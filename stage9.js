@@ -17,7 +17,7 @@
   function loadStage10(){
     const old=document.getElementById('stage10Script');if(old)old.remove();
     window.__stage10Loading=true;
-    const s=document.createElement('script');s.id='stage10Script';s.src='stage10.js?v=3';
+    const s=document.createElement('script');s.id='stage10Script';s.src='stage10.js?v=4';
     s.onload=()=>{window.__stage10Loading=false};s.onerror=()=>{window.__stage10Loading=false};document.body.appendChild(s);
   }
 
