@@ -62,9 +62,13 @@
   const boot=()=>{let tries=0;const t=setInterval(()=>{wireControls();addWorkflowCard();clarifyNavigation();if(++tries>30)clearInterval(t)},250)};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
+function loadStage9Once(){
+  if(document.getElementById('stage9Script')||window.__stage9Loading||window.__stage9Initialized)return;
+  window.__stage9Loading=true;const s=document.createElement('script');s.id='stage9Script';s.src='stage9.js?v=1';s.onload=()=>{window.__stage9Loading=false};s.onerror=()=>{window.__stage9Loading=false};document.body.appendChild(s);
+}
 function loadStage8Once(){
-  if(document.getElementById('stage8Script')||window.__stage8Loading||window.__stage8Initialized)return;
-  window.__stage8Loading=true;const s=document.createElement('script');s.id='stage8Script';s.src='stage8.js?v=1';s.onload=()=>{window.__stage8Loading=false};s.onerror=()=>{window.__stage8Loading=false};document.body.appendChild(s);
+  if(document.getElementById('stage8Script')||window.__stage8Loading||window.__stage8Initialized){if(window.__stage8Initialized)loadStage9Once();return;}
+  window.__stage8Loading=true;const s=document.createElement('script');s.id='stage8Script';s.src='stage8.js?v=1';s.onload=()=>{window.__stage8Loading=false;loadStage9Once()};s.onerror=()=>{window.__stage8Loading=false};document.body.appendChild(s);
 }
 function loadStage7Once(){
   if(document.getElementById('stage7Script')||window.__stage7Loading||window.__stage7Initialized){if(window.__stage7Initialized)loadStage8Once();return;}
