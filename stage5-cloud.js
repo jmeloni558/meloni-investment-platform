@@ -50,8 +50,19 @@
     const card=document.createElement('div');card.id='stage5WorkflowCard';card.className='card span-12';card.innerHTML='<div class="sectionhead"><div><h2>Analysis Workflow</h2><p>Recommended sequence for a complete client-ready file.</p></div><span class="badge">Cloud + Report</span></div><div class="support-grid"><div class="support-box"><span>1. Property</span><b>Create / select client and property</b></div><div class="support-box"><span>2. Analysis</span><b>Enter assumptions and compare financing</b></div><div class="support-box"><span>3. Report</span><b>Add concluded range and commentary</b></div><div class="support-box"><span>4. Save</span><b>Save analysis + report to cloud</b></div></div>';
     grid.appendChild(card);
   }
+  function clarifyNavigation(){
+    const analysis=document.querySelector('.tab[data-tab="dashboard"]');
+    if(analysis){analysis.textContent='Analysis Dashboard';analysis.title='Financial results for the analysis currently open';}
+    const workspace=document.querySelector('.tab[data-tab="propertyhub"]');
+    if(workspace){workspace.textContent='Property Workspace';workspace.title='Manage saved properties, clients, analyses and reports';}
+    const section=document.getElementById('propertyhub');
+    if(section){
+      const h=section.querySelector('.sectionhead h2');if(h)h.textContent='Property Workspace';
+      const p=section.querySelector('.sectionhead p');if(p)p.textContent='Manage saved properties, clients, analyses, reports and archived files from one workspace.';
+    }
+  }
   window.Stage5Cloud={getPrefs,applyPrefs,syncReportMeta};
-  const boot=()=>{let tries=0;const t=setInterval(()=>{wireControls();addWorkflowCard();if(++tries>20||document.getElementById('stage5ReportControls'))clearInterval(t)},250)};
+  const boot=()=>{let tries=0;const t=setInterval(()=>{wireControls();addWorkflowCard();clarifyNavigation();if(++tries>30)clearInterval(t)},250)};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 (() => {
@@ -59,27 +70,8 @@
   window.__stage6Loading=true;
   const s=document.createElement('script');
   s.id='stage6Script';
-  s.src='stage6.js?v=4';
-  s.onload=()=>{window.__stage6Loading=false;};
+  s.src='stage6.js?v=5';
+  s.onload=()=>{window.__stage6Loading=false;const a=document.querySelector('.tab[data-tab="dashboard"]');if(a)a.textContent='Analysis Dashboard';const w=document.querySelector('.tab[data-tab="propertyhub"]');if(w)w.textContent='Property Workspace';const sec=document.getElementById('propertyhub');if(sec){const h=sec.querySelector('.sectionhead h2');if(h)h.textContent='Property Workspace';const p=sec.querySelector('.sectionhead p');if(p)p.textContent='Manage saved properties, clients, analyses, reports and archived files from one workspace.';}};
   s.onerror=()=>{window.__stage6Loading=false;};
   document.body.appendChild(s);
-})();
-(() => {
-  function clarifyNavigation(){
-    const analysisTab=document.querySelector('.tab[data-tab="dashboard"]');
-    if(analysisTab){analysisTab.textContent='Analysis Dashboard';analysisTab.title='View financial results for the current property analysis';}
-    const propertyTab=document.querySelector('.tab[data-tab="propertyhub"]');
-    if(propertyTab){propertyTab.textContent='Property Workspace';propertyTab.title='Manage saved clients, properties, analyses and reports';}
-    const propertySection=document.getElementById('propertyhub');
-    if(propertySection){
-      const h=propertySection.querySelector('.sectionhead h2');
-      const p=propertySection.querySelector('.sectionhead p');
-      if(h)h.textContent='Property Workspace';
-      if(p)p.textContent='Manage saved properties, clients, analyses, reports and archived files from one workspace.';
-      const signedOut=propertySection.querySelector('#hubSignedOut p');
-      if(signedOut)signedOut.textContent='The Property Workspace uses your private cloud records and remains empty when you are signed out.';
-    }
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',clarifyNavigation);else clarifyNavigation();
-  let tries=0;const t=setInterval(()=>{clarifyNavigation();if(document.querySelector('.tab[data-tab="propertyhub"]')||++tries>20)clearInterval(t)},150);
 })();
