@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=3;
+  const VERSION=4;
   if((window.__stage13Version||0)>=VERSION)return;
   window.__stage13Version=VERSION;
 
@@ -28,21 +28,27 @@
   }
 
   function applyRentGrowth(){
-    const input=document.getElementById('f_rentGrowth');const field=input?.closest('.field');
+    const input=document.getElementById('f_rentGrowth'),field=input?.closest('.field');
     if(!input||!field)return false;
     const label=field.querySelector('label');if(label)label.textContent='Rent Increase Starting in Year 2 (%)';
-    let note=field.querySelector('.rent-growth-note');
-    if(!note){note=document.createElement('span');note.className='rent-growth-note';note.textContent='Enter the annual percentage change applied to the initial monthly rent beginning in Year 2.';label?.insertAdjacentElement('afterend',note);}
+    if(!field.querySelector('.rent-growth-note')){
+      const note=document.createElement('span');note.className='rent-growth-note';
+      note.textContent='Enter the annual percentage change applied to the initial monthly rent beginning in Year 2.';
+      label?.insertAdjacentElement('afterend',note);
+    }
     normalizePercentInput(input,'rent-growth-line','rent-growth-percent');
     return true;
   }
 
   function applyVacancy(){
-    const input=document.getElementById('f_vacancy');const field=input?.closest('.field');
+    const input=document.getElementById('f_vacancy'),field=input?.closest('.field');
     if(!input||!field)return false;
     const label=field.querySelector('label');if(label)label.textContent='Vacancy and Credit Losses (%)';
-    let note=field.querySelector('.vacancy-note');
-    if(!note){note=document.createElement('span');note.className='vacancy-note';note.textContent='Percentage of Potential Gross Income deducted for expected vacancy, turnover and uncollected rent.';label?.insertAdjacentElement('afterend',note);}
+    if(!field.querySelector('.vacancy-note')){
+      const note=document.createElement('span');note.className='vacancy-note';
+      note.textContent='Percentage of Potential Gross Income deducted for expected vacancy, turnover and uncollected rent.';
+      label?.insertAdjacentElement('afterend',note);
+    }
     normalizePercentInput(input,'vacancy-line','vacancy-percent');
     if(!field.querySelector('.vacancy-guidance')){
       const box=document.createElement('div');box.className='vacancy-guidance';
@@ -52,14 +58,17 @@
     return true;
   }
 
-  function apply(){injectStyles();const a=applyRentGrowth(),b=applyVacancy();return a||b;}
+  function apply(){injectStyles();return applyRentGrowth()||applyVacancy();}
 
   function start(){
     let tries=0;
-    const timer=setInterval(()=>{if((applyRentGrowth()&&applyVacancy())||++tries>100)clearInterval(timer)},125);
-    document.addEventListener('click',()=>setTimeout(apply,0));
+    const timer=setInterval(()=>{
+      const ready=applyRentGrowth()&&applyVacancy();
+      if(ready||++tries>40)clearInterval(timer);
+    },125);
+    document.querySelector('[data-s8-tab="assumptions"]')?.addEventListener('click',()=>setTimeout(()=>{applyRentGrowth();applyVacancy();},0));
   }
 
   window.Stage13AssumptionGuidance={apply,applyRentGrowth,applyVacancy};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
