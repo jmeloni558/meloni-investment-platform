@@ -64,7 +64,7 @@
 })();
 function loadStage9Once(){
   if(document.getElementById('stage9Script')||window.__stage9Loading||window.__stage9Initialized)return;
-  window.__stage9Loading=true;const s=document.createElement('script');s.id='stage9Script';s.src='stage9.js?v=1';s.onload=()=>{window.__stage9Loading=false};s.onerror=()=>{window.__stage9Loading=false};document.body.appendChild(s);
+  window.__stage9Loading=true;const s=document.createElement('script');s.id='stage9Script';s.src='stage9.js?v=2';s.onload=()=>{window.__stage9Loading=false};s.onerror=()=>{window.__stage9Loading=false};document.body.appendChild(s);
 }
 function loadStage8Once(){
   if(document.getElementById('stage8Script')||window.__stage8Loading||window.__stage8Initialized){if(window.__stage8Initialized)loadStage9Once();return;}
