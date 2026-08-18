@@ -82,7 +82,7 @@
   function loadStage10(){
     if(document.getElementById('stage10Script')||window.__stage10Loading||window.__stage10Initialized)return;
     window.__stage10Loading=true;
-    const s=document.createElement('script');s.id='stage10Script';s.src='stage10.js?v=1';
+    const s=document.createElement('script');s.id='stage10Script';s.src='stage10.js?v=2';
     s.onload=()=>{window.__stage10Loading=false};s.onerror=()=>{window.__stage10Loading=false};document.body.appendChild(s);
   }
 
