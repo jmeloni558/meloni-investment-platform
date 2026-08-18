@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=4;
+  const VERSION=5;
   if((window.__stage10Version||0)>=VERSION)return;
   window.__stage10Version=VERSION;
   window.__stage10Initialized=true;
@@ -30,6 +30,50 @@
     if(btn)btn.setAttribute('aria-expanded',String(!panel.classList.contains('hidden')));
   }
 
+  function reviewResults(){
+    try{
+      if(typeof readFields==='function')readFields();
+      if(typeof render==='function')render();
+      if(typeof setStatus==='function')setStatus('Analysis updated — review the results');
+      switchTab('dashboard');
+      window.scrollTo({top:0,behavior:'smooth'});
+    }catch(e){
+      if(typeof setStatus==='function')setStatus('Please review the analysis inputs: '+e.message);
+    }
+  }
+
+  function simplifyAnalysisSetup(){
+    const sec=document.getElementById('assumptions');
+    if(!sec)return;
+    const topCard=sec.querySelector('.card.span-12');
+    if(!topCard)return;
+    const head=topCard.querySelector('.sectionhead');
+    if(head){
+      const h=head.querySelector('h2');
+      const p=head.querySelector('p');
+      if(h)h.textContent='Analysis Setup';
+      if(p)p.textContent='Enter the property information and investment assumptions below. When finished, click Review Results.';
+      let actions=head.querySelector('.actions');
+      if(actions){
+        actions.innerHTML='<button class="btn primary s10-review-results" id="s10ReviewResults" type="button">Review Results →</button>';
+      }
+    }
+    const review=document.getElementById('s10ReviewResults');
+    if(review)review.onclick=reviewResults;
+
+    let bottom=document.getElementById('s10ReviewResultsBottom');
+    if(!bottom){
+      bottom=document.createElement('div');
+      bottom.id='s10ReviewResultsBottom';
+      bottom.className='card span-12 screen-only s10-review-card';
+      bottom.innerHTML='<div><strong>Finished entering the assumptions?</strong><p>Continue to the financial results and valuation review.</p></div><button class="btn primary" id="s10ReviewResultsBottomBtn" type="button">Review Results →</button>';
+      const grid=sec.querySelector('.grid');
+      if(grid)grid.appendChild(bottom);
+    }
+    const bottomBtn=document.getElementById('s10ReviewResultsBottomBtn');
+    if(bottomBtn)bottomBtn.onclick=reviewResults;
+  }
+
   function rebuildWorkflow(){
     const workflow=document.getElementById('stage8Workflow');
     if(!workflow)return false;
@@ -37,14 +81,12 @@
     const steps=workflow.querySelector('.s8-steps');
     if(!steps)return false;
 
-    // If v4 structure already exists, do not rewrite it. Rewriting used to
-    // destroy the Advanced Tools panel after every click.
-    if(workflow.dataset.stage10Layout==='4'){
+    if(workflow.dataset.stage10Layout==='5'){
       wireControls();
+      simplifyAnalysisSetup();
       return true;
     }
 
-    // Preserve the Stage 8 advanced-tools panel before replacing utility markup.
     const advancedPanel=document.getElementById('s8AdvancedPanel');
     if(advancedPanel)advancedPanel.remove();
 
@@ -101,12 +143,16 @@
       .s10-icon,.s10-tool-icon{width:24px;height:24px;border-radius:6px;background:#e8edf2;color:#475467;font-weight:900;font-size:15px;display:grid;place-items:center;flex:0 0 24px}
       #s10Utilities .s8-advanced{border:0;border-top:1px solid #e3e8ee;border-radius:0;background:#fff;padding:10px 12px}
       #s10NewAnalysis{white-space:nowrap;margin-left:12px}
-      @media(max-width:850px){.s10-step-grid{grid-template-columns:1fr}.s10-step-grid .s8-step{border-right:0;border-bottom:1px solid var(--line)}.s10-step-grid .s8-step:last-child{border-bottom:0}.s10-utilities-actions{display:grid;grid-template-columns:1fr 1fr}.s10-existing,.s10-advanced{min-width:0}.s10-row-label,.s10-utilities-label{display:block}.s10-row-label small,.s10-utilities-label small{display:block;margin-top:2px}}
+      .s10-review-results{min-width:150px}
+      .s10-review-card{display:flex;justify-content:space-between;align-items:center;gap:16px;border:1px solid #cfe0ef;background:#f7fbff}
+      .s10-review-card strong{color:#174f83}.s10-review-card p{margin:3px 0 0;color:#667085;font-size:11px}
+      @media(max-width:850px){.s10-step-grid{grid-template-columns:1fr}.s10-step-grid .s8-step{border-right:0;border-bottom:1px solid var(--line)}.s10-step-grid .s8-step:last-child{border-bottom:0}.s10-utilities-actions{display:grid;grid-template-columns:1fr 1fr}.s10-existing,.s10-advanced{min-width:0}.s10-row-label,.s10-utilities-label{display:block}.s10-row-label small,.s10-utilities-label small{display:block;margin-top:2px}.s10-review-card{display:block}.s10-review-card .btn{margin-top:10px}}
       @media(max-width:620px){.s10-utilities-actions{grid-template-columns:1fr}#s10NewAnalysis{margin:8px 0 0}}
     `;
 
-    workflow.dataset.stage10Layout='4';
+    workflow.dataset.stage10Layout='5';
     wireControls();
+    simplifyAnalysisSetup();
     return true;
   }
 
@@ -115,12 +161,14 @@
     const existing=document.getElementById('s10Existing');if(existing)existing.onclick=openExisting;
     const adv=document.getElementById('s8AdvancedToggle');if(adv)adv.onclick=toggleAdvanced;
     const newBtn=document.getElementById('s10NewAnalysis');if(newBtn)newBtn.onclick=resetNewAnalysis;
+    const review=document.getElementById('s10ReviewResults');if(review)review.onclick=reviewResults;
+    const reviewBottom=document.getElementById('s10ReviewResultsBottomBtn');if(reviewBottom)reviewBottom.onclick=reviewResults;
   }
 
   function relabelHelp(){
     const map={
       propertyhub:['Existing Properties','Search saved properties here. This is a utility area for reopening prior work, not part of the normal three-step analysis workflow.'],
-      assumptions:['Step 1 — Analysis Setup','Start here for a new analysis. Enter the property name and address once, then complete purchase price, rent, expenses, financing, taxes, and return assumptions.'],
+      assumptions:['Step 1 — Analysis Setup','Enter the property name, address, purchase price, rent, expenses, financing, taxes, and return assumptions. Then click Review Results to continue.'],
       dashboard:['Step 2 — Review Results','Review NOI, cap rate, IRR, NPV, DSCR, cash flow, and valuation. Adjust assumptions if needed before preparing the report.'],
       report:['Step 3 — Client Report','Finalize the concluded value range and commentary, save the analysis, and generate the branded client PDF.']
     };
@@ -133,15 +181,15 @@
   }
 
   function refreshState(){
-    if(!document.getElementById('stage8Workflow')?.dataset.stage10Layout)rebuildWorkflow();
-    wireControls();relabelHelp();
+    if(document.getElementById('stage8Workflow')?.dataset.stage10Layout!=='5')rebuildWorkflow();
+    wireControls();simplifyAnalysisSetup();relabelHelp();
     const active=document.querySelector('.section.active')?.id||'';
     document.querySelectorAll('#stage8Workflow [data-s8-tab]').forEach(b=>b.classList.toggle('active',b.dataset.s8Tab===active));
     const existing=document.getElementById('s10Existing');if(existing)existing.classList.toggle('active',active==='propertyhub'||active==='propertyfile');
     const adv=document.getElementById('s8AdvancedToggle');if(adv)adv.classList.toggle('active',advancedTabs.includes(active));
     const next=document.getElementById('s8NextText');
     if(next){
-      if(active==='assumptions')next.textContent='Next: complete the analysis inputs, then review the results.';
+      if(active==='assumptions')next.textContent='Next: enter the assumptions, then click Review Results.';
       else if(active==='dashboard')next.textContent='Next: confirm the investment results, then prepare the client report.';
       else if(active==='report')next.textContent='Final step: save the analysis and download the client PDF.';
       else if(active==='propertyhub'||active==='propertyfile')next.textContent='Utility area: open a saved property, or click New Analysis to return to the primary workflow.';
@@ -159,6 +207,6 @@
     const badge=document.querySelector('.stage-pill');if(badge)badge.textContent='Guided Analysis';
   }
 
-  window.Stage10Workflow={refresh:refreshState,newAnalysis:resetNewAnalysis,existing:openExisting,toggleAdvanced};
+  window.Stage10Workflow={refresh:refreshState,newAnalysis:resetNewAnalysis,existing:openExisting,toggleAdvanced,reviewResults};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
