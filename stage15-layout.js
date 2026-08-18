@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=8;
+  const VERSION=9;
   if((window.__stage15LayoutVersion||0)>=VERSION)return;
   window.__stage15LayoutVersion=VERSION;
 
@@ -19,6 +19,12 @@
       .mort-rate-line,.valuation-percent-line{position:relative;display:block;width:100%}
       .mort-rate-line input,.valuation-percent-line input{width:100%;box-sizing:border-box;padding-right:34px!important;border-radius:6px!important}
       .mort-rate-percent,.valuation-percent{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;color:#667085;font-weight:800;font-size:12px;line-height:1;pointer-events:none;background:transparent;border:0;padding:0;min-width:0}
+      .guidance-box[data-guide="rentGrowth"]{margin-top:7px!important;padding:9px 10px!important;border:1px solid #d9e4ee!important;border-radius:8px!important;background:#f8fbfd!important;color:#475467!important;font-size:10px!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important;letter-spacing:normal!important}
+      .guidance-box[data-guide="rentGrowth"] b{color:#174f83!important;font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="rentGrowth"] p{margin:3px 0 0!important;font-size:inherit!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important}
+      .guidance-box[data-guide="rentGrowth"] strong{font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="rentGrowth"] a{color:#175c92!important;font-weight:700!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="rentGrowth"] a:hover{text-decoration:underline!important}
       .analysis-benchmark-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
       .analysis-benchmark-grid .field{min-width:0}
       .analysis-benchmark-grid .address-setup-field{grid-column:1/-1;width:min(100%,720px);justify-self:center;text-align:center}
@@ -51,6 +57,19 @@
     let line=input.closest('.'+lineClass);
     if(!line){line=document.createElement('div');line.className=lineClass;input.parentNode.insertBefore(line,input);line.appendChild(input);}
     if(!line.querySelector('.'+percentClass)){const pct=document.createElement('span');pct.className=percentClass;pct.textContent='%';line.appendChild(pct);}
+  }
+
+  function applyRentGrowthGuidance(){
+    const input=document.getElementById('f_rentGrowth'),field=input?.closest('.field');
+    if(!input||!field)return false;
+    if(!field.querySelector('.guidance-box[data-guide="rentGrowth"]')){
+      const box=document.createElement('div');
+      box.className='guidance-box';
+      box.dataset.guide='rentGrowth';
+      box.innerHTML='<b>How to choose this assumption</b><p>This is the annual percentage change applied to the starting monthly rent beginning in <strong>Year 2</strong>, and it compounds in later years. Enter <strong>2%</strong> for 2% annual rent growth, <strong>0%</strong> for no growth, or a negative percentage if rents are expected to decline.</p><p>Use recent local rent trends, lease renewals and competing rental data when available. A conservative assumption is appropriate when future rent growth is uncertain.</p><p><a href="https://www.zillow.com/research/data/" target="_blank" rel="noopener">Research rent trends with Zillow Observed Rent Index data ↗</a></p>';
+      field.appendChild(box);
+    }
+    return true;
   }
 
   function applyFinanceGuidance(){
@@ -122,8 +141,8 @@
 
   function removeDuplicateReview(){document.getElementById('s10ReviewResultsBottom')?.remove();return true;}
 
-  function apply(){injectStyles();removeDuplicateReview();const a=applyFinanceGuidance();const b=applyValuationSetup();const c=applyTaxLayout();return a&&b&&c;}
+  function apply(){injectStyles();removeDuplicateReview();const r=applyRentGrowthGuidance();const a=applyFinanceGuidance();const b=applyValuationSetup();const c=applyTaxLayout();return r&&a&&b&&c;}
   function start(){let tries=0;const timer=setInterval(()=>{if(apply()||++tries>50)clearInterval(timer)},125);document.querySelector('[data-s8-tab="assumptions"]')?.addEventListener('click',()=>setTimeout(apply,0));}
-  window.Stage15Layout={apply,applyFinanceGuidance,applyValuationSetup,applyTaxLayout,removeDuplicateReview};
+  window.Stage15Layout={apply,applyRentGrowthGuidance,applyFinanceGuidance,applyValuationSetup,applyTaxLayout,removeDuplicateReview};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
