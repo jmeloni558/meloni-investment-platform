@@ -64,3 +64,22 @@
   s.onerror=()=>{window.__stage6Loading=false;};
   document.body.appendChild(s);
 })();
+(() => {
+  function clarifyNavigation(){
+    const analysisTab=document.querySelector('.tab[data-tab="dashboard"]');
+    if(analysisTab){analysisTab.textContent='Analysis Dashboard';analysisTab.title='View financial results for the current property analysis';}
+    const propertyTab=document.querySelector('.tab[data-tab="propertyhub"]');
+    if(propertyTab){propertyTab.textContent='Property Workspace';propertyTab.title='Manage saved clients, properties, analyses and reports';}
+    const propertySection=document.getElementById('propertyhub');
+    if(propertySection){
+      const h=propertySection.querySelector('.sectionhead h2');
+      const p=propertySection.querySelector('.sectionhead p');
+      if(h)h.textContent='Property Workspace';
+      if(p)p.textContent='Manage saved properties, clients, analyses, reports and archived files from one workspace.';
+      const signedOut=propertySection.querySelector('#hubSignedOut p');
+      if(signedOut)signedOut.textContent='The Property Workspace uses your private cloud records and remains empty when you are signed out.';
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',clarifyNavigation);else clarifyNavigation();
+  let tries=0;const t=setInterval(()=>{clarifyNavigation();if(document.querySelector('.tab[data-tab="propertyhub"]')||++tries>20)clearInterval(t)},150);
+})();
