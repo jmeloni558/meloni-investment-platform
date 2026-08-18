@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=3;
+  const VERSION=4;
   if((window.__stage11Version||0)>=VERSION)return;
   window.__stage11Version=VERSION;
   let startupApplied=false;
@@ -15,6 +15,28 @@
     }catch(e){
       if(typeof setStatus==='function')setStatus('Please review the analysis inputs: '+e.message);
     }
+  }
+
+  function injectGuidanceStyles(){
+    if(document.getElementById('stage11GuidanceStyles'))return;
+    const st=document.createElement('style');
+    st.id='stage11GuidanceStyles';
+    st.textContent='.guidance-box{margin-top:7px;padding:9px 10px;border:1px solid #d9e4ee;border-radius:8px;background:#f8fbfd;color:#475467;font-size:10px;line-height:1.45}.guidance-box b{color:#174f83}.guidance-box p{margin:3px 0 0}.guidance-box a{color:#175c92;font-weight:700;text-decoration:none}.guidance-box a:hover{text-decoration:underline}';
+    document.head.appendChild(st);
+  }
+
+  function applyRentGrowthGuidance(){
+    injectGuidanceStyles();
+    const input=document.getElementById('f_rentGrowth');
+    const field=input?.closest('.field');
+    if(!field)return false;
+    if(field.querySelector('.guidance-box[data-guide="rentGrowth"]'))return true;
+    const box=document.createElement('div');
+    box.className='guidance-box';
+    box.dataset.guide='rentGrowth';
+    box.innerHTML='<b>How to choose this assumption</b><p>This is your estimate of how monthly rent may change beginning in Year 2. Base it on current rental-market conditions and expectations for the local area. The assumption can be <strong>positive</strong> when rents are expected to rise, <strong>0%</strong> when rents are expected to remain generally stable, or <strong>negative</strong> when rents are expected to decline. Use a conservative figure when the outlook is uncertain.</p><p><a href="https://www.zillow.com/research/data/" target="_blank" rel="noopener">Research local rent trends with Zillow Research (ZORI) ↗</a></p>';
+    field.appendChild(box);
+    return true;
   }
 
   function apply(){
@@ -32,6 +54,7 @@
     if(!bottom){bottom=document.createElement('div');bottom.id='guidedReviewResultsBottom';bottom.className='card span-12 screen-only';bottom.innerHTML='<div class="sectionhead"><div><h2>Ready to review?</h2><p>Your inputs will be recalculated automatically before opening Step 2.</p></div><button class="btn primary" id="guidedReviewResultsBottomBtn" type="button">Review Results →</button></div>';sec.querySelector('.grid')?.appendChild(bottom);}
     const b=document.getElementById('guidedReviewResultsBottomBtn');if(b)b.onclick=reviewResults;
     const help=sec.querySelector('.s8-help');if(help){const strong=help.querySelector('strong'),p=help.querySelector('p');if(strong)strong.textContent='Step 1 — Analysis Setup';if(p)p.textContent='Enter the property name, address and investment assumptions, then click Review Results to continue.';}
+    applyRentGrowthGuidance();
     return true;
   }
 
@@ -47,18 +70,14 @@
     switchTab('assumptions');window.Stage8Workflow?.refresh?.();window.Stage10Workflow?.refresh?.();setTimeout(()=>document.getElementById('f_name')?.focus(),80);
   }
 
-  function loadStage12(){
-    if((window.__stage12Version||0)>=1)return;
-    const old=document.getElementById('stage12Script');if(old)old.remove();
-    const s=document.createElement('script');s.id='stage12Script';s.src='stage12.js?v=1';document.body.appendChild(s);
-  }
-
   function start(){
     let tries=0;
-    const timer=setInterval(()=>{apply();applyFreshStartup();if((startupApplied&&apply())||++tries>100){clearInterval(timer);loadStage12();}},125);
-    document.addEventListener('click',()=>setTimeout(()=>{apply();window.Stage12Guidance?.apply?.()},0));
+    const timer=setInterval(()=>{apply();applyFreshStartup();if((startupApplied&&apply())||++tries>100)clearInterval(timer);},125);
+    document.addEventListener('click',()=>setTimeout(apply,0));
+    const observer=new MutationObserver(()=>applyRentGrowthGuidance());
+    const propertyFields=document.getElementById('propertyFields');if(propertyFields)observer.observe(propertyFields,{childList:true,subtree:true});
   }
 
-  window.Stage11Step1={apply,reviewResults,applyFreshStartup};
+  window.Stage11Step1={apply,reviewResults,applyFreshStartup,applyRentGrowthGuidance};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
