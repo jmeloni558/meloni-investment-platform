@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=7;
+  const VERSION=8;
   if((window.__stage15LayoutVersion||0)>=VERSION)return;
   window.__stage15LayoutVersion=VERSION;
 
@@ -14,6 +14,7 @@
       .finance-tax-divider p{margin:0;color:#667085;font-size:10px;line-height:1.4}
       .layout-hidden-card{display:none!important}
       #s10ReviewResultsBottom{display:none!important}
+      #assumptions .s8-help{display:none!important}
       .finance-field-note,.valuation-field-note{display:block;margin:3px 0 5px;color:#667085;font-size:9px;line-height:1.35;font-weight:500}
       .mort-rate-line,.valuation-percent-line{position:relative;display:block;width:100%}
       .mort-rate-line input,.valuation-percent-line input{width:100%;box-sizing:border-box;padding-right:34px!important;border-radius:6px!important}
