@@ -18,10 +18,10 @@
 })();
 
 function loadStage9Once(){
-  if((window.__stage9Version||0)>=10)return;
+  if((window.__stage9Version||0)>=11)return;
   const old=document.getElementById('stage9Script');if(old)old.remove();
   window.__stage9Loading=true;
-  const s=document.createElement('script');s.id='stage9Script';s.src='stage9.js?v=10';
+  const s=document.createElement('script');s.id='stage9Script';s.src='stage9.js?v=11';
   s.onload=()=>{window.__stage9Loading=false};s.onerror=()=>{window.__stage9Loading=false};document.body.appendChild(s);
 }
 function loadStage8Once(){if(document.getElementById('stage8Script')||window.__stage8Loading||window.__stage8Initialized){if(window.__stage8Initialized)loadStage9Once();return;}window.__stage8Loading=true;const s=document.createElement('script');s.id='stage8Script';s.src='stage8.js?v=1';s.onload=()=>{window.__stage8Loading=false;loadStage9Once()};s.onerror=()=>{window.__stage8Loading=false};document.body.appendChild(s);}
