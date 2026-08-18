@@ -10,7 +10,7 @@
 <div class="loading"><b>Investment Property Analyzer</b>Loading the latest build…</div>
 <script>
 (async()=>{
-  const BUILD='20260818-1632-selling-expense-guidance';
+  const BUILD='20260818-1638-national-selling-costs';
   try{
     const r=await fetch('./index.html?build='+encodeURIComponent(BUILD),{cache:'no-store'});
     if(!r.ok)throw new Error('Unable to load application');
@@ -18,7 +18,7 @@
     const assets=['styles.css','app.js','cloud.js','stage5.js','stage5-cloud.js'];
     for(const asset of assets){html=html.split('"'+asset+'"').join('"'+asset+'?build='+BUILD+'"');}
     html=html.replace('</head>','<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"></head>');
-    html=html.replace('</body>','<script src="stage13.js?v=12&build='+BUILD+'"><\/script></body>');
+    html=html.replace('</body>','<script src="stage13.js?v=13&build='+BUILD+'"><\/script></body>');
     document.open();document.write(html);document.close();
   }catch(e){document.body.innerHTML='<div class="loading"><b>Unable to load the latest build</b>'+String(e.message||e)+'</div>';}
 })();
