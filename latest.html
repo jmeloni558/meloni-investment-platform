@@ -10,7 +10,7 @@
 <div class="loading"><b>Investment Property Analyzer</b>Loading the latest build…</div>
 <script>
 (async()=>{
-  const BUILD='20260818-1840-review-taxes-from-operations';
+  const BUILD='20260818-1847-review-taxes-due-on-sale';
   try{
     const r=await fetch('./index.html?build='+encodeURIComponent(BUILD),{cache:'no-store'});
     if(!r.ok)throw new Error('Unable to load application');
@@ -18,7 +18,7 @@
     const assets=['styles.css','app.js','cloud.js','stage5.js','stage5-cloud.js'];
     for(const asset of assets){html=html.split('"'+asset+'"').join('"'+asset+'?build='+BUILD+'"');}
     html=html.replace('</head>','<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"></head>');
-    html=html.replace('</body>','<script src="stage10.js?v=6&build='+BUILD+'"><\/script><script src="stage13.js?v=15&build='+BUILD+'"><\/script><script src="stage14-capgains.js?v=2&build='+BUILD+'"><\/script><script src="stage15-layout.js?v=12&build='+BUILD+'"><\/script><script src="review-valuation.js?v=2&build='+BUILD+'"><\/script><script src="review-cashflow-statement.js?v=1&build='+BUILD+'"><\/script><script src="review-taxes-operations.js?v=1&build='+BUILD+'"><\/script></body>');
+    html=html.replace('</body>','<script src="stage10.js?v=6&build='+BUILD+'"><\/script><script src="stage13.js?v=15&build='+BUILD+'"><\/script><script src="stage14-capgains.js?v=2&build='+BUILD+'"><\/script><script src="stage15-layout.js?v=12&build='+BUILD+'"><\/script><script src="review-valuation.js?v=2&build='+BUILD+'"><\/script><script src="review-cashflow-statement.js?v=1&build='+BUILD+'"><\/script><script src="review-taxes-operations.js?v=1&build='+BUILD+'"><\/script><script src="review-taxes-sale.js?v=1&build='+BUILD+'"><\/script></body>');
     document.open();document.write(html);document.close();
   }catch(e){document.body.innerHTML='<div class="loading"><b>Unable to load the latest build</b>'+String(e.message||e)+'</div>'}
 })();
