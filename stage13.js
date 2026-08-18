@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=5;
+  const VERSION=6;
   if((window.__stage13Version||0)>=VERSION)return;
   window.__stage13Version=VERSION;
 
@@ -13,6 +13,12 @@
       .rent-growth-line input,.vacancy-line input{flex:1 1 auto;min-width:0;border-radius:6px 0 0 6px!important}
       .rent-growth-percent,.vacancy-percent{display:flex;align-items:center;justify-content:center;min-width:38px;padding:0 10px;border:1px solid var(--line);border-left:0;border-radius:0 6px 6px 0;background:#f2f4f7;color:#344054;font-weight:800;font-size:12px}
       .rent-growth-note,.vacancy-note{display:block;margin:3px 0 5px;color:#667085;font-size:9px;line-height:1.35;font-weight:500}
+      .guidance-box[data-guide="vacancy"]{margin-top:7px!important;padding:9px 10px!important;border:1px solid #d9e4ee!important;border-radius:8px!important;background:#f8fbfd!important;color:#475467!important;font-size:10px!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important;letter-spacing:normal!important}
+      .guidance-box[data-guide="vacancy"] b{color:#174f83!important;font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="vacancy"] p{margin:3px 0 0!important;font-size:inherit!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important}
+      .guidance-box[data-guide="vacancy"] strong{font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="vacancy"] a{color:#175c92!important;font-weight:700!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="vacancy"] a:hover{text-decoration:underline!important}
     `;
     document.head.appendChild(st);
   }
@@ -41,6 +47,7 @@
   function applyVacancy(){
     const input=document.getElementById('f_vacancy'),field=input?.closest('.field');
     if(!input||!field)return false;
+    field.querySelectorAll('.vacancy-guidance').forEach(el=>el.remove());
     const label=field.querySelector('label');if(label)label.textContent='Vacancy and Credit Losses (%)';
     if(!field.querySelector('.vacancy-note')){
       const note=document.createElement('span');note.className='vacancy-note';
@@ -58,15 +65,12 @@
     return true;
   }
 
-  function apply(){injectStyles();return applyRentGrowth()||applyVacancy();}
+  function apply(){injectStyles();const a=applyRentGrowth();const b=applyVacancy();return a&&b;}
 
   function start(){
     let tries=0;
-    const timer=setInterval(()=>{
-      const ready=applyRentGrowth()&&applyVacancy();
-      if(ready||++tries>40)clearInterval(timer);
-    },125);
-    document.querySelector('[data-s8-tab="assumptions"]')?.addEventListener('click',()=>setTimeout(()=>{applyRentGrowth();applyVacancy();},0));
+    const timer=setInterval(()=>{if(apply()||++tries>40)clearInterval(timer)},125);
+    document.querySelector('[data-s8-tab="assumptions"]')?.addEventListener('click',()=>setTimeout(apply,0));
   }
 
   window.Stage13AssumptionGuidance={apply,applyRentGrowth,applyVacancy};
