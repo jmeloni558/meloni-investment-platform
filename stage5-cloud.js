@@ -54,3 +54,13 @@
   const boot=()=>{let tries=0;const t=setInterval(()=>{wireControls();addWorkflowCard();if(++tries>20||document.getElementById('stage5ReportControls'))clearInterval(t)},250)};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
+(() => {
+  if(document.getElementById('stage6Script') || window.__stage6Loading || window.__stage6Initialized) return;
+  window.__stage6Loading=true;
+  const s=document.createElement('script');
+  s.id='stage6Script';
+  s.src='stage6.js?v=4';
+  s.onload=()=>{window.__stage6Loading=false;};
+  s.onerror=()=>{window.__stage6Loading=false;};
+  document.body.appendChild(s);
+})();
