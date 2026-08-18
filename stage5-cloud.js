@@ -17,13 +17,13 @@
     const b=document.getElementById('s5_refresh');if(b)b.click();
   };
   async function syncReportMeta(silent=false){
-    if(!window.cloudClient||!window.cloudUser||!window.selectedAnalysisId)return false;
-    const item=(window.cloudAnalyses||[]).find(x=>x.id===window.selectedAnalysisId);
+    if(!cloudClient||!cloudUser||!selectedAnalysisId)return false;
+    const item=(cloudAnalyses||[]).find(x=>x.id===selectedAnalysisId);
     const report_meta={...(item?.report_meta||{}),prepared_by:'Jamie Meloni',brokerage:'Meloni Realty',stage5:getPrefs(),report_updated_at:new Date().toISOString()};
-    const {error}=await window.cloudClient.from('analyses').update({report_meta,updated_at:new Date().toISOString()}).eq('id',window.selectedAnalysisId);
-    if(error){if(!silent&&window.setStatus)window.setStatus('Report cloud sync failed: '+error.message);return false;}
+    const {error}=await cloudClient.from('analyses').update({report_meta,updated_at:new Date().toISOString()}).eq('id',selectedAnalysisId);
+    if(error){if(!silent&&typeof setStatus==='function')setStatus('Report cloud sync failed: '+error.message);return false;}
     if(item)item.report_meta=report_meta;
-    if(!silent&&window.setStatus)window.setStatus('Report settings saved to cloud');
+    if(!silent&&typeof setStatus==='function')setStatus('Report settings saved to cloud');
     const s=document.getElementById('s5CloudSyncStatus');if(s)s.textContent='Report settings synced '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
     return true;
   }
@@ -38,12 +38,12 @@
     Object.values(IDS).forEach(id=>{const el=document.getElementById(id);if(el&&!el.dataset.cloudwired){el.dataset.cloudwired='1';el.addEventListener('input',scheduleSync);el.addEventListener('change',scheduleSync)}});
     return true;
   }
-  const oldSave=window.saveCurrentCloud;
-  if(typeof oldSave==='function')window.saveCurrentCloud=async function(clone=false){const out=await oldSave(clone);await syncReportMeta(true);return out;};
-  const oldLoad=window.loadSelectedCloud;
-  if(typeof oldLoad==='function')window.loadSelectedCloud=async function(){const id=window.selectedAnalysisId;const item=(window.cloudAnalyses||[]).find(x=>x.id===id);const out=await oldLoad();setTimeout(()=>{if(item?.report_meta?.stage5)applyPrefs(item.report_meta.stage5);wireControls();},50);return out;};
-  const oldSelect=window.selectAnalysis;
-  if(typeof oldSelect==='function')window.selectAnalysis=async function(id){const out=await oldSelect(id);const item=(window.cloudAnalyses||[]).find(x=>x.id===id);const s=document.getElementById('s5CloudSyncStatus');if(s)s.textContent=item?.report_meta?.stage5?'Saved report settings available for this analysis.':'No cloud report settings saved yet.';return out;};
+  const oldSave=saveCurrentCloud;
+  if(typeof oldSave==='function')saveCurrentCloud=async function(clone=false){const out=await oldSave(clone);await syncReportMeta(true);return out;};
+  const oldLoad=loadSelectedCloud;
+  if(typeof oldLoad==='function')loadSelectedCloud=async function(){const id=selectedAnalysisId;const item=(cloudAnalyses||[]).find(x=>x.id===id);const out=await oldLoad();setTimeout(()=>{if(item?.report_meta?.stage5)applyPrefs(item.report_meta.stage5);wireControls();},50);return out;};
+  const oldSelect=selectAnalysis;
+  if(typeof oldSelect==='function')selectAnalysis=async function(id){const out=await oldSelect(id);const item=(cloudAnalyses||[]).find(x=>x.id===id);const s=document.getElementById('s5CloudSyncStatus');if(s)s.textContent=item?.report_meta?.stage5?'Saved report settings available for this analysis.':'No cloud report settings saved yet.';return out;};
   function addWorkflowCard(){
     const cloud=document.getElementById('cloud');if(!cloud||document.getElementById('stage5WorkflowCard'))return;
     const grid=cloud.querySelector('.grid');if(!grid)return;
