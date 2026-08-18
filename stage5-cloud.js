@@ -54,3 +54,4 @@
   const boot=()=>{let tries=0;const t=setInterval(()=>{wireControls();addWorkflowCard();if(++tries>20||document.getElementById('stage5ReportControls'))clearInterval(t)},250)};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
+(() => { const s=document.createElement('script'); s.src='stage6.js'; s.defer=true; document.body.appendChild(s); })();
