@@ -1,9 +1,23 @@
 'use strict';
 (() => {
+  if(window.__stage6Initialized){
+    if(window.Stage6Dashboard?.cleanup)window.Stage6Dashboard.cleanup();
+    if(window.Stage6Dashboard?.render)window.Stage6Dashboard.render();
+    return;
+  }
+  window.__stage6Initialized=true;
+
   const money=v=>Number.isFinite(Number(v))?fmtC(Number(v)):'N/A';
   const pct=v=>Number.isFinite(Number(v))?fmtP(Number(v)):'N/A';
   const mult=v=>Number.isFinite(Number(v))?Number(v).toFixed(2)+'x':'N/A';
   let showArchived=false, searchTerm='';
+
+  function cleanupDuplicates(){
+    const tabs=[...document.querySelectorAll('.tab[data-tab="propertyhub"]')];
+    tabs.slice(1).forEach(el=>el.remove());
+    const secs=[...document.querySelectorAll('section#propertyhub')];
+    secs.slice(1).forEach(el=>el.remove());
+  }
 
   function latestForProperty(pid){
     return (cloudAnalyses||[])
@@ -26,22 +40,21 @@
     return 'Review Needed';
   }
   function inject(){
-    const existingSection=document.getElementById('propertyhub');
-    const existingTab=document.querySelector('.tab[data-tab="propertyhub"]');
-    if(existingSection&&existingTab)return;
-
+    cleanupDuplicates();
     const nav=document.querySelector('.nav');
-    const cloudTab=[...document.querySelectorAll('.tab')].find(b=>b.dataset.tab==='cloud');
-    let btn=existingTab;
+    let btn=document.querySelector('.tab[data-tab="propertyhub"]');
+    let sec=document.getElementById('propertyhub');
+
     if(!btn){
+      const cloudTab=[...document.querySelectorAll('.tab')].find(b=>b.dataset.tab==='cloud');
       btn=document.createElement('button');
-      btn.className='tab'; btn.dataset.tab='propertyhub'; btn.textContent='Property Dashboard';
-      nav.insertBefore(btn,cloudTab||null);
+      btn.className='tab';btn.dataset.tab='propertyhub';btn.textContent='Property Dashboard';
+      nav?.insertBefore(btn,cloudTab||null);
     }
     btn.onclick=()=>{switchTab('propertyhub');renderHub()};
 
-    if(existingSection)return;
-    const sec=document.createElement('section');
+    if(sec)return;
+    sec=document.createElement('section');
     sec.id='propertyhub'; sec.className='section';
     sec.innerHTML=`<div class="grid">
       <div class="card span-12">
@@ -61,11 +74,10 @@
       <div class="card span-12" id="hubSignedOut"><div class="callout"><strong>Sign in to view your property files.</strong><p>The dashboard uses your private cloud records and remains empty when you are signed out.</p></div></div>
       <div class="span-12" id="hubCards"></div>
     </div>`;
-    document.querySelector('.footer').insertAdjacentElement('beforebegin',sec);
+    document.querySelector('.footer')?.insertAdjacentElement('beforebegin',sec);
 
     if(!document.getElementById('stage6Styles')){
-      const st=document.createElement('style');
-      st.id='stage6Styles';
+      const st=document.createElement('style');st.id='stage6Styles';
       st.textContent=`
         .hub-toolbar{display:grid;grid-template-columns:minmax(260px,1fr) auto auto;gap:14px;align-items:end}
         .hub-check{display:flex;align-items:center;gap:7px;padding:9px 0;font-weight:700;color:#475467}
@@ -93,11 +105,13 @@
   }
 
   function renderHub(){
+    cleanupDuplicates();
     inject();
     const signed=!!cloudUser;
-    document.getElementById('hubSignedOut').style.display=signed?'none':'block';
+    const signedOut=document.getElementById('hubSignedOut');if(signedOut)signedOut.style.display=signed?'none':'block';
     const cards=document.getElementById('hubCards');
-    if(!signed){cards.innerHTML='';document.getElementById('hubSummary').textContent='';return}
+    if(!cards)return;
+    if(!signed){cards.innerHTML='';const sum=document.getElementById('hubSummary');if(sum)sum.textContent='';return}
     const props=(cloudProperties||[]).filter(p=>{
       if(!showArchived&&p.archived)return false;
       const c=clientForProperty(p);
@@ -106,7 +120,7 @@
     });
     const activeCount=(cloudProperties||[]).filter(p=>!p.archived).length;
     const archivedCount=(cloudProperties||[]).filter(p=>p.archived).length;
-    document.getElementById('hubSummary').textContent=`${activeCount} active • ${archivedCount} archived • ${cloudAnalyses.length} analyses`;
+    const sum=document.getElementById('hubSummary');if(sum)sum.textContent=`${activeCount} active • ${archivedCount} archived • ${cloudAnalyses.length} analyses`;
     if(!props.length){cards.innerHTML='<div class="card"><div class="note">No properties match the current dashboard filter.</div></div>';return}
     cards.innerHTML='<div class="hub-grid">'+props.map(p=>{
       const a=latestForProperty(p.id),c=clientForProperty(p),o=a?.outputs||{},s=a?.assumptions||{};
@@ -191,7 +205,7 @@
   const oldSaveAnalysis=saveCurrentCloud;
   saveCurrentCloud=async function(clone=false){const out=await oldSaveAnalysis(clone);renderHub();return out};
 
-  window.Stage6Dashboard={render:renderHub};
-  const boot=()=>{inject();renderHub();const badge=document.querySelector('.stage-pill');if(badge)badge.textContent='Stage 6 Workspace'};
+  window.Stage6Dashboard={render:renderHub,cleanup:cleanupDuplicates};
+  const boot=()=>{cleanupDuplicates();inject();renderHub();const badge=document.querySelector('.stage-pill');if(badge)badge.textContent='Stage 6 Workspace'};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
