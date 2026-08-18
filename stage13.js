@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=12;
+  const VERSION=13;
   if((window.__stage13Version||0)>=VERSION)return;
   window.__stage13Version=VERSION;
 
@@ -44,7 +44,7 @@
     normalizePercentInput(input,'selling-line','selling-percent');
     if(!field.querySelector('.guidance-box[data-guide="sellCost"]')){
       const box=document.createElement('div');box.className='guidance-box';box.dataset.guide='sellCost';
-      box.innerHTML='<b>How to choose this assumption</b><p>This percentage is applied to the <strong>projected value of the property in the year you intend to sell it</strong>. It estimates the transaction costs deducted from the sale price before calculating net sale proceeds.</p><p>Typical seller expenses may include <strong>real estate brokerage commissions or compensation, transfer or documentary taxes, owner\'s title insurance or other title-related charges, closing or settlement fees, recording charges, and other negotiated seller-paid costs</strong>. Brokerage compensation is negotiable and actual closing costs vary by market and transaction.</p><p>For preliminary analysis, <strong>5% to 7%</strong> of the expected sale price is a reasonable estimating range when detailed seller costs are not yet known. Replace the estimate with transaction-specific costs when available.</p><p><a href="https://sell.realtor.com/resources/closing-costs-florida/" target="_blank" rel="noopener">Review common seller closing costs and fees ↗</a></p>';
+      box.innerHTML='<b>How to choose this assumption</b><p>This percentage is applied to the <strong>projected value of the property in the year you intend to sell it</strong>. It estimates the transaction costs deducted from the sale price before calculating net sale proceeds.</p><p>Typical seller expenses may include <strong>real estate brokerage commissions or compensation, transfer or documentary taxes, owner\'s title insurance or other title-related charges, closing or settlement fees, recording charges, and other negotiated seller-paid costs</strong>. Brokerage compensation is negotiable and actual closing costs vary by market and transaction.</p><p>For preliminary analysis, <strong>5% to 7%</strong> of the expected sale price is a reasonable estimating range when detailed seller costs are not yet known. Replace the estimate with transaction-specific costs when available.</p><p><a href="https://myhome.freddiemac.com/selling/costs-of-selling" target="_blank" rel="noopener">Review common costs of selling a home with Freddie Mac ↗</a></p>';
       field.appendChild(box);
     }
     return true;
