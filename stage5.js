@@ -9,7 +9,7 @@
   let prefs={clientName:'',preparedFor:'',analyst:'Jamie Meloni',brokerage:'Meloni Realty',recommendationNote:'',valueLow:'',valueHigh:'',marketRent:'',marketCap:'',reportNotes:'',includeTax:true,includeSensitivity:true};
   try{Object.assign(prefs,JSON.parse(localStorage.getItem(S5_KEY)||'{}'))}catch(_e){}
   function persistPrefs(){localStorage.setItem(S5_KEY,JSON.stringify(prefs))}
-  function current(){if(typeof readFields==='function')readFields(); if(typeof render==='function')render(); return result}
+  function current(){if(typeof readFields==='function')readFields(); result=analyze(state); return result}
   function annualDebt(r){return r?.years?.[0]?.debt||0}
   function operatingMargin(){return Math.max(.0001,(1-state.vacancy)*(1-state.opEx))}
   function rentForNoi(noi){return noi/(12*Math.max(1,state.units)*operatingMargin())}
