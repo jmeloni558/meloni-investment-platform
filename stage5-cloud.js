@@ -56,22 +56,23 @@
     const workspace=document.querySelector('.tab[data-tab="propertyhub"]');
     if(workspace){workspace.textContent='Property Workspace';workspace.title='Manage saved properties, clients, analyses and reports';}
     const section=document.getElementById('propertyhub');
-    if(section){
-      const h=section.querySelector('.sectionhead h2');if(h)h.textContent='Property Workspace';
-      const p=section.querySelector('.sectionhead p');if(p)p.textContent='Manage saved properties, clients, analyses, reports and archived files from one workspace.';
-    }
+    if(section){const h=section.querySelector('.sectionhead h2');if(h)h.textContent='Property Workspace';const p=section.querySelector('.sectionhead p');if(p)p.textContent='Manage saved properties, clients, analyses, reports and archived files from one workspace.';}
   }
   window.Stage5Cloud={getPrefs,applyPrefs,syncReportMeta};
   const boot=()=>{let tries=0;const t=setInterval(()=>{wireControls();addWorkflowCard();clarifyNavigation();if(++tries>30)clearInterval(t)},250)};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
+function loadStage7Once(){
+  if(document.getElementById('stage7Script')||window.__stage7Loading||window.__stage7Initialized)return;
+  window.__stage7Loading=true;const s=document.createElement('script');s.id='stage7Script';s.src='stage7.js?v=1';s.onload=()=>{window.__stage7Loading=false};s.onerror=()=>{window.__stage7Loading=false};document.body.appendChild(s);
+}
 (() => {
-  if(document.getElementById('stage6Script') || window.__stage6Loading || window.__stage6Initialized) return;
+  if(document.getElementById('stage6Script') || window.__stage6Loading || window.__stage6Initialized){if(window.__stage6Initialized)loadStage7Once();return;}
   window.__stage6Loading=true;
   const s=document.createElement('script');
   s.id='stage6Script';
   s.src='stage6.js?v=5';
-  s.onload=()=>{window.__stage6Loading=false;const a=document.querySelector('.tab[data-tab="dashboard"]');if(a)a.textContent='Analysis Dashboard';const w=document.querySelector('.tab[data-tab="propertyhub"]');if(w)w.textContent='Property Workspace';const sec=document.getElementById('propertyhub');if(sec){const h=sec.querySelector('.sectionhead h2');if(h)h.textContent='Property Workspace';const p=sec.querySelector('.sectionhead p');if(p)p.textContent='Manage saved properties, clients, analyses, reports and archived files from one workspace.';}};
+  s.onload=()=>{window.__stage6Loading=false;const a=document.querySelector('.tab[data-tab="dashboard"]');if(a)a.textContent='Analysis Dashboard';const w=document.querySelector('.tab[data-tab="propertyhub"]');if(w)w.textContent='Property Workspace';const sec=document.getElementById('propertyhub');if(sec){const h=sec.querySelector('.sectionhead h2');if(h)h.textContent='Property Workspace';const p=sec.querySelector('.sectionhead p');if(p)p.textContent='Manage saved properties, clients, analyses, reports and archived files from one workspace.';}loadStage7Once();};
   s.onerror=()=>{window.__stage6Loading=false;};
   document.body.appendChild(s);
 })();
