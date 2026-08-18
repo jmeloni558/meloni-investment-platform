@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=9;
+  const VERSION=10;
   if((window.__stage15LayoutVersion||0)>=VERSION)return;
   window.__stage15LayoutVersion=VERSION;
 
@@ -37,6 +37,10 @@
       #financeFields .field:has(#f_mortgage) .finance-field-note,#financeFields .field:has(#f_interestOnly) .finance-field-note{min-height:42px}
       #taxFields .field:has(#f_ordinaryTax),#taxFields .field:has(#f_depTax){display:grid;grid-template-rows:auto 56px auto 1fr;align-content:start}
       #taxFields .field:has(#f_ordinaryTax) .tax-rate-note,#taxFields .field:has(#f_depTax) .tax-rate-note{min-height:56px}
+      #reviewAnalysisSetup{margin-bottom:0}
+      #reviewAnalysisSetup .sectionhead{align-items:flex-start}
+      #reviewAnalysisSetup .sectionhead .actions{display:none!important}
+      #reviewAnalysisSetup .analysis-benchmark-grid{margin-top:12px}
       @media(max-width:900px){.analysis-benchmark-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
       @media(max-width:700px){.analysis-benchmark-grid{grid-template-columns:1fr}.analysis-benchmark-grid .address-setup-field{grid-column:1}.analysis-benchmark-grid .valuation-metric-field{display:block}.analysis-benchmark-grid .valuation-metric-field .valuation-field-note{min-height:0}#financeFields .field:has(#f_mortgage),#financeFields .field:has(#f_interestOnly),#taxFields .field:has(#f_ordinaryTax),#taxFields .field:has(#f_depTax){display:block}#financeFields .field:has(#f_mortgage) .finance-field-note,#financeFields .field:has(#f_interestOnly) .finance-field-note,#taxFields .field:has(#f_ordinaryTax) .tax-rate-note,#taxFields .field:has(#f_depTax) .tax-rate-note{min-height:0}}
     `;
@@ -129,6 +133,62 @@
     return true;
   }
 
+  function syncReviewSetup(){
+    const map=['f_address','f_requiredReturn','f_desiredCap','f_desiredGrm'];
+    for(const id of map){
+      const source=document.getElementById(id),mirror=document.getElementById('review_'+id);
+      if(source&&mirror&&document.activeElement!==mirror)mirror.value=source.value;
+    }
+  }
+
+  function wireReviewSetup(){
+    const map=['f_address','f_requiredReturn','f_desiredCap','f_desiredGrm'];
+    for(const id of map){
+      const source=document.getElementById(id),mirror=document.getElementById('review_'+id);
+      if(!source||!mirror)continue;
+      if(!source.dataset.reviewSync){
+        source.dataset.reviewSync='1';
+        source.addEventListener('input',()=>{const m=document.getElementById('review_'+id);if(m&&document.activeElement!==m)m.value=source.value;});
+      }
+      if(!mirror.dataset.sourceSync){
+        mirror.dataset.sourceSync='1';
+        mirror.addEventListener('input',()=>{source.value=mirror.value;});
+        mirror.addEventListener('change',()=>{
+          source.value=mirror.value;
+          try{if(typeof readFields==='function')readFields();if(typeof render==='function')render();}catch(e){}
+          setTimeout(syncReviewSetup,0);
+        });
+      }
+    }
+  }
+
+  function applyReviewSetup(){
+    const dashboard=document.getElementById('dashboard');
+    const sourceAddress=document.getElementById('f_address');
+    const sourceCard=sourceAddress?.closest('.card');
+    const grid=dashboard?.querySelector('.grid');
+    if(!dashboard||!sourceCard||!grid)return false;
+
+    const oldQuick=dashboard.querySelector('.quickbar')?.closest('.card');
+    if(oldQuick)oldQuick.classList.add('layout-hidden-card');
+
+    let review=document.getElementById('reviewAnalysisSetup');
+    if(!review){
+      review=sourceCard.cloneNode(true);
+      review.id='reviewAnalysisSetup';
+      review.classList.add('span-12');
+      review.querySelectorAll('[id]').forEach(el=>{el.id='review_'+el.id;});
+      review.querySelector('.sectionhead .actions')?.remove();
+      const p=review.querySelector('.sectionhead p');
+      if(p)p.textContent='Desired valuation benchmarks carried forward from Analysis Setup for direct comparison with the calculated results below.';
+      const hiddenName=review.querySelector('.analysis-name-hidden');if(hiddenName)hiddenName.remove();
+      grid.insertBefore(review,grid.firstChild);
+    }
+    syncReviewSetup();
+    wireReviewSetup();
+    return true;
+  }
+
   function applyTaxLayout(){
     const financeFields=document.getElementById('financeFields');const taxFields=document.getElementById('taxFields');
     if(!financeFields||!taxFields)return false;
@@ -141,8 +201,13 @@
 
   function removeDuplicateReview(){document.getElementById('s10ReviewResultsBottom')?.remove();return true;}
 
-  function apply(){injectStyles();removeDuplicateReview();const r=applyRentGrowthGuidance();const a=applyFinanceGuidance();const b=applyValuationSetup();const c=applyTaxLayout();return r&&a&&b&&c;}
-  function start(){let tries=0;const timer=setInterval(()=>{if(apply()||++tries>50)clearInterval(timer)},125);document.querySelector('[data-s8-tab="assumptions"]')?.addEventListener('click',()=>setTimeout(apply,0));}
-  window.Stage15Layout={apply,applyRentGrowthGuidance,applyFinanceGuidance,applyValuationSetup,applyTaxLayout,removeDuplicateReview};
+  function apply(){injectStyles();removeDuplicateReview();const r=applyRentGrowthGuidance();const a=applyFinanceGuidance();const b=applyValuationSetup();const c=applyTaxLayout();const d=applyReviewSetup();return r&&a&&b&&c&&d;}
+  function start(){
+    let tries=0;
+    const timer=setInterval(()=>{if(apply()||++tries>50)clearInterval(timer)},125);
+    document.querySelector('[data-s8-tab="assumptions"]')?.addEventListener('click',()=>setTimeout(apply,0));
+    document.querySelector('[data-s8-tab="dashboard"]')?.addEventListener('click',()=>setTimeout(()=>{apply();syncReviewSetup();},0));
+  }
+  window.Stage15Layout={apply,applyRentGrowthGuidance,applyFinanceGuidance,applyValuationSetup,applyReviewSetup,applyTaxLayout,removeDuplicateReview,syncReviewSetup};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
