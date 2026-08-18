@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=6;
+  const VERSION=7;
   if((window.__stage15LayoutVersion||0)>=VERSION)return;
   window.__stage15LayoutVersion=VERSION;
 
@@ -26,8 +26,12 @@
       .analysis-benchmark-grid .valuation-metric-field{display:grid;grid-template-rows:auto 42px auto;align-content:start}
       .analysis-benchmark-grid .valuation-metric-field .valuation-field-note{min-height:42px}
       .analysis-name-hidden{display:none!important}
+      #financeFields .field:has(#f_mortgage),#financeFields .field:has(#f_interestOnly){display:grid;grid-template-rows:auto 42px auto;align-content:start}
+      #financeFields .field:has(#f_mortgage) .finance-field-note,#financeFields .field:has(#f_interestOnly) .finance-field-note{min-height:42px}
+      #taxFields .field:has(#f_ordinaryTax),#taxFields .field:has(#f_depTax){display:grid;grid-template-rows:auto 56px auto 1fr;align-content:start}
+      #taxFields .field:has(#f_ordinaryTax) .tax-rate-note,#taxFields .field:has(#f_depTax) .tax-rate-note{min-height:56px}
       @media(max-width:900px){.analysis-benchmark-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-      @media(max-width:700px){.analysis-benchmark-grid{grid-template-columns:1fr}.analysis-benchmark-grid .address-setup-field{grid-column:1}.analysis-benchmark-grid .valuation-metric-field{display:block}.analysis-benchmark-grid .valuation-metric-field .valuation-field-note{min-height:0}}
+      @media(max-width:700px){.analysis-benchmark-grid{grid-template-columns:1fr}.analysis-benchmark-grid .address-setup-field{grid-column:1}.analysis-benchmark-grid .valuation-metric-field{display:block}.analysis-benchmark-grid .valuation-metric-field .valuation-field-note{min-height:0}#financeFields .field:has(#f_mortgage),#financeFields .field:has(#f_interestOnly),#taxFields .field:has(#f_ordinaryTax),#taxFields .field:has(#f_depTax){display:block}#financeFields .field:has(#f_mortgage) .finance-field-note,#financeFields .field:has(#f_interestOnly) .finance-field-note,#taxFields .field:has(#f_ordinaryTax) .tax-rate-note,#taxFields .field:has(#f_depTax) .tax-rate-note{min-height:0}}
     `;
     document.head.appendChild(st);
   }
