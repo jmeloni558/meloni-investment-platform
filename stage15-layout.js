@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=3;
+  const VERSION=4;
   if((window.__stage15LayoutVersion||0)>=VERSION)return;
   window.__stage15LayoutVersion=VERSION;
 
@@ -17,11 +17,14 @@
       .mort-rate-line,.valuation-percent-line{position:relative;display:block;width:100%}
       .mort-rate-line input,.valuation-percent-line input{width:100%;box-sizing:border-box;padding-right:34px!important;border-radius:6px!important}
       .mort-rate-percent,.valuation-percent{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;color:#667085;font-weight:800;font-size:12px;line-height:1;pointer-events:none;background:transparent;border:0;padding:0;min-width:0}
-      .analysis-benchmark-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+      .analysis-benchmark-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
       .analysis-benchmark-grid .field{min-width:0}
+      .analysis-benchmark-grid .address-setup-field{grid-column:1/-1;width:min(100%,720px);justify-self:center;text-align:center}
+      .analysis-benchmark-grid .address-setup-field label{display:block;text-align:center}
+      .analysis-benchmark-grid .address-setup-field input{text-align:center}
       .analysis-name-hidden{display:none!important}
-      @media(max-width:900px){.analysis-benchmark-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-      @media(max-width:560px){.analysis-benchmark-grid{grid-template-columns:1fr}}
+      @media(max-width:900px){.analysis-benchmark-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+      @media(max-width:700px){.analysis-benchmark-grid{grid-template-columns:1fr}.analysis-benchmark-grid .address-setup-field{grid-column:1}}
     `;
     document.head.appendChild(st);
   }
@@ -76,7 +79,10 @@
 
     if(name){const nf=name.closest('.field');if(nf)nf.classList.add('analysis-name-hidden');}
     const addressField=address.closest('.field');
-    if(addressField){const label=addressField.querySelector('label');if(label)label.textContent='Property Address';}
+    if(addressField){
+      addressField.classList.add('address-setup-field');
+      const label=addressField.querySelector('label');if(label)label.textContent='Property Address';
+    }
 
     const requiredField=required.closest('.field'),capField=cap.closest('.field'),grmField=grm.closest('.field');
     [requiredField,capField,grmField].forEach(f=>{if(f&&f.parentElement!==propertyId)propertyId.appendChild(f);});
