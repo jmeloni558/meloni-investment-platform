@@ -26,14 +26,21 @@
     return 'Review Needed';
   }
   function inject(){
-    if(document.getElementById('propertyHub'))return;
+    const existingSection=document.getElementById('propertyhub');
+    const existingTab=document.querySelector('.tab[data-tab="propertyhub"]');
+    if(existingSection&&existingTab)return;
+
     const nav=document.querySelector('.nav');
     const cloudTab=[...document.querySelectorAll('.tab')].find(b=>b.dataset.tab==='cloud');
-    const btn=document.createElement('button');
-    btn.className='tab'; btn.dataset.tab='propertyhub'; btn.textContent='Property Dashboard';
-    nav.insertBefore(btn,cloudTab||null);
+    let btn=existingTab;
+    if(!btn){
+      btn=document.createElement('button');
+      btn.className='tab'; btn.dataset.tab='propertyhub'; btn.textContent='Property Dashboard';
+      nav.insertBefore(btn,cloudTab||null);
+    }
     btn.onclick=()=>{switchTab('propertyhub');renderHub()};
 
+    if(existingSection)return;
     const sec=document.createElement('section');
     sec.id='propertyhub'; sec.className='section';
     sec.innerHTML=`<div class="grid">
@@ -56,25 +63,28 @@
     </div>`;
     document.querySelector('.footer').insertAdjacentElement('beforebegin',sec);
 
-    const st=document.createElement('style');
-    st.textContent=`
-      .hub-toolbar{display:grid;grid-template-columns:minmax(260px,1fr) auto auto;gap:14px;align-items:end}
-      .hub-check{display:flex;align-items:center;gap:7px;padding:9px 0;font-weight:700;color:#475467}
-      .hub-summary{font-size:12px;color:#667085;text-align:right;padding:9px 0}
-      .hub-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-      .hub-card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
-      .hub-card.archived{opacity:.72;background:#fafafa}
-      .hub-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-      .hub-title h3{font-size:17px;margin:0;color:#172033}.hub-title p{margin:3px 0 0;color:#667085;font-size:11px}
-      .hub-state{font-size:10px;font-weight:800;padding:4px 8px;border-radius:999px;background:#eef5fb;color:#174f83;white-space:nowrap}
-      .hub-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
-      .hub-metric{background:#f8fafc;border:1px solid #e6eaf0;border-radius:8px;padding:9px}
-      .hub-metric span{display:block;color:#667085;font-size:9px}.hub-metric b{display:block;font-size:14px;margin-top:2px}
-      .hub-meta{display:grid;grid-template-columns:1fr 1fr;gap:7px 16px;font-size:11px;color:#596579;margin-bottom:12px}
-      .hub-meta b{color:#344054}.hub-actions{display:flex;gap:7px;flex-wrap:wrap}
-      @media(max-width:950px){.hub-grid{grid-template-columns:1fr}.hub-toolbar{grid-template-columns:1fr}.hub-summary{text-align:left}.hub-metrics{grid-template-columns:repeat(2,1fr)}}
-    `;
-    document.head.appendChild(st);
+    if(!document.getElementById('stage6Styles')){
+      const st=document.createElement('style');
+      st.id='stage6Styles';
+      st.textContent=`
+        .hub-toolbar{display:grid;grid-template-columns:minmax(260px,1fr) auto auto;gap:14px;align-items:end}
+        .hub-check{display:flex;align-items:center;gap:7px;padding:9px 0;font-weight:700;color:#475467}
+        .hub-summary{font-size:12px;color:#667085;text-align:right;padding:9px 0}
+        .hub-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+        .hub-card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
+        .hub-card.archived{opacity:.72;background:#fafafa}
+        .hub-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+        .hub-title h3{font-size:17px;margin:0;color:#172033}.hub-title p{margin:3px 0 0;color:#667085;font-size:11px}
+        .hub-state{font-size:10px;font-weight:800;padding:4px 8px;border-radius:999px;background:#eef5fb;color:#174f83;white-space:nowrap}
+        .hub-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+        .hub-metric{background:#f8fafc;border:1px solid #e6eaf0;border-radius:8px;padding:9px}
+        .hub-metric span{display:block;color:#667085;font-size:9px}.hub-metric b{display:block;font-size:14px;margin-top:2px}
+        .hub-meta{display:grid;grid-template-columns:1fr 1fr;gap:7px 16px;font-size:11px;color:#596579;margin-bottom:12px}
+        .hub-meta b{color:#344054}.hub-actions{display:flex;gap:7px;flex-wrap:wrap}
+        @media(max-width:950px){.hub-grid{grid-template-columns:1fr}.hub-toolbar{grid-template-columns:1fr}.hub-summary{text-align:left}.hub-metrics{grid-template-columns:repeat(2,1fr)}}
+      `;
+      document.head.appendChild(st);
+    }
 
     document.getElementById('hubSearch').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();renderHub()});
     document.getElementById('hubArchived').addEventListener('change',e=>{showArchived=e.target.checked;renderHub()});
