@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=6;
+  const VERSION=7;
   if((window.__stage10Version||0)>=VERSION)return;
   window.__stage10Version=VERSION;
   window.__stage10Initialized=true;
@@ -13,17 +13,24 @@
     try{window.Stage15Layout?.apply?.();}catch(e){}
   }
 
+  function clearNewAnalysisCoreFields(){
+    ['f_price','f_land','f_units','f_rent'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    ['quickPrice','quickRent'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  }
+
   function resetNewAnalysis(){
     selectedClientId=null;selectedPropertyId=null;selectedAnalysisId=null;selectedScenarioId=null;
-    state={...defaults,loanYears:30};
+    state={...defaults,price:0,land:0,units:1,rent:0,loanYears:30};
     if(typeof renderFields==='function')renderFields();
+    clearNewAnalysisCoreFields();
     if(typeof render==='function')render();
+    clearNewAnalysisCoreFields();
     applyCurrentInputUI();
-    setTimeout(applyCurrentInputUI,0);
-    setTimeout(applyCurrentInputUI,120);
+    setTimeout(()=>{applyCurrentInputUI();clearNewAnalysisCoreFields();},0);
+    setTimeout(()=>{applyCurrentInputUI();clearNewAnalysisCoreFields();},120);
     if(typeof setStatus==='function')setStatus('New analysis started — enter the property and investment assumptions');
     switchTab('assumptions');
-    setTimeout(()=>{applyCurrentInputUI();document.getElementById('f_address')?.focus();},80);
+    setTimeout(()=>{applyCurrentInputUI();clearNewAnalysisCoreFields();document.getElementById('f_address')?.focus();},80);
   }
 
   function openExisting(){switchTab('propertyhub');setTimeout(()=>document.getElementById('hubSearch')?.focus(),80);}
