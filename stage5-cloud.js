@@ -3,84 +3,27 @@
   const KEY='meloniStage5ReportPrefs';
   const IDS={clientName:'s5_client',marketRent:'s5_marketRent',marketCap:'s5_marketCap',valueLow:'s5_valueLow',valueHigh:'s5_valueHigh',recommendationNote:'s5_recommendation',reportNotes:'s5_notes'};
   let syncTimer=null;
-  const getPrefs=()=>{
-    let p={};
-    try{p=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(_e){}
-    for(const [k,id] of Object.entries(IDS)){const el=document.getElementById(id);if(el)p[k]=el.value;}
-    p.analyst=p.analyst||'Jamie Meloni';p.brokerage=p.brokerage||'Meloni Realty';p.stage5_version=1;
-    localStorage.setItem(KEY,JSON.stringify(p));return p;
-  };
-  const applyPrefs=p=>{
-    if(!p||typeof p!=='object')return;
-    localStorage.setItem(KEY,JSON.stringify({...p}));
-    for(const [k,id] of Object.entries(IDS)){const el=document.getElementById(id);if(el&&p[k]!=null)el.value=p[k];}
-    const b=document.getElementById('s5_refresh');if(b)b.click();
-  };
-  async function syncReportMeta(silent=false){
-    if(!cloudClient||!cloudUser||!selectedAnalysisId)return false;
-    const item=(cloudAnalyses||[]).find(x=>x.id===selectedAnalysisId);
-    const report_meta={...(item?.report_meta||{}),prepared_by:'Jamie Meloni',brokerage:'Meloni Realty',stage5:getPrefs(),report_updated_at:new Date().toISOString()};
-    const {error}=await cloudClient.from('analyses').update({report_meta,updated_at:new Date().toISOString()}).eq('id',selectedAnalysisId);
-    if(error){if(!silent&&typeof setStatus==='function')setStatus('Report cloud sync failed: '+error.message);return false;}
-    if(item)item.report_meta=report_meta;
-    if(!silent&&typeof setStatus==='function')setStatus('Report settings saved to cloud');
-    const s=document.getElementById('s5CloudSyncStatus');if(s)s.textContent='Report settings synced '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
-    return true;
-  }
+  const getPrefs=()=>{let p={};try{p=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(_e){}for(const [k,id] of Object.entries(IDS)){const el=document.getElementById(id);if(el)p[k]=el.value;}p.analyst=p.analyst||'Jamie Meloni';p.brokerage=p.brokerage||'Meloni Realty';p.stage5_version=1;localStorage.setItem(KEY,JSON.stringify(p));return p;};
+  const applyPrefs=p=>{if(!p||typeof p!=='object')return;localStorage.setItem(KEY,JSON.stringify({...p}));for(const [k,id] of Object.entries(IDS)){const el=document.getElementById(id);if(el&&p[k]!=null)el.value=p[k];}document.getElementById('s5_refresh')?.click();};
+  async function syncReportMeta(silent=false){if(!cloudClient||!cloudUser||!selectedAnalysisId)return false;const item=(cloudAnalyses||[]).find(x=>x.id===selectedAnalysisId);const report_meta={...(item?.report_meta||{}),prepared_by:'Jamie Meloni',brokerage:'Meloni Realty',stage5:getPrefs(),report_updated_at:new Date().toISOString()};const {error}=await cloudClient.from('analyses').update({report_meta,updated_at:new Date().toISOString()}).eq('id',selectedAnalysisId);if(error){if(!silent&&typeof setStatus==='function')setStatus('Report cloud sync failed: '+error.message);return false;}if(item)item.report_meta=report_meta;if(!silent&&typeof setStatus==='function')setStatus('Report settings saved to cloud');const s=document.getElementById('s5CloudSyncStatus');if(s)s.textContent='Report settings synced '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});return true;}
   function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncReportMeta(true),900)}
-  function wireControls(){
-    const host=document.getElementById('stage5ReportControls');if(!host)return false;
-    if(!document.getElementById('s5CloudSyncBtn')){
-      const actions=host.querySelector('.actions');
-      const btn=document.createElement('button');btn.id='s5CloudSyncBtn';btn.className='btn ghost';btn.textContent='Save Report Settings to Cloud';btn.onclick=()=>syncReportMeta(false);actions?.appendChild(btn);
-      const st=document.createElement('span');st.id='s5CloudSyncStatus';st.className='mini';st.textContent='Report settings are stored locally until a cloud analysis is selected.';actions?.appendChild(st);
-    }
-    Object.values(IDS).forEach(id=>{const el=document.getElementById(id);if(el&&!el.dataset.cloudwired){el.dataset.cloudwired='1';el.addEventListener('input',scheduleSync);el.addEventListener('change',scheduleSync)}});
-    return true;
-  }
-  const oldSave=saveCurrentCloud;
-  if(typeof oldSave==='function')saveCurrentCloud=async function(clone=false){const out=await oldSave(clone);await syncReportMeta(true);return out;};
-  const oldLoad=loadSelectedCloud;
-  if(typeof oldLoad==='function')loadSelectedCloud=async function(){const id=selectedAnalysisId;const item=(cloudAnalyses||[]).find(x=>x.id===id);const out=await oldLoad();setTimeout(()=>{if(item?.report_meta?.stage5)applyPrefs(item.report_meta.stage5);wireControls();},50);return out;};
-  const oldSelect=selectAnalysis;
-  if(typeof oldSelect==='function')selectAnalysis=async function(id){const out=await oldSelect(id);const item=(cloudAnalyses||[]).find(x=>x.id===id);const s=document.getElementById('s5CloudSyncStatus');if(s)s.textContent=item?.report_meta?.stage5?'Saved report settings available for this analysis.':'No cloud report settings saved yet.';return out;};
-  function addWorkflowCard(){
-    const cloud=document.getElementById('cloud');if(!cloud||document.getElementById('stage5WorkflowCard'))return;
-    const grid=cloud.querySelector('.grid');if(!grid)return;
-    const card=document.createElement('div');card.id='stage5WorkflowCard';card.className='card span-12';card.innerHTML='<div class="sectionhead"><div><h2>Analysis Workflow</h2><p>Recommended sequence for a complete client-ready file.</p></div><span class="badge">Cloud + Report</span></div><div class="support-grid"><div class="support-box"><span>1. Property</span><b>Create / select client and property</b></div><div class="support-box"><span>2. Analysis</span><b>Enter assumptions and compare financing</b></div><div class="support-box"><span>3. Report</span><b>Add concluded range and commentary</b></div><div class="support-box"><span>4. Save</span><b>Save analysis + report to cloud</b></div></div>';
-    grid.appendChild(card);
-  }
-  function clarifyNavigation(){
-    const analysis=document.querySelector('.tab[data-tab="dashboard"]');
-    if(analysis){analysis.textContent='Analysis Dashboard';analysis.title='Financial results for the analysis currently open';}
-    const workspace=document.querySelector('.tab[data-tab="propertyhub"]');
-    if(workspace){workspace.textContent='Property Workspace';workspace.title='Manage saved properties, clients, analyses and reports';}
-    const section=document.getElementById('propertyhub');
-    if(section){const h=section.querySelector('.sectionhead h2');if(h)h.textContent='Property Workspace';const p=section.querySelector('.sectionhead p');if(p)p.textContent='Manage saved properties, clients, analyses, reports and archived files from one workspace.';}
-  }
+  function wireControls(){const host=document.getElementById('stage5ReportControls');if(!host)return false;if(!document.getElementById('s5CloudSyncBtn')){const actions=host.querySelector('.actions');const btn=document.createElement('button');btn.id='s5CloudSyncBtn';btn.className='btn ghost';btn.textContent='Save Report Settings to Cloud';btn.onclick=()=>syncReportMeta(false);actions?.appendChild(btn);const st=document.createElement('span');st.id='s5CloudSyncStatus';st.className='mini';st.textContent='Report settings are stored locally until a cloud analysis is selected.';actions?.appendChild(st);}Object.values(IDS).forEach(id=>{const el=document.getElementById(id);if(el&&!el.dataset.cloudwired){el.dataset.cloudwired='1';el.addEventListener('input',scheduleSync);el.addEventListener('change',scheduleSync)}});return true;}
+  const oldSave=saveCurrentCloud;if(typeof oldSave==='function')saveCurrentCloud=async function(clone=false){const out=await oldSave(clone);await syncReportMeta(true);return out;};
+  const oldLoad=loadSelectedCloud;if(typeof oldLoad==='function')loadSelectedCloud=async function(){const id=selectedAnalysisId;const item=(cloudAnalyses||[]).find(x=>x.id===id);const out=await oldLoad();setTimeout(()=>{if(item?.report_meta?.stage5)applyPrefs(item.report_meta.stage5);wireControls();},50);return out;};
+  const oldSelect=selectAnalysis;if(typeof oldSelect==='function')selectAnalysis=async function(id){const out=await oldSelect(id);const item=(cloudAnalyses||[]).find(x=>x.id===id);const s=document.getElementById('s5CloudSyncStatus');if(s)s.textContent=item?.report_meta?.stage5?'Saved report settings available for this analysis.':'No cloud report settings saved yet.';return out;};
+  function addWorkflowCard(){const cloud=document.getElementById('cloud');if(!cloud||document.getElementById('stage5WorkflowCard'))return;const grid=cloud.querySelector('.grid');if(!grid)return;const card=document.createElement('div');card.id='stage5WorkflowCard';card.className='card span-12';card.innerHTML='<div class="sectionhead"><div><h2>Analysis Workflow</h2><p>Recommended sequence for a complete client-ready file.</p></div><span class="badge">Cloud + Report</span></div><div class="support-grid"><div class="support-box"><span>1. Property</span><b>Create / select client and property</b></div><div class="support-box"><span>2. Analysis</span><b>Enter assumptions and compare financing</b></div><div class="support-box"><span>3. Report</span><b>Add concluded range and commentary</b></div><div class="support-box"><span>4. Save</span><b>Save analysis + report to cloud</b></div></div>';grid.appendChild(card);}
+  function clarifyNavigation(){const analysis=document.querySelector('.tab[data-tab="dashboard"]');if(analysis){analysis.textContent='Analysis Dashboard';analysis.title='Financial results for the analysis currently open';}const workspace=document.querySelector('.tab[data-tab="propertyhub"]');if(workspace){workspace.textContent='Property Workspace';workspace.title='Manage saved properties, clients, analyses and reports';}const section=document.getElementById('propertyhub');if(section){const h=section.querySelector('.sectionhead h2');if(h)h.textContent='Property Workspace';const p=section.querySelector('.sectionhead p');if(p)p.textContent='Manage saved properties, clients, analyses, reports and archived files from one workspace.';}}
   window.Stage5Cloud={getPrefs,applyPrefs,syncReportMeta};
-  const boot=()=>{let tries=0;const t=setInterval(()=>{wireControls();addWorkflowCard();clarifyNavigation();if(++tries>30)clearInterval(t)},250)};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+  const boot=()=>{let tries=0;const t=setInterval(()=>{wireControls();addWorkflowCard();clarifyNavigation();if(++tries>30)clearInterval(t)},250)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
+
 function loadStage9Once(){
-  if(document.getElementById('stage9Script')||window.__stage9Loading||window.__stage9Initialized)return;
-  window.__stage9Loading=true;const s=document.createElement('script');s.id='stage9Script';s.src='stage9.js?v=4';s.onload=()=>{window.__stage9Loading=false};s.onerror=()=>{window.__stage9Loading=false};document.body.appendChild(s);
+  if((window.__stage9Version||0)>=5)return;
+  const old=document.getElementById('stage9Script');if(old)old.remove();
+  window.__stage9Loading=true;
+  const s=document.createElement('script');s.id='stage9Script';s.src='stage9.js?v=5';
+  s.onload=()=>{window.__stage9Loading=false};s.onerror=()=>{window.__stage9Loading=false};document.body.appendChild(s);
 }
-function loadStage8Once(){
-  if(document.getElementById('stage8Script')||window.__stage8Loading||window.__stage8Initialized){if(window.__stage8Initialized)loadStage9Once();return;}
-  window.__stage8Loading=true;const s=document.createElement('script');s.id='stage8Script';s.src='stage8.js?v=1';s.onload=()=>{window.__stage8Loading=false;loadStage9Once()};s.onerror=()=>{window.__stage8Loading=false};document.body.appendChild(s);
-}
-function loadStage7Once(){
-  if(document.getElementById('stage7Script')||window.__stage7Loading||window.__stage7Initialized){if(window.__stage7Initialized)loadStage8Once();return;}
-  window.__stage7Loading=true;const s=document.createElement('script');s.id='stage7Script';s.src='stage7.js?v=1';s.onload=()=>{window.__stage7Loading=false;loadStage8Once()};s.onerror=()=>{window.__stage7Loading=false};document.body.appendChild(s);
-}
-(() => {
-  if(document.getElementById('stage6Script') || window.__stage6Loading || window.__stage6Initialized){if(window.__stage6Initialized)loadStage7Once();return;}
-  window.__stage6Loading=true;
-  const s=document.createElement('script');
-  s.id='stage6Script';
-  s.src='stage6.js?v=5';
-  s.onload=()=>{window.__stage6Loading=false;const a=document.querySelector('.tab[data-tab="dashboard"]');if(a)a.textContent='Analysis Dashboard';const w=document.querySelector('.tab[data-tab="propertyhub"]');if(w)w.textContent='Property Workspace';const sec=document.getElementById('propertyhub');if(sec){const h=sec.querySelector('.sectionhead h2');if(h)h.textContent='Property Workspace';const p=sec.querySelector('.sectionhead p');if(p)p.textContent='Manage saved properties, clients, analyses, reports and archived files from one workspace.';}loadStage7Once();};
-  s.onerror=()=>{window.__stage6Loading=false;};
-  document.body.appendChild(s);
-})();
+function loadStage8Once(){if(document.getElementById('stage8Script')||window.__stage8Loading||window.__stage8Initialized){if(window.__stage8Initialized)loadStage9Once();return;}window.__stage8Loading=true;const s=document.createElement('script');s.id='stage8Script';s.src='stage8.js?v=1';s.onload=()=>{window.__stage8Loading=false;loadStage9Once()};s.onerror=()=>{window.__stage8Loading=false};document.body.appendChild(s);}
+function loadStage7Once(){if(document.getElementById('stage7Script')||window.__stage7Loading||window.__stage7Initialized){if(window.__stage7Initialized)loadStage8Once();return;}window.__stage7Loading=true;const s=document.createElement('script');s.id='stage7Script';s.src='stage7.js?v=1';s.onload=()=>{window.__stage7Loading=false;loadStage8Once()};s.onerror=()=>{window.__stage7Loading=false};document.body.appendChild(s);}
+(() => {if(document.getElementById('stage6Script')||window.__stage6Loading||window.__stage6Initialized){if(window.__stage6Initialized)loadStage7Once();return;}window.__stage6Loading=true;const s=document.createElement('script');s.id='stage6Script';s.src='stage6.js?v=5';s.onload=()=>{window.__stage6Loading=false;const a=document.querySelector('.tab[data-tab="dashboard"]');if(a)a.textContent='Analysis Dashboard';const w=document.querySelector('.tab[data-tab="propertyhub"]');if(w)w.textContent='Property Workspace';const sec=document.getElementById('propertyhub');if(sec){const h=sec.querySelector('.sectionhead h2');if(h)h.textContent='Property Workspace';const p=sec.querySelector('.sectionhead p');if(p)p.textContent='Manage saved properties, clients, analyses, reports and archived files from one workspace.';}loadStage7Once();};s.onerror=()=>{window.__stage6Loading=false;};document.body.appendChild(s);})();
