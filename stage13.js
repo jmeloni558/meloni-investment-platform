@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=8;
+  const VERSION=9;
   if((window.__stage13Version||0)>=VERSION)return;
   window.__stage13Version=VERSION;
 
@@ -12,13 +12,13 @@
       .rent-growth-line,.vacancy-line,.opex-line{position:relative;display:block;width:100%}
       .rent-growth-line input,.vacancy-line input,.opex-line input{width:100%;box-sizing:border-box;padding-right:34px!important;border-radius:6px!important}
       .rent-growth-percent,.vacancy-percent,.opex-percent{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;color:#667085;font-weight:800;font-size:12px;line-height:1;pointer-events:none;background:transparent;border:0;padding:0;min-width:0}
-      .rent-growth-note,.vacancy-note,.opex-note{display:block;margin:3px 0 5px;color:#667085;font-size:9px;line-height:1.35;font-weight:500}
-      .guidance-box[data-guide="vacancy"],.guidance-box[data-guide="opEx"]{margin-top:7px!important;padding:9px 10px!important;border:1px solid #d9e4ee!important;border-radius:8px!important;background:#f8fbfd!important;color:#475467!important;font-size:10px!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important;letter-spacing:normal!important}
-      .guidance-box[data-guide="vacancy"] b,.guidance-box[data-guide="opEx"] b{color:#174f83!important;font-size:inherit!important;font-family:inherit!important}
-      .guidance-box[data-guide="vacancy"] p,.guidance-box[data-guide="opEx"] p{margin:3px 0 0!important;font-size:inherit!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important}
-      .guidance-box[data-guide="vacancy"] strong,.guidance-box[data-guide="opEx"] strong{font-size:inherit!important;font-family:inherit!important}
-      .guidance-box[data-guide="vacancy"] a,.guidance-box[data-guide="opEx"] a{color:#175c92!important;font-weight:700!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important}
-      .guidance-box[data-guide="vacancy"] a:hover,.guidance-box[data-guide="opEx"] a:hover{text-decoration:underline!important}
+      .rent-growth-note,.vacancy-note,.opex-note,.dep-life-note{display:block;margin:3px 0 5px;color:#667085;font-size:9px;line-height:1.35;font-weight:500}
+      .guidance-box[data-guide="vacancy"],.guidance-box[data-guide="opEx"],.guidance-box[data-guide="depLife"]{margin-top:7px!important;padding:9px 10px!important;border:1px solid #d9e4ee!important;border-radius:8px!important;background:#f8fbfd!important;color:#475467!important;font-size:10px!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important;letter-spacing:normal!important}
+      .guidance-box[data-guide="vacancy"] b,.guidance-box[data-guide="opEx"] b,.guidance-box[data-guide="depLife"] b{color:#174f83!important;font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="vacancy"] p,.guidance-box[data-guide="opEx"] p,.guidance-box[data-guide="depLife"] p{margin:3px 0 0!important;font-size:inherit!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important}
+      .guidance-box[data-guide="vacancy"] strong,.guidance-box[data-guide="opEx"] strong,.guidance-box[data-guide="depLife"] strong{font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="vacancy"] a,.guidance-box[data-guide="opEx"] a,.guidance-box[data-guide="depLife"] a{color:#175c92!important;font-weight:700!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="vacancy"] a:hover,.guidance-box[data-guide="opEx"] a:hover,.guidance-box[data-guide="depLife"] a:hover{text-decoration:underline!important}
     `;
     document.head.appendChild(st);
   }
@@ -64,7 +64,20 @@
     return true;
   }
 
-  function apply(){injectStyles();const a=applyRentGrowth(),b=applyVacancy(),c=applyOpEx();return a&&b&&c;}
+  function applyDepLife(){
+    const input=document.getElementById('f_depLife'),field=input?.closest('.field');
+    if(!input||!field)return false;
+    const label=field.querySelector('label');if(label)label.textContent='Depreciable Life in Years';
+    if(!field.querySelector('.dep-life-note')){const note=document.createElement('span');note.className='dep-life-note';note.textContent='Recovery period used to depreciate the building portion of the investment.';label?.insertAdjacentElement('afterend',note);}
+    if(!field.querySelector('.guidance-box[data-guide="depLife"]')){
+      const box=document.createElement('div');box.className='guidance-box';box.dataset.guide='depLife';
+      box.innerHTML='<b>How to choose this assumption</b><p>For most <strong>residential rental buildings</strong> using the IRS General Depreciation System (GDS), the standard recovery period is still <strong>27.5 years</strong>, using straight-line depreciation and the mid-month convention. For most <strong>nonresidential/commercial real property</strong>, the GDS recovery period is generally <strong>39 years</strong>.</p><p><strong>Land is not depreciable</strong>, so this model should apply depreciation only to the building and other depreciable basis. Certain components such as appliances, carpeting, furniture, fences, landscaping or other improvements may have shorter recovery periods, and some taxpayers may be required to use the Alternative Depreciation System (ADS).</p><p>For a typical residential rental analysis, <strong>27.5 years remains the appropriate default</strong> unless the property or taxpayer requires different treatment.</p><p><a href="https://www.irs.gov/publications/p527" target="_blank" rel="noopener">Review residential rental depreciation in IRS Publication 527 ↗</a></p>';
+      field.appendChild(box);
+    }
+    return true;
+  }
+
+  function apply(){injectStyles();const a=applyRentGrowth(),b=applyVacancy(),c=applyOpEx(),d=applyDepLife();return a&&b&&c&&d;}
 
   function start(){
     let tries=0;
@@ -72,6 +85,6 @@
     document.querySelector('[data-s8-tab="assumptions"]')?.addEventListener('click',()=>setTimeout(apply,0));
   }
 
-  window.Stage13AssumptionGuidance={apply,applyRentGrowth,applyVacancy,applyOpEx};
+  window.Stage13AssumptionGuidance={apply,applyRentGrowth,applyVacancy,applyOpEx,applyDepLife};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
