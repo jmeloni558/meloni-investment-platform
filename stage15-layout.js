@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=4;
+  const VERSION=6;
   if((window.__stage15LayoutVersion||0)>=VERSION)return;
   window.__stage15LayoutVersion=VERSION;
 
@@ -13,6 +13,7 @@
       .finance-tax-divider h2{margin:0 0 4px}
       .finance-tax-divider p{margin:0;color:#667085;font-size:10px;line-height:1.4}
       .layout-hidden-card{display:none!important}
+      #s10ReviewResultsBottom{display:none!important}
       .finance-field-note,.valuation-field-note{display:block;margin:3px 0 5px;color:#667085;font-size:9px;line-height:1.35;font-weight:500}
       .mort-rate-line,.valuation-percent-line{position:relative;display:block;width:100%}
       .mort-rate-line input,.valuation-percent-line input{width:100%;box-sizing:border-box;padding-right:34px!important;border-radius:6px!important}
@@ -22,9 +23,11 @@
       .analysis-benchmark-grid .address-setup-field{grid-column:1/-1;width:min(100%,720px);justify-self:center;text-align:center}
       .analysis-benchmark-grid .address-setup-field label{display:block;text-align:center}
       .analysis-benchmark-grid .address-setup-field input{text-align:center}
+      .analysis-benchmark-grid .valuation-metric-field{display:grid;grid-template-rows:auto 42px auto;align-content:start}
+      .analysis-benchmark-grid .valuation-metric-field .valuation-field-note{min-height:42px}
       .analysis-name-hidden{display:none!important}
       @media(max-width:900px){.analysis-benchmark-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-      @media(max-width:700px){.analysis-benchmark-grid{grid-template-columns:1fr}.analysis-benchmark-grid .address-setup-field{grid-column:1}}
+      @media(max-width:700px){.analysis-benchmark-grid{grid-template-columns:1fr}.analysis-benchmark-grid .address-setup-field{grid-column:1}.analysis-benchmark-grid .valuation-metric-field{display:block}.analysis-benchmark-grid .valuation-metric-field .valuation-field-note{min-height:0}}
     `;
     document.head.appendChild(st);
   }
@@ -85,7 +88,7 @@
     }
 
     const requiredField=required.closest('.field'),capField=cap.closest('.field'),grmField=grm.closest('.field');
-    [requiredField,capField,grmField].forEach(f=>{if(f&&f.parentElement!==propertyId)propertyId.appendChild(f);});
+    [requiredField,capField,grmField].forEach(f=>{if(f){f.classList.add('valuation-metric-field');if(f.parentElement!==propertyId)propertyId.appendChild(f);}});
 
     const rLabel=requiredField?.querySelector('label');if(rLabel)rLabel.textContent='Required Rate of Return (%)';
     const cLabel=capField?.querySelector('label');if(cLabel)cLabel.textContent='Desired Capitalization Rate (%)';
@@ -112,8 +115,10 @@
     return true;
   }
 
-  function apply(){injectStyles();const a=applyFinanceGuidance();const b=applyValuationSetup();const c=applyTaxLayout();return a&&b&&c;}
+  function removeDuplicateReview(){document.getElementById('s10ReviewResultsBottom')?.remove();return true;}
+
+  function apply(){injectStyles();removeDuplicateReview();const a=applyFinanceGuidance();const b=applyValuationSetup();const c=applyTaxLayout();return a&&b&&c;}
   function start(){let tries=0;const timer=setInterval(()=>{if(apply()||++tries>50)clearInterval(timer)},125);document.querySelector('[data-s8-tab="assumptions"]')?.addEventListener('click',()=>setTimeout(apply,0));}
-  window.Stage15Layout={apply,applyFinanceGuidance,applyValuationSetup,applyTaxLayout};
+  window.Stage15Layout={apply,applyFinanceGuidance,applyValuationSetup,applyTaxLayout,removeDuplicateReview};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
