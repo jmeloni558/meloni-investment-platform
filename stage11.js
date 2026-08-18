@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=5;
+  const VERSION=6;
   if((window.__stage11Version||0)>=VERSION)return;
   window.__stage11Version=VERSION;
   let startupApplied=false;
@@ -24,8 +24,6 @@
     st.textContent=`
       .guidance-box{margin-top:7px;padding:9px 10px;border:1px solid #d9e4ee;border-radius:8px;background:#f8fbfd;color:#475467;font-size:10px;line-height:1.45}
       .guidance-box b{color:#174f83}.guidance-box p{margin:3px 0 0}.guidance-box a{color:#175c92;font-weight:700;text-decoration:none}.guidance-box a:hover{text-decoration:underline}
-      .field-note{display:block;margin:3px 0 5px;color:#667085;font-size:9px;line-height:1.35;font-weight:500}
-      .percent-input-wrap{position:relative;display:block}.percent-input-wrap input{padding-right:28px}.percent-input-suffix{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#667085;font-size:12px;font-weight:700;pointer-events:none}
     `;
     document.head.appendChild(st);
   }
@@ -35,27 +33,6 @@
     const input=document.getElementById('f_rentGrowth');
     const field=input?.closest('.field');
     if(!field)return false;
-
-    const label=field.querySelector('label');
-    if(label&&!field.querySelector('.field-note[data-note="rentGrowth"]')){
-      const note=document.createElement('span');
-      note.className='field-note';
-      note.dataset.note='rentGrowth';
-      note.textContent='Enter the annual percentage change applied to the initial monthly rent beginning in Year 2.';
-      label.insertAdjacentElement('afterend',note);
-    }
-
-    if(!input.closest('.percent-input-wrap')){
-      const wrap=document.createElement('div');
-      wrap.className='percent-input-wrap';
-      input.parentNode.insertBefore(wrap,input);
-      wrap.appendChild(input);
-      const suffix=document.createElement('span');
-      suffix.className='percent-input-suffix';
-      suffix.textContent='%';
-      wrap.appendChild(suffix);
-    }
-
     if(!field.querySelector('.guidance-box[data-guide="rentGrowth"]')){
       const box=document.createElement('div');
       box.className='guidance-box';
@@ -101,8 +78,6 @@
     let tries=0;
     const timer=setInterval(()=>{apply();applyFreshStartup();if((startupApplied&&apply())||++tries>100)clearInterval(timer);},125);
     document.addEventListener('click',()=>setTimeout(apply,0));
-    const observer=new MutationObserver(()=>applyRentGrowthGuidance());
-    const propertyFields=document.getElementById('propertyFields');if(propertyFields)observer.observe(propertyFields,{childList:true,subtree:true});
   }
 
   window.Stage11Step1={apply,reviewResults,applyFreshStartup,applyRentGrowthGuidance};
