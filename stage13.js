@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=10;
+  const VERSION=11;
   if((window.__stage13Version||0)>=VERSION)return;
   window.__stage13Version=VERSION;
 
@@ -12,13 +12,13 @@
       .rent-growth-line,.vacancy-line,.opex-line,.appreciation-line{position:relative;display:block;width:100%}
       .rent-growth-line input,.vacancy-line input,.opex-line input,.appreciation-line input{width:100%;box-sizing:border-box;padding-right:34px!important;border-radius:6px!important}
       .rent-growth-percent,.vacancy-percent,.opex-percent,.appreciation-percent{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;color:#667085;font-weight:800;font-size:12px;line-height:1;pointer-events:none;background:transparent;border:0;padding:0;min-width:0}
-      .rent-growth-note,.vacancy-note,.opex-note,.dep-life-note,.appreciation-note{display:block;margin:3px 0 5px;color:#667085;font-size:9px;line-height:1.35;font-weight:500}
-      .guidance-box[data-guide="vacancy"],.guidance-box[data-guide="opEx"],.guidance-box[data-guide="depLife"],.guidance-box[data-guide="appreciation"]{margin-top:7px!important;padding:9px 10px!important;border:1px solid #d9e4ee!important;border-radius:8px!important;background:#f8fbfd!important;color:#475467!important;font-size:10px!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important;letter-spacing:normal!important}
-      .guidance-box[data-guide="vacancy"] b,.guidance-box[data-guide="opEx"] b,.guidance-box[data-guide="depLife"] b,.guidance-box[data-guide="appreciation"] b{color:#174f83!important;font-size:inherit!important;font-family:inherit!important}
-      .guidance-box[data-guide="vacancy"] p,.guidance-box[data-guide="opEx"] p,.guidance-box[data-guide="depLife"] p,.guidance-box[data-guide="appreciation"] p{margin:3px 0 0!important;font-size:inherit!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important}
-      .guidance-box[data-guide="vacancy"] strong,.guidance-box[data-guide="opEx"] strong,.guidance-box[data-guide="depLife"] strong,.guidance-box[data-guide="appreciation"] strong{font-size:inherit!important;font-family:inherit!important}
-      .guidance-box[data-guide="vacancy"] a,.guidance-box[data-guide="opEx"] a,.guidance-box[data-guide="depLife"] a,.guidance-box[data-guide="appreciation"] a{color:#175c92!important;font-weight:700!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important}
-      .guidance-box[data-guide="vacancy"] a:hover,.guidance-box[data-guide="opEx"] a:hover,.guidance-box[data-guide="depLife"] a:hover,.guidance-box[data-guide="appreciation"] a:hover{text-decoration:underline!important}
+      .rent-growth-note,.vacancy-note,.opex-note,.dep-life-note,.appreciation-note,.hold-note{display:block;margin:3px 0 5px;color:#667085;font-size:9px;line-height:1.35;font-weight:500}
+      .guidance-box[data-guide="vacancy"],.guidance-box[data-guide="opEx"],.guidance-box[data-guide="depLife"],.guidance-box[data-guide="appreciation"],.guidance-box[data-guide="hold"]{margin-top:7px!important;padding:9px 10px!important;border:1px solid #d9e4ee!important;border-radius:8px!important;background:#f8fbfd!important;color:#475467!important;font-size:10px!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important;letter-spacing:normal!important}
+      .guidance-box[data-guide="vacancy"] b,.guidance-box[data-guide="opEx"] b,.guidance-box[data-guide="depLife"] b,.guidance-box[data-guide="appreciation"] b,.guidance-box[data-guide="hold"] b{color:#174f83!important;font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="vacancy"] p,.guidance-box[data-guide="opEx"] p,.guidance-box[data-guide="depLife"] p,.guidance-box[data-guide="appreciation"] p,.guidance-box[data-guide="hold"] p{margin:3px 0 0!important;font-size:inherit!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important}
+      .guidance-box[data-guide="vacancy"] strong,.guidance-box[data-guide="opEx"] strong,.guidance-box[data-guide="depLife"] strong,.guidance-box[data-guide="appreciation"] strong,.guidance-box[data-guide="hold"] strong{font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="vacancy"] a,.guidance-box[data-guide="opEx"] a,.guidance-box[data-guide="depLife"] a,.guidance-box[data-guide="appreciation"] a,.guidance-box[data-guide="hold"] a{color:#175c92!important;font-weight:700!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="vacancy"] a:hover,.guidance-box[data-guide="opEx"] a:hover,.guidance-box[data-guide="depLife"] a:hover,.guidance-box[data-guide="appreciation"] a:hover,.guidance-box[data-guide="hold"] a:hover{text-decoration:underline!important}
     `;
     document.head.appendChild(st);
   }
@@ -30,75 +30,26 @@
     if(!pct){pct=document.createElement('span');pct.className=percentClass;pct.textContent='%';line.appendChild(pct);}
   }
 
-  function applyRentGrowth(){
-    const input=document.getElementById('f_rentGrowth'),field=input?.closest('.field');
+  function applyRentGrowth(){const input=document.getElementById('f_rentGrowth'),field=input?.closest('.field');if(!input||!field)return false;const label=field.querySelector('label');if(label)label.textContent='Rent Increase Starting in Year 2 (%)';if(!field.querySelector('.rent-growth-note')){const note=document.createElement('span');note.className='rent-growth-note';note.textContent='Enter the annual percentage change applied to the initial monthly rent beginning in Year 2.';label?.insertAdjacentElement('afterend',note);}normalizePercentInput(input,'rent-growth-line','rent-growth-percent');return true;}
+  function applyVacancy(){const input=document.getElementById('f_vacancy'),field=input?.closest('.field');if(!input||!field)return false;field.querySelectorAll('.vacancy-guidance').forEach(el=>el.remove());const label=field.querySelector('label');if(label)label.textContent='Vacancy and Credit Losses (%)';if(!field.querySelector('.vacancy-note')){const note=document.createElement('span');note.className='vacancy-note';note.textContent='Percentage of Potential Gross Income deducted for expected vacancy, turnover and uncollected rent.';label?.insertAdjacentElement('afterend',note);}normalizePercentInput(input,'vacancy-line','vacancy-percent');if(!field.querySelector('.guidance-box[data-guide="vacancy"]')){const box=document.createElement('div');box.className='guidance-box';box.dataset.guide='vacancy';box.innerHTML='<b>How to choose this assumption</b><p>Vacancy and credit losses are estimated as a percentage of <strong>Potential Gross Income</strong>. The assumption should reflect local rental demand, expected tenant turnover, lease-up time and the risk of unpaid rent. <strong>10%</strong> is a common conservative estimate for many investment-property analyses, but stronger rental markets may justify a lower figure while slower or higher-risk markets may warrant a higher percentage.</p><p>Use current local market evidence whenever available rather than relying only on the default.</p><p><a href="https://www.census.gov/acs/www/data/data-tables-and-tools/data-profiles/" target="_blank" rel="noopener">Research local rental vacancy rates with U.S. Census ACS Housing Data ↗</a></p>';field.appendChild(box);}return true;}
+  function applyOpEx(){const input=document.getElementById('f_opEx'),field=input?.closest('.field');if(!input||!field)return false;const label=field.querySelector('label');if(label)label.textContent='Other Operating Expenses as % of EGI (%)';if(!field.querySelector('.opex-note')){const note=document.createElement('span');note.className='opex-note';note.textContent='Estimated operating expenses expressed as a percentage of Effective Gross Income.';label?.insertAdjacentElement('afterend',note);}normalizePercentInput(input,'opex-line','opex-percent');if(!field.querySelector('.guidance-box[data-guide="opEx"]')){const box=document.createElement('div');box.className='guidance-box';box.dataset.guide='opEx';box.innerHTML='<b>How to choose this assumption</b><p>This percentage is applied to <strong>Effective Gross Income (EGI)</strong> to estimate recurring operating costs before debt service and income taxes. Typical operating expenses may include <strong>property taxes, property insurance, repairs and maintenance, property management, utilities paid by the owner, HOA or association expenses, landscaping, pest control, and other routine ownership costs</strong>.</p><p>When detailed expense records are not available, <strong>30% to 40% of EGI</strong> is a commonly used estimating range for many residential investment properties. Actual expenses can vary materially by property type, age, insurance costs, taxes, management structure and local market conditions, so use actual or market-supported expenses whenever available.</p><p><a href="https://www.irs.gov/publications/p527" target="_blank" rel="noopener">Review common rental-property expenses in IRS Publication 527 ↗</a></p>';field.appendChild(box);}return true;}
+  function applyDepLife(){const input=document.getElementById('f_depLife'),field=input?.closest('.field');if(!input||!field)return false;const label=field.querySelector('label');if(label)label.textContent='Depreciable Life in Years';if(!field.querySelector('.dep-life-note')){const note=document.createElement('span');note.className='dep-life-note';note.textContent='Recovery period used to depreciate the building portion of the investment.';label?.insertAdjacentElement('afterend',note);}if(!field.querySelector('.guidance-box[data-guide="depLife"]')){const box=document.createElement('div');box.className='guidance-box';box.dataset.guide='depLife';box.innerHTML='<b>How to choose this assumption</b><p>For most <strong>residential rental buildings</strong> using the IRS General Depreciation System (GDS), the standard recovery period is still <strong>27.5 years</strong>, using straight-line depreciation and the mid-month convention. For most <strong>nonresidential/commercial real property</strong>, the GDS recovery period is generally <strong>39 years</strong>.</p><p><strong>Land is not depreciable</strong>, so this model should apply depreciation only to the building and other depreciable basis. Certain components such as appliances, carpeting, furniture, fences, landscaping or other improvements may have shorter recovery periods, and some taxpayers may be required to use the Alternative Depreciation System (ADS).</p><p>For a typical residential rental analysis, <strong>27.5 years remains the appropriate default</strong> unless the property or taxpayer requires different treatment.</p><p><a href="https://www.irs.gov/publications/p527" target="_blank" rel="noopener">Review residential rental depreciation in IRS Publication 527 ↗</a></p>';field.appendChild(box);}return true;}
+  function applyAppreciation(){const input=document.getElementById('f_appreciation'),field=input?.closest('.field');if(!input||!field)return false;const label=field.querySelector('label');if(label)label.textContent='Annual Property Value Increase (%)';if(!field.querySelector('.appreciation-note')){const note=document.createElement('span');note.className='appreciation-note';note.textContent='Annual percentage increase or decrease applied to the property value after Year 1.';label?.insertAdjacentElement('afterend',note);}normalizePercentInput(input,'appreciation-line','appreciation-percent');if(!field.querySelector('.guidance-box[data-guide="appreciation"]')){const box=document.createElement('div');box.className='guidance-box';box.dataset.guide='appreciation';box.innerHTML='<b>How to choose this assumption</b><p>This assumption estimates how the property\'s value may change after <strong>Year 1</strong>. The Year 1 value is the starting point, and the percentage is then applied in later years on a compounding basis. For example, <strong>3%</strong> assumes the property increases approximately 3% per year, while <strong>0%</strong> assumes stable values and a <strong>negative percentage</strong> models declining values.</p><p>The assumption should reflect local sales trends, supply and demand, property type, condition and the broader market outlook. Use a conservative figure when future appreciation is uncertain.</p><p><a href="https://www.fhfa.gov/data/hpi" target="_blank" rel="noopener">Research local home-price changes with the FHFA House Price Index ↗</a></p>';field.appendChild(box);}return true;}
+  function applyHold(){
+    const input=document.getElementById('f_hold'),field=input?.closest('.field');
     if(!input||!field)return false;
-    const label=field.querySelector('label');if(label)label.textContent='Rent Increase Starting in Year 2 (%)';
-    if(!field.querySelector('.rent-growth-note')){const note=document.createElement('span');note.className='rent-growth-note';note.textContent='Enter the annual percentage change applied to the initial monthly rent beginning in Year 2.';label?.insertAdjacentElement('afterend',note);}
-    normalizePercentInput(input,'rent-growth-line','rent-growth-percent');
-    return true;
-  }
-
-  function applyVacancy(){
-    const input=document.getElementById('f_vacancy'),field=input?.closest('.field');
-    if(!input||!field)return false;
-    field.querySelectorAll('.vacancy-guidance').forEach(el=>el.remove());
-    const label=field.querySelector('label');if(label)label.textContent='Vacancy and Credit Losses (%)';
-    if(!field.querySelector('.vacancy-note')){const note=document.createElement('span');note.className='vacancy-note';note.textContent='Percentage of Potential Gross Income deducted for expected vacancy, turnover and uncollected rent.';label?.insertAdjacentElement('afterend',note);}
-    normalizePercentInput(input,'vacancy-line','vacancy-percent');
-    if(!field.querySelector('.guidance-box[data-guide="vacancy"]')){const box=document.createElement('div');box.className='guidance-box';box.dataset.guide='vacancy';box.innerHTML='<b>How to choose this assumption</b><p>Vacancy and credit losses are estimated as a percentage of <strong>Potential Gross Income</strong>. The assumption should reflect local rental demand, expected tenant turnover, lease-up time and the risk of unpaid rent. <strong>10%</strong> is a common conservative estimate for many investment-property analyses, but stronger rental markets may justify a lower figure while slower or higher-risk markets may warrant a higher percentage.</p><p>Use current local market evidence whenever available rather than relying only on the default.</p><p><a href="https://www.census.gov/acs/www/data/data-tables-and-tools/data-profiles/" target="_blank" rel="noopener">Research local rental vacancy rates with U.S. Census ACS Housing Data ↗</a></p>';field.appendChild(box);}
-    return true;
-  }
-
-  function applyOpEx(){
-    const input=document.getElementById('f_opEx'),field=input?.closest('.field');
-    if(!input||!field)return false;
-    const label=field.querySelector('label');if(label)label.textContent='Other Operating Expenses as % of EGI (%)';
-    if(!field.querySelector('.opex-note')){const note=document.createElement('span');note.className='opex-note';note.textContent='Estimated operating expenses expressed as a percentage of Effective Gross Income.';label?.insertAdjacentElement('afterend',note);}
-    normalizePercentInput(input,'opex-line','opex-percent');
-    if(!field.querySelector('.guidance-box[data-guide="opEx"]')){
-      const box=document.createElement('div');box.className='guidance-box';box.dataset.guide='opEx';
-      box.innerHTML='<b>How to choose this assumption</b><p>This percentage is applied to <strong>Effective Gross Income (EGI)</strong> to estimate recurring operating costs before debt service and income taxes. Typical operating expenses may include <strong>property taxes, property insurance, repairs and maintenance, property management, utilities paid by the owner, HOA or association expenses, landscaping, pest control, and other routine ownership costs</strong>.</p><p>When detailed expense records are not available, <strong>30% to 40% of EGI</strong> is a commonly used estimating range for many residential investment properties. Actual expenses can vary materially by property type, age, insurance costs, taxes, management structure and local market conditions, so use actual or market-supported expenses whenever available.</p><p><a href="https://www.irs.gov/publications/p527" target="_blank" rel="noopener">Review common rental-property expenses in IRS Publication 527 ↗</a></p>';
+    const label=field.querySelector('label');if(label)label.textContent='Expected Holding Period';
+    if(!field.querySelector('.hold-note')){const note=document.createElement('span');note.className='hold-note';note.textContent='Estimated number of years you intend to own the property before selling it.';label?.insertAdjacentElement('afterend',note);}
+    if(!field.querySelector('.guidance-box[data-guide="hold"]')){
+      const box=document.createElement('div');box.className='guidance-box';box.dataset.guide='hold';
+      box.innerHTML='<b>How to choose this assumption</b><p>Enter the estimated number of years you expect to <strong>hold the property before selling it</strong>. This is primarily a planning assumption based on your investment strategy.</p><p>The holding period affects the model\'s projected appreciation, depreciation, loan balance at sale, sale proceeds, taxes and long-term return measures such as IRR.</p>';
       field.appendChild(box);
     }
     return true;
   }
 
-  function applyDepLife(){
-    const input=document.getElementById('f_depLife'),field=input?.closest('.field');
-    if(!input||!field)return false;
-    const label=field.querySelector('label');if(label)label.textContent='Depreciable Life in Years';
-    if(!field.querySelector('.dep-life-note')){const note=document.createElement('span');note.className='dep-life-note';note.textContent='Recovery period used to depreciate the building portion of the investment.';label?.insertAdjacentElement('afterend',note);}
-    if(!field.querySelector('.guidance-box[data-guide="depLife"]')){
-      const box=document.createElement('div');box.className='guidance-box';box.dataset.guide='depLife';
-      box.innerHTML='<b>How to choose this assumption</b><p>For most <strong>residential rental buildings</strong> using the IRS General Depreciation System (GDS), the standard recovery period is still <strong>27.5 years</strong>, using straight-line depreciation and the mid-month convention. For most <strong>nonresidential/commercial real property</strong>, the GDS recovery period is generally <strong>39 years</strong>.</p><p><strong>Land is not depreciable</strong>, so this model should apply depreciation only to the building and other depreciable basis. Certain components such as appliances, carpeting, furniture, fences, landscaping or other improvements may have shorter recovery periods, and some taxpayers may be required to use the Alternative Depreciation System (ADS).</p><p>For a typical residential rental analysis, <strong>27.5 years remains the appropriate default</strong> unless the property or taxpayer requires different treatment.</p><p><a href="https://www.irs.gov/publications/p527" target="_blank" rel="noopener">Review residential rental depreciation in IRS Publication 527 ↗</a></p>';
-      field.appendChild(box);
-    }
-    return true;
-  }
-
-  function applyAppreciation(){
-    const input=document.getElementById('f_appreciation'),field=input?.closest('.field');
-    if(!input||!field)return false;
-    const label=field.querySelector('label');if(label)label.textContent='Annual Property Value Increase (%)';
-    if(!field.querySelector('.appreciation-note')){const note=document.createElement('span');note.className='appreciation-note';note.textContent='Annual percentage increase or decrease applied to the property value after Year 1.';label?.insertAdjacentElement('afterend',note);}
-    normalizePercentInput(input,'appreciation-line','appreciation-percent');
-    if(!field.querySelector('.guidance-box[data-guide="appreciation"]')){
-      const box=document.createElement('div');box.className='guidance-box';box.dataset.guide='appreciation';
-      box.innerHTML='<b>How to choose this assumption</b><p>This assumption estimates how the property\'s value may change after <strong>Year 1</strong>. The Year 1 value is the starting point, and the percentage is then applied in later years on a compounding basis. For example, <strong>3%</strong> assumes the property increases approximately 3% per year, while <strong>0%</strong> assumes stable values and a <strong>negative percentage</strong> models declining values.</p><p>The assumption should reflect local sales trends, supply and demand, property type, condition and the broader market outlook. Use a conservative figure when future appreciation is uncertain.</p><p><a href="https://www.fhfa.gov/data/hpi" target="_blank" rel="noopener">Research local home-price changes with the FHFA House Price Index ↗</a></p>';
-      field.appendChild(box);
-    }
-    return true;
-  }
-
-  function apply(){injectStyles();const a=applyRentGrowth(),b=applyVacancy(),c=applyOpEx(),d=applyDepLife(),e=applyAppreciation();return a&&b&&c&&d&&e;}
-
-  function start(){
-    let tries=0;
-    const timer=setInterval(()=>{if(apply()||++tries>40)clearInterval(timer)},125);
-    document.querySelector('[data-s8-tab="assumptions"]')?.addEventListener('click',()=>setTimeout(apply,0));
-  }
-
-  window.Stage13AssumptionGuidance={apply,applyRentGrowth,applyVacancy,applyOpEx,applyDepLife,applyAppreciation};
+  function apply(){injectStyles();const a=applyRentGrowth(),b=applyVacancy(),c=applyOpEx(),d=applyDepLife(),e=applyAppreciation(),f=applyHold();return a&&b&&c&&d&&e&&f;}
+  function start(){let tries=0;const timer=setInterval(()=>{if(apply()||++tries>40)clearInterval(timer)},125);document.querySelector('[data-s8-tab="assumptions"]')?.addEventListener('click',()=>setTimeout(apply,0));}
+  window.Stage13AssumptionGuidance={apply,applyRentGrowth,applyVacancy,applyOpEx,applyDepLife,applyAppreciation,applyHold};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
