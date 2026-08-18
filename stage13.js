@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=9;
+  const VERSION=10;
   if((window.__stage13Version||0)>=VERSION)return;
   window.__stage13Version=VERSION;
 
@@ -9,16 +9,16 @@
     const st=document.createElement('style');
     st.id='stage13Styles';
     st.textContent=`
-      .rent-growth-line,.vacancy-line,.opex-line{position:relative;display:block;width:100%}
-      .rent-growth-line input,.vacancy-line input,.opex-line input{width:100%;box-sizing:border-box;padding-right:34px!important;border-radius:6px!important}
-      .rent-growth-percent,.vacancy-percent,.opex-percent{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;color:#667085;font-weight:800;font-size:12px;line-height:1;pointer-events:none;background:transparent;border:0;padding:0;min-width:0}
-      .rent-growth-note,.vacancy-note,.opex-note,.dep-life-note{display:block;margin:3px 0 5px;color:#667085;font-size:9px;line-height:1.35;font-weight:500}
-      .guidance-box[data-guide="vacancy"],.guidance-box[data-guide="opEx"],.guidance-box[data-guide="depLife"]{margin-top:7px!important;padding:9px 10px!important;border:1px solid #d9e4ee!important;border-radius:8px!important;background:#f8fbfd!important;color:#475467!important;font-size:10px!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important;letter-spacing:normal!important}
-      .guidance-box[data-guide="vacancy"] b,.guidance-box[data-guide="opEx"] b,.guidance-box[data-guide="depLife"] b{color:#174f83!important;font-size:inherit!important;font-family:inherit!important}
-      .guidance-box[data-guide="vacancy"] p,.guidance-box[data-guide="opEx"] p,.guidance-box[data-guide="depLife"] p{margin:3px 0 0!important;font-size:inherit!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important}
-      .guidance-box[data-guide="vacancy"] strong,.guidance-box[data-guide="opEx"] strong,.guidance-box[data-guide="depLife"] strong{font-size:inherit!important;font-family:inherit!important}
-      .guidance-box[data-guide="vacancy"] a,.guidance-box[data-guide="opEx"] a,.guidance-box[data-guide="depLife"] a{color:#175c92!important;font-weight:700!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important}
-      .guidance-box[data-guide="vacancy"] a:hover,.guidance-box[data-guide="opEx"] a:hover,.guidance-box[data-guide="depLife"] a:hover{text-decoration:underline!important}
+      .rent-growth-line,.vacancy-line,.opex-line,.appreciation-line{position:relative;display:block;width:100%}
+      .rent-growth-line input,.vacancy-line input,.opex-line input,.appreciation-line input{width:100%;box-sizing:border-box;padding-right:34px!important;border-radius:6px!important}
+      .rent-growth-percent,.vacancy-percent,.opex-percent,.appreciation-percent{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;color:#667085;font-weight:800;font-size:12px;line-height:1;pointer-events:none;background:transparent;border:0;padding:0;min-width:0}
+      .rent-growth-note,.vacancy-note,.opex-note,.dep-life-note,.appreciation-note{display:block;margin:3px 0 5px;color:#667085;font-size:9px;line-height:1.35;font-weight:500}
+      .guidance-box[data-guide="vacancy"],.guidance-box[data-guide="opEx"],.guidance-box[data-guide="depLife"],.guidance-box[data-guide="appreciation"]{margin-top:7px!important;padding:9px 10px!important;border:1px solid #d9e4ee!important;border-radius:8px!important;background:#f8fbfd!important;color:#475467!important;font-size:10px!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important;letter-spacing:normal!important}
+      .guidance-box[data-guide="vacancy"] b,.guidance-box[data-guide="opEx"] b,.guidance-box[data-guide="depLife"] b,.guidance-box[data-guide="appreciation"] b{color:#174f83!important;font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="vacancy"] p,.guidance-box[data-guide="opEx"] p,.guidance-box[data-guide="depLife"] p,.guidance-box[data-guide="appreciation"] p{margin:3px 0 0!important;font-size:inherit!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important}
+      .guidance-box[data-guide="vacancy"] strong,.guidance-box[data-guide="opEx"] strong,.guidance-box[data-guide="depLife"] strong,.guidance-box[data-guide="appreciation"] strong{font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="vacancy"] a,.guidance-box[data-guide="opEx"] a,.guidance-box[data-guide="depLife"] a,.guidance-box[data-guide="appreciation"] a{color:#175c92!important;font-weight:700!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important}
+      .guidance-box[data-guide="vacancy"] a:hover,.guidance-box[data-guide="opEx"] a:hover,.guidance-box[data-guide="depLife"] a:hover,.guidance-box[data-guide="appreciation"] a:hover{text-decoration:underline!important}
     `;
     document.head.appendChild(st);
   }
@@ -77,7 +77,21 @@
     return true;
   }
 
-  function apply(){injectStyles();const a=applyRentGrowth(),b=applyVacancy(),c=applyOpEx(),d=applyDepLife();return a&&b&&c&&d;}
+  function applyAppreciation(){
+    const input=document.getElementById('f_appreciation'),field=input?.closest('.field');
+    if(!input||!field)return false;
+    const label=field.querySelector('label');if(label)label.textContent='Annual Property Value Increase (%)';
+    if(!field.querySelector('.appreciation-note')){const note=document.createElement('span');note.className='appreciation-note';note.textContent='Annual percentage increase or decrease applied to the property value after Year 1.';label?.insertAdjacentElement('afterend',note);}
+    normalizePercentInput(input,'appreciation-line','appreciation-percent');
+    if(!field.querySelector('.guidance-box[data-guide="appreciation"]')){
+      const box=document.createElement('div');box.className='guidance-box';box.dataset.guide='appreciation';
+      box.innerHTML='<b>How to choose this assumption</b><p>This assumption estimates how the property\'s value may change after <strong>Year 1</strong>. The Year 1 value is the starting point, and the percentage is then applied in later years on a compounding basis. For example, <strong>3%</strong> assumes the property increases approximately 3% per year, while <strong>0%</strong> assumes stable values and a <strong>negative percentage</strong> models declining values.</p><p>The assumption should reflect local sales trends, supply and demand, property type, condition and the broader market outlook. Use a conservative figure when future appreciation is uncertain.</p><p><a href="https://www.fhfa.gov/data/hpi" target="_blank" rel="noopener">Research local home-price changes with the FHFA House Price Index ↗</a></p>';
+      field.appendChild(box);
+    }
+    return true;
+  }
+
+  function apply(){injectStyles();const a=applyRentGrowth(),b=applyVacancy(),c=applyOpEx(),d=applyDepLife(),e=applyAppreciation();return a&&b&&c&&d&&e;}
 
   function start(){
     let tries=0;
@@ -85,6 +99,6 @@
     document.querySelector('[data-s8-tab="assumptions"]')?.addEventListener('click',()=>setTimeout(apply,0));
   }
 
-  window.Stage13AssumptionGuidance={apply,applyRentGrowth,applyVacancy,applyOpEx,applyDepLife};
+  window.Stage13AssumptionGuidance={apply,applyRentGrowth,applyVacancy,applyOpEx,applyDepLife,applyAppreciation};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
