@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=6;
+  const VERSION=7;
   if((window.__stage13Version||0)>=VERSION)return;
   window.__stage13Version=VERSION;
 
@@ -9,9 +9,9 @@
     const st=document.createElement('style');
     st.id='stage13Styles';
     st.textContent=`
-      .rent-growth-line,.vacancy-line{display:flex;align-items:stretch;width:100%}
-      .rent-growth-line input,.vacancy-line input{flex:1 1 auto;min-width:0;border-radius:6px 0 0 6px!important}
-      .rent-growth-percent,.vacancy-percent{display:flex;align-items:center;justify-content:center;min-width:38px;padding:0 10px;border:1px solid var(--line);border-left:0;border-radius:0 6px 6px 0;background:#f2f4f7;color:#344054;font-weight:800;font-size:12px}
+      .rent-growth-line,.vacancy-line{position:relative;display:block;width:100%}
+      .rent-growth-line input,.vacancy-line input{width:100%;box-sizing:border-box;padding-right:34px!important;border-radius:6px!important}
+      .rent-growth-percent,.vacancy-percent{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;color:#667085;font-weight:800;font-size:12px;line-height:1;pointer-events:none;background:transparent;border:0;padding:0;min-width:0}
       .rent-growth-note,.vacancy-note{display:block;margin:3px 0 5px;color:#667085;font-size:9px;line-height:1.35;font-weight:500}
       .guidance-box[data-guide="vacancy"]{margin-top:7px!important;padding:9px 10px!important;border:1px solid #d9e4ee!important;border-radius:8px!important;background:#f8fbfd!important;color:#475467!important;font-size:10px!important;line-height:1.45!important;font-family:inherit!important;font-weight:400!important;letter-spacing:normal!important}
       .guidance-box[data-guide="vacancy"] b{color:#174f83!important;font-size:inherit!important;font-family:inherit!important}
@@ -24,11 +24,13 @@
   }
 
   function normalizePercentInput(input,lineClass,percentClass){
-    if(!input.closest('.'+lineClass)){
-      const line=document.createElement('div');line.className=lineClass;
+    let line=input.closest('.'+lineClass);
+    if(!line){
+      line=document.createElement('div');line.className=lineClass;
       input.parentNode.insertBefore(line,input);line.appendChild(input);
-      const pct=document.createElement('span');pct.className=percentClass;pct.textContent='%';line.appendChild(pct);
     }
+    let pct=line.querySelector('.'+percentClass);
+    if(!pct){pct=document.createElement('span');pct.className=percentClass;pct.textContent='%';line.appendChild(pct);}
   }
 
   function applyRentGrowth(){
@@ -56,9 +58,7 @@
     }
     normalizePercentInput(input,'vacancy-line','vacancy-percent');
     if(!field.querySelector('.guidance-box[data-guide="vacancy"]')){
-      const box=document.createElement('div');
-      box.className='guidance-box';
-      box.dataset.guide='vacancy';
+      const box=document.createElement('div');box.className='guidance-box';box.dataset.guide='vacancy';
       box.innerHTML='<b>How to choose this assumption</b><p>Vacancy and credit losses are estimated as a percentage of <strong>Potential Gross Income</strong>. The assumption should reflect local rental demand, expected tenant turnover, lease-up time and the risk of unpaid rent. <strong>10%</strong> is a common conservative estimate for many investment-property analyses, but stronger rental markets may justify a lower figure while slower or higher-risk markets may warrant a higher percentage.</p><p>Use current local market evidence whenever available rather than relying only on the default.</p><p><a href="https://www.census.gov/acs/www/data/data-tables-and-tools/data-profiles/" target="_blank" rel="noopener">Research local rental vacancy rates with U.S. Census ACS Housing Data ↗</a></p>';
       field.appendChild(box);
     }
