@@ -1,0 +1,56 @@
+'use strict';
+(() => {
+  const KEY='meloniStage5ReportPrefs';
+  const IDS={clientName:'s5_client',marketRent:'s5_marketRent',marketCap:'s5_marketCap',valueLow:'s5_valueLow',valueHigh:'s5_valueHigh',recommendationNote:'s5_recommendation',reportNotes:'s5_notes'};
+  let syncTimer=null;
+  const getPrefs=()=>{
+    let p={};
+    try{p=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(_e){}
+    for(const [k,id] of Object.entries(IDS)){const el=document.getElementById(id);if(el)p[k]=el.value;}
+    p.analyst=p.analyst||'Jamie Meloni';p.brokerage=p.brokerage||'Meloni Realty';p.stage5_version=1;
+    localStorage.setItem(KEY,JSON.stringify(p));return p;
+  };
+  const applyPrefs=p=>{
+    if(!p||typeof p!=='object')return;
+    localStorage.setItem(KEY,JSON.stringify({...p}));
+    for(const [k,id] of Object.entries(IDS)){const el=document.getElementById(id);if(el&&p[k]!=null)el.value=p[k];}
+    const b=document.getElementById('s5_refresh');if(b)b.click();
+  };
+  async function syncReportMeta(silent=false){
+    if(!window.cloudClient||!window.cloudUser||!window.selectedAnalysisId)return false;
+    const item=(window.cloudAnalyses||[]).find(x=>x.id===window.selectedAnalysisId);
+    const report_meta={...(item?.report_meta||{}),prepared_by:'Jamie Meloni',brokerage:'Meloni Realty',stage5:getPrefs(),report_updated_at:new Date().toISOString()};
+    const {error}=await window.cloudClient.from('analyses').update({report_meta,updated_at:new Date().toISOString()}).eq('id',window.selectedAnalysisId);
+    if(error){if(!silent&&window.setStatus)window.setStatus('Report cloud sync failed: '+error.message);return false;}
+    if(item)item.report_meta=report_meta;
+    if(!silent&&window.setStatus)window.setStatus('Report settings saved to cloud');
+    const s=document.getElementById('s5CloudSyncStatus');if(s)s.textContent='Report settings synced '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+    return true;
+  }
+  function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncReportMeta(true),900)}
+  function wireControls(){
+    const host=document.getElementById('stage5ReportControls');if(!host)return false;
+    if(!document.getElementById('s5CloudSyncBtn')){
+      const actions=host.querySelector('.actions');
+      const btn=document.createElement('button');btn.id='s5CloudSyncBtn';btn.className='btn ghost';btn.textContent='Save Report Settings to Cloud';btn.onclick=()=>syncReportMeta(false);actions?.appendChild(btn);
+      const st=document.createElement('span');st.id='s5CloudSyncStatus';st.className='mini';st.textContent='Report settings are stored locally until a cloud analysis is selected.';actions?.appendChild(st);
+    }
+    Object.values(IDS).forEach(id=>{const el=document.getElementById(id);if(el&&!el.dataset.cloudwired){el.dataset.cloudwired='1';el.addEventListener('input',scheduleSync);el.addEventListener('change',scheduleSync)}});
+    return true;
+  }
+  const oldSave=window.saveCurrentCloud;
+  if(typeof oldSave==='function')window.saveCurrentCloud=async function(clone=false){const out=await oldSave(clone);await syncReportMeta(true);return out;};
+  const oldLoad=window.loadSelectedCloud;
+  if(typeof oldLoad==='function')window.loadSelectedCloud=async function(){const id=window.selectedAnalysisId;const item=(window.cloudAnalyses||[]).find(x=>x.id===id);const out=await oldLoad();setTimeout(()=>{if(item?.report_meta?.stage5)applyPrefs(item.report_meta.stage5);wireControls();},50);return out;};
+  const oldSelect=window.selectAnalysis;
+  if(typeof oldSelect==='function')window.selectAnalysis=async function(id){const out=await oldSelect(id);const item=(window.cloudAnalyses||[]).find(x=>x.id===id);const s=document.getElementById('s5CloudSyncStatus');if(s)s.textContent=item?.report_meta?.stage5?'Saved report settings available for this analysis.':'No cloud report settings saved yet.';return out;};
+  function addWorkflowCard(){
+    const cloud=document.getElementById('cloud');if(!cloud||document.getElementById('stage5WorkflowCard'))return;
+    const grid=cloud.querySelector('.grid');if(!grid)return;
+    const card=document.createElement('div');card.id='stage5WorkflowCard';card.className='card span-12';card.innerHTML='<div class="sectionhead"><div><h2>Analysis Workflow</h2><p>Recommended sequence for a complete client-ready file.</p></div><span class="badge">Cloud + Report</span></div><div class="support-grid"><div class="support-box"><span>1. Property</span><b>Create / select client and property</b></div><div class="support-box"><span>2. Analysis</span><b>Enter assumptions and compare financing</b></div><div class="support-box"><span>3. Report</span><b>Add concluded range and commentary</b></div><div class="support-box"><span>4. Save</span><b>Save analysis + report to cloud</b></div></div>';
+    grid.appendChild(card);
+  }
+  window.Stage5Cloud={getPrefs,applyPrefs,syncReportMeta};
+  const boot=()=>{let tries=0;const t=setInterval(()=>{wireControls();addWorkflowCard();if(++tries>20||document.getElementById('stage5ReportControls'))clearInterval(t)},250)};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
