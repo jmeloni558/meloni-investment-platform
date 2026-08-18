@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=4;
+  const VERSION=5;
   if((window.__stage11Version||0)>=VERSION)return;
   window.__stage11Version=VERSION;
   let startupApplied=false;
@@ -21,7 +21,12 @@
     if(document.getElementById('stage11GuidanceStyles'))return;
     const st=document.createElement('style');
     st.id='stage11GuidanceStyles';
-    st.textContent='.guidance-box{margin-top:7px;padding:9px 10px;border:1px solid #d9e4ee;border-radius:8px;background:#f8fbfd;color:#475467;font-size:10px;line-height:1.45}.guidance-box b{color:#174f83}.guidance-box p{margin:3px 0 0}.guidance-box a{color:#175c92;font-weight:700;text-decoration:none}.guidance-box a:hover{text-decoration:underline}';
+    st.textContent=`
+      .guidance-box{margin-top:7px;padding:9px 10px;border:1px solid #d9e4ee;border-radius:8px;background:#f8fbfd;color:#475467;font-size:10px;line-height:1.45}
+      .guidance-box b{color:#174f83}.guidance-box p{margin:3px 0 0}.guidance-box a{color:#175c92;font-weight:700;text-decoration:none}.guidance-box a:hover{text-decoration:underline}
+      .field-note{display:block;margin:3px 0 5px;color:#667085;font-size:9px;line-height:1.35;font-weight:500}
+      .percent-input-wrap{position:relative;display:block}.percent-input-wrap input{padding-right:28px}.percent-input-suffix{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#667085;font-size:12px;font-weight:700;pointer-events:none}
+    `;
     document.head.appendChild(st);
   }
 
@@ -30,12 +35,34 @@
     const input=document.getElementById('f_rentGrowth');
     const field=input?.closest('.field');
     if(!field)return false;
-    if(field.querySelector('.guidance-box[data-guide="rentGrowth"]'))return true;
-    const box=document.createElement('div');
-    box.className='guidance-box';
-    box.dataset.guide='rentGrowth';
-    box.innerHTML='<b>How to choose this assumption</b><p>This is your estimate of how monthly rent may change beginning in Year 2. Base it on current rental-market conditions and expectations for the local area. The assumption can be <strong>positive</strong> when rents are expected to rise, <strong>0%</strong> when rents are expected to remain generally stable, or <strong>negative</strong> when rents are expected to decline. Use a conservative figure when the outlook is uncertain.</p><p><a href="https://www.zillow.com/research/data/" target="_blank" rel="noopener">Research local rent trends with Zillow Research (ZORI) ↗</a></p>';
-    field.appendChild(box);
+
+    const label=field.querySelector('label');
+    if(label&&!field.querySelector('.field-note[data-note="rentGrowth"]')){
+      const note=document.createElement('span');
+      note.className='field-note';
+      note.dataset.note='rentGrowth';
+      note.textContent='Enter the annual percentage change applied to the initial monthly rent beginning in Year 2.';
+      label.insertAdjacentElement('afterend',note);
+    }
+
+    if(!input.closest('.percent-input-wrap')){
+      const wrap=document.createElement('div');
+      wrap.className='percent-input-wrap';
+      input.parentNode.insertBefore(wrap,input);
+      wrap.appendChild(input);
+      const suffix=document.createElement('span');
+      suffix.className='percent-input-suffix';
+      suffix.textContent='%';
+      wrap.appendChild(suffix);
+    }
+
+    if(!field.querySelector('.guidance-box[data-guide="rentGrowth"]')){
+      const box=document.createElement('div');
+      box.className='guidance-box';
+      box.dataset.guide='rentGrowth';
+      box.innerHTML='<b>How to choose this assumption</b><p>This is your estimate of how monthly rent may change beginning in Year 2. The percentage is applied to the initial monthly rent and then compounds in later years. For example, entering <strong>2%</strong> assumes rent increases by 2% in Year 2 and continues growing at that annual rate. Enter <strong>0%</strong> for stable rents or a <strong>negative percentage</strong> if rents are expected to decline. Base the assumption on current rental-market conditions and use a conservative figure when the outlook is uncertain.</p><p><a href="https://www.zillow.com/research/data/" target="_blank" rel="noopener">Research local rent trends with Zillow Research (ZORI) ↗</a></p>';
+      field.appendChild(box);
+    }
     return true;
   }
 
