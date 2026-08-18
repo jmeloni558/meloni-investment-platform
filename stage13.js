@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=2;
+  const VERSION=3;
   if((window.__stage13Version||0)>=VERSION)return;
   window.__stage13Version=VERSION;
 
@@ -20,8 +20,6 @@
   }
 
   function normalizePercentInput(input,lineClass,percentClass){
-    const oldWrap=input.closest('.percent-input-wrap');
-    if(oldWrap){const parent=oldWrap.parentNode;parent.insertBefore(input,oldWrap);oldWrap.remove();}
     if(!input.closest('.'+lineClass)){
       const line=document.createElement('div');line.className=lineClass;
       input.parentNode.insertBefore(line,input);line.appendChild(input);
@@ -57,9 +55,9 @@
   function apply(){injectStyles();const a=applyRentGrowth(),b=applyVacancy();return a||b;}
 
   function start(){
-    let tries=0;const timer=setInterval(()=>{if((applyRentGrowth()&&applyVacancy())||++tries>100)clearInterval(timer)},125);
+    let tries=0;
+    const timer=setInterval(()=>{if((applyRentGrowth()&&applyVacancy())||++tries>100)clearInterval(timer)},125);
     document.addEventListener('click',()=>setTimeout(apply,0));
-    const host=document.getElementById('propertyFields');if(host)new MutationObserver(apply).observe(host,{childList:true,subtree:true});
   }
 
   window.Stage13AssumptionGuidance={apply,applyRentGrowth,applyVacancy};
