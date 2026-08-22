@@ -25,11 +25,11 @@
     return p?.name||a?.name||state?.name||'No property selected';
   }
   function nextText(active){
-    if(active==='propertyhub'||active==='propertyfile')return 'Next: open a property file or start a new analysis.';
+    if(active==='propertyhub')return '';
     if(active==='assumptions')return 'Next: complete the assumptions, then review the results.';
     if(active==='dashboard')return 'Next: review the results and scenarios, then prepare the client report.';
     if(active==='report')return 'Final step: confirm the conclusion, save to cloud, and download the client PDF.';
-    return 'Advanced view. Return to the four-step workflow when you are finished here.';
+    return 'Advanced view. Return to the three-step workflow when you are finished here.';
   }
   function activeSection(){return document.querySelector('.section.active')?.id||'dashboard'}
 
@@ -66,8 +66,8 @@
   }
 
   function addHelpCards(){
+    document.querySelector('#propertyhub .s8-help')?.remove();
     const definitions={
-      propertyhub:['Step 1 — Choose a property','Start here. Open an existing property file or create a new analysis. Use Property Workspace as your home base for saved files.'],
       assumptions:['Step 2 — Build the analysis','Enter the purchase price, rent, operating assumptions, financing, taxes, and target return. Recalculate when finished.'],
       dashboard:['Step 3 — Review the results','Use this page to decide whether the investment is supportable. Review NOI, cap rate, IRR, NPV, DSCR, cash flow, and valuation before reporting.'],
       report:['Step 4 — Prepare the client report','Enter the concluded value range and commentary, refresh the professional report, save it to cloud, and download the branded PDF.']
