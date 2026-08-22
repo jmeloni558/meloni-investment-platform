@@ -51,7 +51,7 @@
       btn.className='tab';btn.dataset.tab='propertyhub';btn.textContent='Property Dashboard';
       nav?.insertBefore(btn,cloudTab||null);
     }
-    btn.onclick=()=>{switchTab('propertyhub');renderHub()};
+    btn.onclick=async()=>{if(cloudUser&&typeof refreshCloud==='function')await refreshCloud();switchTab('propertyhub');renderHub()};
 
     if(sec)return;
     sec=document.createElement('section');
@@ -59,10 +59,9 @@
     sec.innerHTML=`<div class="grid">
       <div class="card span-12">
         <div class="sectionhead">
-          <div><h2>Property Dashboard</h2><p>Open, update, report, clone and archive investment-property files from one workspace.</p></div>
+          <div><h2>Existing Properties</h2><p>Open, update, report, clone, archive, or permanently delete saved investment-property files.</p></div>
           <div class="actions">
             <button class="btn primary" id="hubNewAnalysis">New Analysis</button>
-            <button class="btn secondary" id="hubRefresh">Refresh Cloud Data</button>
           </div>
         </div>
         <div class="hub-toolbar">
@@ -71,7 +70,7 @@
           <div id="hubSummary" class="hub-summary"></div>
         </div>
       </div>
-      <div class="card span-12" id="hubSignedOut"><div class="callout"><strong>Sign in to view your property files.</strong><p>The dashboard uses your private cloud records and remains empty when you are signed out.</p></div></div>
+      <div class="card span-12" id="hubSignedOut"><div class="callout"><strong>Sign in to view your property files.</strong><p>Your saved properties load automatically from your private cloud records after sign-in.</p></div></div>
       <div class="span-12" id="hubCards"></div>
     </div>`;
     document.querySelector('.footer')?.insertAdjacentElement('beforebegin',sec);
@@ -93,14 +92,14 @@
         .hub-metric span{display:block;color:#667085;font-size:9px}.hub-metric b{display:block;font-size:14px;margin-top:2px}
         .hub-meta{display:grid;grid-template-columns:1fr 1fr;gap:7px 16px;font-size:11px;color:#596579;margin-bottom:12px}
         .hub-meta b{color:#344054}.hub-actions{display:flex;gap:7px;flex-wrap:wrap}
-        @media(max-width:950px){.hub-grid{grid-template-columns:1fr}.hub-toolbar{grid-template-columns:1fr}.hub-summary{text-align:left}.hub-metrics{grid-template-columns:repeat(2,1fr)}}
+        .hub-delete{margin-left:auto}
+        @media(max-width:950px){.hub-grid{grid-template-columns:1fr}.hub-toolbar{grid-template-columns:1fr}.hub-summary{text-align:left}.hub-metrics{grid-template-columns:repeat(2,1fr)}.hub-delete{margin-left:0}}
       `;
       document.head.appendChild(st);
     }
 
     document.getElementById('hubSearch').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();renderHub()});
     document.getElementById('hubArchived').addEventListener('change',e=>{showArchived=e.target.checked;renderHub()});
-    document.getElementById('hubRefresh').onclick=async()=>{if(!cloudUser){showAuth();return}await refreshCloud();renderHub()};
     document.getElementById('hubNewAnalysis').onclick=()=>{selectedClientId=selectedPropertyId=selectedAnalysisId=null;state={...defaults};renderFields();render();switchTab('assumptions');setStatus('New analysis started')};
   }
 
@@ -149,7 +148,8 @@
           ${a?`<button class="btn secondary" data-hub-report="${p.id}">Generate Report</button>
           <button class="btn ghost" data-hub-clone="${p.id}">Clone Analysis</button>`:''}
           <button class="btn ghost" data-hub-update="${p.id}">Update Property</button>
-          <button class="btn ${p.archived?'secondary':'danger'}" data-hub-archive="${p.id}">${p.archived?'Restore':'Archive'}</button>
+          <button class="btn ${p.archived?'secondary':'ghost'}" data-hub-archive="${p.id}">${p.archived?'Restore':'Archive'}</button>
+          <button class="btn danger hub-delete" data-hub-delete="${p.id}">Delete Property</button>
         </div>
       </div>`;
     }).join('')+'</div>';
@@ -188,12 +188,35 @@
     if(error){setStatus('Archive update failed: '+error.message);return}
     p.archived=next;renderHub();renderCloudLists();setStatus(next?'Property archived':'Property restored');
   }
+  async function deletePropertyPermanently(pid){
+    if(!cloudUser)return showAuth();
+    const p=(cloudProperties||[]).find(x=>x.id===pid);if(!p)return;
+    const analyses=(cloudAnalyses||[]).filter(a=>a.property_id===pid);
+    const label=p.name||p.address||'this property';
+    const extra=analyses.length?` This will also permanently delete ${analyses.length} saved ${analyses.length===1?'analysis':'analyses'} and their saved financing scenarios.`:'';
+    if(!window.confirm(`Delete ${label}?${extra} This cannot be undone.`))return;
+    setStatus('Deleting property…');
+    const ids=analyses.map(a=>a.id);
+    if(ids.length){
+      const sc=await cloudClient.from('scenarios').delete().in('analysis_id',ids);
+      if(sc.error){setStatus('Property delete failed: '+sc.error.message);return}
+      const an=await cloudClient.from('analyses').delete().eq('property_id',pid);
+      if(an.error){setStatus('Property delete failed: '+an.error.message);return}
+    }
+    const pr=await cloudClient.from('properties').delete().eq('id',pid);
+    if(pr.error){setStatus('Property delete failed: '+pr.error.message);return}
+    if(selectedPropertyId===pid){selectedPropertyId=null;selectedAnalysisId=null;selectedScenarioId=null;}
+    await refreshCloud();
+    renderHub();
+    setStatus('Property permanently deleted');
+  }
   function wireHubActions(){
     document.querySelectorAll('[data-hub-open]').forEach(b=>b.onclick=()=>openAnalysis(b.dataset.hubOpen));
     document.querySelectorAll('[data-hub-report]').forEach(b=>b.onclick=async()=>{await openAnalysis(b.dataset.hubReport,'report');setTimeout(()=>document.getElementById('s5_refresh')?.click(),80)});
     document.querySelectorAll('[data-hub-clone]').forEach(b=>b.onclick=()=>cloneAnalysis(b.dataset.hubClone));
     document.querySelectorAll('[data-hub-update]').forEach(b=>b.onclick=()=>updateProperty(b.dataset.hubUpdate));
     document.querySelectorAll('[data-hub-archive]').forEach(b=>b.onclick=()=>archiveProperty(b.dataset.hubArchive));
+    document.querySelectorAll('[data-hub-delete]').forEach(b=>b.onclick=()=>deletePropertyPermanently(b.dataset.hubDelete));
   }
 
   const oldRefresh=refreshCloud;
@@ -205,7 +228,7 @@
   const oldSaveAnalysis=saveCurrentCloud;
   saveCurrentCloud=async function(clone=false){const out=await oldSaveAnalysis(clone);renderHub();return out};
 
-  window.Stage6Dashboard={render:renderHub,cleanup:cleanupDuplicates};
+  window.Stage6Dashboard={render:renderHub,cleanup:cleanupDuplicates,deleteProperty:deletePropertyPermanently};
   const boot=()=>{cleanupDuplicates();inject();renderHub();const badge=document.querySelector('.stage-pill');if(badge)badge.textContent='Stage 6 Workspace'};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
