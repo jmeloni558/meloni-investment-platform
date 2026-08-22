@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__guidedContinueControllerV||0)>=VERSION)return;
   window.__guidedContinueControllerV=VERSION;
 
@@ -28,11 +28,13 @@
     const address=document.getElementById('f_address')?.value?.trim()||'';
     const price=n(document.getElementById('f_price')?.value);
     const units=n(document.getElementById('f_units')?.value);
+    const hold=n(document.getElementById('f_hold')?.value);
     const rent=n(document.getElementById('f_rent')?.value);
     if(i===0){
       if(!address)missing.push('property address');
       if(price<=0)missing.push('acquisition price');
       if(units<=0)missing.push('number of units');
+      if(hold<=0)missing.push('expected holding period');
     }
     if(i===1&&rent<=0)missing.push('monthly rent');
     if(missing.length){
