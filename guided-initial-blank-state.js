@@ -1,10 +1,10 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__guidedInitialBlankStateV||0)>=VERSION)return;
   window.__guidedInitialBlankStateV=VERSION;
 
-  const BLANK_IDS=['f_address','f_price','f_land','f_units','f_rent','f_hold','quickPrice','quickRent'];
+  const BLANK_IDS=['f_address','f_price','f_land','f_units','f_rent','f_hold','f_initialRepairs','quickPrice','quickRent'];
 
   function hasExistingSelection(){
     try{
@@ -17,11 +17,12 @@
     BLANK_IDS.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     try{
       if(typeof state==='object'&&state){
-        state={...state,name:'',address:'',price:0,land:0,units:0,rent:0,hold:0};
+        state={...state,name:'',address:'',price:0,land:0,units:0,rent:0,hold:0,initialRepairs:0};
       }
     }catch(e){}
     try{window.GuidedAnalysisSetup?.reset?.();}catch(e){}
     try{window.GuidedAssumptionGuidance?.apply?.();}catch(e){}
+    try{window.GuidedInitialRepairs?.apply?.();}catch(e){}
     return true;
   }
 
