@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__reportSensitivityAnalysisVersion||0)>=VERSION)return;
   window.__reportSensitivityAnalysisVersion=VERSION;
 
@@ -10,17 +10,21 @@
   const money=v=>typeof fmtC==='function'?fmtC(v):(Number.isFinite(v)?v.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'N/A');
   const pct=v=>typeof fmtP==='function'?fmtP(v):(Number.isFinite(v)?(v*100).toFixed(2)+'%':'N/A');
 
+  function getState(){try{return typeof state!=='undefined'?state:null;}catch(_e){return null;}}
+
   function scenarioState(priceFactor,rentFactor){
-    const basePrice=Number(state?.price)||0;
-    const baseMortgage=Number(state?.mortgage)||0;
-    const baseLand=Number(state?.land)||0;
+    const s=getState();
+    if(!s)return null;
+    const basePrice=Number(s.price)||0;
+    const baseMortgage=Number(s.mortgage)||0;
+    const baseLand=Number(s.land)||0;
     const ltv=basePrice>0?baseMortgage/basePrice:0;
     const landRatio=basePrice>0?baseLand/basePrice:0;
     const price=basePrice*priceFactor;
     return {
-      ...state,
+      ...s,
       price,
-      rent:(Number(state?.rent)||0)*rentFactor,
+      rent:(Number(s.rent)||0)*rentFactor,
       land:Math.max(0,Math.min(price,price*landRatio)),
       mortgage:baseMortgage>0?price*ltv:0
     };
@@ -28,14 +32,18 @@
 
   function calc(priceFactor,rentFactor){
     try{
-      const rr=analyze(scenarioState(priceFactor,rentFactor));
+      const ss=scenarioState(priceFactor,rentFactor);
+      if(!ss||typeof analyze!=='function')return {irr:NaN,npv:NaN,cap:NaN,atcf:NaN};
+      const rr=analyze(ss);
       return {irr:rr?.IRR,npv:rr?.NPV,cap:rr?.cap,atcf:rr?.years?.[0]?.atcf};
     }catch(_e){return {irr:NaN,npv:NaN,cap:NaN,atcf:NaN};}
   }
 
   function matrix(metric,formatter){
-    const basePrice=Number(state?.price)||0;
-    const baseRent=Number(state?.rent)||0;
+    const s=getState();
+    if(!s)return '';
+    const basePrice=Number(s.price)||0;
+    const baseRent=Number(s.rent)||0;
     const head=`<thead><tr><th>Purchase Price</th>${rentFactors.map(rf=>`<th>${money(baseRent*rf)}/mo<br><small>${Math.round(rf*100)}% rent</small></th>`).join('')}</tr></thead>`;
     const body=priceFactors.map(pf=>{
       const cells=rentFactors.map(rf=>{
@@ -64,12 +72,15 @@
 
   function apply(){
     const section=document.querySelector('#clientReport [data-rb-section="sensitivity"]');
-    if(!section||!window.state||typeof analyze!=='function')return false;
+    const s=getState();
+    if(!section||!s||typeof analyze!=='function')return false;
+    if(section.querySelector('.rb-sens-table')&&!section.textContent.includes('Reserved for the next report-builder pass'))return true;
     ensureStyles();
     const head=section.querySelector('.rb-section-head');
     if(head){
-      const sub=head.querySelector('p');
-      if(sub)sub.textContent='Purchase-price and monthly-rent sensitivity using the same underwriting assumptions and calculation engine as the primary analysis.';
+      let sub=head.querySelector('p');
+      if(!sub){sub=document.createElement('p');head.appendChild(sub);}
+      sub.textContent='Purchase-price and monthly-rent sensitivity using the same underwriting assumptions and calculation engine as the primary analysis.';
     }
     const body=`
       <p class="rb-sens-intro">The tables below show how the modeled return changes when acquisition price and initial monthly rent vary by ±5% and ±10%. Financing is adjusted at the same loan-to-value ratio as the base analysis, while all other assumptions remain unchanged. The highlighted center cell is the current modeled scenario.</p>
@@ -81,20 +92,24 @@
     return true;
   }
 
-  function schedule(){setTimeout(apply,0);setTimeout(apply,60);setTimeout(apply,180);}
+  function schedule(){setTimeout(apply,0);setTimeout(apply,80);setTimeout(apply,240);}
   document.addEventListener('click',e=>{
-    if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbSelectAll,#rbDownloadPdf')){
-      apply();schedule();
-    }
+    if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbSelectAll,#rbDownloadPdf'))schedule();
   },true);
   document.addEventListener('change',e=>{if(e.target?.matches?.('[data-rb-pref]'))schedule();},true);
 
-  const host=document.getElementById('clientReport');
-  if(host&&window.MutationObserver){
-    const obs=new MutationObserver(()=>{if(document.querySelector('#clientReport [data-rb-section="sensitivity"]'))setTimeout(apply,0);});
+  function observe(){
+    const host=document.getElementById('clientReport');
+    if(!host||!window.MutationObserver)return false;
+    const obs=new MutationObserver(()=>{
+      const section=document.querySelector('#clientReport [data-rb-section="sensitivity"]');
+      if(section&&!section.querySelector('.rb-sens-table'))setTimeout(apply,0);
+    });
     obs.observe(host,{childList:true,subtree:true});
+    return true;
   }
 
+  function start(){schedule();let tries=0;const timer=setInterval(()=>{if(observe()||++tries>50)clearInterval(timer)},100);}
   window.ReportSensitivityAnalysis={apply,schedule};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
