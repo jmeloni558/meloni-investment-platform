@@ -57,15 +57,9 @@
     sec=document.createElement('section');
     sec.id='propertyhub'; sec.className='section';
     sec.innerHTML=`<div class="grid">
-      <div class="card span-12">
-        <div class="sectionhead">
-          <div><h2>Existing Properties</h2><p>Open, update, report, clone, archive, or permanently delete saved investment-property files.</p></div>
-          <div class="actions">
-            <button class="btn primary" id="hubNewAnalysis">New Analysis</button>
-          </div>
-        </div>
+      <div class="span-12 hub-toolbar-shell">
         <div class="hub-toolbar">
-          <div class="field"><label>Search properties or clients</label><input id="hubSearch" placeholder="Address, property, client…"></div>
+          <div class="field hub-search-field"><label>Search saved properties</label><input id="hubSearch" placeholder="Address, property, client…"></div>
           <label class="hub-check"><input id="hubArchived" type="checkbox"> Show archived</label>
           <div id="hubSummary" class="hub-summary"></div>
         </div>
@@ -78,9 +72,11 @@
     if(!document.getElementById('stage6Styles')){
       const st=document.createElement('style');st.id='stage6Styles';
       st.textContent=`
-        .hub-toolbar{display:grid;grid-template-columns:minmax(260px,1fr) auto auto;gap:14px;align-items:end}
-        .hub-check{display:flex;align-items:center;gap:7px;padding:9px 0;font-weight:700;color:#475467}
-        .hub-summary{font-size:12px;color:#667085;text-align:right;padding:9px 0}
+        .hub-toolbar-shell{padding:0 2px 2px}
+        .hub-toolbar{display:grid;grid-template-columns:minmax(260px,1fr) auto auto;gap:12px;align-items:end}
+        .hub-search-field label{font-size:9px;margin-bottom:4px}.hub-search-field input{min-height:36px}
+        .hub-check{display:flex;align-items:center;gap:7px;padding:9px 0;font-weight:700;color:#475467;white-space:nowrap}
+        .hub-summary{font-size:11px;color:#667085;text-align:right;padding:9px 0;white-space:nowrap}
         .hub-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
         .hub-card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
         .hub-card.archived{opacity:.72;background:#fafafa}
@@ -93,14 +89,13 @@
         .hub-meta{display:grid;grid-template-columns:1fr 1fr;gap:7px 16px;font-size:11px;color:#596579;margin-bottom:12px}
         .hub-meta b{color:#344054}.hub-actions{display:flex;gap:7px;flex-wrap:wrap}
         .hub-delete{margin-left:auto}
-        @media(max-width:950px){.hub-grid{grid-template-columns:1fr}.hub-toolbar{grid-template-columns:1fr}.hub-summary{text-align:left}.hub-metrics{grid-template-columns:repeat(2,1fr)}.hub-delete{margin-left:0}}
+        @media(max-width:950px){.hub-grid{grid-template-columns:1fr}.hub-toolbar{grid-template-columns:1fr}.hub-summary{text-align:left;padding-top:0}.hub-check{padding-bottom:0}.hub-metrics{grid-template-columns:repeat(2,1fr)}.hub-delete{margin-left:0}}
       `;
       document.head.appendChild(st);
     }
 
     document.getElementById('hubSearch').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();renderHub()});
     document.getElementById('hubArchived').addEventListener('change',e=>{showArchived=e.target.checked;renderHub()});
-    document.getElementById('hubNewAnalysis').onclick=()=>{selectedClientId=selectedPropertyId=selectedAnalysisId=null;state={...defaults};renderFields();render();switchTab('assumptions');setStatus('New analysis started')};
   }
 
   function renderHub(){
@@ -217,8 +212,6 @@
       return;
     }
 
-    // The database foreign keys use ON DELETE CASCADE, so related analyses and scenarios
-    // are removed automatically when the owned property row is deleted.
     cloudProperties=(cloudProperties||[]).filter(x=>x.id!==pid);
     cloudAnalyses=(cloudAnalyses||[]).filter(x=>x.property_id!==pid);
     if(selectedPropertyId===pid){selectedPropertyId=null;selectedAnalysisId=null;selectedScenarioId=null;cloudScenarios=[];}
