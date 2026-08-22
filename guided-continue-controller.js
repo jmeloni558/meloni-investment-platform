@@ -1,10 +1,17 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   if((window.__guidedContinueControllerV||0)>=VERSION)return;
   window.__guidedContinueControllerV=VERSION;
 
   const n=v=>Number(v)||0;
+  const LABELS={
+    f_address:'Property Address',
+    f_price:'Acquisition Price',
+    f_units:'Number of Units',
+    f_hold:'Expected Holding Period',
+    f_rent:'Monthly Rent'
+  };
 
   function syncVisible(){
     const root=document.getElementById('gwBody');
@@ -23,7 +30,50 @@
     return active?Number(active.dataset.step):0;
   }
 
-  function valid(i){
+  function ensureStyles(){
+    if(document.getElementById('guidedValidationStyles'))return;
+    const st=document.createElement('style');st.id='guidedValidationStyles';st.textContent=`
+      .gw-validation{display:none;margin:0 24px 12px;padding:10px 12px;border:1px solid #f3c7c7;border-left:4px solid #c43d3d;border-radius:8px;background:#fff6f6;color:#7a2525;font-size:10px;line-height:1.45}
+      .gw-validation.show{display:block}.gw-validation b{display:block;font-size:10.5px;margin-bottom:3px}.gw-validation ul{margin:4px 0 0 17px;padding:0}.gw-validation li{margin:2px 0}
+      .gw-field.gw-missing>label{color:#a12d2d}.gw-field.gw-missing input,.gw-field.gw-missing select{border-color:#cf5a5a!important;box-shadow:0 0 0 3px rgba(207,90,90,.12)!important;background:#fffafa}
+      @media(max-width:650px){.gw-validation{margin-left:16px;margin-right:16px}}
+    `;document.head.appendChild(st);
+  }
+
+  function ensureBox(){
+    ensureStyles();
+    const actions=document.querySelector('#guidedSetup .gw-actions');
+    if(!actions)return null;
+    let box=document.getElementById('gwValidation');
+    if(!box){box=document.createElement('div');box.id='gwValidation';box.className='gw-validation';box.setAttribute('role','alert');box.setAttribute('aria-live','polite');actions.insertAdjacentElement('beforebegin',box);}
+    return box;
+  }
+
+  function clearValidation(){
+    const box=document.getElementById('gwValidation');if(box){box.classList.remove('show');box.innerHTML='';}
+    document.querySelectorAll('#gwBody .gw-field.gw-missing').forEach(f=>f.classList.remove('gw-missing'));
+    document.querySelectorAll('#gwBody [aria-invalid="true"]').forEach(el=>el.removeAttribute('aria-invalid'));
+  }
+
+  function showMissing(ids){
+    clearValidation();
+    const box=ensureBox();
+    if(!box)return;
+    ids.forEach(id=>{
+      const visible=document.querySelector(`#gwBody [data-src="${id}"]`);
+      visible?.setAttribute('aria-invalid','true');
+      visible?.closest('.gw-field')?.classList.add('gw-missing');
+    });
+    const labels=ids.map(id=>LABELS[id]||id);
+    box.innerHTML=`<b>Complete the required fields before continuing.</b><div>Please enter:</div><ul>${labels.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+    box.classList.add('show');
+    const first=document.querySelector(`#gwBody [data-src="${ids[0]}"]`);
+    first?.focus();
+    first?.scrollIntoView({behavior:'smooth',block:'center'});
+    try{if(typeof setStatus==='function')setStatus('Please enter '+labels.join(', ')+' before continuing.');}catch(e){}
+  }
+
+  function missingForStep(i){
     const missing=[];
     const address=document.getElementById('f_address')?.value?.trim()||'';
     const price=n(document.getElementById('f_price')?.value);
@@ -31,16 +81,19 @@
     const hold=n(document.getElementById('f_hold')?.value);
     const rent=n(document.getElementById('f_rent')?.value);
     if(i===0){
-      if(!address)missing.push('property address');
-      if(price<=0)missing.push('acquisition price');
-      if(units<=0)missing.push('number of units');
-      if(hold<=0)missing.push('expected holding period');
+      if(!address)missing.push('f_address');
+      if(price<=0)missing.push('f_price');
+      if(units<=0)missing.push('f_units');
+      if(hold<=0)missing.push('f_hold');
     }
-    if(i===1&&rent<=0)missing.push('monthly rent');
-    if(missing.length){
-      try{if(typeof setStatus==='function')setStatus('Please enter '+missing.join(', ')+' before continuing.');}catch(e){}
-      return false;
-    }
+    if(i===1&&rent<=0)missing.push('f_rent');
+    return missing;
+  }
+
+  function valid(i){
+    const missing=missingForStep(i);
+    if(missing.length){showMissing(missing);return false;}
+    clearValidation();
     return true;
   }
 
@@ -64,9 +117,10 @@
       try{window.GuidedAnalysisSetup?.go?.(i+1);}catch(err){
         try{if(typeof setStatus==='function')setStatus('Unable to advance the setup: '+err.message);}catch(_e){}
       }
-      setTimeout(()=>{try{window.GuidedAssumptionGuidance?.apply?.();window.GuidedPage1Cleanup?.apply?.();bindButton();}catch(e){}},0);
+      setTimeout(()=>{try{window.GuidedAssumptionGuidance?.apply?.();window.GuidedPage1Cleanup?.apply?.();bindButton();ensureBox();clearValidation();}catch(e){}},0);
       return;
     }
+    clearValidation();
     try{
       if(typeof readFields==='function')readFields();
       if(typeof render==='function')render();
@@ -74,6 +128,7 @@
       if(typeof setStatus==='function')setStatus('Analysis updated — review the results');
       activateDashboard();
     }catch(err){
+      const box=ensureBox();if(box){box.innerHTML=`<b>Please review the analysis inputs.</b><div>${String(err.message||err)}</div>`;box.classList.add('show');}
       try{if(typeof setStatus==='function')setStatus('Please review the inputs: '+err.message);}catch(_e){}
     }
   }
@@ -87,16 +142,24 @@
     const btn=document.getElementById('gwNext');
     if(!btn)return false;
     btn.onclick=e=>{e.preventDefault();e.stopPropagation();run();};
+    ensureBox();
     return true;
+  }
+
+  function clearFieldError(e){
+    const input=e.target?.closest?.('#gwBody [data-src]');if(!input)return;
+    input.removeAttribute('aria-invalid');input.closest('.gw-field')?.classList.remove('gw-missing');
+    if(!document.querySelector('#gwBody .gw-field.gw-missing')){const box=document.getElementById('gwValidation');if(box)box.classList.remove('show');}
   }
 
   function start(){
     window.addEventListener('click',capture,true);
+    document.addEventListener('input',clearFieldError,true);
     let tries=0;const timer=setInterval(()=>{if(bindButton())clearInterval(timer);if(++tries>60)clearInterval(timer)},120);
     const host=document.getElementById('guidedSetup');
     if(host){new MutationObserver(()=>bindButton()).observe(host,{childList:true,subtree:true});}
   }
 
-  window.GuidedContinueController={run,bindButton};
+  window.GuidedContinueController={run,bindButton,validate:valid};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
