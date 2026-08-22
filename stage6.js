@@ -189,26 +189,44 @@
     p.archived=next;renderHub();renderCloudLists();setStatus(next?'Property archived':'Property restored');
   }
   async function deletePropertyPermanently(pid){
-    if(!cloudUser)return showAuth();
+    if(!cloudUser){showAuth();return;}
     const p=(cloudProperties||[]).find(x=>x.id===pid);if(!p)return;
     const analyses=(cloudAnalyses||[]).filter(a=>a.property_id===pid);
     const label=p.name||p.address||'this property';
     const extra=analyses.length?` This will also permanently delete ${analyses.length} saved ${analyses.length===1?'analysis':'analyses'} and their saved financing scenarios.`:'';
     if(!window.confirm(`Delete ${label}?${extra} This cannot be undone.`))return;
-    setStatus('Deleting property…');
-    const ids=analyses.map(a=>a.id);
-    if(ids.length){
-      const sc=await cloudClient.from('scenarios').delete().in('analysis_id',ids);
-      if(sc.error){setStatus('Property delete failed: '+sc.error.message);return}
-      const an=await cloudClient.from('analyses').delete().eq('property_id',pid);
-      if(an.error){setStatus('Property delete failed: '+an.error.message);return}
+
+    try{if(typeof setStatus==='function')setStatus('Deleting property…');}catch(_e){}
+    const {data,error}=await cloudClient
+      .from('properties')
+      .delete()
+      .eq('id',pid)
+      .eq('user_id',cloudUser.id)
+      .select('id');
+
+    if(error){
+      try{if(typeof setStatus==='function')setStatus('Property delete failed: '+error.message);}catch(_e){}
+      window.alert('Property could not be deleted: '+error.message);
+      return;
     }
-    const pr=await cloudClient.from('properties').delete().eq('id',pid);
-    if(pr.error){setStatus('Property delete failed: '+pr.error.message);return}
-    if(selectedPropertyId===pid){selectedPropertyId=null;selectedAnalysisId=null;selectedScenarioId=null;}
+    if(!Array.isArray(data)||!data.some(row=>row.id===pid)){
+      const message='Supabase did not delete the property. Your session may need to be refreshed or the record may no longer belong to the signed-in account.';
+      try{if(typeof setStatus==='function')setStatus(message);}catch(_e){}
+      window.alert(message);
+      await refreshCloud();
+      return;
+    }
+
+    // The database foreign keys use ON DELETE CASCADE, so related analyses and scenarios
+    // are removed automatically when the owned property row is deleted.
+    cloudProperties=(cloudProperties||[]).filter(x=>x.id!==pid);
+    cloudAnalyses=(cloudAnalyses||[]).filter(x=>x.property_id!==pid);
+    if(selectedPropertyId===pid){selectedPropertyId=null;selectedAnalysisId=null;selectedScenarioId=null;cloudScenarios=[];}
+    renderHub();
+    try{renderCloudLists();}catch(_e){}
     await refreshCloud();
     renderHub();
-    setStatus('Property permanently deleted');
+    try{if(typeof setStatus==='function')setStatus('Property permanently deleted');}catch(_e){}
   }
   function wireHubActions(){
     document.querySelectorAll('[data-hub-open]').forEach(b=>b.onclick=()=>openAnalysis(b.dataset.hubOpen));
