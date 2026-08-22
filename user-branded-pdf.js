@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=4;
+  const VERSION=5;
   if((window.__userBrandedPdfVersion||0)>=VERSION)return;
   window.__userBrandedPdfVersion=VERSION;
   const AUTO_TABLE_SRC='https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js';
@@ -15,6 +15,7 @@
 
   function lerp(a,b,t){return Math.round(a+(b-a)*t)}
   function blendRect(doc,x,y,w,h,from,to,steps=20){for(let i=0;i<steps;i++){const t=i/(steps-1),c=[lerp(from[0],to[0],t),lerp(from[1],to[1],t),lerp(from[2],to[2],t)];doc.setFillColor(...c);doc.rect(x+(w*i/steps),y,w/steps+0.5,h,'F')}}
+  function uniqueMeta(items){const seen=new Set(),out=[];for(const item of items){const key=clean(item).toLowerCase();if(!key||seen.has(key))continue;seen.add(key);out.push(clean(item));}return out;}
 
   function renderCover(doc,r,p){
     const report=document.querySelector('#clientReport .rb-report'),cover=report?.querySelector('.rb-cover'),conclusion=clean(report?.querySelector('.rb-conclusion p')?.textContent||'');
@@ -35,16 +36,20 @@
     pdfText(doc,PRODUCT,r.w-42,48,half-72,22,'bold',[255,255,255],'right');
     pdfText(doc,TAGLINE,r.w-42,71,half-72,8.5,'normal',[219,234,254],'right');
 
-    doc.setFillColor(255,255,255);doc.rect(0,128,r.w,108,'F');
-    doc.setFillColor(...accent);doc.rect(0,232,r.w,4,'F');
+    doc.setFillColor(255,255,255);doc.rect(0,128,r.w,160,'F');
     pdfText(doc,REPORT_TYPE,42,174,r.cw,23,'bold',[18,38,63]);
     const addr=clean(cover?.querySelector('.address')?.textContent||state?.address||state?.name||'Income-Producing Property');
     pdfText(doc,addr,42,201,r.cw,11,'normal',[82,101,122]);
 
-    const meta=[...cover?.querySelectorAll('.rb-meta span')||[]].map(x=>clean(x.textContent)).filter(Boolean);
-    if(meta.length)pdfText(doc,meta.join('   |   '),42,221,r.cw,7,'normal',[100,116,139]);
+    const rawMeta=[...cover?.querySelectorAll('.rb-meta span')||[]].map(x=>clean(x.textContent)).filter(Boolean);
+    const meta=uniqueMeta(rawMeta);
+    let metaEnd=221;
+    if(meta.length)metaEnd=pdfText(doc,meta.join('   |   '),42,221,r.cw,7,'normal',[100,116,139]);
 
-    r.setY(264);
+    const accentY=Math.max(238,metaEnd+7);
+    doc.setFillColor(...accent);doc.rect(0,accentY,r.w,4,'F');
+
+    r.setY(accentY+31);
     r.heading('Executive Investment Conclusion');
     r.para(conclusion||'No investment conclusion has been entered.');
     const findings=[...report?.querySelectorAll('.rb-finding')||[]].map(el=>({label:clean(el.querySelector('span')?.textContent),value:[clean(el.querySelector('b')?.textContent),clean(el.querySelector('small')?.textContent)].filter(Boolean).join(' - ')}));
