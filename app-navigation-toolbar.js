@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -14,7 +14,17 @@
   }
 
   function newAnalysis(){try{window.WorkflowNavigationController?.newAnalysis?.();}catch(e){}}
-  function openExisting(){try{if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');}catch(e){go('propertyhub')}}
+  async function openExisting(){
+    try{
+      if(typeof cloudUser!=='undefined'&&!cloudUser){if(typeof showAuth==='function')showAuth();return;}
+      if(typeof refreshCloud==='function')await refreshCloud();
+      if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');
+      try{window.Stage6Dashboard?.render?.();}catch(_e){}
+    }catch(e){
+      try{if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');}catch(_e){}
+      try{window.Stage6Dashboard?.render?.();}catch(_e){}
+    }
+  }
 
   function toggleAdvanced(){
     const panel=document.getElementById('appNavAdvancedPanel'),btn=document.getElementById('appNavAdvanced');
@@ -72,6 +82,6 @@
   }
 
   function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));}
-  window.AppNavigationToolbar={refresh,go};
+  window.AppNavigationToolbar={refresh,go,openExisting};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
