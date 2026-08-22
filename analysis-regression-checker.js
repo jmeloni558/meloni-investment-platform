@@ -1,9 +1,8 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__analysisRegressionCheckerVersion||0)>=VERSION)return;
   window.__analysisRegressionCheckerVersion=VERSION;
-  let simulationEnabled=false;
 
   const METRICS=[
     {key:'cap',label:'Cap Rate',kind:'rate',saved:a=>a.outputs?.cap,fresh:r=>r.cap},
@@ -55,22 +54,9 @@
     }catch(e){out.error=e?.message||String(e);}
     return out;
   }
-  function applySimulation(results){
-    if(!simulationEnabled)return false;
-    const r=results.find(x=>!x.error&&x.analysis);
-    if(!r)return false;
-    const metric=METRICS.find(m=>m.key==='npv');
-    const saved=num(metric.saved(r.analysis));
-    if(!Number.isFinite(saved))return false;
-    const current=saved+100;
-    r.mismatches.push({metric,saved,current,diff:100,simulated:true});
-    r.pass=false;
-    return true;
-  }
   function run(){
     const analyses=(typeof cloudAnalyses!=='undefined'?cloudAnalyses:[])||[];
     const results=analyses.map(checkOne);
-    const simulated=applySimulation(results);
     return {
       results,
       total:results.length,
@@ -78,7 +64,6 @@
       failed:results.filter(x=>!x.pass).length,
       mismatches:results.reduce((n,x)=>n+x.mismatches.length,0),
       missing:results.reduce((n,x)=>n+x.missing.length,0),
-      simulated,
       timestamp:new Date()
     };
   }
@@ -88,7 +73,6 @@
       #qaRegressionPanel{margin:0 0 14px}#qaRegressionPanel .qa-box{border:1px solid #d0d5dd;border-radius:10px;background:#fff;padding:13px 15px;font-size:12px;color:#475467}
       #qaRegressionPanel .qa-box.pass{border-color:#a6d8bd;background:#f4fbf7;color:#24613d}#qaRegressionPanel .qa-box.fail{border-color:#efb3b3;background:#fff6f6;color:#842929}
       #qaRegressionPanel .qa-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.qa-title{font-weight:800;font-size:13px}.qa-sub{margin-top:3px;font-size:11px;opacity:.85}
-      #qaRegressionPanel .qa-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}#qaRegressionPanel .qa-sim-note{margin-top:8px;font-weight:700;color:#9a6700}
       #qaRegressionPanel details{margin-top:10px}#qaRegressionPanel table{width:100%;border-collapse:collapse;margin-top:8px;background:#fff}#qaRegressionPanel th,#qaRegressionPanel td{text-align:left;padding:6px 7px;border-bottom:1px solid #eaecf0;font-size:10px}#qaRegressionPanel th{font-weight:800;color:#475467;background:#f9fafb}
       #qaRunRegression{white-space:nowrap}
     `;document.head.appendChild(s);
@@ -108,10 +92,6 @@
     }
     return true;
   }
-  function toggleSimulation(){
-    simulationEnabled=!simulationEnabled;
-    render(run());
-  }
   function render(report){
     if(!ensureUi())return report;
     const host=document.getElementById('qaRegressionPanel');
@@ -122,15 +102,13 @@
       const rows=[];
       for(const r of report.results){
         if(r.error)rows.push(`<tr><td>${esc(r.property)}</td><td>Engine error</td><td colspan="2">${esc(r.error)}</td></tr>`);
-        for(const x of r.mismatches)rows.push(`<tr><td>${esc(r.property)}</td><td>${esc(x.metric.label)}${x.simulated?' (SIMULATED)':''}</td><td>${esc(fmt(x.saved,x.metric.kind))}</td><td>${esc(fmt(x.current,x.metric.kind))}</td></tr>`);
+        for(const x of r.mismatches)rows.push(`<tr><td>${esc(r.property)}</td><td>${esc(x.metric.label)}</td><td>${esc(fmt(x.saved,x.metric.kind))}</td><td>${esc(fmt(x.current,x.metric.kind))}</td></tr>`);
         for(const x of r.missing)rows.push(`<tr><td>${esc(r.property)}</td><td>${esc(x.metric.label)}</td><td>${esc(fmt(x.saved,x.metric.kind))}</td><td>${esc(fmt(x.current,x.metric.kind))}</td></tr>`);
       }
       detail=`<details open><summary>Show ${report.mismatches+report.missing+(report.results.filter(x=>x.error).length)} issue(s)</summary><table><thead><tr><th>Property</th><th>Metric</th><th>Saved</th><th>Recalculated</th></tr></thead><tbody>${rows.join('')}</tbody></table></details>`;
     }
-    const simNote=simulationEnabled?'<div class="qa-sim-note">QA TEST MODE is ON. One NPV comparison is intentionally offset by $100. No saved data is being changed.</div>':'';
-    host.innerHTML=`<div class="qa-box ${ok?'pass':'fail'}"><div class="qa-head"><div><div class="qa-title">${ok?'✓ Calculation QA PASS':'⚠ Calculation QA FAILED'}</div><div class="qa-sub">${report.passed} of ${report.total} saved analyses match a fresh recalculation${ok?' with no output drift':`; ${report.mismatches} mismatch(es), ${report.missing} missing value(s)`}. Checked ${report.timestamp.toLocaleTimeString()}.</div></div><div class="qa-actions"><button class="btn ghost" type="button" id="qaRunAgain">Run Again</button><button class="btn ${simulationEnabled?'secondary':'ghost'}" type="button" id="qaToggleSimulation">${simulationEnabled?'Turn Off Test Mode':'Simulate QA Failure'}</button></div></div>${simNote}${detail}</div>`;
+    host.innerHTML=`<div class="qa-box ${ok?'pass':'fail'}"><div class="qa-head"><div><div class="qa-title">${ok?'✓ Calculation QA PASS':'⚠ Calculation QA FAILED'}</div><div class="qa-sub">${report.passed} of ${report.total} saved analyses match a fresh recalculation${ok?' with no output drift':`; ${report.mismatches} mismatch(es), ${report.missing} missing value(s)`}. Checked ${report.timestamp.toLocaleTimeString()}.</div></div><button class="btn ghost" type="button" id="qaRunAgain">Run Again</button></div>${detail}</div>`;
     document.getElementById('qaRunAgain')?.addEventListener('click',()=>render(run()));
-    document.getElementById('qaToggleSimulation')?.addEventListener('click',toggleSimulation);
     return report;
   }
   function autoRun(){
@@ -149,6 +127,6 @@
     },125);
   }
 
-  window.PropertyThesisRegressionChecker={run,checkOne,render,autoRun,metrics:METRICS,toggleSimulation,isSimulationEnabled:()=>simulationEnabled};
+  window.PropertyThesisRegressionChecker={run,checkOne,render,autoRun,metrics:METRICS};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
