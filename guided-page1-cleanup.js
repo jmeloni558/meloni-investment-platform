@@ -1,8 +1,10 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__guidedPage1CleanupV||0)>=VERSION)return;
   window.__guidedPage1CleanupV=VERSION;
+
+  let observer=null;
 
   function removeDuplicateLandHelp(){
     const body=document.getElementById('gwBody');
@@ -14,13 +16,22 @@
     return true;
   }
 
-  function schedule(){[0,40,120].forEach(ms=>setTimeout(removeDuplicateLandHelp,ms));}
-  function start(){
-    schedule();
-    document.addEventListener('click',e=>{
-      if(e.target.closest('#guidedSetup,#s10NewAnalysis,[data-s8-tab="assumptions"]'))schedule();
-    },true);
+  function watch(){
+    const body=document.getElementById('gwBody');
+    if(!body)return false;
+    removeDuplicateLandHelp();
+    if(observer)observer.disconnect();
+    observer=new MutationObserver(()=>removeDuplicateLandHelp());
+    observer.observe(body,{childList:true,subtree:true});
+    return true;
   }
-  window.GuidedPage1Cleanup={apply:removeDuplicateLandHelp};
+
+  function start(){
+    let tries=0;
+    const timer=setInterval(()=>{if(watch())clearInterval(timer);if(++tries>60)clearInterval(timer)},120);
+    document.addEventListener('click',()=>setTimeout(()=>{watch();removeDuplicateLandHelp();},0));
+  }
+
+  window.GuidedPage1Cleanup={apply:removeDuplicateLandHelp,watch};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
