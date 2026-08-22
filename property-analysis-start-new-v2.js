@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__propertyAnalysisStartNewVersion||0)>=VERSION)return;
   window.__propertyAnalysisStartNewVersion=VERSION;
 
@@ -28,7 +28,7 @@
     selectedScenarioId=null;
     if(typeof cloudScenarios!=='undefined')cloudScenarios=[];
 
-    state={...defaults,name:propertyName,address:propertyAddress,price:0,rent:0};
+    state={...defaults,name:propertyName,address:propertyAddress,price:0,rent:0,loanYears:30};
     if(typeof buydownDefaults!=='undefined')buyState={...buydownDefaults};
 
     if(typeof renderFields==='function')renderFields();
@@ -41,8 +41,10 @@
     setTimeout(()=>{
       state.address=propertyAddress;
       state.name=propertyName;
+      state.loanYears=30;
       const a=document.getElementById('f_address');if(a)a.value=propertyAddress;
       const n=document.getElementById('f_name');if(n)n.value=propertyName;
+      const y=document.getElementById('f_loanYears');if(y)y.value='30';
       try{window.GuidedAnalysisSetup?.refresh?.();}catch(_e){}
     },80);
     try{if(typeof setStatus==='function')setStatus('New analysis started for '+(propertyName||propertyAddress||'selected property'));}catch(_e){}
