@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -10,44 +10,30 @@
   function currentFileName(){return document.getElementById('s8ContextName')?.textContent?.trim()||'No property selected';}
 
   function go(id){
-    const active=activeSection();
-    if(id==='dashboard'&&active==='assumptions'){
-      try{window.WorkflowNavigationController?.reviewResults?.();return;}catch(e){}
-    }
     try{if(window.WorkflowNavigationController?.go){window.WorkflowNavigationController.go(id);return;}}catch(e){}
     try{if(typeof switchTab==='function')switchTab(id);}catch(e){}
   }
 
-  function newAnalysis(){
-    try{window.WorkflowNavigationController?.newAnalysis?.();}catch(e){}
-  }
-
-  function openExisting(){
-    try{if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');}catch(e){go('propertyhub');}
-  }
+  function newAnalysis(){try{window.WorkflowNavigationController?.newAnalysis?.();}catch(e){}}
+  function openExisting(){try{if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');}catch(e){go('propertyhub')}}
 
   function toggleAdvanced(){
-    const panel=document.getElementById('appNavAdvancedPanel');
-    const btn=document.getElementById('appNavAdvanced');
+    const panel=document.getElementById('appNavAdvancedPanel'),btn=document.getElementById('appNavAdvanced');
     if(!panel||!btn)return;
-    const open=panel.hidden;
-    panel.hidden=!open;
-    btn.setAttribute('aria-expanded',String(open));
+    const open=panel.hidden;panel.hidden=!open;btn.setAttribute('aria-expanded',String(open));
   }
 
   function ensureStyles(){
-    let st=document.getElementById('appNavigationToolbarStyles');
-    if(!st){st=document.createElement('style');st.id='appNavigationToolbarStyles';document.head.appendChild(st)}
+    let st=document.getElementById('appNavigationToolbarStyles');if(!st){st=document.createElement('style');st.id='appNavigationToolbarStyles';document.head.appendChild(st)}
     st.textContent=`
       .app-nav-shell{margin:14px 0 12px;border:1px solid #d8e1e9;border-radius:13px;background:#fff;box-shadow:0 7px 24px rgba(16,24,40,.055);overflow:hidden}
-      .app-nav-toolbar{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(450px,1.8fr) auto;gap:10px;align-items:center;padding:10px}
-      .app-nav-file{padding:4px 7px;min-width:0}.app-nav-file span{display:block;font-size:8px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#175c92}.app-nav-file b{display:block;font-size:12px;color:#172033;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.app-nav-file small{display:block;font-size:8px;color:#667085;margin-top:2px}
-      .app-nav-pages{display:grid;grid-template-columns:repeat(3,minmax(135px,1fr));gap:6px}.app-nav-page{appearance:none;border:1px solid #d7e0e8;border-radius:9px;background:#f9fbfc;padding:8px 10px;display:flex;gap:8px;align-items:center;text-align:left;cursor:pointer}.app-nav-page:hover{background:#f2f7fb;border-color:#b9cddd}.app-nav-page.active{background:#eef6fb;border-color:#9dc0db;box-shadow:inset 0 -2px #175c92}.app-nav-num{width:24px;height:24px;flex:0 0 24px;border-radius:7px;background:#e8edf2;display:grid;place-items:center;font-size:9px;font-weight:900;color:#475467}.app-nav-page.active .app-nav-num{background:#175c92;color:#fff}.app-nav-page b{display:block;font-size:10px;color:#27364a}.app-nav-page small{display:block;font-size:7.7px;color:#667085;margin-top:1px;line-height:1.2}
-      .app-nav-actions{display:flex;gap:6px;justify-content:flex-end;align-items:center}.app-nav-action{appearance:none;border:1px solid #d7e0e8;border-radius:8px;background:#fff;padding:8px 10px;font-size:9px;font-weight:800;color:#344054;cursor:pointer;white-space:nowrap}.app-nav-action:hover{background:#f5f8fa}.app-nav-action.primary{background:#175c92;border-color:#175c92;color:#fff}.app-nav-action.active{background:#eef6fb;border-color:#9dc0db;color:#175c92}
+      .app-nav-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px}
+      .app-nav-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.app-nav-action{appearance:none;border:1px solid #d7e0e8;border-radius:8px;background:#fff;padding:9px 12px;font-size:9.5px;font-weight:800;color:#344054;cursor:pointer;white-space:nowrap}.app-nav-action:hover{background:#f5f8fa}.app-nav-action.primary{background:#175c92;border-color:#175c92;color:#fff}.app-nav-action.active{background:#eef6fb;border-color:#9dc0db;color:#175c92}
+      .app-nav-file{margin-left:auto;min-width:190px;max-width:360px;padding:3px 4px;text-align:right}.app-nav-file span{display:block;font-size:8px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#175c92}.app-nav-file b{display:block;font-size:12px;color:#172033;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.app-nav-file small{display:block;font-size:8px;color:#667085;margin-top:2px}
       .app-nav-advanced{display:flex;gap:6px;flex-wrap:wrap;padding:9px 10px;border-top:1px solid #e5eaf0;background:#f8fafc}.app-nav-advanced[hidden]{display:none}.app-nav-advanced button{appearance:none;border:1px solid #d7e0e8;border-radius:7px;background:#fff;padding:7px 9px;font-size:8.5px;color:#344054;cursor:pointer}.app-nav-advanced button:hover{background:#eef5fb;border-color:#b9cddd}
       #stage8Workflow.app-toolbar-clean .s8-context{display:none!important}#stage8Workflow.app-toolbar-clean #s10Utilities{display:none!important}#stage8Workflow.app-toolbar-clean .s10-workflow-row{border-top:1px solid var(--line);border-radius:10px}#stage8Workflow.app-toolbar-clean{margin-top:0}
-      @media(max-width:1050px){.app-nav-toolbar{grid-template-columns:1fr}.app-nav-actions{justify-content:flex-start}.app-nav-pages{max-width:none}}
-      @media(max-width:650px){.app-nav-pages{grid-template-columns:1fr}.app-nav-actions{display:grid;grid-template-columns:1fr 1fr}.app-nav-action{width:100%}.app-nav-file{padding-bottom:2px}}
+      @media(max-width:700px){.app-nav-toolbar{display:block}.app-nav-actions{display:grid;grid-template-columns:1fr 1fr}.app-nav-action{width:100%}.app-nav-file{margin:9px 0 0;max-width:none;text-align:left}}
+      @media(max-width:480px){.app-nav-actions{grid-template-columns:1fr}}
     `;
   }
 
@@ -58,25 +44,19 @@
     if(!shell){
       shell=document.createElement('div');shell.id='appNavShell';shell.className='app-nav-shell screen-only';
       shell.innerHTML=`
-        <nav class="app-nav-toolbar" aria-label="Application navigation">
-          <div class="app-nav-file"><span>Current File</span><b id="appNavFileName">No property selected</b><small id="appNavGuide">Primary analysis navigation</small></div>
-          <div class="app-nav-pages">
-            <button class="app-nav-page" data-app-page="assumptions"><span class="app-nav-num">1</span><span><b>Analysis Setup</b><small>Enter assumptions</small></span></button>
-            <button class="app-nav-page" data-app-page="dashboard"><span class="app-nav-num">2</span><span><b>Review Results</b><small>Value & returns</small></span></button>
-            <button class="app-nav-page" data-app-page="report"><span class="app-nav-num">3</span><span><b>Client Report</b><small>Conclusion & PDF</small></span></button>
-          </div>
+        <nav class="app-nav-toolbar" aria-label="Application tools">
           <div class="app-nav-actions">
             <button class="app-nav-action primary" id="appNavNew">New Analysis</button>
             <button class="app-nav-action" id="appNavExisting">Existing Properties</button>
             <button class="app-nav-action" id="appNavAdvanced" aria-expanded="false">Advanced Tools</button>
           </div>
+          <div class="app-nav-file"><span>Current File</span><b id="appNavFileName">No property selected</b><small id="appNavGuide">Use the workflow below to move through the analysis.</small></div>
         </nav>
         <div class="app-nav-advanced" id="appNavAdvancedPanel" hidden>
           <button data-app-advanced="cashflow">Cash Flow</button><button data-app-advanced="debt">Debt Service</button><button data-app-advanced="taxes">Taxes</button><button data-app-advanced="amort">Amortization</button><button data-app-advanced="buydown">Rate Buydown</button><button data-app-advanced="scenarios">Scenario Lab</button><button data-app-advanced="support">Price & Rent Support</button><button data-app-advanced="cloud">Cloud Workspace</button>
         </div>`;
       workflow.insertAdjacentElement('beforebegin',shell);
-      shell.querySelectorAll('[data-app-page]').forEach(btn=>btn.addEventListener('click',()=>go(btn.dataset.appPage)));
-      shell.querySelectorAll('[data-app-advanced]').forEach(btn=>btn.addEventListener('click',()=>{go(btn.dataset.appAdvanced);document.getElementById('appNavAdvancedPanel').hidden=true;document.getElementById('appNavAdvanced')?.setAttribute('aria-expanded','false');}));
+      shell.querySelectorAll('[data-app-advanced]').forEach(btn=>btn.addEventListener('click',()=>{go(btn.dataset.appAdvanced);document.getElementById('appNavAdvancedPanel').hidden=true;document.getElementById('appNavAdvanced')?.setAttribute('aria-expanded','false')}));
       document.getElementById('appNavNew').addEventListener('click',newAnalysis);
       document.getElementById('appNavExisting').addEventListener('click',openExisting);
       document.getElementById('appNavAdvanced').addEventListener('click',toggleAdvanced);
@@ -84,31 +64,21 @@
     return true;
   }
 
-  function cleanWorkflow(){
-    const workflow=document.getElementById('stage8Workflow');if(!workflow)return false;
-    workflow.classList.add('app-toolbar-clean');
-    return true;
-  }
+  function cleanWorkflow(){const workflow=document.getElementById('stage8Workflow');if(!workflow)return false;workflow.classList.add('app-toolbar-clean');return true;}
 
   function refresh(){
-    if(!ensureToolbar())return false;
-    cleanWorkflow();
+    if(!ensureToolbar())return false;cleanWorkflow();
     const active=activeSection();
-    document.querySelectorAll('#appNavShell [data-app-page]').forEach(btn=>btn.classList.toggle('active',btn.dataset.appPage===active));
     const existing=document.getElementById('appNavExisting');if(existing)existing.classList.toggle('active',active==='propertyhub'||active==='propertyfile');
     const adv=document.getElementById('appNavAdvanced');if(adv)adv.classList.toggle('active',advanced.includes(active));
     const file=document.getElementById('appNavFileName');if(file)file.textContent=currentFileName();
     const guide=document.getElementById('appNavGuide');
-    const text=active==='assumptions'?'Complete the guided setup below.':active==='dashboard'?'Review the investment results.':active==='report'?'Prepare the client-facing report.':active==='propertyhub'||active==='propertyfile'?'Saved-property workspace.':advanced.includes(active)?'Advanced analysis utility.':'Primary analysis navigation';
+    const text=active==='assumptions'?'Use the Primary Workflow and guided steps below.':active==='dashboard'?'Review the investment results below.':active==='report'?'Prepare the client-facing report below.':active==='propertyhub'||active==='propertyfile'?'Saved-property workspace.':advanced.includes(active)?'Advanced analysis utility.':'Use the workflow below to move through the analysis.';
     if(guide)guide.textContent=text;
     return true;
   }
 
-  function start(){
-    let tries=0;const timer=setInterval(()=>{if(refresh()){clearInterval(timer)}if(++tries>80)clearInterval(timer)},120);
-    document.addEventListener('click',()=>setTimeout(refresh,0));
-  }
-
+  function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));}
   window.AppNavigationToolbar={refresh,go};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
