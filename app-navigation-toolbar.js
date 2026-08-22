@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=6;
+  const VERSION=7;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -42,6 +42,7 @@
       .app-nav-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.app-nav-action{appearance:none;border:1px solid #d7e0e8;border-radius:8px;background:#fff;padding:9px 12px;font-size:9.5px;font-weight:800;color:#344054;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,color .15s,box-shadow .15s}.app-nav-action:hover{background:#f5f8fa}.app-nav-action.active{background:#175c92!important;border-color:#175c92!important;color:#fff!important;box-shadow:0 4px 12px rgba(23,92,146,.18)}
       .app-nav-advanced{display:flex;gap:6px;flex-wrap:wrap;padding:9px 10px;border-top:1px solid #e5eaf0;background:#f8fafc}.app-nav-advanced[hidden]{display:none}.app-nav-advanced button{appearance:none;border:1px solid #d7e0e8;border-radius:7px;background:#fff;padding:7px 9px;font-size:8.5px;color:#344054;cursor:pointer}.app-nav-advanced button:hover{background:#eef5fb;border-color:#b9cddd}.app-nav-advanced button.active{background:#eef6fb;border-color:#9dc0db;color:#175c92;font-weight:800}
       #stage8Workflow.app-toolbar-clean .s8-context{display:none!important}#stage8Workflow.app-toolbar-clean #s10Utilities{display:none!important}#stage8Workflow.app-toolbar-clean .s10-workflow-row{border-top:1px solid var(--line);border-radius:10px}#stage8Workflow.app-toolbar-clean{margin-top:0}
+      #report .s8-help{display:none!important}
       @media(max-width:700px){.app-nav-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.app-nav-action{width:100%}}
       @media(max-width:480px){.app-nav-actions{grid-template-columns:1fr}}
     `;
