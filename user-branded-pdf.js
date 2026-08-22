@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=3;
+  const VERSION=4;
   if((window.__userBrandedPdfVersion||0)>=VERSION)return;
   window.__userBrandedPdfVersion=VERSION;
   const AUTO_TABLE_SRC='https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js';
@@ -11,13 +11,16 @@
   function filename(){const raw=(state?.address||state?.name||REPORT_TYPE).trim();return (raw.replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,70)||'PropertyThesis')+'-Investment-Analysis.pdf';}
   async function ensureTable(){const jsPDF=window.jspdf?.jsPDF;if(jsPDF?.API?.autoTable)return;if(window.__ubpTablePromise)return window.__ubpTablePromise;window.__ubpTablePromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=AUTO_TABLE_SRC;s.onload=()=>jsPDF?.API?.autoTable?resolve():reject(new Error('PDF table helper unavailable'));s.onerror=()=>reject(new Error('Unable to load PDF table helper'));document.head.appendChild(s)});return window.__ubpTablePromise;}
   function pdfText(doc,text,x,y,w,size=9,style='normal',color=[71,84,103],align='left'){doc.setFont('helvetica',style);doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(clean(text),w);doc.text(lines,x,y,{align});return y+lines.length*(size*1.18);}
-  function renderer(doc){const margin=42,w=doc.internal.pageSize.getWidth(),h=doc.internal.pageSize.getHeight(),cw=w-margin*2,bottom=h-48;let y=48;function page(){doc.addPage();y=48}function need(n){if(y+n>bottom)page()}function heading(t,s=''){need(s?42:30);doc.setDrawColor(222,229,236);if(y>55)doc.line(margin,y-10,w-margin,y-10);y=pdfText(doc,t,margin,y,cw,13,'bold',[23,50,77]);if(s)y=pdfText(doc,s,margin,y+2,cw,8,'normal',[102,112,133]);y+=8}function para(t){need(45);y=pdfText(doc,t,margin,y,cw,9,'normal',[71,84,103])+8}function pairs(items){const col=(cw-12)/2;for(let i=0;i<items.length;i+=2){need(36);items.slice(i,i+2).forEach((it,j)=>{const x=margin+j*(col+12);doc.setDrawColor(226,231,237);doc.setFillColor(249,251,253);doc.roundedRect(x,y-10,col,29,4,4,'FD');pdfText(doc,it.label,x+7,y-1,col-14,7,'bold',[102,112,133]);pdfText(doc,it.value,x+7,y+11,col-14,10,'bold',[23,79,131]);});y+=37}y+=2}function table(el){const head=[...el.querySelectorAll('thead th')].map(x=>clean(x.textContent)),body=[...el.querySelectorAll('tbody tr')].map(tr=>[...tr.querySelectorAll('th,td')].map(td=>clean(td.textContent)));if(!head.length&&!body.length)return;need(42);doc.autoTable({startY:y,head:head.length?[head]:undefined,body,margin:{left:margin,right:margin,top:48,bottom:44},theme:'grid',styles:{font:'helvetica',fontSize:6.6,cellPadding:3.2,textColor:[52,64,84],lineColor:[229,234,240],lineWidth:.35,overflow:'linebreak'},headStyles:{fillColor:[239,244,248],textColor:[49,70,93],fontStyle:'bold'},alternateRowStyles:{fillColor:[252,253,254]},columnStyles:{0:{halign:'left'}},horizontalPageBreak:true,horizontalPageBreakRepeat:0});y=(doc.lastAutoTable?.finalY||y)+10}return{margin,w,h,cw,getY:()=>y,setY:v=>y=v,heading,para,pairs,table}}
+  function renderer(doc){const margin=42,w=doc.internal.pageSize.getWidth(),h=doc.internal.pageSize.getHeight(),cw=w-margin*2,bottom=h-48;let y=48;function page(){doc.addPage();y=48}function need(n){if(y+n>bottom)page()}function heading(t,s=''){need(s?42:30);doc.setDrawColor(222,229,236);if(y>300)doc.line(margin,y-10,w-margin,y-10);y=pdfText(doc,t,margin,y,cw,13,'bold',[23,50,77]);if(s)y=pdfText(doc,s,margin,y+2,cw,8,'normal',[102,112,133]);y+=8}function para(t){need(45);y=pdfText(doc,t,margin,y,cw,9,'normal',[71,84,103])+8}function pairs(items){const col=(cw-12)/2;for(let i=0;i<items.length;i+=2){need(36);items.slice(i,i+2).forEach((it,j)=>{const x=margin+j*(col+12);doc.setDrawColor(226,231,237);doc.setFillColor(249,251,253);doc.roundedRect(x,y-10,col,29,4,4,'FD');pdfText(doc,it.label,x+7,y-1,col-14,7,'bold',[102,112,133]);pdfText(doc,it.value,x+7,y+11,col-14,10,'bold',[23,79,131]);});y+=37}y+=2}function table(el){const head=[...el.querySelectorAll('thead th')].map(x=>clean(x.textContent)),body=[...el.querySelectorAll('tbody tr')].map(tr=>[...tr.querySelectorAll('th,td')].map(td=>clean(td.textContent)));if(!head.length&&!body.length)return;need(42);doc.autoTable({startY:y,head:head.length?[head]:undefined,body,margin:{left:margin,right:margin,top:48,bottom:44},theme:'grid',styles:{font:'helvetica',fontSize:6.6,cellPadding:3.2,textColor:[52,64,84],lineColor:[229,234,240],lineWidth:.35,overflow:'linebreak'},headStyles:{fillColor:[239,244,248],textColor:[49,70,93],fontStyle:'bold'},alternateRowStyles:{fillColor:[252,253,254]},columnStyles:{0:{halign:'left'}},horizontalPageBreak:true,horizontalPageBreakRepeat:0});y=(doc.lastAutoTable?.finalY||y)+10}return{margin,w,h,cw,getY:()=>y,setY:v=>y=v,heading,para,pairs,table}}
+
+  function lerp(a,b,t){return Math.round(a+(b-a)*t)}
+  function blendRect(doc,x,y,w,h,from,to,steps=20){for(let i=0;i<steps;i++){const t=i/(steps-1),c=[lerp(from[0],to[0],t),lerp(from[1],to[1],t),lerp(from[2],to[2],t)];doc.setFillColor(...c);doc.rect(x+(w*i/steps),y,w/steps+0.5,h,'F')}}
 
   function renderCover(doc,r,p){
     const report=document.querySelector('#clientReport .rb-report'),cover=report?.querySelector('.rb-cover'),conclusion=clean(report?.querySelector('.rb-conclusion p')?.textContent||'');
     const accent=rgb(p.brand_color),half=r.w/2;
-    doc.setFillColor(15,41,72);doc.rect(0,0,half,128,'F');
-    doc.setFillColor(29,78,216);doc.rect(half,0,half,128,'F');
+    blendRect(doc,0,0,half,128,[15,41,72],[29,78,216],24);
+    blendRect(doc,half,0,half,128,[29,78,216],[15,118,110],24);
     doc.setFillColor(...accent);doc.rect(0,124,half,4,'F');
     doc.setFillColor(246,196,83);doc.rect(r.w-106,99,64,4,'F');
 
@@ -32,17 +35,16 @@
     pdfText(doc,PRODUCT,r.w-42,48,half-72,22,'bold',[255,255,255],'right');
     pdfText(doc,TAGLINE,r.w-42,71,half-72,8.5,'normal',[219,234,254],'right');
 
-    doc.setFillColor(255,255,255);doc.rect(0,128,r.w,118,'F');
-    doc.setFillColor(...accent);doc.rect(0,242,r.w,4,'F');
-    pdfText(doc,'CLIENT INVESTMENT REPORT',42,157,r.cw,7.5,'bold',[100,116,139]);
-    pdfText(doc,REPORT_TYPE,42,190,r.cw,23,'bold',[18,38,63]);
+    doc.setFillColor(255,255,255);doc.rect(0,128,r.w,108,'F');
+    doc.setFillColor(...accent);doc.rect(0,232,r.w,4,'F');
+    pdfText(doc,REPORT_TYPE,42,174,r.cw,23,'bold',[18,38,63]);
     const addr=clean(cover?.querySelector('.address')?.textContent||state?.address||state?.name||'Income-Producing Property');
-    pdfText(doc,addr,42,216,r.cw,11,'normal',[82,101,122]);
+    pdfText(doc,addr,42,201,r.cw,11,'normal',[82,101,122]);
 
     const meta=[...cover?.querySelectorAll('.rb-meta span')||[]].map(x=>clean(x.textContent)).filter(Boolean);
-    if(meta.length)pdfText(doc,meta.join('   |   '),42,234,r.cw,7,'normal',[100,116,139]);
+    if(meta.length)pdfText(doc,meta.join('   |   '),42,221,r.cw,7,'normal',[100,116,139]);
 
-    r.setY(274);
+    r.setY(264);
     r.heading('Executive Investment Conclusion');
     r.para(conclusion||'No investment conclusion has been entered.');
     const findings=[...report?.querySelectorAll('.rb-finding')||[]].map(el=>({label:clean(el.querySelector('span')?.textContent),value:[clean(el.querySelector('b')?.textContent),clean(el.querySelector('small')?.textContent)].filter(Boolean).join(' - ')}));
