@@ -1,40 +1,59 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__propertyThesisBrandingV||0)>=VERSION)return;
   window.__propertyThesisBrandingV=VERSION;
 
   const BRAND='PropertyThesis';
-  const TAGLINE='Real estate investment analysis • model the property, test the assumptions, understand the return';
+  const TAGLINE='Know the Numbers. Build the Case.';
+  const TITLE='PropertyThesis | Know the Numbers. Build the Case.';
+
+  function setText(el,text){
+    if(el && el.textContent!==text) el.textContent=text;
+  }
 
   function apply(){
-    document.title='PropertyThesis | Real Estate Investment Analysis';
+    if(document.title!==TITLE) document.title=TITLE;
+
     const meta=document.querySelector('meta[name="description"]');
-    if(meta)meta.setAttribute('content','PropertyThesis helps investors analyze property income, financing, valuation, taxes, cash flow, IRR, NPV and investment returns.');
+    const description='PropertyThesis helps real estate investors model property income, financing, valuation, taxes, cash flow, IRR, NPV and investment returns.';
+    if(meta && meta.getAttribute('content')!==description) meta.setAttribute('content',description);
 
     const brand=document.querySelector('.brand');
     if(brand){
-      const h1=brand.querySelector('h1');
-      const p=brand.querySelector('p');
-      if(h1)h1.textContent=BRAND;
-      if(p)p.textContent=TAGLINE;
+      setText(brand.querySelector('h1'),BRAND);
+      setText(brand.querySelector('p'),TAGLINE);
     }
 
-    const printMini=document.querySelector('.print-only .mini');
-    if(printMini)printMini.textContent='Prepared with PropertyThesis';
+    setText(document.querySelector('.print-only .mini'),'Prepared with PropertyThesis • Know the Numbers. Build the Case.');
 
     const authTitle=document.querySelector('#authModal .modal h2');
-    if(authTitle)authTitle.textContent=BRAND;
+    setText(authTitle,BRAND);
     const authIntro=document.querySelector('#authModal .modal .sectionhead p');
-    if(authIntro)authIntro.textContent='Sign in to access your PropertyThesis analyses across devices.';
+    setText(authIntro,'Sign in or create an account to access your PropertyThesis analyses across devices.');
 
-    const footer=document.querySelector('.footer');
-    if(footer)footer.textContent='PropertyThesis • Real Estate Investment Analysis';
+    setText(document.querySelector('.footer'),'PropertyThesis • Know the Numbers. Build the Case.');
+  }
+
+  let scheduled=false;
+  function scheduleApply(){
+    if(scheduled)return;
+    scheduled=true;
+    requestAnimationFrame(()=>{
+      scheduled=false;
+      apply();
+    });
   }
 
   function start(){
     apply();
-    [80,250,700].forEach(ms=>setTimeout(apply,ms));
+
+    // Keep the product identity intact if another legacy UI module redraws the header.
+    const observer=new MutationObserver(scheduleApply);
+    observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true});
+
+    // Catch delayed initialization without relying on timing for normal operation.
+    [100,300,750,1500,3000].forEach(ms=>setTimeout(apply,ms));
   }
 
   window.PropertyThesisBranding={apply};
