@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__cloudReportStage6BridgeVersion||0)>=VERSION)return;
   window.__cloudReportStage6BridgeVersion=VERSION;
 
@@ -15,9 +15,13 @@
         return;
       }
 
-      // Use the exact same proven report path as Existing Properties -> Generate Report.
+      // Load the saved analysis through the same proven path used by
+      // Existing Properties -> Generate Report.
       await window.Stage6Dashboard.openProperty(selectedPropertyId,'report');
 
+      // Give the current report presentation/branding pass time to finish,
+      // then use the current branded PDF capture engine. Never call the
+      // legacy ReportBuilderV4 PDF generator from Cloud Workspace.
       setTimeout(()=>{
         try{window.ReportBuilderV1?.render?.();}catch(_e){}
         try{window.ReportBuilderV8Presentation?.apply?.();}catch(_e){}
@@ -27,13 +31,15 @@
         try{window.PropertyThesisReportBranding?.apply?.();}catch(_e){}
 
         setTimeout(()=>{
-          if(window.ReportBuilderV4?.generatePdf){
-            window.ReportBuilderV4.generatePdf();
+          if(window.UserBrandedPdf?.generate){
+            window.UserBrandedPdf.generate();
           }else{
+            // Clicking the current report button is the supported fallback;
+            // UserBrandedPdf owns this click in capture phase when loaded.
             document.getElementById('rbDownloadPdf')?.click();
           }
-        },160);
-      },140);
+        },220);
+      },180);
     }catch(err){
       console.error(err);
       if(typeof setStatus==='function')setStatus('Could not generate client report PDF: '+(err?.message||err));
