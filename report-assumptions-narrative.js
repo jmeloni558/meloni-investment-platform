@@ -1,11 +1,12 @@
 'use strict';
 (() => {
-  const VERSION=1;
+  const VERSION=2;
   if((window.__reportAssumptionsNarrativeVersion||0)>=VERSION)return;
   window.__reportAssumptionsNarrativeVersion=VERSION;
 
   const money=v=>typeof fmtC==='function'?fmtC(v):(Number.isFinite(v)?v.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'N/A');
   const pct=(v,d=1)=>Number.isFinite(v)?(v*100).toFixed(d)+'%':'N/A';
+  const mult=v=>typeof fmtX==='function'?fmtX(v):(Number.isFinite(v)?v.toFixed(2)+'x':'N/A');
 
   function copy(){
     const y1=result?.years?.[0];
@@ -17,9 +18,23 @@
     return[first,second];
   }
 
+  function fixExecutiveConclusion(report){
+    const p=report.querySelector('.rb-conclusion p');
+    const y1=result?.years?.[0];
+    if(!p||!y1||!result||!state)return;
+    let text=p.textContent||'';
+    const oldPair=/The projected IRR is [^.]+\.\s*Year 1 performance includes a [^.]+? and NPV of [^.]+\./i;
+    const oldYear=/Year 1 performance includes a [^.]+? and NPV of [^.]+\./i;
+    const sentence=`Key investment metrics include a ${pct(result.cap,2)} capitalization rate, ${mult(result.grm)} GRM${Number.isFinite(y1.dcr)?`, ${mult(y1.dcr)} Year 1 DSCR`:''}, ${pct(result.IRR,2)} projected IRR, and NPV of ${money(result.NPV)}.`;
+    if(oldPair.test(text))text=text.replace(oldPair,sentence);
+    else if(oldYear.test(text))text=text.replace(oldYear,sentence);
+    p.textContent=text;
+  }
+
   function apply(){
     const report=document.querySelector('#clientReport .rb-report');
     if(!report)return;
+    fixExecutiveConclusion(report);
     const section=[...report.querySelectorAll('.rb-section')].find(s=>/Acquisition\s*&\s*Operating\s*Assumptions/i.test(s.querySelector('.rb-section-head h2')?.textContent||s.querySelector('h2')?.textContent||''));
     if(!section)return;
     let box=section.querySelector(':scope > .rb-assumptions-analysis');
