@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=5;
+  const VERSION=6;
   if((window.__guidedContinueControllerV||0)>=VERSION)return;
   window.__guidedContinueControllerV=VERSION;
 
@@ -47,6 +47,16 @@
     let box=document.getElementById('gwValidation');
     if(!box){box=document.createElement('div');box.id='gwValidation';box.className='gw-validation';box.setAttribute('role','alert');box.setAttribute('aria-live','polite');actions.insertAdjacentElement('beforebegin',box);}
     return box;
+  }
+
+  function ensureLegacyRenderTargets(){
+    if(!document.getElementById('printTitle')){
+      const el=document.createElement('div');
+      el.id='printTitle';
+      el.hidden=true;
+      el.setAttribute('aria-hidden','true');
+      document.body.appendChild(el);
+    }
   }
 
   function clearValidation(){
@@ -122,6 +132,7 @@
     }
     clearValidation();
     try{
+      ensureLegacyRenderTargets();
       if(typeof readFields==='function')readFields();
       if(typeof render==='function')render();
       try{window.InitialRepairsModel?.enhanceResults?.();}catch(e){}
@@ -155,6 +166,7 @@
   function start(){
     window.addEventListener('click',capture,true);
     document.addEventListener('input',clearFieldError,true);
+    ensureLegacyRenderTargets();
     let tries=0;const timer=setInterval(()=>{if(bindButton())clearInterval(timer);if(++tries>60)clearInterval(timer)},120);
     const host=document.getElementById('guidedSetup');
     if(host){new MutationObserver(()=>bindButton()).observe(host,{childList:true,subtree:true});}
