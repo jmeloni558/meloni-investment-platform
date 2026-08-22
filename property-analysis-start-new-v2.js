@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=5;
+  const VERSION=6;
   if((window.__propertyAnalysisStartNewVersion||0)>=VERSION)return;
   window.__propertyAnalysisStartNewVersion=VERSION;
 
@@ -47,6 +47,7 @@
       try{window.GuidedAnalysisSetup?.refresh?.();}catch(_e){}
       try{window.GuidedAssumptionGuidance?.apply?.();}catch(_e){}
       try{window.GuidedInitialRepairs?.apply?.();}catch(_e){}
+      try{window.NewAnalysisSaveGuidance?.refresh?.();}catch(_e){}
     };
     finalizeStepOne();
     setTimeout(finalizeStepOne,80);
