@@ -1,0 +1,5 @@
+/* Existing Properties UI simplification */
+#propertyhub [data-hub-clone],
+#propertyhub .hub-state {
+  display: none !important;
+}
