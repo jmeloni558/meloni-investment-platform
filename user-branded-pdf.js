@@ -1,64 +1,31 @@
 'use strict';
 (() => {
-  const VERSION=5;
+  const VERSION=6;
   if((window.__userBrandedPdfVersion||0)>=VERSION)return;
   window.__userBrandedPdfVersion=VERSION;
-  const AUTO_TABLE_SRC='https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js';
-  const PRODUCT='PropertyThesis',TAGLINE='Know the Numbers. Build the Case.',REPORT_TYPE='Investment Property Analysis';
-  const clean=v=>String(v??'').replace(/[\u2013\u2014]/g,'-').replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
+  const HTML2CANVAS_SRC='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+  const PRODUCT='PropertyThesis',REPORT_TYPE='Investment Property Analysis';
   function prof(){return window.UserBranding?.getProfile?.()||{};}
-  function rgb(hex){const h=/^#[0-9a-f]{6}$/i.test(hex||'')?hex:'#14b8a6';const n=parseInt(h.slice(1),16);return[(n>>16)&255,(n>>8)&255,n&255];}
   function filename(){const raw=(state?.address||state?.name||REPORT_TYPE).trim();return (raw.replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,70)||'PropertyThesis')+'-Investment-Analysis.pdf';}
-  async function ensureTable(){const jsPDF=window.jspdf?.jsPDF;if(jsPDF?.API?.autoTable)return;if(window.__ubpTablePromise)return window.__ubpTablePromise;window.__ubpTablePromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=AUTO_TABLE_SRC;s.onload=()=>jsPDF?.API?.autoTable?resolve():reject(new Error('PDF table helper unavailable'));s.onerror=()=>reject(new Error('Unable to load PDF table helper'));document.head.appendChild(s)});return window.__ubpTablePromise;}
-  function pdfText(doc,text,x,y,w,size=9,style='normal',color=[71,84,103],align='left'){doc.setFont('helvetica',style);doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(clean(text),w);doc.text(lines,x,y,{align});return y+lines.length*(size*1.18);}
-  function renderer(doc){const margin=42,w=doc.internal.pageSize.getWidth(),h=doc.internal.pageSize.getHeight(),cw=w-margin*2,bottom=h-48;let y=48;function page(){doc.addPage();y=48}function need(n){if(y+n>bottom)page()}function heading(t,s=''){need(s?42:30);doc.setDrawColor(222,229,236);if(y>300)doc.line(margin,y-10,w-margin,y-10);y=pdfText(doc,t,margin,y,cw,13,'bold',[23,50,77]);if(s)y=pdfText(doc,s,margin,y+2,cw,8,'normal',[102,112,133]);y+=8}function para(t){need(45);y=pdfText(doc,t,margin,y,cw,9,'normal',[71,84,103])+8}function pairs(items){const col=(cw-12)/2;for(let i=0;i<items.length;i+=2){need(36);items.slice(i,i+2).forEach((it,j)=>{const x=margin+j*(col+12);doc.setDrawColor(226,231,237);doc.setFillColor(249,251,253);doc.roundedRect(x,y-10,col,29,4,4,'FD');pdfText(doc,it.label,x+7,y-1,col-14,7,'bold',[102,112,133]);pdfText(doc,it.value,x+7,y+11,col-14,10,'bold',[23,79,131]);});y+=37}y+=2}function table(el){const head=[...el.querySelectorAll('thead th')].map(x=>clean(x.textContent)),body=[...el.querySelectorAll('tbody tr')].map(tr=>[...tr.querySelectorAll('th,td')].map(td=>clean(td.textContent)));if(!head.length&&!body.length)return;need(42);doc.autoTable({startY:y,head:head.length?[head]:undefined,body,margin:{left:margin,right:margin,top:48,bottom:44},theme:'grid',styles:{font:'helvetica',fontSize:6.6,cellPadding:3.2,textColor:[52,64,84],lineColor:[229,234,240],lineWidth:.35,overflow:'linebreak'},headStyles:{fillColor:[239,244,248],textColor:[49,70,93],fontStyle:'bold'},alternateRowStyles:{fillColor:[252,253,254]},columnStyles:{0:{halign:'left'}},horizontalPageBreak:true,horizontalPageBreakRepeat:0});y=(doc.lastAutoTable?.finalY||y)+10}return{margin,w,h,cw,getY:()=>y,setY:v=>y=v,heading,para,pairs,table}}
-
-  function lerp(a,b,t){return Math.round(a+(b-a)*t)}
-  function blendRect(doc,x,y,w,h,from,to,steps=20){for(let i=0;i<steps;i++){const t=i/(steps-1),c=[lerp(from[0],to[0],t),lerp(from[1],to[1],t),lerp(from[2],to[2],t)];doc.setFillColor(...c);doc.rect(x+(w*i/steps),y,w/steps+0.5,h,'F')}}
-  function uniqueMeta(items){const seen=new Set(),out=[];for(const item of items){const key=clean(item).toLowerCase();if(!key||seen.has(key))continue;seen.add(key);out.push(clean(item));}return out;}
-
-  function renderCover(doc,r,p){
-    const report=document.querySelector('#clientReport .rb-report'),cover=report?.querySelector('.rb-cover'),conclusion=clean(report?.querySelector('.rb-conclusion p')?.textContent||'');
-    const accent=rgb(p.brand_color),half=r.w/2;
-    blendRect(doc,0,0,half,128,[15,41,72],[29,78,216],24);
-    blendRect(doc,half,0,half,128,[29,78,216],[15,118,110],24);
-    doc.setFillColor(...accent);doc.rect(0,124,half,4,'F');
-    doc.setFillColor(246,196,83);doc.rect(r.w-106,99,64,4,'F');
-
-    const company=clean(p.company_name||'Your Company');
-    const person=[p.full_name,p.professional_title].filter(Boolean).join(' | ');
-    const contact=[p.email,p.phone,p.website].filter(Boolean).join(' | ');
-    pdfText(doc,'PRESENTED BY',42,38,half-72,7,'bold',[159,198,232]);
-    pdfText(doc,company,42,59,half-72,15,'bold',[255,255,255]);
-    if(person)pdfText(doc,person,42,80,half-72,7.5,'normal',[218,232,244]);
-    if(contact)pdfText(doc,contact,42,97,half-72,7,'normal',[218,232,244]);
-
-    pdfText(doc,PRODUCT,r.w-42,48,half-72,22,'bold',[255,255,255],'right');
-    pdfText(doc,TAGLINE,r.w-42,71,half-72,8.5,'normal',[219,234,254],'right');
-
-    doc.setFillColor(255,255,255);doc.rect(0,128,r.w,160,'F');
-    pdfText(doc,REPORT_TYPE,42,174,r.cw,23,'bold',[18,38,63]);
-    const addr=clean(cover?.querySelector('.address')?.textContent||state?.address||state?.name||'Income-Producing Property');
-    pdfText(doc,addr,42,201,r.cw,11,'normal',[82,101,122]);
-
-    const rawMeta=[...cover?.querySelectorAll('.rb-meta span')||[]].map(x=>clean(x.textContent)).filter(Boolean);
-    const meta=uniqueMeta(rawMeta);
-    let metaEnd=221;
-    if(meta.length)metaEnd=pdfText(doc,meta.join('   |   '),42,221,r.cw,7,'normal',[100,116,139]);
-
-    const accentY=Math.max(238,metaEnd+7);
-    doc.setFillColor(...accent);doc.rect(0,accentY,r.w,4,'F');
-
-    r.setY(accentY+31);
-    r.heading('Executive Investment Conclusion');
-    r.para(conclusion||'No investment conclusion has been entered.');
-    const findings=[...report?.querySelectorAll('.rb-finding')||[]].map(el=>({label:clean(el.querySelector('span')?.textContent),value:[clean(el.querySelector('b')?.textContent),clean(el.querySelector('small')?.textContent)].filter(Boolean).join(' - ')}));
-    if(findings.length){r.heading('Key Investment Findings');r.pairs(findings)}
+  function ensureHtml2Canvas(){if(window.html2canvas)return Promise.resolve(window.html2canvas);if(window.__ptHtml2CanvasPromise)return window.__ptHtml2CanvasPromise;window.__ptHtml2CanvasPromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=HTML2CANVAS_SRC;s.async=true;s.onload=()=>window.html2canvas?resolve(window.html2canvas):reject(new Error('PDF preview renderer did not initialize.'));s.onerror=()=>reject(new Error('Unable to load the PDF preview renderer.'));document.head.appendChild(s);});return window.__ptHtml2CanvasPromise;}
+  function status(msg){if(typeof setStatus==='function')setStatus(msg);}
+  function naturalBreaks(report,scale,total){const top=report.getBoundingClientRect().top;const nodes=[...report.querySelectorAll(':scope > .rb-cover,:scope > .rb-conclusion,:scope > .rb-findings,:scope > .rb-section,:scope > .rb-footer')];const ys=nodes.map(el=>(el.getBoundingClientRect().bottom-top)*scale).filter(y=>y>0&&y<total);return [...new Set(ys.map(Math.round))].sort((a,b)=>a-b);}
+  function chooseBreak(start,maxEnd,breaks,total){if(maxEnd>=total)return total;const minUseful=start+(maxEnd-start)*0.55;const options=breaks.filter(y=>y>minUseful&&y<=maxEnd);return options.length?options[options.length-1]:maxEnd;}
+  async function preparePreview(){window.ReportBuilderV1?.renderReport?.();await new Promise(r=>setTimeout(r,180));window.ReportBuilderV8?.apply?.();window.UserBranding?.applyReportBranding?.();window.PropertyThesisReportBranding?.apply?.();await new Promise(r=>setTimeout(r,140));}
+  async function generate(){const btn=document.getElementById('rbDownloadPdf');if(btn){btn.disabled=true;btn.textContent='Generating PDF...';}try{
+      await preparePreview();await ensureHtml2Canvas();
+      const jsPDF=window.jspdf?.jsPDF;if(!jsPDF)throw new Error('PDF library unavailable.');
+      const report=document.querySelector('#clientReport .rb-report');if(!report)throw new Error('Report preview is not available.');
+      const canvas=await window.html2canvas(report,{scale:2,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',logging:false,scrollX:0,scrollY:-window.scrollY,windowWidth:document.documentElement.clientWidth});
+      const doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait',compress:true});
+      const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+      const p=prof();doc.setProperties({title:`${PRODUCT} | ${REPORT_TYPE}`,author:[p.full_name,p.company_name].filter(Boolean).join(' - ')||PRODUCT,subject:state?.address||state?.name||REPORT_TYPE,creator:PRODUCT});
+      const pxPerPt=canvas.width/pageW,maxSlice=Math.floor(pageH*pxPerPt),scale=canvas.width/report.getBoundingClientRect().width,breaks=naturalBreaks(report,scale,canvas.height);
+      let start=0,page=0;
+      while(start<canvas.height-1){const maxEnd=Math.min(canvas.height,start+maxSlice);let end=chooseBreak(start,maxEnd,breaks,canvas.height);if(end<=start+20)end=maxEnd;const h=Math.max(1,Math.round(end-start));const slice=document.createElement('canvas');slice.width=canvas.width;slice.height=h;const ctx=slice.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,slice.width,slice.height);ctx.drawImage(canvas,0,start,canvas.width,h,0,0,canvas.width,h);if(page>0)doc.addPage();const imgH=h/pxPerPt;doc.addImage(slice.toDataURL('image/jpeg',0.96),'JPEG',0,0,pageW,imgH,undefined,'FAST');start=end;page++;}
+      doc.save(filename());status('PDF generated from report preview');
+    }catch(e){console.error(e);status(e?.message||'Unable to generate PDF');alert(e?.message||'Unable to generate PDF.');}finally{if(btn){btn.disabled=false;btn.textContent='Download PDF';}}
   }
-
-  function renderSection(r,section){const title=clean(section.querySelector('.rb-section-head h2')?.textContent||section.querySelector('h2')?.textContent),sub=clean(section.querySelector('.rb-section-head p')?.textContent||'');if(!title)return;r.heading(title,sub);const analysis=clean(section.querySelector('.rb-analysis-copy')?.textContent||'');if(analysis)r.para(analysis.replace(/^Analysis:\s*/i,''));const stats=[...section.querySelectorAll('.rb-stat')].map(el=>({label:clean(el.querySelector('span')?.textContent),value:[clean(el.querySelector('b')?.textContent),clean(el.querySelector('small')?.textContent)].filter(Boolean).join(' - ')}));if(stats.length)r.pairs(stats);for(const panel of section.querySelectorAll('.rb-panel')){const name=clean(panel.querySelector('h3')?.textContent||'');if(name){r.heading(name)}const rows=[...panel.querySelectorAll('.rb-row')].map(el=>({label:clean(el.querySelector('span')?.textContent),value:clean(el.querySelector('b')?.textContent)}));if(rows.length)r.pairs(rows)}for(const t of section.querySelectorAll('table'))r.table(t)}
-  function decorate(doc,p){const pages=doc.getNumberOfPages(),company=clean(p.company_name||'');for(let i=1;i<=pages;i++){doc.setPage(i);const w=doc.internal.pageSize.getWidth(),h=doc.internal.pageSize.getHeight();doc.setDrawColor(220,228,236);doc.line(42,h-30,w-42,h-30);doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(71,84,103);doc.text(company?`${company}  |  ${PRODUCT}`:PRODUCT,42,h-18);doc.setFont('helvetica','normal');doc.setTextColor(122,134,153);doc.text(`${TAGLINE}  |  Page ${i} of ${pages}`,w-42,h-18,{align:'right'})}}
-  async function generate(){const btn=document.getElementById('rbDownloadPdf');if(btn){btn.disabled=true;btn.textContent='Generating PDF...'}try{window.ReportBuilderV1?.renderReport?.();await new Promise(r=>setTimeout(r,120));window.UserBranding?.applyReportBranding?.();window.PropertyThesisReportBranding?.apply?.();await ensureTable();const jsPDF=window.jspdf?.jsPDF;if(!jsPDF)throw new Error('PDF library unavailable');const report=document.querySelector('#clientReport .rb-report');if(!report)throw new Error('Report preview is not available');const p=prof(),doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait',compress:true}),r=renderer(doc);doc.setProperties({title:`${PRODUCT} | ${REPORT_TYPE}`,author:[p.full_name,p.company_name].filter(Boolean).join(' - ')||PRODUCT,subject:state?.address||state?.name||REPORT_TYPE,creator:`${PRODUCT} - ${TAGLINE}`});renderCover(doc,r,p);for(const section of report.querySelectorAll('.rb-section'))renderSection(r,section);if(p.report_disclaimer){r.heading('Report Disclaimer');r.para(p.report_disclaimer)}decorate(doc,p);doc.save(filename());if(typeof setStatus==='function')setStatus('PDF generated')}catch(e){console.error(e);if(typeof setStatus==='function')setStatus(e.message||'Unable to generate PDF');alert(e.message||'Unable to generate PDF')}finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}}
   document.addEventListener('click',e=>{const b=e.target?.closest?.('#rbDownloadPdf');if(!b)return;e.preventDefault();e.stopImmediatePropagation();generate();},true);
   window.UserBrandedPdf={generate};
 })();
