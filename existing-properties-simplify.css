@@ -3,3 +3,11 @@
 #propertyhub .hub-state {
   display: none !important;
 }
+
+/* Primary property action order */
+#propertyhub .hub-actions [data-hub-open] {
+  order: -2;
+}
+#propertyhub .hub-actions [data-pt-manage] {
+  order: -1;
+}
