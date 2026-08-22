@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=1;
+  const VERSION=2;
   if((window.__workflowNavigationControllerVersion||0)>=VERSION)return;
   window.__workflowNavigationControllerVersion=VERSION;
 
@@ -39,13 +39,28 @@
   }
 
   function newAnalysis(){
-    try{window.Stage10Workflow?.newAnalysis?.();}catch(e){}
-    setTimeout(()=>directActivate('assumptions'),0);
+    try{selectedClientId=null;selectedPropertyId=null;selectedAnalysisId=null;selectedScenarioId=null;}catch(e){}
+    try{
+      state={...defaults,name:'',address:'',price:0,land:0,units:1,rent:0,hold:7,mortgage:0,loanYears:30};
+      if(typeof renderFields==='function')renderFields();
+    }catch(e){}
+    try{localStorage.removeItem('guided-expenses-v1');}catch(e){}
+
+    const blankIds=['f_name','f_address','f_price','f_land','f_units','f_rent','f_hold','propertyName','quickPrice','quickRent'];
+    const clearBlanks=()=>blankIds.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    clearBlanks();
+    try{if(typeof render==='function')render();}catch(e){}
+    clearBlanks();
+
+    directActivate('assumptions');
+    try{window.GuidedAnalysisSetup?.reset?.();}catch(e){}
     setTimeout(()=>{
-      directActivate('assumptions');
-      ['f_price','f_land','f_units','f_rent','quickPrice','quickRent'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-      document.getElementById('f_address')?.focus();
-    },100);
+      clearBlanks();
+      try{window.GuidedAnalysisSetup?.reset?.();}catch(e){}
+      try{window.GuidedAssumptionGuidance?.apply?.();}catch(e){}
+      try{if(typeof setStatus==='function')setStatus('New analysis started — enter the property and investment assumptions');}catch(e){}
+      document.querySelector('#gwBody [data-src="f_address"]')?.focus();
+    },80);
   }
 
   function capture(e){
