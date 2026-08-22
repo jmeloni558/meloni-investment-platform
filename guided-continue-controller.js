@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__guidedContinueControllerV||0)>=VERSION)return;
   window.__guidedContinueControllerV=VERSION;
 
@@ -44,6 +44,18 @@
     return true;
   }
 
+  function activateDashboard(){
+    const target=document.getElementById('dashboard');
+    if(!target)throw new Error('Review Results section is unavailable.');
+    document.querySelectorAll('.section').forEach(sec=>sec.classList.toggle('active',sec===target));
+    document.querySelectorAll('.nav [data-tab]').forEach(btn=>btn.classList.toggle('active',btn.dataset.tab==='dashboard'));
+    document.querySelectorAll('#stage8Workflow [data-s8-tab]').forEach(btn=>btn.classList.toggle('active',btn.dataset.s8Tab==='dashboard'));
+    try{window.Stage8Workflow?.refresh?.();}catch(e){}
+    try{window.Stage10Workflow?.refresh?.();}catch(e){}
+    try{window.Stage15Layout?.apply?.();}catch(e){}
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
   function advance(e){
     const btn=e.target?.closest?.('#gwNext');
     if(!btn)return;
@@ -63,8 +75,9 @@
     try{
       if(typeof readFields==='function')readFields();
       if(typeof render==='function')render();
+      try{window.InitialRepairsModel?.enhanceResults?.();}catch(e){}
       if(typeof setStatus==='function')setStatus('Analysis updated — review the results');
-      window.WorkflowNavigationController?.go?.('dashboard');
+      activateDashboard();
     }catch(err){
       try{if(typeof setStatus==='function')setStatus('Please review the inputs: '+err.message);}catch(_e){}
     }
