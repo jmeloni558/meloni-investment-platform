@@ -118,7 +118,7 @@
       return `<div class="hub-card ${p.archived?'archived':''}"><div class="hub-title"><div><h3>${esc4(p.name||'Untitled Property')}</h3><p>${esc4(p.address||[p.city,p.state,p.postal_code].filter(Boolean).join(', ')||'No address entered')}</p></div><span class="hub-state">${p.archived?'Archived':statusText(a)}</span></div>
         <div class="hub-metrics"><div class="hub-metric"><span>Purchase Price</span><b>${money(s.price)}</b></div><div class="hub-metric"><span>Value Conclusion</span><b>${valueText(a)}</b></div><div class="hub-metric"><span>IRR</span><b>${pct(o.irr)}</b></div><div class="hub-metric"><span>DSCR</span><b>${mult(o.year1_dscr)}</b></div></div>
         <div class="hub-meta"><div><b>Client:</b> ${esc4(c?.name||'Unassigned')}</div><div><b>Rent:</b> ${money(s.rent)}/mo</div><div><b>Cap Rate:</b> ${pct(o.cap)}</div><div><b>NPV:</b> ${money(o.npv)}</div><div><b>Latest Analysis:</b> ${esc4(a?.name||'None')}</div><div><b>Updated:</b> ${updated?new Date(updated).toLocaleDateString():'—'}</div></div>
-        <div class="hub-actions"><button class="btn primary" data-hub-open="${p.id}">Open Property</button>${a?`<button class="btn secondary" data-hub-report="${p.id}">Generate Report</button><button class="btn ghost" data-hub-clone="${p.id}">Clone Analysis</button>`:''}<button class="btn ghost" data-hub-edit="${p.id}">Edit Analysis</button><button class="btn ${p.archived?'secondary':'ghost'}" data-hub-archive="${p.id}">${p.archived?'Restore':'Archive'}</button><button class="btn danger hub-delete" data-hub-delete="${p.id}">Delete Property</button></div></div>`;
+        <div class="hub-actions"><button class="btn secondary" data-pt-manage="${p.id}">Manage Analyses</button><button class="btn primary" data-hub-open="${p.id}">Open Property</button>${a?`<button class="btn secondary" data-hub-report="${p.id}">Generate Report</button><button class="btn ghost" data-hub-clone="${p.id}">Clone Analysis</button>`:''}<button class="btn ghost" data-hub-edit="${p.id}">Edit Analysis</button><button class="btn ${p.archived?'secondary':'ghost'}" data-hub-archive="${p.id}">${p.archived?'Restore':'Archive'}</button><button class="btn danger hub-delete" data-hub-delete="${p.id}">Delete Property</button></div></div>`;
     }).join('')+'</div>';
     wireHubActions();
   }
@@ -167,6 +167,7 @@
     renderHub();try{renderCloudLists()}catch(_e){}await refreshCloud();renderHub();try{setStatus('Property permanently deleted')}catch(_e){}
   }
   function wireHubActions(){
+    document.querySelectorAll('[data-pt-manage]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(window.PropertyAnalysisManager?.open)window.PropertyAnalysisManager.open(b.dataset.ptManage);else if(typeof setStatus==='function')setStatus('Analysis manager is still loading.');});
     document.querySelectorAll('[data-hub-open]').forEach(b=>b.onclick=()=>openProperty(b.dataset.hubOpen,'dashboard'));
     document.querySelectorAll('[data-hub-report]').forEach(b=>b.onclick=()=>openProperty(b.dataset.hubReport,'report'));
     document.querySelectorAll('[data-hub-edit]').forEach(b=>b.onclick=()=>openProperty(b.dataset.hubEdit,'assumptions'));
