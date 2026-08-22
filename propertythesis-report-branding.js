@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__propertyThesisReportBrandingV||0)>=VERSION)return;
   window.__propertyThesisReportBrandingV=VERSION;
   const PRODUCT='PropertyThesis';
@@ -14,16 +14,28 @@
     let s=document.getElementById('propertyThesisReportBrandingStyles');
     if(!s){s=document.createElement('style');s.id='propertyThesisReportBrandingStyles';document.head.appendChild(s);}
     s.textContent=`
-      #clientReport .rb-cover{background:linear-gradient(125deg,#1d4ed8 0%,#2563eb 58%,#0f766e 135%)!important}
-      #clientReport .rb-brand{font-size:0!important;letter-spacing:0!important;color:transparent!important;line-height:1!important}
-      #clientReport .rb-brand::after{content:'PropertyThesis';display:block;font-size:13px;line-height:1.2;letter-spacing:.10em;font-weight:900;color:#fff;text-transform:none}
-      #clientReport .pt-report-tagline{margin-top:4px;font-size:10px;font-weight:700;color:#dceaf6;letter-spacing:.02em}
-      #clientReport .pt-user-brand{display:flex;align-items:center;gap:12px;margin-top:16px;padding:10px 12px;border:1px solid rgba(255,255,255,.24);border-left:4px solid var(--pt-user-accent,#14b8a6);border-radius:9px;background:rgba(255,255,255,.10);max-width:720px}
-      #clientReport .pt-user-brand img{width:auto;max-width:112px;height:40px;max-height:40px;object-fit:contain;background:#fff;border-radius:6px;padding:4px;flex:0 0 auto}
-      #clientReport .pt-user-copy{min-width:0}.pt-user-label{display:block;font-size:7.5px;font-weight:850;letter-spacing:.11em;text-transform:uppercase;color:#dceaf6;margin-bottom:2px}.pt-user-company{display:block;font-size:12px;font-weight:850;color:#fff}.pt-user-person,.pt-user-contact{display:block;font-size:8.5px;line-height:1.4;color:#e8f0f7;margin-top:2px}
+      #clientReport .rb-cover{padding:0!important;background:#102b4e!important;color:#fff!important;overflow:hidden!important}
+      #clientReport .pt-split-head{display:grid;grid-template-columns:1fr 1fr;min-height:138px;border-bottom:1px solid rgba(255,255,255,.16)}
+      #clientReport .pt-user-side{position:relative;padding:25px 30px 22px;background:linear-gradient(135deg,#0f2948,#173e67);display:flex;align-items:center;gap:14px}
+      #clientReport .pt-user-side:after{content:'';position:absolute;right:0;top:22px;bottom:22px;width:1px;background:rgba(255,255,255,.18)}
+      #clientReport .pt-user-side img{width:auto;max-width:128px;height:50px;max-height:50px;object-fit:contain;background:#fff;border-radius:7px;padding:5px;flex:0 0 auto}
+      #clientReport .pt-user-label{display:block;font-size:7.5px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#9fc6e8;margin-bottom:4px}
+      #clientReport .pt-user-company{display:block;font-size:16px;font-weight:900;line-height:1.15;color:#fff}
+      #clientReport .pt-user-person,#clientReport .pt-user-contact{display:block;font-size:8.5px;line-height:1.45;color:#d9e8f4;margin-top:3px}
+      #clientReport .pt-product-side{padding:25px 30px 22px;background:linear-gradient(135deg,#1d4ed8,#2563eb 60%,#0f766e);text-align:right;display:flex;flex-direction:column;justify-content:center;align-items:flex-end}
+      #clientReport .pt-product-name{font-size:24px;font-weight:950;letter-spacing:-.025em;color:#fff;line-height:1}
+      #clientReport .pt-product-tag{font-size:9.5px;font-weight:750;color:#dbeafe;margin-top:7px;letter-spacing:.035em}
+      #clientReport .pt-product-mark{width:64px;height:4px;border-radius:9px;background:#f6c453;margin-top:14px}
+      #clientReport .pt-title-band{padding:24px 30px 21px;background:#fff;color:#172033;border-bottom:4px solid var(--pt-user-accent,#14b8a6)}
+      #clientReport .pt-title-kicker{font-size:8px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:#64748b;margin-bottom:5px}
+      #clientReport .pt-title-band h1{font-size:30px!important;line-height:1.03!important;margin:0 0 7px!important;color:#12263f!important;letter-spacing:-.035em!important}
+      #clientReport .pt-title-band .address{font-size:13px!important;color:#52657a!important;margin:0!important}
+      #clientReport .pt-title-band .rb-meta{margin-top:14px!important;color:#64748b!important}
+      #clientReport .pt-title-band .rb-meta b{color:#334155!important}
+      #clientReport .rb-cover>.rb-brand,#clientReport .rb-cover>.pt-report-tagline,#clientReport .rb-cover>.rb-brand-logo,#clientReport .rb-cover>.pt-user-brand{display:none!important}
       #clientReport .rb-footer .pt-report-product{font-weight:850;color:#fff;white-space:nowrap}
-      @media(max-width:700px){#clientReport .pt-user-brand{align-items:flex-start;flex-direction:column}}
-      @media print{#clientReport .rb-cover{background:#1d4ed8!important}#clientReport .rb-brand::after{font-size:9pt!important}#clientReport .pt-report-tagline{font-size:7.2pt!important;color:#e5eef6!important}#clientReport .pt-user-brand{margin-top:9pt!important;padding:6pt 7pt!important}.pt-user-company{font-size:8.5pt!important}.pt-user-person,.pt-user-contact{font-size:6.4pt!important}}
+      @media(max-width:700px){#clientReport .pt-split-head{grid-template-columns:1fr}.pt-user-side:after{display:none!important}#clientReport .pt-product-side{text-align:left;align-items:flex-start}}
+      @media print{#clientReport .pt-split-head{grid-template-columns:1fr 1fr!important;min-height:92pt!important}#clientReport .pt-user-side,#clientReport .pt-product-side{padding:15pt 18pt!important}#clientReport .pt-product-name{font-size:17pt!important}#clientReport .pt-user-company{font-size:11pt!important}#clientReport .pt-title-band{padding:15pt 18pt 13pt!important}#clientReport .pt-title-band h1{font-size:21pt!important}}
     `;
   }
 
@@ -31,31 +43,22 @@
     const report=document.querySelector('#clientReport .rb-report');
     if(!report)return false;
     const cover=report.querySelector('.rb-cover');
-    const p=profile();
-    if(cover){
-      const brand=cover.querySelector('.rb-brand');
-      let tag=cover.querySelector('.pt-report-tagline');
-      if(!tag){tag=document.createElement('div');tag.className='pt-report-tagline';brand?.insertAdjacentElement('afterend',tag);}
-      if(tag)tag.textContent=TAGLINE;
-      const h1=cover.querySelector('h1');if(h1)h1.textContent=TYPE;
-
-      let secondary=cover.querySelector('.pt-user-brand');
-      const company=(p.company_name||'').trim();
-      const person=[p.full_name,p.professional_title].filter(Boolean).join(' • ');
-      const contact=[p.email,p.phone,p.website].filter(Boolean).join(' • ');
-      const hasSecondary=!!(company||person||contact||p.logo_url);
-      if(hasSecondary){
-        if(!secondary){secondary=document.createElement('div');secondary.className='pt-user-brand';const meta=cover.querySelector('.rb-meta');if(meta)meta.insertAdjacentElement('beforebegin',secondary);else cover.appendChild(secondary);}
-        secondary.style.setProperty('--pt-user-accent',safeColor(p.brand_color));
-        secondary.innerHTML=`${p.logo_url?`<img src="${esc(p.logo_url)}" alt="${esc(company||'Company')} logo">`:''}<div class="pt-user-copy"><span class="pt-user-label">Presented by</span>${company?`<strong class="pt-user-company">${esc(company)}</strong>`:''}${person?`<span class="pt-user-person">${esc(person)}</span>`:''}${contact?`<span class="pt-user-contact">${esc(contact)}</span>`:''}</div>`;
-      }else if(secondary){secondary.remove();}
+    if(!cover)return false;
+    const p=profile(),company=(p.company_name||'Your Company').trim();
+    const person=[p.full_name,p.professional_title].filter(Boolean).join(' • ');
+    const contact=[p.email,p.phone,p.website].filter(Boolean).join(' • ');
+    const address=cover.querySelector('.address')?.textContent||state?.address||state?.name||'Income-Producing Property';
+    const meta=cover.querySelector('.rb-meta');
+    const metaHtml=meta?meta.innerHTML:'';
+    let head=cover.querySelector('.pt-master-header');
+    if(!head){
+      head=document.createElement('div');head.className='pt-master-header';cover.prepend(head);
     }
+    head.style.setProperty('--pt-user-accent',safeColor(p.brand_color));
+    head.innerHTML=`<div class="pt-split-head"><div class="pt-user-side" style="border-bottom:4px solid ${safeColor(p.brand_color)}">${p.logo_url?`<img src="${esc(p.logo_url)}" alt="${esc(company)} logo">`:''}<div><span class="pt-user-label">Presented by</span><strong class="pt-user-company">${esc(company)}</strong>${person?`<span class="pt-user-person">${esc(person)}</span>`:''}${contact?`<span class="pt-user-contact">${esc(contact)}</span>`:''}</div></div><div class="pt-product-side"><div class="pt-product-name">${PRODUCT}</div><div class="pt-product-tag">${TAGLINE}</div><div class="pt-product-mark"></div></div></div><div class="pt-title-band"><div class="pt-title-kicker">Client Investment Report</div><h1>${TYPE}</h1><p class="address">${esc(address)}</p>${metaHtml?`<div class="rb-meta">${metaHtml}</div>`:''}</div>`;
+    [...cover.children].forEach(el=>{if(el!==head)el.style.display='none';});
     const footer=report.querySelector('.rb-footer');
-    if(footer){
-      let prod=footer.querySelector('.pt-report-product');
-      if(!prod){prod=document.createElement('div');prod.className='pt-report-product';footer.appendChild(prod);}
-      prod.textContent=`${PRODUCT} • ${TAGLINE}`;
-    }
+    if(footer){let prod=footer.querySelector('.pt-report-product');if(!prod){prod=document.createElement('div');prod.className='pt-report-product';footer.appendChild(prod);}prod.textContent=`${PRODUCT} • ${TAGLINE}`;}
     return true;
   }
 
