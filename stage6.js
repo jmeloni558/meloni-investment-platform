@@ -131,7 +131,14 @@
     try{await loadCloudScenarios(a.id);}catch(_e){}
     goPrimary(target);
     try{if(typeof setStatus==='function')setStatus(target==='report'?'Saved analysis loaded — client report ready':'Saved analysis loaded');}catch(_e){}
-    if(target==='report')setTimeout(()=>{try{window.ReportBuilderV1?.renderReport?.();}catch(_e){}try{document.getElementById('s5_refresh')?.click();}catch(_e){}},80);
+    if(target==='report')setTimeout(()=>{
+      try{window.ReportBuilderV1?.render?.();}catch(_e){}
+      try{window.ReportBuilderV8Presentation?.apply?.();}catch(_e){}
+      try{window.ReportAssumptionsNarrative?.apply?.();}catch(_e){}
+      try{window.ReportDetailOrder?.apply?.();}catch(_e){}
+      try{window.ReportSensitivityAnalysis?.apply?.();}catch(_e){}
+      try{window.PropertyThesisReportBranding?.apply?.();}catch(_e){}
+    },80);
   }
   async function cloneAnalysis(pid){
     if(!cloudUser)return showAuth();
