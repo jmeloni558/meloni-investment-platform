@@ -1,7 +1,8 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
+  const APP_URL='https://propertythesis.com/latest.html';
   const ALLOWED_HOSTS=new Set(['propertythesis.com','www.propertythesis.com']);
   if((window.__propertyThesisTurnstileAuthVersion||0)>=VERSION)return;
   window.__propertyThesisTurnstileAuthVersion=VERSION;
@@ -45,6 +46,16 @@
       document.head.appendChild(s);
     });
     return scriptPromise;
+  }
+
+  function loadRecoveryFlow(){
+    const params=new URLSearchParams(location.hash.replace(/^#/,''));
+    if(params.get('type')!=='recovery'||document.querySelector('script[data-pt-recovery-flow]'))return;
+    const s=document.createElement('script');
+    s.src='password-recovery-flow.js?v=1';
+    s.async=false;
+    s.dataset.ptRecoveryFlow='1';
+    document.body.appendChild(s);
   }
 
   async function renderChallenge(){
@@ -101,7 +112,7 @@
     if(!requireToken())return;
     busy=true;message('Creating account…');
     try{
-      const {data,error}=await cloudClient.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname,captchaToken:token}});
+      const {data,error}=await cloudClient.auth.signUp({email,password,options:{emailRedirectTo:APP_URL,captchaToken:token}});
       if(error)return message(error.message);
       message(data.session?'Account created and signed in.':'Account created. Check your email to verify it, then return here and sign in.');
     }catch(e){message(e?.message||'Account creation failed. Please try again.');}
@@ -115,7 +126,7 @@
     if(!requireToken())return;
     busy=true;message('Sending password reset email…');
     try{
-      const {error}=await cloudClient.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname,captchaToken:token});
+      const {error}=await cloudClient.auth.resetPasswordForEmail(email,{redirectTo:APP_URL,captchaToken:token});
       message(error?error.message:'Password reset email sent. Check your inbox.');
     }catch(e){message(e?.message||'Password reset failed. Please try again.');}
     finally{busy=false;resetChallenge();}
@@ -133,6 +144,7 @@
   }
 
   function bind(){
+    loadRecoveryFlow();
     const auth=el('authBtn');
     if(auth)auth.onclick=()=>{try{showAuth();}catch(_e){el('authModal')?.classList.remove('hidden');}renderChallenge();};
 
