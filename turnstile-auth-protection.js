@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
   const ALLOWED_HOSTS=new Set(['propertythesis.com','www.propertythesis.com']);
   if((window.__propertyThesisTurnstileAuthVersion||0)>=VERSION)return;
@@ -9,6 +9,7 @@
   let token='';
   let widgetId=null;
   let scriptPromise=null;
+  let busy=false;
 
   const el=id=>document.getElementById(id);
   const message=text=>{const m=el('authMessage');if(m)m.textContent=text;};
@@ -81,49 +82,82 @@
   }
 
   async function protectedSignIn(){
+    if(busy)return;
     const email=el('authEmail')?.value.trim()||'',password=el('authPassword')?.value||'';
     if(!email||!password)return message('Enter an email and password.');
     if(!requireToken())return;
-    message('Signing in…');
+    busy=true;message('Signing in…');
     try{
       const {error}=await cloudClient.auth.signInWithPassword({email,password,options:{captchaToken:token}});
-      message(error?error.message:'Signed in.');
-    }finally{resetChallenge();}
+      if(error)message(error.message);else message('Signed in.');
+    }catch(e){message(e?.message||'Sign in failed. Please try again.');}
+    finally{busy=false;resetChallenge();}
   }
 
   async function protectedSignUp(){
+    if(busy)return;
     const email=el('authEmail')?.value.trim()||'',password=el('authPassword')?.value||'';
     if(!email||password.length<12)return message('Enter an email and a password of at least 12 characters.');
     if(!requireToken())return;
-    message('Creating account…');
+    busy=true;message('Creating account…');
     try{
       const {data,error}=await cloudClient.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname,captchaToken:token}});
       if(error)return message(error.message);
       message(data.session?'Account created and signed in.':'Account created. Check your email to verify it, then return here and sign in.');
-    }finally{resetChallenge();}
+    }catch(e){message(e?.message||'Account creation failed. Please try again.');}
+    finally{busy=false;resetChallenge();}
   }
 
   async function protectedReset(){
+    if(busy)return;
     const email=el('authEmail')?.value.trim()||'';
     if(!email)return message('Enter your email address first.');
     if(!requireToken())return;
-    message('Sending password reset email…');
+    busy=true;message('Sending password reset email…');
     try{
       const {error}=await cloudClient.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname,captchaToken:token});
       message(error?error.message:'Password reset email sent. Check your inbox.');
-    }finally{resetChallenge();}
+    }catch(e){message(e?.message||'Password reset failed. Please try again.');}
+    finally{busy=false;resetChallenge();}
+  }
+
+  function classifyButton(target){
+    const button=target?.closest?.('button,input[type="button"],input[type="submit"]');
+    if(!button||!el('authModal')?.contains(button))return null;
+    const text=String(button.textContent||button.value||'').trim().toLowerCase();
+    const id=String(button.id||'').toLowerCase();
+    if(id.includes('forgot')||text.includes('forgot')||text.includes('reset'))return 'reset';
+    if(id.includes('signup')||id.includes('create')||text.includes('create account')||text.includes('sign up'))return 'signup';
+    if(id.includes('signin')||id.includes('login')||text==='sign in'||text==='login')return 'signin';
+    return null;
   }
 
   function bind(){
     const auth=el('authBtn');
     if(auth)auth.onclick=()=>{try{showAuth();}catch(_e){el('authModal')?.classList.remove('hidden');}renderChallenge();};
-    const signIn=el('signInAction');if(signIn)signIn.onclick=protectedSignIn;
-    const signUp=el('signUpAction');if(signUp)signUp.onclick=protectedSignUp;
-    const forgot=el('forgotPasswordAction')||el('forgotPasswordBtn');if(forgot)forgot.onclick=protectedReset;
+
+    const modal=el('authModal');
+    if(modal&&!modal.dataset.ptTurnstileDelegated){
+      modal.dataset.ptTurnstileDelegated='1';
+      modal.addEventListener('click',e=>{
+        const action=classifyButton(e.target);
+        if(!action)return;
+        e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+        if(action==='signin')protectedSignIn();
+        else if(action==='signup')protectedSignUp();
+        else protectedReset();
+      },true);
+      modal.addEventListener('keydown',e=>{
+        if(e.key!=='Enter'||!el('authPassword')?.contains?.(e.target)&&e.target!==el('authPassword')&&e.target!==el('authEmail'))return;
+        e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+        protectedSignIn();
+      },true);
+    }
+
     window.signInCloud=protectedSignIn;
     window.signUpCloud=protectedSignUp;
     window.forgotPasswordCloud=protectedReset;
-    if(el('authModal')&&!el('authModal').classList.contains('hidden'))renderChallenge();
+    if(modal&&!modal.classList.contains('hidden'))renderChallenge();
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});
