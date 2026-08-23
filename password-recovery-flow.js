@@ -1,11 +1,8 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__propertyThesisPasswordRecoveryVersion||0)>=VERSION)return;
   window.__propertyThesisPasswordRecoveryVersion=VERSION;
-
-  const isRecovery=()=>new URLSearchParams(location.hash.replace(/^#/,''))?.get('type')==='recovery';
-  if(!isRecovery())return;
 
   const style=document.createElement('style');
   style.textContent=`#ptRecoveryOverlay{position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.72);display:grid;place-items:center;padding:20px}#ptRecoveryCard{width:min(440px,100%);background:#fff;border-radius:18px;padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.28);font-family:Arial,sans-serif;color:#111827}#ptRecoveryCard h2{margin:0 0 6px;font-size:24px}#ptRecoveryCard p{margin:0 0 18px;color:#475467;line-height:1.45}#ptRecoveryCard label{display:block;font-weight:700;margin:12px 0 6px}#ptRecoveryCard input{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d0d5dd;border-radius:10px;font-size:16px}#ptRecoveryCard button{width:100%;margin-top:16px;padding:11px 14px;border:0;border-radius:10px;background:#2563eb;color:#fff;font-weight:700;font-size:16px;cursor:pointer}#ptRecoveryCard button[disabled]{opacity:.6;cursor:wait}#ptRecoveryMsg{margin-top:12px;font-size:14px;min-height:20px}`;
