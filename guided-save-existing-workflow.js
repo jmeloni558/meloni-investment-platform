@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=6;
+  const VERSION=7;
   if((window.__propertyThesisGuidedSaveExistingWorkflowV||0)>=VERSION)return;
   window.__propertyThesisGuidedSaveExistingWorkflowV=VERSION;
 
@@ -11,6 +11,7 @@
   function ensureStyles(){
     if(document.getElementById('ptGuidedSaveExistingStyles'))return;
     const s=document.createElement('style');s.id='ptGuidedSaveExistingStyles';s.textContent=`
+      #guidedSetup #gwSave.gw-hide{display:inline-flex!important}
       #gwSave[disabled]{opacity:.62;cursor:wait}
       #propertyhub .pt-hub-primary-flow{display:flex;gap:7px;flex-wrap:wrap;width:100%}
       #propertyhub .pt-hub-primary-flow [data-hub-open]{order:-2!important}
@@ -58,6 +59,7 @@
     const b=document.getElementById('gwSave');if(!b)return false;
     const review=currentStep()===5;
     b.textContent=review?'Calculate, Save & Review Results':'Save Progress';
+    b.classList.toggle('gw-hide',false);
     if(review){
       if(b.dataset.ptStep6Save!=='1'){
         b.dataset.ptStep6Save='1';
