@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__reportExecutiveConclusionCurrentVersion||0)>=VERSION)return;
   window.__reportExecutiveConclusionCurrentVersion=VERSION;
 
@@ -25,6 +25,7 @@
     const support=[Number(result.capValue),Number(result.grmValue)].filter(Number.isFinite);
     const low=support.length?Math.min(...support):NaN,high=support.length?Math.max(...support):NaN;
     const recon=reconValue();
+    let thesis='';try{thesis=window.PropertyThesisInvestmentThesis?.narrative?.()||'';}catch(_e){}
 
     const valuation=finite(low)&&finite(high)
       ? `The income approaches indicate a property value range of ${money(low)} to ${money(high)} based on the selected capitalization rate and gross rent multiplier benchmarks.`
@@ -33,6 +34,7 @@
       ? `The reconciled investment value is ${money(recon)} compared with an acquisition price of ${money(state.price)}.`
       : `A reconciled investment value has not been entered; the modeled acquisition price is ${money(state.price)}.`;
     const performance=`The projected IRR is ${pct(result.IRR)} versus the required return of ${pct(state.requiredReturn)}. Year 1 performance includes a ${pct(result.cap)} capitalization rate, ${mult(result.grm)} GRM, ${finite(y1.dcr)?mult(y1.dcr)+' DSCR':'no modeled debt-service coverage ratio'}, and NPV of ${money(result.NPV)}.`;
+    if(thesis)return `${thesis} ${valuation} ${reconciliation} ${performance}`;
     const meets=finite(result.IRR)&&finite(state.requiredReturn)&&result.IRR>=state.requiredReturn&&finite(result.NPV)&&Number(result.NPV)>=0;
     const assessment=meets
       ? 'Based on the modeled assumptions, the principal return benchmarks are currently met; the acquisition should still be evaluated in conjunction with property-specific risks and the investor’s objectives.'
@@ -47,7 +49,7 @@
     const text=currentNarrative();
     if(!text)return false;
     p.innerHTML=esc(text);
-    box.dataset.currentExecutiveConclusion='1';
+    box.dataset.currentExecutiveConclusion='2';
     return true;
   }
 
@@ -73,6 +75,6 @@
   },true);
   document.addEventListener('change',e=>{if(e.target?.matches?.('[data-rb-pref]'))setTimeout(apply,80);},true);
 
-  window.ReportExecutiveConclusionCurrent={apply,currentNarrative};
+  window.ReportExecutiveConclusionCurrent={version:VERSION,apply,currentNarrative};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,0),{once:true});else setTimeout(install,0);
 })();
