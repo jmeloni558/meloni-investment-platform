@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__propertyThesisResultsHydrationCoordinatorV||0)>=VERSION)return;
   window.__propertyThesisResultsHydrationCoordinatorV=VERSION;
 
@@ -17,6 +17,8 @@
     try{window.InitialRepairsModel?.enhanceResults?.();}catch(_e){}
     try{window.Stage15Layout?.apply?.();}catch(_e){}
     try{window.PropertyThesisSecondaryServerUI?.apply?.();}catch(_e){}
+    try{window.CashFlowChart?.draw?.();}catch(_e){}
+    requestAnimationFrame(()=>{try{window.CashFlowChart?.draw?.();}catch(_e){}});
   }
 
   async function hydrate({force=false}={}){
@@ -33,8 +35,9 @@
       if(!base?.years?.length)throw new Error('Protected calculation result is unavailable.');
       result=base;
 
-      // Repaint the original results shell from the complete protected base result.
+      const originalBrowserRender=bridge?.browserRender;
       try{originalBrowserRender?.();}catch(_e){}
+      result=base;
 
       const secondary=window.PropertyThesisSecondaryEngine;
       let secondaryResult=secondary?.current?.();
@@ -44,6 +47,7 @@
       refreshConsumers();
       setTimeout(refreshConsumers,40);
       setTimeout(refreshConsumers,140);
+      setTimeout(()=>{try{window.CashFlowChart?.draw?.();}catch(_e){}},240);
       return true;
     }catch(e){
       console.warn('Results hydration incomplete:',e);
@@ -51,19 +55,6 @@
       refreshConsumers();
       return false;
     }finally{busy=false;}
-  }
-
-  const bridge=window.PropertyThesisIncomeEngineBridge;
-  const originalBrowserRender=bridge?.browserRender;
-  if(bridge&&typeof originalBrowserRender==='function'&&!originalBrowserRender.__ptResultsHydrationWrapped){
-    const wrapped=function(){
-      const out=originalBrowserRender.apply(this,arguments);
-      setTimeout(()=>hydrate({force:true}),0);
-      return out;
-    };
-    wrapped.__ptResultsHydrationWrapped=true;
-    wrapped.__original=originalBrowserRender;
-    bridge.browserRender=wrapped;
   }
 
   function schedule(force=false){[0,80,220].forEach(ms=>setTimeout(()=>hydrate({force}),ms));}
