@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   if((window.__protectedAnalysisOpenRouterVersion||0)>=VERSION)return;
   window.__protectedAnalysisOpenRouterVersion=VERSION;
 
@@ -18,8 +18,7 @@
     const p=propertyById(a.property_id);
     try{if(p)selectedClientId=p.client_id||null;}catch(_e){}
     const assumptions={...(a.assumptions||{})};
-    const embeddedBuy=assumptions.buyState;
-    delete assumptions.buyState;
+    const embeddedBuy=assumptions.buyState;delete assumptions.buyState;
     try{state={...defaults,...assumptions};}catch(_e){return false;}
     try{if(embeddedBuy&&typeof buydownDefaults!=='undefined')buyState={...buydownDefaults,...embeddedBuy};}catch(_e){}
     try{if(typeof renderFields==='function')renderFields();}catch(_e){}
@@ -41,9 +40,7 @@
     return true;
   }
 
-  function refreshProtectedValuation(){
-    try{window.ReviewValuation?.apply?.();}catch(_e){}
-  }
+  function refreshProtectedValuation(){try{window.ReviewValuation?.apply?.();}catch(_e){}}
 
   async function protectedResults(){
     const base=window.PropertyThesisIncomeEngineBridge;
@@ -52,8 +49,7 @@
     if(!secondary?.request)throw new Error('Protected secondary engine is unavailable.');
     const baseResult=await base.requestServer({...state},{refresh:false});
     if(!baseResult?.years?.length)throw new Error('Protected base engine did not return a complete result.');
-    result=baseResult;
-    refreshProtectedValuation();
+    result=baseResult;refreshProtectedValuation();
     const secondaryResult=await secondary.request({refresh:false});
     if(!secondaryResult?.offer||!secondaryResult?.sensitivity||!Array.isArray(secondaryResult?.scenarios))throw new Error('Protected secondary engine did not return a complete result.');
     return {baseResult,secondaryResult};
@@ -64,9 +60,7 @@
     try{window.InitialRepairsModel?.enhanceResults?.();}catch(_e){}
     try{window.GuidedAnalysisSetup?.refresh?.();window.GuidedAssumptionGuidance?.apply?.();window.GuidedInitialRepairs?.apply?.();}catch(_e){}
     try{window.Stage13AssumptionGuidance?.apply?.();window.Stage14TaxGuidance?.apply?.();window.Stage15Layout?.apply?.();}catch(_e){}
-    refreshProtectedValuation();
-    setTimeout(refreshProtectedValuation,0);
-    setTimeout(refreshProtectedValuation,80);
+    refreshProtectedValuation();setTimeout(refreshProtectedValuation,0);setTimeout(refreshProtectedValuation,80);
   }
 
   async function hydrateCurrentResults(){
@@ -78,9 +72,10 @@
         try{window.ReviewTotalInvestmentCashflow?.apply?.();}catch(_e){}
         try{window.InvestmentOfferAnalysis?.apply?.();}catch(_e){}
         try{window.PropertyThesisDecisionCenter?.apply?.();}catch(_e){}
+        try{window.PropertyThesisInvestmentThesis?.apply?.();window.PropertyThesisInvestmentThesis?.pin?.();}catch(_e){}
         try{window.CashFlowChart?.draw?.();}catch(_e){}
       }
-      setTimeout(()=>{try{window.CashFlowChart?.draw?.();}catch(_e){}},80);
+      setTimeout(()=>{try{window.PropertyThesisInvestmentThesis?.apply?.();window.PropertyThesisInvestmentThesis?.pin?.();}catch(_e){}try{window.CashFlowChart?.draw?.();}catch(_e){}},80);
     }catch(e){console.warn('Saved analysis results hydration skipped',e);}
   }
 
@@ -92,6 +87,7 @@
       try{window.ReportBuilderV8?.apply?.();window.ReportBuilderV8Presentation?.apply?.();}catch(_e){}
       try{window.ReportAssumptionsNarrative?.apply?.();window.ReportDetailOrder?.apply?.();}catch(_e){}
       try{window.ReportSensitivityAnalysis?.apply?.();window.ReportInvestmentOfferAnalysis?.apply?.();}catch(_e){}
+      try{window.ReportExecutiveConclusionCurrent?.apply?.();}catch(_e){}
       try{window.UserBranding?.applyReportBranding?.();window.PropertyThesisReportBranding?.apply?.();}catch(_e){}
     },80);
   }
@@ -108,12 +104,8 @@
       if(window.WorkflowNavigationController?.go)window.WorkflowNavigationController.go(target);
       else if(typeof switchTab==='function')switchTab(target);
       if(target==='report')refreshReport();
-      else if(target==='dashboard'){
-        refreshDashboard();
-        await hydrateCurrentResults();
-      } else {
-        try{window.GuidedAnalysisSetup?.refresh?.();window.GuidedAssumptionGuidance?.apply?.();window.GuidedInitialRepairs?.apply?.();}catch(_e){}
-      }
+      else if(target==='dashboard'){refreshDashboard();await hydrateCurrentResults();}
+      else {try{window.GuidedAnalysisSetup?.refresh?.();window.GuidedAssumptionGuidance?.apply?.();window.GuidedInitialRepairs?.apply?.();}catch(_e){}}
       try{window.AnalysisHistoryAutosave?.checkDraft?.();window.UnsavedChangeProtection?.markClean?.();}catch(_e){}
       status(target==='report'?'Protected report ready':target==='assumptions'?'Analysis ready to edit':'Saved analysis loaded');
     }catch(e){
@@ -122,11 +114,7 @@
     }finally{busy=false;}
   }
 
-  function routeProperty(pid,target){
-    const a=latestForProperty(pid);
-    if(!a){startProperty(pid);return;}
-    openSaved(a.id,target);
-  }
+  function routeProperty(pid,target){const a=latestForProperty(pid);if(!a){startProperty(pid);return;}openSaved(a.id,target);}
 
   window.addEventListener('click',e=>{
     const ptReport=e.target?.closest?.('[data-pt-report]');
@@ -134,8 +122,7 @@
     const hubReport=e.target?.closest?.('[data-hub-report]');
     const hubOpen=e.target?.closest?.('[data-hub-open]');
     const hubEdit=e.target?.closest?.('[data-hub-edit]');
-    const btn=ptReport||ptOpen||hubReport||hubOpen||hubEdit;
-    if(!btn)return;
+    const btn=ptReport||ptOpen||hubReport||hubOpen||hubEdit;if(!btn)return;
     e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
     if(ptReport)return openSaved(ptReport.dataset.ptReport,'report');
     if(ptOpen)return openSaved(ptOpen.dataset.ptOpen,'dashboard');
