@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__propertyThesisInvestmentThesisV||0)>=VERSION)return;
   window.__propertyThesisInvestmentThesisV=VERSION;
 
@@ -71,8 +71,28 @@
   function apply(){styles();const thesis=build();const dc=document.getElementById('ptDecisionCenter');if(!thesis||!dc){document.getElementById('ptInvestmentThesis')?.remove();return false;}let card=document.getElementById('ptInvestmentThesis');if(!card){card=document.createElement('div');card.id='ptInvestmentThesis';card.className='card span-12';dc.insertAdjacentElement('afterend',card);}const list=a=>a.length?`<ul>${a.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`:'<div style="font-size:9px;color:#667085">No material items identified.</div>';card.innerHTML=`<div class="ptit-head"><div><h2>Investment Thesis</h2><p>Interpretation of the modeled returns, income performance, pricing, financing and underwriting quality.</p></div><span class="ptit-badge ${thesis.tone}">${esc(thesis.label)}</span></div><div class="ptit-body"><p class="ptit-narrative">${esc(thesis.narrative)}</p><div class="ptit-cols"><div class="ptit-box"><strong>Investment Strengths</strong>${list(thesis.strengths)}</div><div class="ptit-box"><strong>Risks & Constraints</strong>${list(thesis.risks)}</div></div><div class="ptit-strategy"><strong>Acquisition Strategy</strong><p>${esc(thesis.strategy)}</p></div></div>`;pin();return true;}
 
   function narrative(){const t=build();if(!t)return'';const s=t.strengths[0]?` Key support: ${t.strengths[0]}`:'';const r=t.risks[0]?` Primary risk: ${t.risks[0]}`:'';return `${t.narrative} ${t.strategy}${s}${r}`.replace(/\s+/g,' ').trim();}
-  function schedule(){[0,60,160,320].forEach(ms=>setTimeout(()=>{apply();pin();},ms));}
-  function start(){schedule();document.addEventListener('click',e=>{if(e.target?.closest?.('[data-s8-tab="dashboard"],[data-tab="dashboard"],#appNavReview,[data-app-review],#gwNext,#gwSave,[data-hub-open],[data-pt-open]'))schedule();},true);}
-  window.PropertyThesisInvestmentThesis={version:VERSION,apply,pin,build,narrative};
+
+  function hookHydration(){
+    const api=window.PropertyThesisResultsHydration;
+    if(!api||typeof api.hydrate!=='function'||api.hydrate.__ptInvestmentThesisWrapped)return false;
+    const original=api.hydrate;
+    const wrapped=async function(){
+      const out=await original.apply(this,arguments);
+      try{apply();pin();}catch(_e){}
+      setTimeout(()=>{try{apply();pin();}catch(_e){}},0);
+      return out;
+    };
+    wrapped.__ptInvestmentThesisWrapped=true;
+    wrapped.__original=original;
+    api.hydrate=wrapped;
+    return true;
+  }
+
+  function schedule(){[0,60,160,320].forEach(ms=>setTimeout(()=>{hookHydration();apply();pin();},ms));}
+  function start(){
+    hookHydration();schedule();
+    document.addEventListener('click',e=>{if(e.target?.closest?.('[data-s8-tab="dashboard"],[data-tab="dashboard"],#appNavReview,[data-app-review],#gwNext,#gwSave,[data-hub-open],[data-pt-open]'))schedule();},true);
+  }
+  window.PropertyThesisInvestmentThesis={version:VERSION,apply,pin,build,narrative,hookHydration};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
