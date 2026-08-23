@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__propertyThesisInvestmentThesisV||0)>=VERSION)return;
   window.__propertyThesisInvestmentThesisV=VERSION;
 
@@ -10,7 +10,7 @@
   const pct=v=>finite(v)?(n(v)*100).toFixed(2)+'%':'—';
   const ratio=v=>finite(v)?n(v).toFixed(2)+'x':'—';
   const esc=v=>String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
-  const joinLabels=a=>a.length===1?a[0]:a.length===2?`${a[0]} and ${a[1]}`:`${a.slice(0,-1).join(', ')}, and ${a[a.length-1]}`;
+  const join=a=>a.length===1?a[0]:a.length===2?`${a[0]} and ${a[1]}`:`${a.slice(0,-1).join(', ')}, and ${a[a.length-1]}`;
 
   function assumptionItems(s){try{return window.PropertyThesisAssumptionIntelligence?.evaluate?.(s||{})||[];}catch(_e){return [];}}
   function assumptionSummary(items){try{return window.PropertyThesisAssumptionIntelligence?.summarize?.(items)||null;}catch(_e){return null;}}
@@ -24,11 +24,25 @@
     return {s,base,offer,y1:base.years[0],items,assumptions:assumptionSummary(items)};
   }
 
-  function supportDescription(items){
-    const needs=items.filter(x=>x.rating==='Needs Support');
-    const aggressive=items.filter(x=>x.rating==='Aggressive');
-    const labels=[...needs,...aggressive].map(x=>x.label).filter((v,i,a)=>a.indexOf(v)===i);
-    return {needs,aggressive,labels};
+  function verificationText(item){
+    const k=item?.key||'';
+    if(k==='desiredCap')return 'verify against comparable investment sales.';
+    if(k==='desiredGrm')return 'verify against comparable rental-property sales.';
+    if(k==='mortRate')return 'verify against current lender terms.';
+    if(k==='vacancy')return 'verify against property history and local vacancy evidence.';
+    if(k==='opEx')return 'verify against the property expense budget or operating history.';
+    if(k==='rentGrowth')return 'verify against local rent trends and competitive positioning.';
+    if(k==='appreciation')return 'verify against supportable long-term local price trends.';
+    if(k==='sellCost')return 'verify against expected brokerage and disposition costs.';
+    if(k==='requiredReturn')return 'confirm it reflects the investor’s actual hurdle rate and alternatives.';
+    if(k==='leverage')return 'confirm the leverage level is consistent with lender terms and risk tolerance.';
+    return 'verify with market or property-specific evidence.';
+  }
+
+  function quality(items){
+    const flagged=items.filter(x=>x.rating==='Needs Support'||x.rating==='Aggressive');
+    const labels=flagged.map(x=>x.label).filter((v,i,a)=>a.indexOf(v)===i);
+    return {flagged,labels};
   }
 
   function build(){
@@ -43,62 +57,49 @@
     const supportGap=finite(offer.price)&&finite(offer.maxSupported)?n(offer.price)-n(offer.maxSupported):0;
     const rentNeed=Math.max(...[offer.capRent,offer.irrRent].filter(finite).map(n),0);
     const rentGap=finite(offer.rent)&&rentNeed?Math.max(0,rentNeed-n(offer.rent)):0;
-    const quality=supportDescription(items);
-
-    const strengths=[],risks=[];
-    if(irrOk)strengths.push(`Projected IRR of ${pct(base.IRR)} exceeds the ${pct(s.requiredReturn)} required return${n(base.IRR)>=n(s.requiredReturn)*1.5?' by a substantial margin':''}.`);else risks.push(`Projected IRR of ${pct(base.IRR)} is below the ${pct(s.requiredReturn)} required return.`);
-    if(npvOk)strengths.push(`NPV is positive at ${money(base.NPV)}, indicating modeled value creation at the selected required return.`);else risks.push(`NPV is negative at ${money(base.NPV)} at the selected required return.`);
-    if(capOk)strengths.push(`Year 1 cap rate of ${pct(base.cap)} exceeds the ${pct(s.desiredCap)} target, providing strong current-income support.`);else risks.push(`Year 1 cap rate of ${pct(base.cap)} is below the ${pct(s.desiredCap)} target.`);
-    if(financed){if(debtOk)strengths.push(`Year 1 DSCR of ${ratio(y1.dcr)} provides an adequate modeled cushion above debt service.`);else risks.push(`Year 1 DSCR of ${ratio(y1.dcr)} indicates weak debt-service coverage and limited cash-flow cushion.`);}
-    if(priceOk)strengths.push(`The ${money(offer.price)} acquisition price is within the modeled price support produced by the selected return targets.`);else risks.push(`The ${money(offer.price)} acquisition price exceeds modeled maximum support of ${money(offer.maxSupported)} by ${money(Math.max(0,supportGap))}.`);
-
-    quality.aggressive.forEach(a=>risks.push(`${a.label} (${a.value}) is classified as aggressive: ${a.reason}`));
-    quality.needs.forEach(a=>risks.push(`${a.label} (${a.value}) still needs market or property-specific support.`));
+    const q=quality(items);
 
     let tone='good',label='Supportable Investment Case';
     if(!priceOk){tone='warn';label='Negotiation-Dependent Investment Case';}
     if(!irrOk||!npvOk||!capOk||!debtOk){tone='warn';label='Conditional Investment Case';}
     if((!irrOk&&!npvOk&&!capOk)||(!debtOk&&finite(y1.dcr)&&n(y1.dcr)<1)){tone='bad';label='Weak Investment Case at Current Terms';}
 
-    const evidence=[];
-    if(finite(base.IRR)&&finite(s.requiredReturn))evidence.push(`projected IRR of ${pct(base.IRR)} versus a ${pct(s.requiredReturn)} required return`);
-    if(finite(base.NPV))evidence.push(`NPV of ${money(base.NPV)}`);
-    if(finite(base.cap)&&finite(s.desiredCap))evidence.push(`a Year 1 cap rate of ${pct(base.cap)} versus the ${pct(s.desiredCap)} target`);
-    if(financed&&finite(y1.dcr))evidence.push(`${ratio(y1.dcr)} Year 1 DSCR`);
+    const strengths=[],risks=[];
+    if(irrOk)strengths.push(`Projected IRR of ${pct(base.IRR)} exceeds the ${pct(s.requiredReturn)} required return${n(base.IRR)>=n(s.requiredReturn)*1.5?' by a substantial margin':''}.`);else risks.push(`Projected IRR of ${pct(base.IRR)} is below the ${pct(s.requiredReturn)} required return.`);
+    if(npvOk)strengths.push(`NPV is positive at ${money(base.NPV)}, indicating modeled value creation at the selected required return.`);else risks.push(`NPV is negative at ${money(base.NPV)} at the selected required return.`);
+    if(capOk)strengths.push(`Year 1 cap rate of ${pct(base.cap)} exceeds the ${pct(s.desiredCap)} target, providing strong current-income support.`);else risks.push(`Year 1 cap rate of ${pct(base.cap)} is below the ${pct(s.desiredCap)} target.`);
+    if(financed){if(debtOk)strengths.push(`Year 1 DSCR of ${ratio(y1.dcr)} provides an adequate modeled cushion above debt service.`);else risks.push(`Year 1 DSCR of ${ratio(y1.dcr)} indicates weak debt-service coverage and limited cash-flow cushion.`);}
+    if(priceOk)strengths.push(`The ${money(offer.price)} acquisition price is within modeled support under the selected return targets.`);else risks.push(`The ${money(offer.price)} acquisition price exceeds modeled maximum support of ${money(offer.maxSupported)} by ${money(Math.max(0,supportGap))}.`);
+    q.flagged.forEach(a=>risks.push(`${a.label} (${a.value}) — ${verificationText(a)}`));
 
     let narrative='';
     if(tone==='good'){
-      narrative=`The property presents a supportable investment case at the modeled acquisition terms. ${evidence.length?`The case is supported by ${joinLabels(evidence)}.`:''} Current income and return performance are aligned with the investor’s selected benchmarks, and the acquisition price is within modeled support.`;
-      if(quality.labels.length)narrative+=` The principal remaining uncertainty is underwriting support rather than modeled performance: ${joinLabels(quality.labels)} ${quality.labels.length===1?'requires':'require'} verification before the conclusion should be treated as market-supported.`;
+      narrative=`The property presents a supportable investment case at the modeled acquisition terms. Current return, income-yield${financed?', and debt-coverage':''} metrics ${irrOk&&capOk&&debtOk?'materially ':''}support the investor’s selected benchmarks, and the acquisition price is within modeled support.`;
+      if(q.labels.length)narrative+=` The primary remaining uncertainty is the quality of the market-derived assumptions, particularly ${join(q.labels)}, which should be verified before the conclusion is treated as fully market-supported.`;
     }else if(!priceOk){
-      narrative=`The investment case is primarily constrained by acquisition pricing. At ${money(offer.price)}, the property exceeds the modeled maximum price of ${money(offer.maxSupported)} that satisfies both selected return targets. ${evidence.length?`Current performance includes ${joinLabels(evidence)}.`:''} The opportunity becomes more compelling if the acquisition basis is reduced or sustainable income can be demonstrated above the current underwriting level.`;
+      narrative=`The investment case is primarily constrained by acquisition pricing. The current price of ${money(offer.price)} exceeds the modeled maximum of ${money(offer.maxSupported)} that satisfies both selected return targets. The opportunity becomes more supportable if the acquisition basis is reduced or sustainable income is verified above the current underwriting level.`;
+      if(q.labels.length)narrative+=` ${join(q.labels)} should also be verified before relying on the modeled support range.`;
     }else if(!debtOk){
-      narrative=`The property produces a mixed investment case because financing pressure is limiting cash-flow resilience. Year 1 DSCR is ${ratio(y1.dcr)}, below the preferred 1.20x coverage screen. ${evidence.length?`Other modeled indicators include ${joinLabels(evidence)}.`:''} Lower leverage, stronger NOI, or improved financing terms represent the clearest paths to a stronger conclusion.`;
+      narrative=`The property produces a mixed investment case because financing pressure is limiting cash-flow resilience. Year 1 DSCR of ${ratio(y1.dcr)} is below the preferred 1.20x coverage screen, making lower leverage, stronger NOI, or improved financing terms the clearest paths to a stronger conclusion.`;
+      if(q.labels.length)narrative+=` ${join(q.labels)} should also be verified before the underwriting is treated as market-supported.`;
     }else{
-      narrative=`The property produces mixed results under the current underwriting assumptions. ${evidence.length?`Modeled performance includes ${joinLabels(evidence)}.`:''} One or more selected return or income benchmarks are not met, so the acquisition case depends on improving price, income, financing, or the investor’s target assumptions.`;
+      narrative=`The property produces mixed results under the current underwriting assumptions. One or more selected return or income benchmarks are not met, so the investment case depends on improving price, income, financing, or the investor’s target assumptions before proceeding.`;
+      if(q.labels.length)narrative+=` ${join(q.labels)} should also be verified with market or property-specific evidence.`;
     }
 
+    const verificationAction=q.flagged.length?q.flagged.map(a=>`${a.label}: ${verificationText(a).replace(/^verify /,'verify ')}`).join(' '):'';
     let strategy='';
-    const verify=quality.labels.length?` Verify ${joinLabels(quality.labels)} with market, lender, or property-specific evidence.`:'';
     if(tone==='good'){
-      strategy=`Proceed with property-level due diligence at the modeled acquisition terms. Current return, income-yield${financed?', and debt-coverage':''} metrics provide support for proceeding.${verify}`;
+      strategy=`Proceed with property-level due diligence at the modeled acquisition terms. Current return, income-yield${financed?', and debt-coverage':''} metrics provide support for proceeding.${verificationAction?' '+verificationAction:''}`;
     }else if(!priceOk){
-      strategy=`Negotiate toward the modeled support range. The maximum price meeting both selected targets is ${money(offer.maxSupported)}${finite(offer.opening)?`, with a modeled opening offer of ${money(offer.opening)}`:''}.${rentGap>0?` If price remains unchanged, modeled rent would need to reach approximately ${money(rentNeed)}/month.`:''}${verify}`;
+      strategy=`Negotiate toward the modeled support range. The maximum price meeting both selected targets is ${money(offer.maxSupported)}${finite(offer.opening)?`, with a modeled opening offer of ${money(offer.opening)}`:''}.${rentGap>0?` If price remains unchanged, modeled rent would need to reach approximately ${money(rentNeed)}/month.`:''}${verificationAction?' '+verificationAction:''}`;
     }else if(!debtOk){
-      strategy=`Rework financing before proceeding. Lower leverage, a lower rate, or stronger verified NOI should be tested until debt coverage improves above the preferred screen.${verify}`;
+      strategy=`Rework financing before proceeding. Lower leverage, a lower rate, or stronger verified NOI should be tested until debt coverage improves above the preferred screen.${verificationAction?' '+verificationAction:''}`;
     }else{
-      strategy=`Rework the acquisition terms before proceeding. Focus first on the benchmark currently failing in the Decision Center, then confirm the resulting price, income, and financing structure still meets the investor’s return requirements.${rentGap>0?` At the current price, modeled rent would need to reach approximately ${money(rentNeed)}/month.`:''}${verify}`;
+      strategy=`Rework the acquisition terms before proceeding. Focus first on the benchmark currently failing in the Decision Center, then confirm the resulting price, income, and financing structure still meets the investor’s return requirements.${rentGap>0?` At the current price, modeled rent would need to reach approximately ${money(rentNeed)}/month.`:''}${verificationAction?' '+verificationAction:''}`;
     }
 
-    return {
-      label,tone,narrative,
-      strengths:strengths.slice(0,5),
-      risks:risks.slice(0,6),
-      strategy,
-      assumptionIssues:quality.labels,
-      assumptionRating:assumptions?.rating||'Not Rated',
-      metrics:{price:offer.price,maxSupported:offer.maxSupported,opening:offer.opening,IRR:base.IRR,cap:base.cap,dcr:y1.dcr,NPV:base.NPV,NOI:y1.noi}
-    };
+    return {label,tone,narrative,strengths:strengths.slice(0,5),risks:risks.slice(0,7),strategy,assumptionIssues:q.labels,assumptionRating:assumptions?.rating||'Not Rated',metrics:{price:offer.price,maxSupported:offer.maxSupported,opening:offer.opening,IRR:base.IRR,cap:base.cap,dcr:y1.dcr,NPV:base.NPV,NOI:y1.noi}};
   }
 
   function styles(){if(document.getElementById('ptInvestmentThesisStyles'))return;const st=document.createElement('style');st.id='ptInvestmentThesisStyles';st.textContent=`
@@ -114,16 +115,10 @@
 
   function narrative(){const t=build();if(!t)return'';const support=t.strengths[0]?` Key support: ${t.strengths[0]}`:'';const risk=t.risks[0]?` Primary risk: ${t.risks[0]}`:'';return `${t.narrative} ${t.strategy}${support}${risk}`.replace(/\s+/g,' ').trim();}
 
-  function hookHydration(){
-    const api=window.PropertyThesisResultsHydration;
-    if(!api||typeof api.hydrate!=='function'||api.hydrate.__ptInvestmentThesisWrapped)return false;
-    const original=api.hydrate;
-    const wrapped=async function(){const out=await original.apply(this,arguments);try{apply();pin();}catch(_e){}setTimeout(()=>{try{apply();pin();}catch(_e){}},0);return out;};
-    wrapped.__ptInvestmentThesisWrapped=true;wrapped.__original=original;api.hydrate=wrapped;return true;
-  }
-
+  function hookHydration(){const api=window.PropertyThesisResultsHydration;if(!api||typeof api.hydrate!=='function'||api.hydrate.__ptInvestmentThesisWrapped)return false;const original=api.hydrate;const wrapped=async function(){const out=await original.apply(this,arguments);try{apply();pin();}catch(_e){}setTimeout(()=>{try{apply();pin();}catch(_e){}},0);return out;};wrapped.__ptInvestmentThesisWrapped=true;wrapped.__original=original;api.hydrate=wrapped;return true;}
   function schedule(){[0,60,160,320].forEach(ms=>setTimeout(()=>{hookHydration();apply();pin();},ms));}
   function start(){hookHydration();schedule();document.addEventListener('click',e=>{if(e.target?.closest?.('[data-s8-tab="dashboard"],[data-tab="dashboard"],#appNavReview,[data-app-review],#gwNext,#gwSave,[data-hub-open],[data-pt-open]'))schedule();},true);}
+
   window.PropertyThesisInvestmentThesis={version:VERSION,apply,pin,build,narrative,hookHydration};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
