@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__reportExecutiveConclusionCurrentVersion||0)>=VERSION)return;
   window.__reportExecutiveConclusionCurrentVersion=VERSION;
 
@@ -44,15 +44,34 @@
     return !!(front||final);
   }
 
+  function refineReportLabels(){
+    const report=document.querySelector('#clientReport .rb-report');if(!report)return false;
+    const assessmentLabel=report.querySelector('.rb-conclusion-box strong');
+    if(assessmentLabel&&/^Investment Conclusion:?$/i.test((assessmentLabel.textContent||'').trim()))assessmentLabel.textContent='Investment Assessment:';
+
+    for(const stat of report.querySelectorAll('.rb-stat')){
+      const label=(stat.querySelector('span')?.textContent||'').replace(/\s+/g,' ').trim();
+      if(!/^Acquisition Price vs\. Reconciled Value$/i.test(label))continue;
+      const value=stat.querySelector('b');
+      const note=stat.querySelector('small');
+      if(value&&/^(N\/?A|Not entered)$/i.test((value.textContent||'').trim())){
+        value.textContent='Not Reconciled';
+        if(note)note.textContent='No reconciled investment value entered';
+      }
+    }
+    return true;
+  }
+
   function apply(){
     const box=document.querySelector('#clientReport .rb-report > .rb-conclusion');
     const p=box?.querySelector('p');
     renameSections();
+    refineReportLabels();
     if(!p)return false;
     const text=currentNarrative();
     if(!text)return false;
     p.innerHTML=esc(text);
-    box.dataset.currentExecutiveConclusion='3';
+    box.dataset.currentExecutiveConclusion='4';
     return true;
   }
 
@@ -78,6 +97,6 @@
   },true);
   document.addEventListener('change',e=>{if(e.target?.matches?.('[data-rb-pref]'))setTimeout(apply,80);},true);
 
-  window.ReportExecutiveConclusionCurrent={version:VERSION,apply,currentNarrative,renameSections};
+  window.ReportExecutiveConclusionCurrent={version:VERSION,apply,currentNarrative,renameSections,refineReportLabels};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,0),{once:true});else setTimeout(install,0);
 })();
