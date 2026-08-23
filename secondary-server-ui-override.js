@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__secondaryServerUiOverrideVersion||0)>=VERSION)return;
   window.__secondaryServerUiOverrideVersion=VERSION;
   const finite=v=>Number.isFinite(Number(v));
@@ -10,13 +10,13 @@
   function badge(){
     let b=document.getElementById('ptSecondaryEngineStatus');if(b)return b;
     const host=document.querySelector('.topactions');if(!host)return null;
-    b=document.createElement('span');b.id='ptSecondaryEngineStatus';b.className='pill';b.style.fontSize='10px';b.style.fontWeight='800';b.style.letterSpacing='.01em';b.textContent='Secondary Engine…';b.style.background='#eff8ff';b.style.borderColor='#b2ddff';b.style.color='#175cd3';
+    b=document.createElement('span');b.id='ptSecondaryEngineStatus';b.className='pill';b.style.fontSize='10px';b.style.fontWeight='800';b.style.letterSpacing='.01em';b.style.display='none';
     const primary=document.getElementById('ptEngineSourceStatus');if(primary?.nextSibling)host.insertBefore(b,primary.nextSibling);else host.appendChild(b);return b;
   }
   function paint(ok,msg=''){
     const b=badge();if(!b)return;
-    if(ok){b.textContent='Secondary Protected';b.title='Scenarios, sensitivity analysis and offer solving are supplied by the authenticated PropertyThesis server engine.';b.style.background='#ecfdf3';b.style.borderColor='#a6f4c5';b.style.color='#067647';}
-    else{b.textContent='Secondary Fallback';b.title=msg||'Secondary calculations are temporarily using the local fallback.';b.style.background='#fffaeb';b.style.borderColor='#fedf89';b.style.color='#b54708';}
+    if(ok){b.style.display='none';b.textContent='';b.title='';}
+    else{b.style.display='inline-flex';b.textContent='Advanced Analysis Unavailable';b.title=msg||'Some advanced calculations are temporarily unavailable.';b.style.background='#fffaeb';b.style.borderColor='#fedf89';b.style.color='#b54708';}
   }
   function recommendation(d){
     if(!d||!finite(d.maxSupported))return 'A supported offer recommendation could not be calculated from the current assumptions.';
