@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__propertyThesisGuidedSaveExistingWorkflowV||0)>=VERSION)return;
   window.__propertyThesisGuidedSaveExistingWorkflowV=VERSION;
 
@@ -61,25 +61,26 @@
 
   function modernizeHubCard(card){
     const actions=card.querySelector('.hub-actions');if(!actions)return;
-    const pid=card.querySelector('[data-hub-open],[data-hub-edit],[data-hub-report],[data-pt-manage]')?.dataset?.hubOpen||card.querySelector('[data-hub-edit]')?.dataset?.hubEdit||card.querySelector('[data-hub-report]')?.dataset?.hubReport||card.querySelector('[data-pt-manage]')?.dataset?.ptManage;
-    if(!pid)return;
-    const hasAnalysis=!!card.querySelector('[data-hub-open]')&&!!card.querySelector('[data-hub-report]');
-    const manage=card.querySelector('[data-pt-manage]');
     const open=card.querySelector('[data-hub-open]');
     const report=card.querySelector('[data-hub-report]');
     const edit=card.querySelector('[data-hub-edit]');
+    const manage=card.querySelector('[data-pt-manage]');
     const clone=card.querySelector('[data-hub-clone]');
     const archive=card.querySelector('[data-hub-archive]');
     const del=card.querySelector('[data-hub-delete]');
+    const pid=open?.dataset?.hubOpen||edit?.dataset?.hubEdit||report?.dataset?.hubReport||manage?.dataset?.ptManage;
+    if(!pid)return;
+    const hasAnalysis=!!report;
     clone?.remove();
     if(manage)manage.textContent='Manage Analyses';
-    if(open)open.textContent='Review Latest Analysis';
     if(report)report.textContent='Client Report';
+    if(hasAnalysis&&open)open.textContent='Review Latest Analysis';
+    if(!hasAnalysis&&open)open.remove();
     if(edit)edit.textContent=hasAnalysis?'Edit Guided Analysis':'Start Guided Analysis';
     let newBtn=card.querySelector('[data-pt-new]');
     if(hasAnalysis&&!newBtn){newBtn=document.createElement('button');newBtn.type='button';newBtn.className='btn ghost';newBtn.dataset.ptNew=pid;newBtn.textContent='Start New Analysis';}
     const primary=document.createElement('div');primary.className='pt-hub-primary-flow';
-    [open,edit,newBtn,report,manage].forEach(x=>{if(x)primary.appendChild(x);});
+    [hasAnalysis?open:null,edit,newBtn,report,manage].forEach(x=>{if(x)primary.appendChild(x);});
     const admin=document.createElement('div');admin.className='pt-hub-admin-flow';
     [archive,del].forEach(x=>{if(x)admin.appendChild(x);});
     actions.replaceChildren(primary,admin);
