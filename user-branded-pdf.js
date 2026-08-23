@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=17;
+  const VERSION=18;
   if((window.__userBrandedPdfVersion||0)>=VERSION)return;
   window.__userBrandedPdfVersion=VERSION;
 
@@ -26,7 +26,24 @@
     #clientReport .pt-pdf-row-capture>*{box-sizing:border-box!important;margin:0!important}
   `;}
 
-  async function preparePreview(){window.ReportBuilderV1?.renderReport?.();await new Promise(r=>setTimeout(r,180));window.ReportBuilderV8?.apply?.();window.ReportAssumptionsNarrative?.apply?.();window.UserBranding?.applyReportBranding?.();window.PropertyThesisReportBranding?.apply?.();await new Promise(r=>setTimeout(r,220));}
+  async function preparePreview(){
+    window.ReportBuilderV1?.renderReport?.();
+    await new Promise(r=>setTimeout(r,180));
+    window.ReportBuilderV8?.apply?.();
+    window.ReportAssumptionsNarrative?.apply?.();
+    window.ReportMarketRentSupport?.apply?.();
+    window.ReportMarketRentUnderwriting?.apply?.();
+    window.ReportExecutiveConclusionCurrent?.apply?.();
+    window.PropertyThesisMarketRentConclusion?.enhanceReport?.();
+    window.UserBranding?.applyReportBranding?.();
+    window.PropertyThesisReportBranding?.apply?.();
+    await new Promise(r=>setTimeout(r,160));
+    window.ReportMarketRentSupport?.apply?.();
+    window.ReportMarketRentUnderwriting?.apply?.();
+    window.ReportExecutiveConclusionCurrent?.apply?.();
+    window.PropertyThesisMarketRentConclusion?.enhanceReport?.();
+    await new Promise(r=>setTimeout(r,220));
+  }
   function makeClone(source){ensureCaptureStyles();const host=document.getElementById('clientReport');if(!host)throw new Error('Client report container is unavailable.');const clone=source.cloneNode(true);clone.classList.add('pt-pdf-capture');clone.setAttribute('aria-hidden','true');Object.assign(clone.style,{position:'fixed',left:'-12000px',top:'0',width:CAPTURE_WIDTH+'px',maxWidth:CAPTURE_WIDTH+'px',height:'auto',zIndex:'-1',transform:'none',overflow:'visible'});host.appendChild(clone);return clone;}
 
   function visualRows(elements){const items=[...elements].map(el=>({el,r:el.getBoundingClientRect()})).sort((a,b)=>a.r.top-b.r.top||a.r.left-b.r.left),rows=[];let row=[];for(const item of items){if(!row.length||Math.abs(item.r.top-row[0].r.top)<8)row.push(item);else{rows.push(row.map(x=>x.el));row=[item];}}if(row.length)rows.push(row.map(x=>x.el));return rows;}
@@ -46,6 +63,7 @@
         const ps=[...section.querySelectorAll('.rb-final-copy > p')];if(ps.length){for(const p of ps)add('full',p,12);}else add('full',section.querySelector('.rb-final-copy'),10);continue;
       }
       add('full',section.querySelector('.rb-analysis-copy'),10);
+      add('full',section.querySelector('.ptmri-report-conclusion'),10);
       for(const row of statRows(section))add('row',row,9);
       const tables=[...section.querySelectorAll('.rb-tablewrap')];
       const panels=[...section.querySelectorAll('.rb-panel')].filter(panel=>!tables.some(table=>panel.contains(table)));
