@@ -7,11 +7,11 @@
 <title>PropertyThesis — Step 1 Address Test</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{font-family:Inter,Segoe UI,Arial,sans-serif;color:#172033;background:#edf2f7}*{box-sizing:border-box}body{margin:0}.top{background:linear-gradient(125deg,#1d4ed8,#0f766e);color:#fff;padding:22px 28px}.top h1{margin:0;font-size:24px}.top p{margin:4px 0 0;opacity:.9}.wrap{max-width:980px;margin:28px auto;padding:0 18px}.card{background:#fff;border:1px solid #d8dee8;border-radius:16px;padding:22px;box-shadow:0 8px 24px rgba(16,24,40,.06);margin-bottom:18px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}label{display:block;font-weight:700;font-size:12px;margin-bottom:6px;color:#475467}input{width:100%;padding:12px 13px;border:1px solid #cfd7e3;border-radius:10px;font-size:15px}button,a.btn{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}.primary{background:#1d4ed8;color:#fff}.secondary{background:#eef4ff;color:#1d4ed8}.status{margin-top:12px;padding:11px 12px;border-radius:10px;background:#f5f7fb;color:#475467}.ok{background:#ecfdf3;color:#067647}.err{background:#fef3f2;color:#b42318}.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.fact{padding:12px;border-radius:10px;background:#f8fafc;border:1px solid #e5e7eb}.fact b{display:block;font-size:12px;color:#667085;margin-bottom:4px}.candidate{padding:12px 0;border-top:1px solid #eaecf0}.candidate:first-child{border-top:0}.muted{color:#667085;font-size:13px}.hidden{display:none}@media(max-width:700px){.facts{grid-template-columns:1fr}}
+:root{font-family:Inter,Segoe UI,Arial,sans-serif;color:#172033;background:#edf2f7}*{box-sizing:border-box}body{margin:0}.top{background:linear-gradient(125deg,#1d4ed8,#0f766e);color:#fff;padding:22px 28px}.top h1{margin:0;font-size:24px}.top p{margin:4px 0 0;opacity:.9}.wrap{max-width:980px;margin:28px auto;padding:0 18px}.card{background:#fff;border:1px solid #d8dee8;border-radius:16px;padding:22px;box-shadow:0 8px 24px rgba(16,24,40,.06);margin-bottom:18px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}label{display:block;font-weight:700;font-size:12px;margin-bottom:6px;color:#475467}input{width:100%;padding:12px 13px;border:1px solid #cfd7e3;border-radius:10px;font-size:15px}button,a.btn{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}.primary{background:#1d4ed8;color:#fff}.secondary{background:#eef4ff;color:#1d4ed8}.status{margin-top:12px;padding:11px 12px;border-radius:10px;background:#f5f7fb;color:#475467}.ok{background:#ecfdf3;color:#067647}.err{background:#fef3f2;color:#b42318}.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.fact{padding:12px;border-radius:10px;background:#f8fafc;border:1px solid #e5e7eb}.fact b{display:block;font-size:12px;color:#667085;margin-bottom:4px}.candidate{padding:12px 0;border-top:1px solid #eaecf0}.candidate:first-child{border-top:0}.muted{color:#667085;font-size:13px}.hidden{display:none}.keybox{display:grid;grid-template-columns:minmax(260px,1fr) auto auto;gap:10px;align-items:end}.keybox input{font-family:monospace}.pac-container{z-index:9999!important;border-radius:10px;box-shadow:0 8px 24px rgba(16,24,40,.14)}@media(max-width:700px){.facts{grid-template-columns:1fr}.keybox{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header class="top"><h1>PropertyThesis — Step 1 Test</h1><p>Same-origin property recognition test. The live analysis workflow is not modified.</p></header>
+<header class="top"><h1>PropertyThesis — Step 1 Test</h1><p>Same-origin address autocomplete + property recognition test. The live analysis workflow is not modified.</p></header>
 <main class="wrap">
 <section class="card">
 <h2>Session Status</h2>
@@ -20,55 +20,37 @@
 <div id="signInHelp" class="row hidden" style="margin-top:12px"><a class="btn secondary" href="./latest.html" target="_blank" rel="noopener">Open PropertyThesis to Sign In</a><button class="primary" id="checkAgain">Check Again</button></div>
 </section>
 <section class="card">
+<h2>Address Suggestions</h2>
+<p class="muted">Google Places supplies the type-ahead address suggestions. The browser key is stored only in this browser and is not committed to GitHub. Use a Google Maps browser key restricted to <b>https://propertythesis.com/*</b> with Maps JavaScript API and Places API enabled.</p>
+<div class="keybox"><div><label for="googleKey">Google Places browser key</label><input id="googleKey" type="password" autocomplete="off" placeholder="Paste key here — do not send it in chat"></div><button class="primary" id="enablePlaces">Enable Suggestions</button><button class="secondary" id="forgetKey">Forget Key</button></div>
+<div id="placesStatus" class="status">Checking local autocomplete configuration…</div>
+</section>
+<section class="card">
 <h2>1. Property Address</h2>
-<p class="muted">Enter a complete U.S. property address. This checkpoint tests raw property recognition before autocomplete is added.</p>
+<p class="muted">Begin typing a U.S. street address. Select a Google suggestion; the selected standardized address will automatically run the secure RentCast property lookup. Manual full-address lookup still works.</p>
 <label for="address">Property address</label>
-<div class="row"><input id="address" style="flex:1;min-width:260px" placeholder="123 Main St, Tampa, FL 33602"><button class="primary" id="recognize">Recognize Property</button></div>
+<div class="row"><input id="address" style="flex:1;min-width:260px" placeholder="Start typing an address…" autocomplete="off"><button class="primary" id="recognize">Recognize Property</button></div>
 <div id="lookupStatus" class="status">Waiting for an authenticated session.</div>
 </section>
 <section class="card hidden" id="matchCard"><h2>Matched Property</h2><div id="matchedAddress" style="font-size:18px;font-weight:800"></div><div id="facts" class="facts"></div></section>
-<section class="card hidden" id="candidateCard"><h2>Candidate Records</h2><p class="muted">These are the records RentCast returned for the submitted address.</p><div id="candidates"></div></section>
+<section class="card hidden" id="candidateCard"><h2>Candidate Records</h2><p class="muted">These are the records RentCast returned for the selected/submitted address.</p><div id="candidates"></div></section>
 </main>
 <script>
 (()=>{
 const SUPABASE_URL='https://lmaiqpkogmmsldkziggy.supabase.co';
 const SUPABASE_KEY='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
+const GOOGLE_KEY_STORAGE='pt_step1_google_places_key';
 const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
-let session=null;
+let session=null,autocomplete=null,googleLoading=null;
 function setStatus(id,text,kind=''){const el=$(id);el.textContent=text;el.className='status '+kind}
 function fmt(v,suffix=''){return v===null||v===undefined||v===''?'—':String(v)+suffix}
-async function refreshSession(){
-  const {data:{session:s},error}=await client.auth.getSession();
-  session=s||null;
-  if(error){setStatus('sessionStatus','Could not read the PropertyThesis session: '+error.message,'err');$('signInHelp').classList.remove('hidden');return;}
-  if(session?.user){setStatus('sessionStatus','Signed in as '+(session.user.email||'PropertyThesis user')+'. Secure lookup is enabled.','ok');$('signInHelp').classList.add('hidden');setStatus('lookupStatus','Enter a full address and click Recognize Property.');}
-  else{setStatus('sessionStatus','No active PropertyThesis session found in this browser. Sign in to PropertyThesis in another tab, then click Check Again.','err');$('signInHelp').classList.remove('hidden');setStatus('lookupStatus','Sign in to PropertyThesis first.','err');}
-}
-$('checkAgain').onclick=refreshSession;
-$('recognize').onclick=async()=>{
-  const address=$('address').value.trim();
-  $('matchCard').classList.add('hidden');$('candidateCard').classList.add('hidden');
-  if(!session?.user){await refreshSession();if(!session?.user)return;}
-  if(!address)return setStatus('lookupStatus','Enter a full property address.','err');
-  setStatus('lookupStatus','Looking up property…');
-  const {data,error}=await client.functions.invoke('rentcast-property-lookup',{body:{address}});
-  if(error)return setStatus('lookupStatus',error.message||'Lookup failed.','err');
-  if(!data?.matched||!data.property)return setStatus('lookupStatus','No matching RentCast property record found.','err');
-  const p=data.property;
-  $('matchedAddress').textContent=p.formattedAddress||address;
-  const items=[['Property Type',fmt(p.propertyType)],['Living Area',fmt(p.squareFootage,' sf')],['Year Built',fmt(p.yearBuilt)],['Lot Size',fmt(p.lotSize,' sf')],['Bedrooms',fmt(p.bedrooms)],['Bathrooms',fmt(p.bathrooms)],['County',fmt(p.county)],['Subdivision',fmt(p.subdivision)],['Assessor ID',fmt(p.assessorID)],['Last Sale Date',fmt(p.lastSaleDate)],['Last Sale Price',p.lastSalePrice?Number(p.lastSalePrice).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'—'],['RentCast ID',fmt(p.id)]];
-  $('facts').innerHTML=items.map(([k,v])=>`<div class="fact"><b>${esc(k)}</b>${esc(v)}</div>`).join('');
-  $('matchCard').classList.remove('hidden');
-  const c=Array.isArray(data.candidates)?data.candidates:[];
-  $('candidates').innerHTML=c.map((x,i)=>`<div class="candidate"><strong>${i+1}. ${esc(x.formattedAddress||'Unformatted address')}</strong><div class="muted">${esc([x.propertyType,x.squareFootage?x.squareFootage+' sf':null,x.yearBuilt?'Built '+x.yearBuilt:null].filter(Boolean).join(' • '))}</div></div>`).join('')||'<div class="muted">No additional candidates.</div>';
-  $('candidateCard').classList.remove('hidden');
-  setStatus('lookupStatus','Property recognized successfully.','ok');
-};
-$('address').addEventListener('keydown',e=>{if(e.key==='Enter')$('recognize').click()});
-client.auth.onAuthStateChange((_event,s)=>{session=s||null;refreshSession();});
-refreshSession();
+async function refreshSession(){const {data:{session:s},error}=await client.auth.getSession();session=s||null;if(error){setStatus('sessionStatus','Could not read the PropertyThesis session: '+error.message,'err');$('signInHelp').classList.remove('hidden');return;}if(session?.user){setStatus('sessionStatus','Signed in as '+(session.user.email||'PropertyThesis user')+'. Secure lookup is enabled.','ok');$('signInHelp').classList.add('hidden');setStatus('lookupStatus','Start typing or enter a full address.');}else{setStatus('sessionStatus','No active PropertyThesis session found in this browser. Sign in to PropertyThesis in another tab, then click Check Again.','err');$('signInHelp').classList.remove('hidden');setStatus('lookupStatus','Sign in to PropertyThesis first.','err');}}
+function loadGoogle(key){if(window.google?.maps?.places)return Promise.resolve();if(googleLoading)return googleLoading;googleLoading=new Promise((resolve,reject)=>{window.__ptPlacesReady=()=>resolve();const s=document.createElement('script');s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(key)+'&libraries=places&callback=__ptPlacesReady&v=weekly';s.async=true;s.defer=true;s.onerror=()=>reject(new Error('Google Places failed to load. Check the API key, enabled APIs, billing, and HTTP referrer restriction.'));document.head.appendChild(s);setTimeout(()=>{if(!window.google?.maps?.places)reject(new Error('Google Places did not initialize. Check the browser console and Google Cloud key restrictions.'));},12000);});return googleLoading;}
+async function enablePlaces(){const key=$('googleKey').value.trim()||localStorage.getItem(GOOGLE_KEY_STORAGE)||'';if(!key)return setStatus('placesStatus','Enter a Google Places browser key first.','err');localStorage.setItem(GOOGLE_KEY_STORAGE,key);$('googleKey').value=key;setStatus('placesStatus','Loading Google address suggestions…');try{await loadGoogle(key);if(!window.google?.maps?.places)throw new Error('Places library unavailable');if(!autocomplete){autocomplete=new google.maps.places.Autocomplete($('address'),{componentRestrictions:{country:'us'},types:['address'],fields:['formatted_address','place_id','geometry']});autocomplete.addListener('place_changed',()=>{const p=autocomplete.getPlace();const address=p?.formatted_address||$('address').value.trim();if(!address)return;$('address').value=address;setStatus('lookupStatus','Address selected. Looking up property…');recognize(address);});}setStatus('placesStatus','Google address suggestions are enabled. Start typing below.','ok');}catch(e){setStatus('placesStatus',e?.message||'Could not enable Google Places.','err');}}
+async function recognize(provided){const address=String(provided||$('address').value).trim();$('matchCard').classList.add('hidden');$('candidateCard').classList.add('hidden');if(!session?.user){await refreshSession();if(!session?.user)return;}if(!address)return setStatus('lookupStatus','Enter a full property address.','err');setStatus('lookupStatus','Looking up property…');const {data,error}=await client.functions.invoke('rentcast-property-lookup',{body:{address}});if(error)return setStatus('lookupStatus',error.message||'Lookup failed.','err');if(!data?.matched||!data.property)return setStatus('lookupStatus','No matching RentCast property record found.','err');const p=data.property;$('matchedAddress').textContent=p.formattedAddress||address;const items=[['Property Type',fmt(p.propertyType)],['Living Area',fmt(p.squareFootage,' sf')],['Year Built',fmt(p.yearBuilt)],['Lot Size',fmt(p.lotSize,' sf')],['Bedrooms',fmt(p.bedrooms)],['Bathrooms',fmt(p.bathrooms)],['County',fmt(p.county)],['Subdivision',fmt(p.subdivision)],['Assessor ID',fmt(p.assessorID)],['Last Sale Date',fmt(p.lastSaleDate)],['Last Sale Price',p.lastSalePrice?Number(p.lastSalePrice).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'—'],['RentCast ID',fmt(p.id)]];$('facts').innerHTML=items.map(([k,v])=>`<div class="fact"><b>${esc(k)}</b>${esc(v)}</div>`).join('');$('matchCard').classList.remove('hidden');const c=Array.isArray(data.candidates)?data.candidates:[];$('candidates').innerHTML=c.map((x,i)=>`<div class="candidate"><strong>${i+1}. ${esc(x.formattedAddress||'Unformatted address')}</strong><div class="muted">${esc([x.propertyType,x.squareFootage?x.squareFootage+' sf':null,x.yearBuilt?'Built '+x.yearBuilt:null].filter(Boolean).join(' • '))}</div></div>`).join('')||'<div class="muted">No additional candidates.</div>';$('candidateCard').classList.remove('hidden');setStatus('lookupStatus','Property recognized successfully.','ok');}
+$('checkAgain').onclick=refreshSession;$('recognize').onclick=()=>recognize();$('enablePlaces').onclick=enablePlaces;$('forgetKey').onclick=()=>{localStorage.removeItem(GOOGLE_KEY_STORAGE);$('googleKey').value='';setStatus('placesStatus','Saved Google Places key removed from this browser.');};$('address').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();recognize();}});client.auth.onAuthStateChange((_event,s)=>{session=s||null;refreshSession();});const saved=localStorage.getItem(GOOGLE_KEY_STORAGE)||'';if(saved){$('googleKey').value=saved;enablePlaces();}else setStatus('placesStatus','No Google Places key stored in this browser yet.');refreshSession();
 })();
 </script>
 </body>
