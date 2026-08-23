@@ -1,10 +1,24 @@
 'use strict';
 (() => {
-  const VERSION=3;
+  const VERSION=4;
   if((window.__workflowNavigationControllerVersion||0)>=VERSION)return;
   window.__workflowNavigationControllerVersion=VERSION;
 
   const PRIMARY=new Set(['assumptions','dashboard','report']);
+
+  function finalizeReport(){
+    try{window.ReportBuilderV2?.apply?.();}catch(e){}
+    try{window.ReportBuilderV3?.apply?.();}catch(e){}
+    try{window.ReportBuilderV4?.apply?.();}catch(e){}
+    try{window.ReportBuilderV8?.apply?.();window.ReportBuilderV8Presentation?.apply?.();}catch(e){}
+    try{window.ReportAssumptionsNarrative?.apply?.();window.ReportDetailOrder?.apply?.();}catch(e){}
+    try{window.ReportSensitivityAnalysis?.apply?.();window.ReportInvestmentOfferAnalysis?.apply?.();}catch(e){}
+    try{window.ReportMarketRentSupport?.apply?.();window.ReportMarketRentUnderwriting?.apply?.();}catch(e){}
+    try{window.ReportExecutiveConclusionCurrent?.apply?.();}catch(e){}
+    try{window.PropertyThesisMarketRentConclusion?.enhanceReport?.();}catch(e){}
+    try{window.UserBranding?.applyReportBranding?.();}catch(e){}
+    try{window.PropertyThesisReportBranding?.apply?.();}catch(e){}
+  }
 
   function directActivate(id){
     const target=document.getElementById(id);
@@ -21,12 +35,9 @@
     }
     if(id==='report'){
       try{window.ReportBuilderV1?.renderReport?.();}catch(e){}
-      setTimeout(()=>{
-        try{window.ReportBuilderV2?.apply?.();}catch(e){}
-        try{window.ReportBuilderV3?.apply?.();}catch(e){}
-        try{window.ReportBuilderV4?.apply?.();}catch(e){}
-        try{window.UserBranding?.applyReportBranding?.();}catch(e){}
-      },0);
+      setTimeout(finalizeReport,0);
+      setTimeout(finalizeReport,100);
+      setTimeout(finalizeReport,240);
     }
     window.scrollTo({top:0,behavior:'smooth'});
     return true;
