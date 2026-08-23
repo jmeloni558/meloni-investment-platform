@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=4;
+  const VERSION=5;
   if((window.__workflowNavigationControllerVersion||0)>=VERSION)return;
   window.__workflowNavigationControllerVersion=VERSION;
 
@@ -50,10 +50,18 @@
     directActivate('dashboard');
   }
 
+  function clearPropertySpecificDraftUI(){
+    try{document.querySelectorAll('.pt-unsaved-new').forEach(x=>x.remove());}catch(e){}
+    try{const b=document.getElementById('cloudSaveCurrent');if(b)b.textContent='Save Current Analysis to Cloud';}catch(e){}
+    try{window.UnsavedChangeProtection?.markClean?.();}catch(e){}
+  }
+
   function newAnalysis(){
     try{selectedClientId=null;selectedPropertyId=null;selectedAnalysisId=null;selectedScenarioId=null;}catch(e){}
+    try{if(typeof cloudScenarios!=='undefined')cloudScenarios=[];}catch(e){}
+    clearPropertySpecificDraftUI();
     try{
-      state={...defaults,name:'',address:'',price:0,land:0,units:1,rent:0,hold:7,mortgage:0,loanYears:30,initialRepairs:0};
+      state={...defaults,name:'',address:'',price:0,land:0,units:1,rent:0,hold:7,mortgage:0,mortRate:.065,interestOnly:false,loanYears:30,initialRepairs:0};
       if(typeof renderFields==='function')renderFields();
     }catch(e){}
     try{localStorage.removeItem('guided-expenses-v1');}catch(e){}
@@ -66,14 +74,18 @@
 
     directActivate('assumptions');
     try{window.GuidedAnalysisSetup?.reset?.();}catch(e){}
+    try{window.NewAnalysisSaveGuidance?.refresh?.();}catch(e){}
     setTimeout(()=>{
       clearBlanks();
+      clearPropertySpecificDraftUI();
       try{window.GuidedAnalysisSetup?.reset?.();}catch(e){}
       try{window.GuidedAssumptionGuidance?.apply?.();}catch(e){}
       try{window.GuidedInitialRepairs?.apply?.();}catch(e){}
+      try{window.NewAnalysisSaveGuidance?.refresh?.();}catch(e){}
       try{if(typeof setStatus==='function')setStatus('New analysis started — enter the property and investment assumptions');}catch(e){}
       document.querySelector('#gwBody [data-src="f_address"]')?.focus();
     },80);
+    setTimeout(()=>{clearPropertySpecificDraftUI();try{window.NewAnalysisSaveGuidance?.refresh?.();}catch(e){}},180);
   }
 
   function capture(e){
