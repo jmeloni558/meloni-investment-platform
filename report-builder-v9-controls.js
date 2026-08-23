@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=3;
+  const VERSION=4;
   if((window.__reportBuilderV9ControlsVersion||0)>=VERSION)return;
   window.__reportBuilderV9ControlsVersion=VERSION;
 
@@ -151,11 +151,17 @@
   }
 
   function schedule(finalize=false){
-    [0,80,220].forEach(ms=>setTimeout(()=>{apply();if(finalize)finalizeReport();},ms));
+    const times=finalize?[120,320,650]:[0,80,220];
+    times.forEach(ms=>setTimeout(()=>{apply();if(finalize)finalizeReport();},ms));
   }
+
   document.addEventListener('click',e=>{
     const preset=e.target?.closest?.('#rbSelectCore,#rbSelectAll');
-    if(preset){schedule(true);return;}
+    if(preset){
+      setTimeout(()=>{try{window.ReportBuilderV1?.renderReport?.();}catch(_e){}},60);
+      schedule(true);
+      return;
+    }
     if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbDownloadPdf'))schedule(false);
   },true);
   document.addEventListener('change',e=>{if(e.target?.matches?.('[data-rb-pref]'))schedule(true);},true);
