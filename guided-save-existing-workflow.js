@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__propertyThesisGuidedSaveExistingWorkflowV||0)>=VERSION)return;
   window.__propertyThesisGuidedSaveExistingWorkflowV=VERSION;
 
@@ -14,6 +14,8 @@
       #gwSaveAndReview{white-space:nowrap}
       #gwSaveAndReview[disabled]{opacity:.62;cursor:wait}
       #propertyhub .pt-hub-primary-flow{display:flex;gap:7px;flex-wrap:wrap;width:100%}
+      #propertyhub .pt-hub-primary-flow [data-hub-open]{order:-2}
+      #propertyhub .pt-hub-primary-flow .pt-manage-analysis,#propertyhub .pt-hub-primary-flow [data-pt-manage]{order:0!important}
       #propertyhub .pt-hub-admin-flow{display:flex;gap:7px;flex-wrap:wrap;width:100%;padding-top:8px;margin-top:2px;border-top:1px solid #edf1f5}
       #propertyhub .pt-hub-admin-flow .hub-delete{margin-left:auto}
       #propertyhub .hub-actions{display:block}
