@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   if((window.__reportExecutiveConclusionCurrentVersion||0)>=VERSION)return;
   window.__reportExecutiveConclusionCurrentVersion=VERSION;
 
@@ -8,6 +8,13 @@
   const pct=v=>typeof fmtP==='function'?fmtP(v):(Number.isFinite(Number(v))?(Number(v)*100).toFixed(2)+'%':'N/A');
   const finite=v=>Number.isFinite(Number(v));
   const esc=v=>String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
+
+  function loadProForma(){
+    if(window.PropertyThesisReportProForma){window.PropertyThesisReportProForma.schedule?.();return;}
+    if(document.getElementById('ptReportProFormaLoader'))return;
+    const s=document.createElement('script');s.id='ptReportProFormaLoader';s.src='report-pro-forma.js?v=2&build=20260823-1410-pro-forma';s.async=false;s.onload=()=>window.PropertyThesisReportProForma?.schedule?.();
+    (document.body||document.head||document.documentElement).appendChild(s);
+  }
 
   function fallbackThesis(){
     if(typeof state==='undefined'||typeof result==='undefined'||!state||!result||!result.years?.length)return'';
@@ -27,12 +34,7 @@
     return `The property presents a conditional investment opportunity at the modeled acquisition terms. The principal challenge is ${issueText||'the relationship between acquisition basis and modeled performance'}, which limits support for the current price. The opportunity becomes more compelling through a lower acquisition basis, stronger sustainable income, improved financing, or lower operating costs, subject to verification of the underlying market assumptions.`;
   }
 
-  function currentNarrative(){
-    let thesis=null;
-    try{thesis=window.PropertyThesisInvestmentThesis?.build?.()||null;}catch(_e){}
-    if(thesis?.narrative)return String(thesis.narrative).replace(/\s+/g,' ').trim();
-    return fallbackThesis();
-  }
+  function currentNarrative(){let thesis=null;try{thesis=window.PropertyThesisInvestmentThesis?.build?.()||null;}catch(_e){}if(thesis?.narrative)return String(thesis.narrative).replace(/\s+/g,' ').trim();return fallbackThesis();}
 
   function renameSections(){
     const report=document.querySelector('#clientReport .rb-report');if(!report)return false;
@@ -48,53 +50,27 @@
     const report=document.querySelector('#clientReport .rb-report');if(!report)return false;
     const assessmentLabel=report.querySelector('.rb-conclusion-box strong');
     if(assessmentLabel&&/^Investment Conclusion:?$/i.test((assessmentLabel.textContent||'').trim()))assessmentLabel.textContent='Investment Assessment:';
-
     for(const stat of report.querySelectorAll('.rb-stat')){
       const label=(stat.querySelector('span')?.textContent||'').replace(/\s+/g,' ').trim();
       if(!/^Acquisition Price vs\. Reconciled Value$/i.test(label))continue;
-      const value=stat.querySelector('b');
-      const note=stat.querySelector('small');
-      if(value&&/^(N\/?A|Not entered)$/i.test((value.textContent||'').trim())){
-        value.textContent='Not Reconciled';
-        if(note)note.textContent='No reconciled investment value entered';
-      }
+      const value=stat.querySelector('b');const note=stat.querySelector('small');
+      if(value&&/^(N\/?A|Not entered)$/i.test((value.textContent||'').trim())){value.textContent='Not Reconciled';if(note)note.textContent='No reconciled investment value entered';}
     }
     return true;
   }
 
   function apply(){
-    const box=document.querySelector('#clientReport .rb-report > .rb-conclusion');
-    const p=box?.querySelector('p');
-    renameSections();
-    refineReportLabels();
+    const box=document.querySelector('#clientReport .rb-report > .rb-conclusion');const p=box?.querySelector('p');
+    renameSections();refineReportLabels();loadProForma();
     if(!p)return false;
-    const text=currentNarrative();
-    if(!text)return false;
-    p.innerHTML=esc(text);
-    box.dataset.currentExecutiveConclusion='4';
-    return true;
+    const text=currentNarrative();if(!text)return false;
+    p.innerHTML=esc(text);box.dataset.currentExecutiveConclusion='5';return true;
   }
 
-  function wrap(obj,key,flag){
-    const fn=obj?.[key];
-    if(typeof fn!=='function'||fn[flag])return;
-    const wrapped=function(...args){const out=fn.apply(this,args);apply();setTimeout(apply,0);return out;};
-    wrapped[flag]=true;
-    obj[key]=wrapped;
-  }
+  function wrap(obj,key,flag){const fn=obj?.[key];if(typeof fn!=='function'||fn[flag])return;const wrapped=function(...args){const out=fn.apply(this,args);apply();setTimeout(apply,0);return out;};wrapped[flag]=true;obj[key]=wrapped;}
+  function install(){wrap(window.ReportBuilderV1,'renderReport','__currentExecutiveConclusion');wrap(window.ReportBuilderV1,'render','__currentExecutiveConclusion');wrap(window.ReportBuilderV8,'apply','__currentExecutiveConclusion');wrap(window.ReportBuilderV8Presentation,'apply','__currentExecutiveConclusion');wrap(window.PropertyThesisReportBranding,'apply','__currentExecutiveConclusion');loadProForma();apply();}
 
-  function install(){
-    wrap(window.ReportBuilderV1,'renderReport','__currentExecutiveConclusion');
-    wrap(window.ReportBuilderV1,'render','__currentExecutiveConclusion');
-    wrap(window.ReportBuilderV8,'apply','__currentExecutiveConclusion');
-    wrap(window.ReportBuilderV8Presentation,'apply','__currentExecutiveConclusion');
-    wrap(window.PropertyThesisReportBranding,'apply','__currentExecutiveConclusion');
-    apply();
-  }
-
-  document.addEventListener('click',e=>{
-    if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbDownloadPdf,[data-hub-report],[data-pt-report]'))setTimeout(apply,120);
-  },true);
+  document.addEventListener('click',e=>{if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbDownloadPdf,[data-hub-report],[data-pt-report]'))setTimeout(()=>{loadProForma();apply();},120);},true);
   document.addEventListener('change',e=>{if(e.target?.matches?.('[data-rb-pref]'))setTimeout(apply,80);},true);
 
   window.ReportExecutiveConclusionCurrent={version:VERSION,apply,currentNarrative,renameSections,refineReportLabels};
