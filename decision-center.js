@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__propertyThesisDecisionCenterV||0)>=VERSION)return;
   window.__propertyThesisDecisionCenterV=VERSION;
 
@@ -11,6 +11,7 @@
   const ratio=v=>finite(v)?num(v).toFixed(2)+'x':'—';
   const esc=v=>String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
   const analyses=()=>{try{return cloudAnalyses||[];}catch(_e){return [];}};
+  let refreshPending=false;
 
   function styles(){
     if(document.getElementById('ptDecisionCenterStyles'))return;
@@ -33,15 +34,23 @@
   }
 
   function assumptionSummary(s){
-    try{
-      const api=window.PropertyThesisAssumptionIntelligence;
-      if(!api?.evaluate||!api?.summarize)return null;
-      return api.summarize(api.evaluate(s||{}));
-    }catch(_e){return null;}
+    try{const api=window.PropertyThesisAssumptionIntelligence;if(!api?.evaluate||!api?.summarize)return null;return api.summarize(api.evaluate(s||{}));}catch(_e){return null;}
+  }
+  function near(a,b,t=.000001){return finite(a)&&finite(b)&&Math.abs(num(a)-num(b))<=t*Math.max(1,Math.abs(num(a)),Math.abs(num(b)));}
+  function offerMatchesState(offer,s){
+    if(!offer||!s)return false;
+    return near(offer.price,s.price,.000001)&&near(offer.rent,s.rent,.000001)&&near(offer.desiredCap,s.desiredCap,.000001)&&near(offer.requiredReturn,s.requiredReturn,.000001);
+  }
+  function requestFreshSecondary(){
+    if(refreshPending)return;
+    const engine=window.PropertyThesisSecondaryEngine;if(!engine?.request)return;
+    refreshPending=true;
+    try{engine.clearCache?.();}catch(_e){}
+    Promise.resolve(engine.request({refresh:false})).then(()=>setTimeout(apply,0)).finally(()=>{refreshPending=false;});
   }
 
   function decision(base,offer,s){
-    const irr=base?.IRR, npv=base?.NPV, dcr=base?.years?.[0]?.dcr, cap=base?.cap;
+    const irr=base?.IRR,npv=base?.NPV,dcr=base?.years?.[0]?.dcr,cap=base?.cap;
     const irrOk=finite(irr)&&finite(s.requiredReturn)&&num(irr)>=num(s.requiredReturn);
     const npvOk=finite(npv)&&num(npv)>=0;
     const capOk=finite(cap)&&finite(s.desiredCap)&&num(cap)>=num(s.desiredCap);
@@ -51,7 +60,6 @@
     if(priceOk&&irrOk&&npvOk&&debtOk){label='Meets Selected Benchmarks';tone='good';}
     else if((!irrOk&&!npvOk)||(!priceOk&&finite(offer?.gapPct)&&num(offer.gapPct)>.10)||(!debtOk&&finite(dcr)&&num(dcr)<1)){label='Does Not Meet Selected Benchmarks';tone='bad';}
     else {label='Borderline / Needs Adjustment';tone='warn';}
-
     const issues=[];
     if(!priceOk)issues.push({key:'price',severity:finite(offer?.gapPct)?Math.abs(num(offer.gapPct)):1,label:'Acquisition pricing'});
     if(!irrOk)issues.push({key:'irr',severity:finite(irr)&&finite(s.requiredReturn)?Math.max(0,num(s.requiredReturn)-num(irr)):1,label:'Return shortfall'});
@@ -59,11 +67,8 @@
     if(!debtOk)issues.push({key:'debt',severity:finite(dcr)?Math.max(0,1.2-num(dcr)):1,label:'Debt coverage'});
     if(!npvOk)issues.push({key:'npv',severity:finite(npv)?Math.abs(num(npv)):1,label:'Required-return economics'});
     issues.sort((a,b)=>b.severity-a.severity);
-    const primary=issues[0]?.key||'none';
-    const primaryLabel=issues[0]?.label||'No single constraint';
-    return {label,tone,primary,primaryLabel,irrOk,npvOk,capOk,debtOk,priceOk};
+    return {label,tone,primary:issues[0]?.key||'none',primaryLabel:issues[0]?.label||'No single constraint',irrOk,npvOk,capOk,debtOk,priceOk};
   }
-
   function thesisText(d,base,offer,s){
     const price=offer?.price??s.price;
     if(d.tone==='good')return `At ${money(price)}, the property satisfies the selected return and pricing benchmarks under the current assumptions. The investment case is supported without requiring a modeled price reduction.`;
@@ -73,61 +78,48 @@
     if(d.primary==='cap')return `Current income yield is the primary constraint. Year 1 NOI is too low relative to the acquisition price to meet the selected capitalization-rate target.`;
     return `The investment produces mixed results under the selected assumptions. Review pricing, income, financing and return targets before reaching a final acquisition conclusion.`;
   }
+  const metric=(label,value,sub,cls='')=>`<div class="ptdc-metric ${cls}"><span>${esc(label)}</span><b>${esc(value)}</b><small>${esc(sub)}</small></div>`;
+  const change=(label,value,text)=>`<div class="ptdc-changebox"><strong>${esc(label)}</strong><b>${esc(value)}</b><p>${esc(text)}</p></div>`;
 
-  function metric(label,value,sub,cls=''){return `<div class="ptdc-metric ${cls}"><span>${esc(label)}</span><b>${esc(value)}</b><small>${esc(sub)}</small></div>`;}
-  function change(label,value,text){return `<div class="ptdc-changebox"><strong>${esc(label)}</strong><b>${esc(value)}</b><p>${esc(text)}</p></div>`;}
-
+  function pin(){const setup=document.getElementById('reviewAnalysisSetup'),card=document.getElementById('ptDecisionCenter');if(setup&&card&&card.previousElementSibling!==setup)setup.insertAdjacentElement('afterend',card);return !!(setup&&card);}
   function apply(){
     styles();
-    const dashboard=document.getElementById('dashboard'),grid=dashboard?.querySelector('.grid');
-    const setup=document.getElementById('reviewAnalysisSetup');if(!dashboard||!grid||!setup||!result?.years?.length||!state)return false;
+    const dashboard=document.getElementById('dashboard'),grid=dashboard?.querySelector('.grid'),setup=document.getElementById('reviewAnalysisSetup');
+    if(!dashboard||!grid||!setup||!state)return false;
+    const bridge=window.PropertyThesisIncomeEngineBridge;
+    const base=bridge?.current?.();
+    if(!base?.years?.length)return false;
     const offer=window.PropertyThesisSecondaryEngine?.getOffer?.();
-    if(!offer){try{window.PropertyThesisSecondaryEngine?.request?.();}catch(_e){}return false;}
-    const base=window.PropertyThesisIncomeEngineBridge?.current?.()||result;
+    if(!offerMatchesState(offer,state)){requestFreshSecondary();return false;}
+    result=base;
     const d=decision(base,offer,state),as=assumptionSummary(state),y1=base.years?.[0]||{};
-    const maxRent=Math.max(...[offer.capRent,offer.irrRent].filter(finite).map(num));
-    const requiredRent=Number.isFinite(maxRent)?maxRent:NaN;
+    const rentCandidates=[offer.capRent,offer.irrRent].filter(finite).map(num);
+    const requiredRent=rentCandidates.length?Math.max(...rentCandidates):NaN;
     const rentGap=finite(requiredRent)&&finite(offer.rent)?Math.max(0,requiredRent-num(offer.rent)):NaN;
     const priceCut=finite(offer.price)&&finite(offer.maxSupported)?Math.max(0,num(offer.price)-num(offer.maxSupported)):NaN;
     const gapPct=finite(offer.gapPct)?Math.abs(num(offer.gapPct)):NaN;
-
     let card=document.getElementById('ptDecisionCenter');
-    if(!card){card=document.createElement('div');card.id='ptDecisionCenter';card.className='card span-12';setup.insertAdjacentElement('afterend',card);}
-    else if(card.previousElementSibling!==setup)setup.insertAdjacentElement('afterend',card);
-
+    if(!card){card=document.createElement('div');card.id='ptDecisionCenter';card.className='card span-12';setup.insertAdjacentElement('afterend',card);}else pin();
     const answer=d.tone==='good'?'Yes — under the selected assumptions.':d.tone==='bad'?'No — not at the current terms.':'Not yet — one or more targets need adjustment.';
-    const confidence=as?.rating||'Not Rated';
-    const counts=as?.counts||{};
-    card.innerHTML=`<div class="ptdc-head"><div><div class="ptdc-eyebrow">PropertyThesis Decision Center</div><h2>Does This Investment Work?</h2><p>Decision summary based on the protected income model, selected return benchmarks and current underwriting assumptions.</p></div><div class="ptdc-verdict ${d.tone}">${esc(d.label)}</div></div><div class="ptdc-body"><div class="ptdc-thesis"><div class="ptdc-answer"><strong>Decision</strong><b>${esc(answer)}</b><p>${esc(thesisText(d,base,offer,state))}</p></div><div class="ptdc-constraint"><strong>Primary Constraint</strong><b>${esc(d.primaryLabel)}</b><p>${d.primary==='none'?'Current pricing, income and return benchmarks are generally aligned.':'This is the factor currently exerting the greatest pressure on the investment conclusion.'}</p></div></div><div class="ptdc-grid">${metric('Current Acquisition Price',money(offer.price),`Maximum supported: ${money(offer.maxSupported)}`,d.priceOk?'primary':'warn')}${metric('Maximum Price Meeting Both Targets',money(offer.maxSupported),`Cap support ${money(offer.capPrice)} • IRR support ${money(offer.irrPrice)}`,'primary')}${metric('Modeled IRR',pct(base.IRR),`Required return: ${pct(state.requiredReturn)}`,d.irrOk?'primary':'warn')}${metric('Year 1 Cap Rate',pct(base.cap),`Desired cap: ${pct(state.desiredCap)}`,d.capOk?'primary':'warn')}${metric('Year 1 DSCR',ratio(y1.dcr),finite(state.mortgage)&&num(state.mortgage)>0?'1.20x+ used as the preferred coverage screen.':'No material debt modeled.',d.debtOk?'':'warn')}${metric('Net Present Value',money(base.NPV),`At required return of ${pct(state.requiredReturn)}`,d.npvOk?'primary':'warn')}${metric('Suggested Opening Offer',money(offer.opening),`Based on the selected negotiation discount below maximum support.`,'primary')}${metric('Year 1 NOI',money(y1.noi),'Income after vacancy and operating expenses, before debt service.')}</div><div class="ptdc-change">${change('If Price Changes',finite(priceCut)&&priceCut>0?money(offer.maxSupported):'No reduction required',finite(priceCut)&&priceCut>0?`${money(priceCut)} reduction (${finite(gapPct)?(gapPct*100).toFixed(1)+'%':''}) brings price to the modeled maximum meeting both targets.`:'Current price is within modeled support under the selected benchmarks.')}${change('If Rent Changes',finite(rentGap)&&rentGap>0?money(requiredRent)+'/mo':'Current rent is sufficient',finite(rentGap)&&rentGap>0?`Approximately ${money(rentGap)}/month additional rent is required to satisfy the more demanding of the cap-rate and IRR targets at the current price.`:'Modeled rent satisfies the current cap-rate and IRR requirements at this price.')}${change('If Financing Changes',d.debtOk?'Coverage acceptable':ratio(y1.dcr)+' DSCR',d.debtOk?'Current debt structure clears the preferred coverage screen.':'Lower leverage, a lower rate, or stronger NOI would improve debt-service coverage.')}</div><div class="ptdc-confidence"><b>Underwriting confidence:</b><span class="tag">${esc(confidence)}</span><span>${counts.Aggressive?counts.Aggressive+' aggressive assumption'+(counts.Aggressive===1?'':'s')+' • ':''}${counts['Needs Support']||0} assumption${counts['Needs Support']===1?'':'s'} still need support.</span><span>Market-derived inputs remain subject to comparable and property-specific evidence.</span></div></div>`;
-    card.dataset.engineSource='protected-server';
-    return true;
+    const confidence=as?.rating||'Not Rated',counts=as?.counts||{};
+    card.innerHTML=`<div class="ptdc-head"><div><div class="ptdc-eyebrow">PropertyThesis Decision Center</div><h2>Does This Investment Work?</h2><p>Decision summary based on the protected income model, selected return benchmarks and current underwriting assumptions.</p></div><div class="ptdc-verdict ${d.tone}">${esc(d.label)}</div></div><div class="ptdc-body"><div class="ptdc-thesis"><div class="ptdc-answer"><strong>Decision</strong><b>${esc(answer)}</b><p>${esc(thesisText(d,base,offer,state))}</p></div><div class="ptdc-constraint"><strong>Primary Constraint</strong><b>${esc(d.primaryLabel)}</b><p>${d.primary==='none'?'Current pricing, income and return benchmarks are generally aligned.':'This is the factor currently exerting the greatest pressure on the investment conclusion.'}</p></div></div><div class="ptdc-grid">${metric('Current Acquisition Price',money(offer.price),`Maximum supported: ${money(offer.maxSupported)}`,d.priceOk?'primary':'warn')}${metric('Maximum Price Meeting Both Targets',money(offer.maxSupported),`Cap support ${money(offer.capPrice)} • IRR support ${money(offer.irrPrice)}`,'primary')}${metric('Modeled IRR',pct(base.IRR),`Required return: ${pct(state.requiredReturn)}`,d.irrOk?'primary':'warn')}${metric('Year 1 Cap Rate',pct(base.cap),`Desired cap: ${pct(state.desiredCap)}`,d.capOk?'primary':'warn')}${metric('Year 1 DSCR',ratio(y1.dcr),finite(state.mortgage)&&num(state.mortgage)>0?'1.20x+ used as the preferred coverage screen.':'No material debt modeled.',d.debtOk?'':'warn')}${metric('Net Present Value',money(base.NPV),`At required return of ${pct(state.requiredReturn)}`,d.npvOk?'primary':'warn')}${metric('Suggested Opening Offer',money(offer.opening),'Based on the selected negotiation discount below maximum support.','primary')}${metric('Year 1 NOI',money(y1.noi),'Income after vacancy and operating expenses, before debt service.')}</div><div class="ptdc-change">${change('If Price Changes',finite(priceCut)&&priceCut>0?money(offer.maxSupported):'No reduction required',finite(priceCut)&&priceCut>0?`${money(priceCut)} reduction (${finite(gapPct)?(gapPct*100).toFixed(1)+'%':''}) brings price to the modeled maximum meeting both targets.`:'Current price is within modeled support under the selected benchmarks.')}${change('If Rent Changes',finite(rentGap)&&rentGap>0?money(requiredRent)+'/mo':'Current rent is sufficient',finite(rentGap)&&rentGap>0?`Approximately ${money(rentGap)}/month additional rent is required to satisfy the more demanding of the cap-rate and IRR targets at the current price.`:'Modeled rent satisfies the current cap-rate and IRR requirements at this price.')}${change('If Financing Changes',d.debtOk?'Coverage acceptable':ratio(y1.dcr)+' DSCR',d.debtOk?'Current debt structure clears the preferred coverage screen.':'Lower leverage, a lower rate, or stronger NOI would improve debt-service coverage.')}</div><div class="ptdc-confidence"><b>Underwriting confidence:</b><span class="tag">${esc(confidence)}</span><span>${counts.Aggressive?counts.Aggressive+' aggressive assumption'+(counts.Aggressive===1?'':'s')+' • ':''}${counts['Needs Support']||0} assumption${counts['Needs Support']===1?'':'s'} still need support.</span><span>Market-derived inputs remain subject to comparable and property-specific evidence.</span></div></div>`;
+    card.dataset.engineSource='protected-server';pin();return true;
   }
 
   function savedDecision(a){
     const s=a?.assumptions||{},o=a?.outputs||{};
-    const irrOk=finite(o.irr)&&finite(s.requiredReturn)&&num(o.irr)>=num(s.requiredReturn);
-    const npvOk=finite(o.npv)&&num(o.npv)>=0;
-    const capOk=finite(o.cap)&&finite(s.desiredCap)&&num(o.cap)>=num(s.desiredCap);
-    const dscrOk=!finite(s.mortgage)||num(s.mortgage)<=0||!finite(o.year1_dscr)||num(o.year1_dscr)>=1.2;
-    if(irrOk&&npvOk&&capOk&&dscrOk)return {label:'Meets Benchmarks',tone:'good'};
-    const failures=[irrOk,npvOk,capOk,dscrOk].filter(x=>!x).length;
-    if(failures>=3||(finite(o.year1_dscr)&&num(o.year1_dscr)<1))return {label:'Needs Material Adjustment',tone:'bad'};
+    const irrOk=finite(o.irr)&&finite(s.requiredReturn)&&num(o.irr)>=num(s.requiredReturn),npvOk=finite(o.npv)&&num(o.npv)>=0,capOk=finite(o.cap)&&finite(s.desiredCap)&&num(o.cap)>=num(s.desiredCap),dcrOk=!finite(o.year1_dscr)||!finite(s.mortgage)||num(s.mortgage)<=0||num(o.year1_dscr)>=1.2;
+    if(irrOk&&npvOk&&capOk&&dcrOk)return {label:'Meets Benchmarks',tone:'good'};
+    if((!irrOk&&!npvOk)||(!dcrOk&&finite(o.year1_dscr)&&num(o.year1_dscr)<1))return {label:'Needs Material Adjustment',tone:'bad'};
     return {label:'Review / Adjust',tone:'warn'};
   }
-  function latestFor(pid){return analyses().filter(a=>a.property_id===pid).sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at))[0]||null;}
   function hub(){
-    styles();const root=document.getElementById('propertyhub');if(!root)return false;
-    root.querySelectorAll('.hub-card').forEach(card=>{
-      const any=card.querySelector('[data-hub-open],[data-hub-edit],[data-pt-manage]');const pid=any?.dataset?.hubOpen||any?.dataset?.hubEdit||any?.dataset?.ptManage;if(!pid)return;
-      const a=latestFor(pid);let row=card.querySelector('.ptdc-hub');if(!a){row?.remove();return;}
-      const d=savedDecision(a);if(!row){row=document.createElement('div');row.className='ptdc-hub';const ai=card.querySelector('.pt-ai-hub');if(ai)ai.insertAdjacentElement('afterend',row);else card.querySelector('.hub-actions')?.insertAdjacentElement('beforebegin',row);}
-      row.innerHTML=`<b>Investment Decision</b><span class="ptdc-hub-badge ${d.tone}">${esc(d.label)}</span><span>IRR ${pct(a.outputs?.irr)} • Cap ${pct(a.outputs?.cap)} • DSCR ${ratio(a.outputs?.year1_dscr)}</span>`;
-    });return true;
+    const root=document.getElementById('propertyhub');if(!root)return false;
+    root.querySelectorAll('.hub-card').forEach(card=>{const any=card.querySelector('[data-hub-open],[data-hub-edit],[data-pt-manage]');const pid=any?.dataset?.hubOpen||any?.dataset?.hubEdit||any?.dataset?.ptManage;if(!pid)return;const a=analyses().filter(x=>x.property_id===pid).sort((x,y)=>new Date(y.updated_at)-new Date(x.updated_at))[0],old=card.querySelector('.ptdc-hub');if(!a){old?.remove();return;}const d=savedDecision(a),o=a.outputs||{};const el=old||document.createElement('div');el.className='ptdc-hub';el.innerHTML=`<b>Investment Decision</b><span class="ptdc-hub-badge ${d.tone}">${esc(d.label)}</span><span>IRR ${pct(o.irr)} • Cap ${pct(o.cap)} • DSCR ${ratio(o.year1_dscr)}</span>`;if(!old){const q=card.querySelector('.pt-ai-hub');if(q)q.insertAdjacentElement('afterend',el);else card.querySelector('.hub-actions')?.insertAdjacentElement('beforebegin',el);}});return true;
   }
-  function hookStage6(){const api=window.Stage6Dashboard;if(!api||typeof api.render!=='function')return false;if(api.render.__ptDecisionCenterWrapped)return true;const orig=api.render;const wrapped=function(){const out=orig.apply(this,arguments);setTimeout(hub,0);setTimeout(hub,90);return out;};wrapped.__ptDecisionCenterWrapped=true;api.render=wrapped;return true;}
-  function schedule(){[0,80,220].forEach(ms=>setTimeout(()=>{apply();hub();},ms));}
-  function start(){hookStage6();schedule();document.addEventListener('click',e=>{if(e.target.closest('[data-s8-tab="dashboard"],[data-tab="dashboard"],#appNavReview,[data-app-review],[data-tab="propertyhub"],[data-pt-cloud-refresh],[data-hub-open]'))schedule();},true);}
-
-  window.PropertyThesisDecisionCenter={version:VERSION,apply,hub,decision};
+  function hookStage6(){const api=window.Stage6Dashboard;if(!api||typeof api.render!=='function')return false;if(api.render.__ptDecisionCenterWrapped)return true;const orig=api.render;const wrapped=function(){const out=orig.apply(this,arguments);setTimeout(hub,0);setTimeout(hub,80);return out;};wrapped.__ptDecisionCenterWrapped=true;api.render=wrapped;return true;}
+  function schedule(){[0,70,180].forEach(ms=>setTimeout(()=>{apply();pin();hub();},ms));}
+  function start(){hookStage6();schedule();document.addEventListener('click',e=>{if(e.target.closest('[data-s8-tab="dashboard"],[data-tab="dashboard"],#appNavReview,[data-app-review],[data-hub-open],[data-pt-open],[data-tab="propertyhub"]'))schedule();},true);}
+  window.PropertyThesisDecisionCenter={version:VERSION,apply,pin,hub,offerMatchesState};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
