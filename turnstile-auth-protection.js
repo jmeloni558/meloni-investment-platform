@@ -48,14 +48,35 @@
     return scriptPromise;
   }
 
-  function loadRecoveryFlow(){
-    const params=new URLSearchParams(location.hash.replace(/^#/,''));
-    if(params.get('type')!=='recovery'||document.querySelector('script[data-pt-recovery-flow]'))return;
+  function injectRecoveryFlow(){
+    if(document.querySelector('script[data-pt-recovery-flow]')||document.getElementById('ptRecoveryOverlay'))return;
     const s=document.createElement('script');
-    s.src='password-recovery-flow.js?v=2';
+    s.src='password-recovery-flow.js?v=3';
     s.async=false;
     s.dataset.ptRecoveryFlow='1';
     document.body.appendChild(s);
+  }
+
+  function decodeJwtPayload(jwt){
+    try{
+      const part=String(jwt||'').split('.')[1];
+      if(!part)return null;
+      let b64=part.replace(/-/g,'+').replace(/_/g,'/');
+      while(b64.length%4)b64+='=';
+      return JSON.parse(atob(b64));
+    }catch(_e){return null;}
+  }
+
+  async function loadRecoveryFlow(){
+    const params=new URLSearchParams(location.hash.replace(/^#/,''));
+    if(params.get('type')==='recovery')return injectRecoveryFlow();
+    try{
+      if(typeof cloudClient==='undefined'||!cloudClient)return;
+      const {data:{session}}=await cloudClient.auth.getSession();
+      const payload=decodeJwtPayload(session?.access_token);
+      const methods=Array.isArray(payload?.amr)?payload.amr.map(x=>String(x?.method||'').toLowerCase()):[];
+      if(methods.includes('otp'))injectRecoveryFlow();
+    }catch(_e){}
   }
 
   async function renderChallenge(){
