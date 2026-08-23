@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__saveStateFeedbackVersion||0)>=VERSION)return;
   window.__saveStateFeedbackVersion=VERSION;
 
@@ -24,9 +24,7 @@
     b.hidden=true;
     host.appendChild(b);
     if(!document.getElementById('ptSaveStateStyle')){
-      const s=document.createElement('style');
-      s.id='ptSaveStateStyle';
-      s.textContent=`
+      const s=document.createElement('style');s.id='ptSaveStateStyle';s.textContent=`
         #ptDirtyBadge{display:none!important}
         .pt-save-state{margin-left:auto;border-radius:999px;padding:6px 10px;font-size:9px;font-weight:800;white-space:nowrap;border:1px solid #d0d5dd;background:#fff;color:#475467}
         .pt-save-state.unsaved{border-color:#e6b85c;background:#fff8e8;color:#7a4b00}
@@ -34,8 +32,7 @@
         .pt-save-state.saved{border-color:#9fd3af;background:#eef9f1;color:#196b35}
         .pt-save-state.error{border-color:#e5a7a7;background:#fff1f1;color:#a22b2b}
         .pt-save-state[hidden]{display:none!important}
-      `;
-      document.head.appendChild(s);
+      `;document.head.appendChild(s);
     }
     return b;
   }
@@ -46,6 +43,14 @@
     b.hidden=false;
     b.className='pt-save-state '+kind;
     b.textContent=text;
+  }
+  function clear(){
+    stateName='clean';
+    const b=document.getElementById('ptSaveStateBadge');
+    if(!b)return;
+    b.hidden=true;
+    b.className='pt-save-state';
+    b.textContent='';
   }
   function unsaved(){show('unsaved','Unsaved changes');}
   function saving(){show('saving','Saving…');}
@@ -63,6 +68,9 @@
 
   document.addEventListener('input',e=>{if(tracked(e.target))unsaved();},true);
   document.addEventListener('change',e=>{if(tracked(e.target))unsaved();},true);
+  document.addEventListener('click',e=>{
+    if(e.target?.closest?.('#appNavNew,#s10NewAnalysis'))clear();
+  },true);
 
   const original=window.saveCurrentCloud;
   if(typeof original==='function'){
@@ -82,7 +90,7 @@
     };
   }
 
-  window.SaveStateFeedback={unsaved,saving,saved,error,state:()=>stateName,refresh:ensure};
+  window.SaveStateFeedback={unsaved,saving,saved,error,clear,state:()=>stateName,refresh:ensure};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(ensure,120),{once:true});
   else setTimeout(ensure,120);
 })();
