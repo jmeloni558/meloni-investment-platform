@@ -1,18 +1,17 @@
 'use strict';
 (()=>{
-  const VERSION=5;
+  const VERSION=6;
   if((window.__propertyThesisGuidedSaveExistingWorkflowV||0)>=VERSION)return;
   window.__propertyThesisGuidedSaveExistingWorkflowV=VERSION;
 
-  let saving=false,observer=null;
+  let saving=false;
   const status=t=>{try{if(typeof setStatus==='function')setStatus(t);}catch(_e){}};
   const currentStep=()=>{const a=document.querySelector('#gwSteps .gw-step.active[data-step]');return a?Number(a.dataset.step):0;};
 
   function ensureStyles(){
     if(document.getElementById('ptGuidedSaveExistingStyles'))return;
     const s=document.createElement('style');s.id='ptGuidedSaveExistingStyles';s.textContent=`
-      #gwSaveAndReview{white-space:nowrap}
-      #gwSaveAndReview[disabled]{opacity:.62;cursor:wait}
+      #gwSave[disabled]{opacity:.62;cursor:wait}
       #propertyhub .pt-hub-primary-flow{display:flex;gap:7px;flex-wrap:wrap;width:100%}
       #propertyhub .pt-hub-primary-flow [data-hub-open]{order:-2!important}
       #propertyhub .pt-hub-primary-flow .pt-manage-analysis,#propertyhub .pt-hub-primary-flow [data-pt-manage]{order:0!important}
@@ -25,8 +24,9 @@
 
   async function calculateSaveReview(){
     if(saving)return;
-    const btn=document.getElementById('gwSaveAndReview');
-    saving=true;if(btn){btn.disabled=true;btn.textContent='Calculating & Saving…';btn.setAttribute('aria-busy','true');}
+    const btn=document.getElementById('gwSave');
+    saving=true;
+    if(btn){btn.disabled=true;btn.textContent='Calculating & Saving…';btn.setAttribute('aria-busy','true');}
     try{
       const controller=window.GuidedContinueController;
       if(!controller?.recalculate)throw new Error('Guided calculation workflow is not ready.');
@@ -39,31 +39,34 @@
         document.querySelectorAll('.section').forEach(sec=>sec.classList.toggle('active',sec.id==='dashboard'));
         document.querySelectorAll('.nav [data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab==='dashboard'));
       }
-      try{window.PropertyThesisIncomeEngineBridge?.browserRender?.();}catch(_e){}
-      try{await window.PropertyThesisResultsHydration?.hydrate?.({force:true});}catch(_e){}
+      try{await window.PropertyThesisResultsHydration?.hydrate?.({force:true,freshSecondary:true});}catch(_e){}
       try{window.GuidedContinueController?.refreshReview?.();}catch(_e){}
       try{window.Stage15Layout?.apply?.();}catch(_e){}
-      setTimeout(()=>{try{window.PropertyThesisSecondaryEngine?.request?.();}catch(_e){}},0);
       window.scrollTo({top:0,behavior:'smooth'});
     }catch(e){
       status('Unable to calculate and save: '+String(e?.message||e));
       const box=document.getElementById('gwValidation');if(box){box.innerHTML=`<b>Unable to calculate and save the analysis.</b><div>${String(e?.message||e)}</div>`;box.classList.add('show');}
     }finally{
-      saving=false;if(btn){btn.disabled=false;btn.removeAttribute('aria-busy');btn.textContent='Calculate, Save & Review Results →';}
+      saving=false;
+      refreshGuidedSaveAction();
+      if(btn){btn.disabled=false;btn.removeAttribute('aria-busy');}
     }
   }
 
-  function enhanceStepSix(){
+  function refreshGuidedSaveAction(){
     ensureStyles();
-    const actions=document.querySelector('#guidedSetup .gw-actions>div');
-    if(!actions||currentStep()!==5){document.getElementById('gwSaveAndReview')?.remove();return false;}
-    let b=document.getElementById('gwSaveAndReview');
-    if(!b){
-      b=document.createElement('button');b.id='gwSaveAndReview';b.type='button';b.className='btn secondary';b.textContent='Calculate, Save & Review Results →';
-      b.onclick=e=>{e.preventDefault();e.stopPropagation();calculateSaveReview();};
+    const b=document.getElementById('gwSave');if(!b)return false;
+    const review=currentStep()===5;
+    b.textContent=review?'Calculate, Save & Review Results':'Save Progress';
+    if(review){
+      if(b.dataset.ptStep6Save!=='1'){
+        b.dataset.ptStep6Save='1';
+        b.onclick=e=>{e.preventDefault();e.stopPropagation();calculateSaveReview();};
+      }
+    }else if(b.dataset.ptStep6Save==='1'){
+      delete b.dataset.ptStep6Save;
+      b.onclick=()=>{try{window.GuidedAnalysisSetup?.save?.();}catch(_e){try{if(typeof saveCurrentCloud==='function')saveCurrentCloud(false);}catch(__e){}}};
     }
-    const next=document.getElementById('gwNext');
-    if(b.parentElement!==actions||b.nextElementSibling!==next)actions.insertBefore(b,next||null);
     return true;
   }
 
@@ -110,21 +113,18 @@
     wrapped.__ptGuidedWorkflowWrapped=true;wrapped.__original=original;api.render=wrapped;return true;
   }
 
-  function apply(){hookStage6();enhanceStepSix();modernizeHub();}
-  function schedule(){[0,50,140,320,650].forEach(ms=>setTimeout(apply,ms));}
-  function installGuidedObserver(){
-    const host=document.getElementById('guidedSetup');if(!host||observer)return false;
-    observer=new MutationObserver(()=>{if(currentStep()===5)setTimeout(enhanceStepSix,0);});
-    observer.observe(host,{childList:true,subtree:true});return true;
-  }
+  function apply(){hookStage6();refreshGuidedSaveAction();modernizeHub();}
+  function schedule(){[0,40,120,260].forEach(ms=>setTimeout(apply,ms));}
   function start(){
-    hookStage6();installGuidedObserver();schedule();
+    hookStage6();schedule();
     document.addEventListener('click',e=>{
       if(e.target.closest('#guidedSetup,[data-tab="propertyhub"],[data-s8-tab="assumptions"],#s10NewAnalysis,[data-pt-new],[data-pt-cloud-refresh]'))schedule();
     },true);
     document.addEventListener('change',e=>{if(e.target.closest('#guidedSetup,#propertyhub'))schedule();},true);
+    const assumptions=document.getElementById('assumptions');
+    if(assumptions){const mo=new MutationObserver(()=>setTimeout(refreshGuidedSaveAction,0));mo.observe(assumptions,{childList:true,subtree:true});}
   }
 
-  window.PropertyThesisGuidedSaveExistingWorkflow={version:VERSION,apply,calculateSaveReview,modernizeHub,enhanceStepSix};
+  window.PropertyThesisGuidedSaveExistingWorkflow={version:VERSION,apply,calculateSaveReview,modernizeHub,refreshGuidedSaveAction};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
