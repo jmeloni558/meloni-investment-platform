@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=1;
+  const VERSION=2;
   if((window.__reportBuilderV9ControlsVersion||0)>=VERSION)return;
   window.__reportBuilderV9ControlsVersion=VERSION;
 
@@ -72,12 +72,32 @@
     return true;
   }
 
-  function schedule(){setTimeout(apply,0);setTimeout(apply,80);setTimeout(apply,220);}
-  document.addEventListener('click',e=>{
-    if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbSelectCore,#rbSelectAll,#rbDownloadPdf'))schedule();
-  },true);
-  document.addEventListener('change',e=>{if(e.target?.matches?.('[data-rb-pref]'))schedule();},true);
+  function finalizeReport(){
+    try{window.ReportBuilderV2?.apply?.();}catch(e){}
+    try{window.ReportBuilderV3?.apply?.();}catch(e){}
+    try{window.ReportBuilderV4?.apply?.();}catch(e){}
+    try{window.ReportBuilderV8?.apply?.();window.ReportBuilderV8Presentation?.apply?.();}catch(e){}
+    try{window.ReportAssumptionsNarrative?.apply?.();window.ReportDetailOrder?.apply?.();}catch(e){}
+    try{window.ReportSensitivityAnalysis?.apply?.();window.ReportInvestmentOfferAnalysis?.apply?.();}catch(e){}
+    try{window.ReportMarketRentSupport?.apply?.();window.ReportMarketRentUnderwriting?.apply?.();}catch(e){}
+    try{window.PropertyThesisReportProForma?.apply?.();window.PropertyThesisReportProForma?.injectControls?.();}catch(e){}
+    try{window.ReportExecutiveConclusionCurrent?.apply?.();}catch(e){}
+    try{window.PropertyThesisMarketRentConclusion?.enhanceReport?.();}catch(e){}
+    try{window.UserBranding?.applyReportBranding?.();}catch(e){}
+    try{window.PropertyThesisReportBranding?.apply?.();}catch(e){}
+    apply();
+  }
 
-  window.ReportBuilderV9Controls={apply,schedule};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+  function schedule(finalize=false){
+    [0,80,220].forEach(ms=>setTimeout(()=>{apply();if(finalize)finalizeReport();},ms));
+  }
+  document.addEventListener('click',e=>{
+    const preset=e.target?.closest?.('#rbSelectCore,#rbSelectAll');
+    if(preset){schedule(true);return;}
+    if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbDownloadPdf'))schedule(false);
+  },true);
+  document.addEventListener('change',e=>{if(e.target?.matches?.('[data-rb-pref]'))schedule(true);},true);
+
+  window.ReportBuilderV9Controls={apply,schedule,finalizeReport};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>schedule(false),{once:true});else schedule(false);
 })();
