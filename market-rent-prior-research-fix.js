@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   if((window.__marketRentPriorResearchFixVersion||0)>=VERSION)return;
   window.__marketRentPriorResearchFixVersion=VERSION;
 
@@ -53,11 +53,13 @@
       try{window.PropertyThesisMarketRentUnderwriting?.schedule?.();}catch(_e){}
       try{window.PropertyThesisMarketRentUnderwriting?.enhanceModal?.();}catch(_e){}
       try{window.PropertyThesisMarketRentResultsOrder?.schedule?.();}catch(_e){}
+      try{window.PropertyThesisMarketRentConclusion?.schedule?.();}catch(_e){}
     };
     loadModule('market-rent-underwriting.js?v=1&build=20260823-1318-market-rent-underwriting','ptMarketRentUnderwritingLoader',afterLoad);
-    loadModule('report-market-rent-underwriting.js?v=1&build=20260823-1318-market-rent-underwriting','ptReportMarketRentUnderwritingLoader');
+    loadModule('report-market-rent-underwriting.js?v=1&build=20260823-1318-market-rent-underwriting','ptReportMarketRentUnderwritingLoader',afterLoad);
     loadModule('market-rent-results-order.js?v=1&build=20260823-1322-market-rent-order','ptMarketRentResultsOrderLoader',afterLoad);
-    [0,100,300,700].forEach(ms=>setTimeout(afterLoad,ms));
+    loadModule('market-rent-conclusion-integration.js?v=1&build=20260823-1338-market-rent-conclusion','ptMarketRentConclusionLoader',afterLoad);
+    [0,100,300,700,1500].forEach(ms=>setTimeout(afterLoad,ms));
   }
 
   function activateWhenReady(){
@@ -71,8 +73,11 @@
       setTimeout(()=>{try{window.PropertyThesisMarketRentUnderwriting?.enhanceModal?.();}catch(_e){}},80);
       setTimeout(()=>{try{window.PropertyThesisMarketRentUnderwriting?.enhanceModal?.();}catch(_e){}},250);
     }
-    if(e.target?.closest?.('[data-s8-tab="dashboard"],[data-tab="dashboard"],#appNavReview,[data-app-review],[data-hub-open],[data-pt-open]')){
-      setTimeout(()=>{try{window.PropertyThesisMarketRentResultsOrder?.schedule?.();}catch(_e){}},40);
+    if(e.target?.closest?.('[data-s8-tab="dashboard"],[data-tab="dashboard"],#appNavReview,[data-app-review],[data-hub-open],[data-pt-open],[data-s8-tab="report"],[data-tab="report"],[data-hub-report],[data-pt-report],#rbDownloadPdf')){
+      setTimeout(()=>{try{window.PropertyThesisMarketRentResultsOrder?.schedule?.();}catch(_e){}try{window.PropertyThesisMarketRentConclusion?.schedule?.();}catch(_e){}},40);
+    }
+    if(e.target?.closest?.('[data-ptru-impact]')){
+      [250,750,1500,3000].forEach(ms=>setTimeout(()=>{try{window.PropertyThesisMarketRentConclusion?.schedule?.();}catch(_e){}},ms));
     }
   },true);
 
