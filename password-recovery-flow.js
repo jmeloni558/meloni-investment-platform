@@ -1,6 +1,8 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
+  const SUPABASE_URL='https://lmaiqpkogmmsldkziggy.supabase.co';
+  const SUPABASE_KEY='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
   if((window.__propertyThesisPasswordRecoveryVersion||0)>=VERSION)return;
   window.__propertyThesisPasswordRecoveryVersion=VERSION;
 
@@ -15,13 +17,15 @@
 
   const msg=t=>{const el=document.getElementById('ptRecoveryMsg');if(el)el.textContent=t||'';};
   const button=document.getElementById('ptRecoverySave');
+  let fallbackClient=null;
 
-  async function waitClient(){
-    for(let i=0;i<100;i++){
-      if(typeof cloudClient!=='undefined'&&cloudClient)return cloudClient;
-      await new Promise(r=>setTimeout(r,50));
-    }
-    throw new Error('Authentication service did not initialize.');
+  async function getClient(){
+    try{if(typeof cloudClient!=='undefined'&&cloudClient)return cloudClient;}catch(_e){}
+    if(fallbackClient)return fallbackClient;
+    for(let i=0;i<100&&!window.supabase;i++)await new Promise(r=>setTimeout(r,50));
+    if(!window.supabase?.createClient)throw new Error('Authentication service did not initialize.');
+    fallbackClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{detectSessionInUrl:false,persistSession:true,autoRefreshToken:true}});
+    return fallbackClient;
   }
 
   async function save(){
@@ -31,13 +35,17 @@
     if(password!==confirm)return msg('Passwords do not match.');
     button.disabled=true;msg('Updating password…');
     try{
-      const client=await waitClient();
-      const {data:{session}}=await client.auth.getSession();
+      const client=await getClient();
+      let {data:{session}}=await client.auth.getSession();
+      if(!session){
+        await new Promise(r=>setTimeout(r,250));
+        ({data:{session}}=await client.auth.getSession());
+      }
       if(!session)throw new Error('This recovery link is invalid or has expired. Request a new password-reset email.');
       const {error}=await client.auth.updateUser({password});
       if(error)throw error;
       msg('Password updated successfully. Signing you out…');
-      await client.auth.signOut({scope:'global'}).catch(()=>client.auth.signOut());
+      try{await client.auth.signOut({scope:'global'});}catch(_e){try{await client.auth.signOut();}catch(_e2){}}
       history.replaceState(null,'',location.pathname+location.search);
       setTimeout(()=>location.replace('https://propertythesis.com/latest.html'),700);
     }catch(e){msg(e?.message||'Unable to update password.');button.disabled=false;}
