@@ -1,0 +1,11 @@
+/* PropertyThesis hero image tuning — 2026-08-23 */
+.top{
+  background-image:linear-gradient(90deg,rgba(20,55,130,.78) 0%,rgba(20,105,155,.54) 46%,rgba(13,148,136,.20) 100%),url('assets/investment-header.webp')!important;
+  background-position:58% 55%!important;
+}
+@media(max-width:650px){
+  .top{
+    background-image:linear-gradient(90deg,rgba(20,55,130,.84) 0%,rgba(20,105,155,.56) 52%,rgba(13,148,136,.20) 100%),url('assets/investment-header.webp')!important;
+    background-position:60% center!important;
+  }
+}
