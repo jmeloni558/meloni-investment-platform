@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mortgage Tools | PropertyThesis</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<style>
+:root{--nav:#0c2745;--nav2:#123b66;--blue:#1f5f9d;--ink:#172033;--muted:#667085;--line:#d8dee8;--bg:#edf2f7}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,Segoe UI,Arial,sans-serif}.top{position:relative;min-height:220px;color:#fff;background-image:linear-gradient(90deg,rgba(5,22,40,.92) 0%,rgba(8,34,60,.76) 40%,rgba(5,23,41,.42) 100%),url('assets/investment-header.webp');background-size:cover;background-position:center 55%;background-repeat:no-repeat;box-shadow:inset 0 -1px 0 rgba(255,255,255,.12)}.topin{max-width:1600px;min-height:220px;margin:auto;padding:30px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand h1{font-size:32px;line-height:1.08;margin:0;letter-spacing:-.02em;text-shadow:0 2px 12px rgba(0,0,0,.42)}.brand p{margin:7px 0 0;color:#eef5fb;font-size:13px;font-weight:550;text-shadow:0 1px 8px rgba(0,0,0,.48)}.topactions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border:1px solid rgba(255,255,255,.16);border-radius:12px;background:rgba(4,20,36,.42);box-shadow:0 10px 28px rgba(0,0,0,.12);backdrop-filter:blur(5px)}.pill{padding:5px 9px;border-radius:999px;background:#ffffff18;border:1px solid #ffffff30;font-size:11px;font-weight:700}.back{border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:9px 12px;background:rgba(255,255,255,.94);color:#344054;text-decoration:none;font-size:11px;font-weight:750}.shell{max-width:1600px;margin:auto;padding:20px 28px 34px}.toolframe{display:block;width:100%;border:0;background:#fff;border-radius:13px;min-height:1500px;box-shadow:0 1px 3px rgba(16,24,40,.08),0 8px 24px rgba(16,24,40,.04)}
+@media(max-width:650px){.top{min-height:205px;background-position:62% center}.topin{min-height:205px;padding:24px 14px;align-items:flex-start;flex-direction:column}.brand h1{font-size:26px}.topactions{width:100%;justify-content:flex-start}.shell{padding-left:14px;padding-right:14px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="topin"><div class="brand"><h1>PropertyThesis</h1><p>Know the Numbers. Build the Case.</p></div><div class="topactions"><span class="pill">Mortgage Tools</span><a class="back" href="latest.html?build=20260823-1615-mortgage-tools-suite">Back to Property Analysis</a></div></div></header>
+<main class="shell"><iframe id="mortgageFrame" class="toolframe" src="mortgage-tools.html?embedded=1&v=20260823-1611" title="PropertyThesis Mortgage Tools"></iframe></main>
+<script>
+const frame=document.getElementById('mortgageFrame');
+function fit(){try{const d=frame.contentDocument;if(!d)return;const old=d.querySelector('header');if(old)old.style.display='none';const main=d.querySelector('main');if(main){main.style.maxWidth='none';main.style.paddingTop='8px';}d.body.style.background='#edf2f7';const h=Math.max(d.documentElement.scrollHeight,d.body.scrollHeight);frame.style.height=(h+12)+'px';}catch(e){}}
+frame.addEventListener('load',()=>{fit();setTimeout(fit,150);setTimeout(fit,700);try{new frame.contentWindow.ResizeObserver(fit).observe(frame.contentDocument.body)}catch(e){}});
+window.addEventListener('resize',fit);
+</script>
+</body>
+</html>
