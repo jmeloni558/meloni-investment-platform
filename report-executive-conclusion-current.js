@@ -1,55 +1,58 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__reportExecutiveConclusionCurrentVersion||0)>=VERSION)return;
   window.__reportExecutiveConclusionCurrentVersion=VERSION;
 
   const money=v=>typeof fmtC==='function'?fmtC(v):(Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'N/A');
   const pct=v=>typeof fmtP==='function'?fmtP(v):(Number.isFinite(Number(v))?(Number(v)*100).toFixed(2)+'%':'N/A');
-  const mult=v=>typeof fmtX==='function'?fmtX(v):(Number.isFinite(Number(v))?Number(v).toFixed(2)+'x':'N/A');
   const finite=v=>Number.isFinite(Number(v));
   const esc=v=>String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
 
-  function reconValue(){
-    try{
-      const key=((state?.address||'').trim()||(state?.name||'').trim()||'current-analysis');
-      const all=JSON.parse(localStorage.getItem('meloni-review-reconciliation-v1')||'{}')||{};
-      const v=Number(all?.[key]?.reconciled);
-      return finite(v)&&v>0?v:null;
-    }catch(_e){return null;}
+  function fallbackThesis(){
+    if(typeof state==='undefined'||typeof result==='undefined'||!state||!result||!result.years?.length)return'';
+    const y1=result.years[0]||{};
+    const meetsReturn=finite(result.IRR)&&finite(state.requiredReturn)&&Number(result.IRR)>=Number(state.requiredReturn)&&finite(result.NPV)&&Number(result.NPV)>=0;
+    const meetsCap=finite(result.cap)&&finite(state.desiredCap)&&Number(result.cap)>=Number(state.desiredCap);
+    const financed=finite(state.mortgage)&&Number(state.mortgage)>0;
+    const debtOk=!financed||!finite(y1.dcr)||Number(y1.dcr)>=1.20;
+    if(meetsReturn&&meetsCap&&debtOk){
+      return `The property presents a supportable investment opportunity at the modeled acquisition terms. Current income, projected return${financed?', and debt coverage':''} are aligned with the investor’s selected benchmarks. The opportunity should be pursued subject to verification of achievable rent, operating expenses, financing terms, and other market-derived assumptions.`;
+    }
+    const issues=[];
+    if(!meetsCap)issues.push('current income yield');
+    if(!meetsReturn)issues.push('projected return');
+    if(!debtOk)issues.push('debt coverage');
+    const issueText=issues.length===1?issues[0]:issues.length===2?`${issues[0]} and ${issues[1]}`:`${issues.slice(0,-1).join(', ')}, and ${issues[issues.length-1]}`;
+    return `The property presents a conditional investment opportunity at the modeled acquisition terms. The principal challenge is ${issueText||'the relationship between acquisition basis and modeled performance'}, which limits support for the current price. The opportunity becomes more compelling through a lower acquisition basis, stronger sustainable income, improved financing, or lower operating costs, subject to verification of the underlying market assumptions.`;
   }
 
   function currentNarrative(){
-    if(typeof state==='undefined'||typeof result==='undefined'||!state||!result||!result.years?.length)return'';
-    const y1=result.years[0];
-    const support=[Number(result.capValue),Number(result.grmValue)].filter(Number.isFinite);
-    const low=support.length?Math.min(...support):NaN,high=support.length?Math.max(...support):NaN;
-    const recon=reconValue();
-    let thesis='';try{thesis=window.PropertyThesisInvestmentThesis?.narrative?.()||'';}catch(_e){}
+    let thesis=null;
+    try{thesis=window.PropertyThesisInvestmentThesis?.build?.()||null;}catch(_e){}
+    if(thesis?.narrative)return String(thesis.narrative).replace(/\s+/g,' ').trim();
+    return fallbackThesis();
+  }
 
-    const valuation=finite(low)&&finite(high)
-      ? `The income approaches indicate a property value range of ${money(low)} to ${money(high)} based on the selected capitalization rate and gross rent multiplier benchmarks.`
-      : 'The income-supported valuation range is not available from the current assumptions.';
-    const reconciliation=recon
-      ? `The reconciled investment value is ${money(recon)} compared with an acquisition price of ${money(state.price)}.`
-      : `A reconciled investment value has not been entered; the modeled acquisition price is ${money(state.price)}.`;
-    const performance=`The projected IRR is ${pct(result.IRR)} versus the required return of ${pct(state.requiredReturn)}. Year 1 performance includes a ${pct(result.cap)} capitalization rate, ${mult(result.grm)} GRM, ${finite(y1.dcr)?mult(y1.dcr)+' DSCR':'no modeled debt-service coverage ratio'}, and NPV of ${money(result.NPV)}.`;
-    if(thesis)return `${thesis} ${valuation} ${reconciliation} ${performance}`;
-    const meets=finite(result.IRR)&&finite(state.requiredReturn)&&result.IRR>=state.requiredReturn&&finite(result.NPV)&&Number(result.NPV)>=0;
-    const assessment=meets
-      ? 'Based on the modeled assumptions, the principal return benchmarks are currently met; the acquisition should still be evaluated in conjunction with property-specific risks and the investor’s objectives.'
-      : 'Based on the modeled assumptions, one or more return benchmarks are not currently met and the acquisition terms should be reviewed in conjunction with the investor’s objectives.';
-    return `${valuation} ${reconciliation} ${performance} ${assessment}`;
+  function renameSections(){
+    const report=document.querySelector('#clientReport .rb-report');if(!report)return false;
+    const front=report.querySelector(':scope > .rb-conclusion');
+    const frontH=front?.querySelector('h2');if(frontH)frontH.textContent='Property Thesis';
+    const final=report.querySelector(':scope > .rb-final-conclusion,[data-rb-section="finalConclusion"]');
+    const finalH=final?.querySelector('.rb-section-head h2');if(finalH)finalH.textContent='Investment Conclusion';
+    const finalSub=final?.querySelector('.rb-section-head p');if(finalSub)finalSub.textContent='Final reconciliation of income, market rent, financing, valuation, risk, and projected returns.';
+    return !!(front||final);
   }
 
   function apply(){
     const box=document.querySelector('#clientReport .rb-report > .rb-conclusion');
     const p=box?.querySelector('p');
+    renameSections();
     if(!p)return false;
     const text=currentNarrative();
     if(!text)return false;
     p.innerHTML=esc(text);
-    box.dataset.currentExecutiveConclusion='2';
+    box.dataset.currentExecutiveConclusion='3';
     return true;
   }
 
@@ -71,10 +74,10 @@
   }
 
   document.addEventListener('click',e=>{
-    if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbDownloadPdf'))setTimeout(apply,120);
+    if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbDownloadPdf,[data-hub-report],[data-pt-report]'))setTimeout(apply,120);
   },true);
   document.addEventListener('change',e=>{if(e.target?.matches?.('[data-rb-pref]'))setTimeout(apply,80);},true);
 
-  window.ReportExecutiveConclusionCurrent={version:VERSION,apply,currentNarrative};
+  window.ReportExecutiveConclusionCurrent={version:VERSION,apply,currentNarrative,renameSections};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,0),{once:true});else setTimeout(install,0);
 })();
