@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__propertyThesisGuidedSaveExistingWorkflowV||0)>=VERSION)return;
   window.__propertyThesisGuidedSaveExistingWorkflowV=VERSION;
 
@@ -14,7 +14,7 @@
       #gwSaveAndReview{white-space:nowrap}
       #gwSaveAndReview[disabled]{opacity:.62;cursor:wait}
       #propertyhub .pt-hub-primary-flow{display:flex;gap:7px;flex-wrap:wrap;width:100%}
-      #propertyhub .pt-hub-primary-flow [data-hub-open]{order:-2}
+      #propertyhub .pt-hub-primary-flow [data-hub-open]{order:-2!important}
       #propertyhub .pt-hub-primary-flow .pt-manage-analysis,#propertyhub .pt-hub-primary-flow [data-pt-manage]{order:0!important}
       #propertyhub .pt-hub-admin-flow{display:flex;gap:7px;flex-wrap:wrap;width:100%;padding-top:8px;margin-top:2px;border-top:1px solid #edf1f5}
       #propertyhub .pt-hub-admin-flow .hub-delete{margin-left:auto}
@@ -76,7 +76,7 @@
     clone?.remove();
     if(manage)manage.textContent='Manage Analyses';
     if(report)report.textContent='Client Report';
-    if(hasAnalysis&&open)open.textContent='Review Latest Analysis';
+    if(hasAnalysis&&open)open.textContent='Open Property';
     if(!hasAnalysis&&open)open.remove();
     if(edit)edit.textContent=hasAnalysis?'Edit Guided Analysis':'Start Guided Analysis';
     let newBtn=card.querySelector('[data-pt-new]');
@@ -95,12 +95,29 @@
     return true;
   }
 
-  function apply(){enhanceStepSix();modernizeHub();}
+  function hookStage6(){
+    const api=window.Stage6Dashboard;
+    if(!api||typeof api.render!=='function')return false;
+    if(api.render.__ptGuidedWorkflowWrapped)return true;
+    const original=api.render;
+    const wrapped=function(){
+      const out=original.apply(this,arguments);
+      setTimeout(modernizeHub,0);
+      setTimeout(modernizeHub,60);
+      return out;
+    };
+    wrapped.__ptGuidedWorkflowWrapped=true;
+    wrapped.__original=original;
+    api.render=wrapped;
+    return true;
+  }
+
+  function apply(){hookStage6();enhanceStepSix();modernizeHub();}
   function schedule(){[0,50,140].forEach(ms=>setTimeout(apply,ms));}
   function start(){
-    schedule();
+    hookStage6();schedule();
     document.addEventListener('click',e=>{
-      if(e.target.closest('#guidedSetup,[data-tab="propertyhub"],[data-s8-tab="assumptions"],#s10NewAnalysis,[data-pt-new]'))schedule();
+      if(e.target.closest('#guidedSetup,[data-tab="propertyhub"],[data-s8-tab="assumptions"],#s10NewAnalysis,[data-pt-new],[data-pt-cloud-refresh]'))schedule();
     },true);
     document.addEventListener('change',e=>{if(e.target.closest('#guidedSetup,#propertyhub'))schedule();},true);
   }
