@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__propertyThesisResultsHydrationCoordinatorV||0)>=VERSION)return;
   window.__propertyThesisResultsHydrationCoordinatorV=VERSION;
 
@@ -8,21 +8,24 @@
   const status=t=>{try{if(typeof setStatus==='function')setStatus(t);}catch(_e){}};
 
   function pinDecisionCenter(){try{window.PropertyThesisDecisionCenter?.pin?.();}catch(_e){}}
+  function pinInvestmentThesis(){try{window.PropertyThesisInvestmentThesis?.pin?.();}catch(_e){}}
+  function pinTopResults(){pinDecisionCenter();pinInvestmentThesis();}
+
   function refreshConsumers(){
     const modules=[
       'ReviewValuation','ReviewCashflowStatement','ReviewTaxesOperations','ReviewTaxesSale',
       'ReviewFinancingSummary','ReviewTotalInvestmentCashflow','ReviewReconciliation',
-      'ReviewDecisionSummary','InvestmentOfferAnalysis','PropertyThesisDecisionCenter'
+      'ReviewDecisionSummary','InvestmentOfferAnalysis','PropertyThesisDecisionCenter','PropertyThesisInvestmentThesis'
     ];
     for(const name of modules){try{window[name]?.apply?.();}catch(e){console.warn(name+' refresh skipped',e);}}
     try{window.InitialRepairsModel?.enhanceResults?.();}catch(_e){}
     try{window.Stage15Layout?.apply?.();}catch(_e){}
     try{window.PropertyThesisSecondaryServerUI?.apply?.();}catch(_e){}
     try{window.CashFlowChart?.draw?.();}catch(_e){}
-    pinDecisionCenter();
-    requestAnimationFrame(()=>{try{window.CashFlowChart?.draw?.();}catch(_e){}pinDecisionCenter();});
-    setTimeout(pinDecisionCenter,30);
-    setTimeout(pinDecisionCenter,100);
+    pinTopResults();
+    requestAnimationFrame(()=>{try{window.CashFlowChart?.draw?.();}catch(_e){}pinTopResults();});
+    setTimeout(pinTopResults,30);
+    setTimeout(pinTopResults,100);
   }
 
   async function hydrate({force=false}={}){
@@ -52,7 +55,7 @@
       refreshConsumers();
       setTimeout(refreshConsumers,40);
       setTimeout(refreshConsumers,140);
-      setTimeout(()=>{try{window.CashFlowChart?.draw?.();}catch(_e){}pinDecisionCenter();},240);
+      setTimeout(()=>{try{window.CashFlowChart?.draw?.();}catch(_e){}pinTopResults();},240);
       return true;
     }catch(e){
       console.warn('Results hydration incomplete:',e);
@@ -68,5 +71,5 @@
   },true);
   window.addEventListener('pageshow',()=>schedule(false));
 
-  window.PropertyThesisResultsHydration={version:VERSION,hydrate,refresh:refreshConsumers,pinDecisionCenter};
+  window.PropertyThesisResultsHydration={version:VERSION,hydrate,refresh:refreshConsumers,pinDecisionCenter,pinInvestmentThesis,pinTopResults};
 })();
