@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=11;
+  const VERSION=12;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -31,7 +31,7 @@
   }
 
   function openMortgageTools(){
-    window.location.href='mortgage-tools.html';
+    window.location.href='mortgage-tools-shell.html?v=20260823-1611';
   }
 
   function ensureStyles(){
