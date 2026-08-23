@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>PropertyThesis — Step 1 Address Test</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{font-family:Inter,Segoe UI,Arial,sans-serif;color:#172033;background:#edf2f7}*{box-sizing:border-box}body{margin:0}.top{background:linear-gradient(125deg,#1d4ed8,#0f766e);color:#fff;padding:22px 28px}.top h1{margin:0;font-size:24px}.top p{margin:4px 0 0;opacity:.9}.wrap{max-width:980px;margin:28px auto;padding:0 18px}.card{background:#fff;border:1px solid #d8dee8;border-radius:16px;padding:22px;box-shadow:0 8px 24px rgba(16,24,40,.06);margin-bottom:18px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}label{display:block;font-weight:700;font-size:12px;margin-bottom:6px;color:#475467}input{width:100%;padding:12px 13px;border:1px solid #cfd7e3;border-radius:10px;font-size:15px}button,a.btn{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}.primary{background:#1d4ed8;color:#fff}.secondary{background:#eef4ff;color:#1d4ed8}.status{margin-top:12px;padding:11px 12px;border-radius:10px;background:#f5f7fb;color:#475467}.ok{background:#ecfdf3;color:#067647}.err{background:#fef3f2;color:#b42318}.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.fact{padding:12px;border-radius:10px;background:#f8fafc;border:1px solid #e5e7eb}.fact b{display:block;font-size:12px;color:#667085;margin-bottom:4px}.candidate{padding:12px 0;border-top:1px solid #eaecf0}.candidate:first-child{border-top:0}.muted{color:#667085;font-size:13px}.hidden{display:none}@media(max-width:700px){.facts{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top"><h1>PropertyThesis — Step 1 Test</h1><p>Same-origin property recognition test. The live analysis workflow is not modified.</p></header>
+<main class="wrap">
+<section class="card">
+<h2>Session Status</h2>
+<p class="muted">This page reuses your existing PropertyThesis sign-in session. No separate CAPTCHA is required here.</p>
+<div id="sessionStatus" class="status">Checking PropertyThesis session…</div>
+<div id="signInHelp" class="row hidden" style="margin-top:12px"><a class="btn secondary" href="./latest.html" target="_blank" rel="noopener">Open PropertyThesis to Sign In</a><button class="primary" id="checkAgain">Check Again</button></div>
+</section>
+<section class="card">
+<h2>1. Property Address</h2>
+<p class="muted">Enter a complete U.S. property address. This checkpoint tests raw property recognition before autocomplete is added.</p>
+<label for="address">Property address</label>
+<div class="row"><input id="address" style="flex:1;min-width:260px" placeholder="123 Main St, Tampa, FL 33602"><button class="primary" id="recognize">Recognize Property</button></div>
+<div id="lookupStatus" class="status">Waiting for an authenticated session.</div>
+</section>
+<section class="card hidden" id="matchCard"><h2>Matched Property</h2><div id="matchedAddress" style="font-size:18px;font-weight:800"></div><div id="facts" class="facts"></div></section>
+<section class="card hidden" id="candidateCard"><h2>Candidate Records</h2><p class="muted">These are the records RentCast returned for the submitted address.</p><div id="candidates"></div></section>
+</main>
+<script>
+(()=>{
+const SUPABASE_URL='https://lmaiqpkogmmsldkziggy.supabase.co';
+const SUPABASE_KEY='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
+const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
+let session=null;
+function setStatus(id,text,kind=''){const el=$(id);el.textContent=text;el.className='status '+kind}
+function fmt(v,suffix=''){return v===null||v===undefined||v===''?'—':String(v)+suffix}
+async function refreshSession(){
+  const {data:{session:s},error}=await client.auth.getSession();
+  session=s||null;
+  if(error){setStatus('sessionStatus','Could not read the PropertyThesis session: '+error.message,'err');$('signInHelp').classList.remove('hidden');return;}
+  if(session?.user){setStatus('sessionStatus','Signed in as '+(session.user.email||'PropertyThesis user')+'. Secure lookup is enabled.','ok');$('signInHelp').classList.add('hidden');setStatus('lookupStatus','Enter a full address and click Recognize Property.');}
+  else{setStatus('sessionStatus','No active PropertyThesis session found in this browser. Sign in to PropertyThesis in another tab, then click Check Again.','err');$('signInHelp').classList.remove('hidden');setStatus('lookupStatus','Sign in to PropertyThesis first.','err');}
+}
+$('checkAgain').onclick=refreshSession;
+$('recognize').onclick=async()=>{
+  const address=$('address').value.trim();
+  $('matchCard').classList.add('hidden');$('candidateCard').classList.add('hidden');
+  if(!session?.user){await refreshSession();if(!session?.user)return;}
+  if(!address)return setStatus('lookupStatus','Enter a full property address.','err');
+  setStatus('lookupStatus','Looking up property…');
+  const {data,error}=await client.functions.invoke('rentcast-property-lookup',{body:{address}});
+  if(error)return setStatus('lookupStatus',error.message||'Lookup failed.','err');
+  if(!data?.matched||!data.property)return setStatus('lookupStatus','No matching RentCast property record found.','err');
+  const p=data.property;
+  $('matchedAddress').textContent=p.formattedAddress||address;
+  const items=[['Property Type',fmt(p.propertyType)],['Living Area',fmt(p.squareFootage,' sf')],['Year Built',fmt(p.yearBuilt)],['Lot Size',fmt(p.lotSize,' sf')],['Bedrooms',fmt(p.bedrooms)],['Bathrooms',fmt(p.bathrooms)],['County',fmt(p.county)],['Subdivision',fmt(p.subdivision)],['Assessor ID',fmt(p.assessorID)],['Last Sale Date',fmt(p.lastSaleDate)],['Last Sale Price',p.lastSalePrice?Number(p.lastSalePrice).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'—'],['RentCast ID',fmt(p.id)]];
+  $('facts').innerHTML=items.map(([k,v])=>`<div class="fact"><b>${esc(k)}</b>${esc(v)}</div>`).join('');
+  $('matchCard').classList.remove('hidden');
+  const c=Array.isArray(data.candidates)?data.candidates:[];
+  $('candidates').innerHTML=c.map((x,i)=>`<div class="candidate"><strong>${i+1}. ${esc(x.formattedAddress||'Unformatted address')}</strong><div class="muted">${esc([x.propertyType,x.squareFootage?x.squareFootage+' sf':null,x.yearBuilt?'Built '+x.yearBuilt:null].filter(Boolean).join(' • '))}</div></div>`).join('')||'<div class="muted">No additional candidates.</div>';
+  $('candidateCard').classList.remove('hidden');
+  setStatus('lookupStatus','Property recognized successfully.','ok');
+};
+$('address').addEventListener('keydown',e=>{if(e.key==='Enter')$('recognize').click()});
+client.auth.onAuthStateChange((_event,s)=>{session=s||null;refreshSession();});
+refreshSession();
+})();
+</script>
+</body>
+</html>
