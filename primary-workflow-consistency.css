@@ -1,0 +1,150 @@
+:root{
+  --pt-ui-radius:14px;
+  --pt-ui-radius-sm:9px;
+  --pt-ui-border:#d7e3ed;
+  --pt-ui-border-strong:#c7d8e7;
+  --pt-ui-shadow:0 8px 24px rgba(29,57,84,.075);
+  --pt-ui-soft:#f7fbff;
+  --pt-ui-ink:#173f66;
+  --pt-ui-muted:#667085;
+  --pt-ui-blue:#2563eb;
+}
+
+/* Consistent application rhythm around the three primary workflow stages. */
+#appNavShell,
+#stage8Workflow .s10-workflow-row,
+#guidedSetup .gw-card,
+#guidedSetup .gw-side,
+#dashboard>.grid>.card,
+#dashboard>.grid>#ptDecisionCenter,
+#dashboard>.grid>#ptInvestmentThesis,
+#dashboard>.grid>#ptMarketRentDecision,
+#report>#rbControls{
+  border-radius:var(--pt-ui-radius)!important;
+  border-color:var(--pt-ui-border)!important;
+  box-shadow:var(--pt-ui-shadow)!important;
+}
+
+#appNavShell{margin-bottom:16px!important}
+#stage8Workflow{margin-bottom:18px!important}
+#assumptions #guidedSetup,
+#dashboard>.grid,
+#report>#rbControls{scroll-margin-top:18px}
+
+/* Shared section typography. */
+#guidedSetup .gw-head h2,
+#dashboard>.grid>.card>.sectionhead h2,
+#dashboard #ptDecisionCenter h2,
+#dashboard #ptInvestmentThesis h2,
+#dashboard #ptMarketRentDecision h2,
+#report>#rbControls>.sectionhead h2{
+  color:var(--pt-ui-ink)!important;
+  letter-spacing:-.01em;
+}
+
+#guidedSetup .gw-head p,
+#dashboard>.grid>.card>.sectionhead p,
+#dashboard #ptDecisionCenter p,
+#dashboard #ptInvestmentThesis p,
+#dashboard #ptMarketRentDecision p,
+#report>#rbControls>.sectionhead p{
+  color:var(--pt-ui-muted)!important;
+  line-height:1.45!important;
+}
+
+/* Unified card/header spacing for screen-only workflow surfaces. */
+#guidedSetup .gw-head{padding:18px 20px 15px!important}
+#guidedSetup .gw-body{padding:20px!important}
+#guidedSetup .gw-actions{padding:13px 20px!important}
+#dashboard>.grid{gap:16px!important}
+#dashboard>.grid>.card>.sectionhead{padding-bottom:10px!important}
+#dashboard>.grid>.card{overflow:hidden}
+
+/* Keep the main results hierarchy visually distinct from supporting detail. */
+#dashboard #ptDecisionCenter,
+#dashboard #ptInvestmentThesis,
+#dashboard #ptMarketRentDecision{margin-bottom:0!important}
+#dashboard #reviewAnalysisSetup{background:#fbfdff!important}
+#dashboard #reviewAnalysisSetup>.sectionhead{background:linear-gradient(180deg,#f8fbfe,#f4f8fb)!important;border-bottom:1px solid #e3ebf2!important}
+
+/* Consistent compact labels/eyebrows. */
+#stage8Workflow .s10-row-label span,
+#guidedSetup .gw-eye,
+#guidedSetup .pt-gw-goal b,
+#report>#rbControls .rb-zone-title,
+#dashboard #reviewAnalysisSetup .sectionhead .badge{
+  font-weight:900!important;
+  letter-spacing:.07em!important;
+  text-transform:uppercase!important;
+}
+
+/* Buttons: same height/radius/focus language across all three stages. */
+#stage8Workflow button,
+#guidedSetup .btn,
+#dashboard .btn,
+#report>#rbControls .btn,
+#appNavShell button{
+  border-radius:8px!important;
+}
+
+#guidedSetup .gw-actions .btn,
+#dashboard .sectionhead .btn,
+#report>#rbControls .rb-actions .btn{
+  min-height:38px!important;
+}
+
+#stage8Workflow button:focus-visible,
+#guidedSetup button:focus-visible,
+#guidedSetup input:focus-visible,
+#guidedSetup select:focus-visible,
+#dashboard button:focus-visible,
+#dashboard input:focus-visible,
+#dashboard select:focus-visible,
+#report>#rbControls button:focus-visible,
+#report>#rbControls input:focus-visible,
+#appNavShell button:focus-visible{
+  outline:3px solid rgba(59,130,246,.2)!important;
+  outline-offset:2px!important;
+}
+
+/* Inputs and editable controls share the same visual weight. */
+#guidedSetup input,
+#guidedSetup select,
+#dashboard #reviewAnalysisSetup input,
+#dashboard #reviewAnalysisSetup select,
+#report>#rbControls input[type="text"]{
+  min-height:40px!important;
+  border-radius:8px!important;
+  border-color:#cbd9e5!important;
+}
+
+/* Step controls should always look interactive. */
+#stage8Workflow .s8-step,
+#guidedSetup .gw-step{transition:background .15s ease,border-color .15s ease,box-shadow .15s ease,transform .15s ease!important}
+#stage8Workflow .s8-step:hover,
+#guidedSetup .gw-step:hover{transform:translateY(-1px)}
+
+/* Normalize supporting notes/callouts. */
+#guidedSetup .gw-callout,
+#guidedSetup .gw-help,
+#guidedSetup .pt-gw-goal,
+#dashboard .note,
+#dashboard .callout{
+  border-radius:var(--pt-ui-radius-sm)!important;
+}
+
+/* Report builder stays separate from the actual report preview. */
+#report>#rbControls{margin-bottom:24px!important}
+#report>#rbControls .rb-work-zone,
+#report>#rbControls .rb-export-panel{border-radius:11px!important}
+#report>#rbControls .rb-toggle{border-radius:7px!important}
+#clientReport .rb-report{box-shadow:none}
+
+/* Mobile keeps the same hierarchy without excess vertical chrome. */
+@media(max-width:700px){
+  #appNavShell{margin-bottom:12px!important}
+  #stage8Workflow{margin-bottom:14px!important}
+  #guidedSetup .gw-head,#guidedSetup .gw-body,#guidedSetup .gw-actions{padding-left:16px!important;padding-right:16px!important}
+  #dashboard>.grid{gap:12px!important}
+  #report>#rbControls{margin-bottom:16px!important}
+}
