@@ -1,0 +1,132 @@
+:root{
+  --nav:#1d4ed8;
+  --nav2:#2563eb;
+  --blue:#2563eb;
+  --blue2:#3b82f6;
+  --ink:#172033;
+  --muted:#64748b;
+  --line:#dbe7f3;
+  --soft:#f4f9ff;
+  --bg:#f5faff;
+  --card:#ffffff;
+  --input:#ffffff;
+  --green:#0f9f78;
+  --red:#c2413a;
+  --amber:#d97706;
+  --teal:#14b8a6;
+  --teal-dark:#0f766e;
+  --sky:#eaf4ff;
+  --mint:#e8fbf7;
+  --gold:#fff7df;
+  --shadow:0 2px 5px rgba(37,99,235,.06),0 14px 34px rgba(37,99,235,.08);
+}
+body{background:linear-gradient(180deg,#f8fcff 0%,#f3f9ff 45%,#f8fbff 100%)!important;color:var(--ink)}
+.shell{padding-top:16px}
+
+/* Hero: brighter and more colorful without sacrificing contrast */
+.top{background-image:linear-gradient(90deg,rgba(20,55,130,.88) 0%,rgba(20,105,155,.67) 46%,rgba(13,148,136,.32) 100%),url('assets/investment-header.webp')!important;box-shadow:inset 0 -1px 0 rgba(255,255,255,.25),0 8px 28px rgba(37,99,235,.13)!important}
+.brand h1{text-shadow:0 3px 16px rgba(11,35,80,.32)!important}
+.brand p{color:#f4fbff!important}
+.topactions{background:rgba(16,62,128,.32)!important;border-color:rgba(255,255,255,.28)!important;box-shadow:0 12px 32px rgba(17,62,120,.16)!important}
+.top .btn.ghost{background:#ffffff!important;border-color:#dbeafe!important;color:#1d4ed8!important}
+
+/* Global cards and surfaces */
+.card,.gw-card,.gw-side,.app-nav-shell{border-color:#d9e8f5!important;box-shadow:var(--shadow)!important}
+.card{background:linear-gradient(180deg,#ffffff 0%,#fdfefe 100%)!important}
+h2{color:#17365f}
+h3{color:#28496f}
+.sectionhead p,.gw-head p{color:#64748b!important}
+.badge,.gw-tag{background:#e8f2ff!important;color:#1d4ed8!important;border:1px solid #cfe3ff!important}
+
+/* Primary app toolbar */
+.app-nav-shell{background:linear-gradient(90deg,#ffffff 0%,#f7fbff 100%)!important;border-color:#cfe3f4!important}
+.app-nav-toolbar{background:transparent!important}
+.app-nav-action{background:#ffffff!important;border-color:#cfe0ee!important;color:#31506f!important;box-shadow:0 2px 6px rgba(37,99,235,.04)}
+.app-nav-action:hover{background:#eff7ff!important;border-color:#8fc3ef!important;color:#1d4ed8!important}
+.app-nav-action.primary{background:linear-gradient(135deg,#2563eb,#3182f6)!important;border-color:#2563eb!important;color:#fff!important;box-shadow:0 6px 16px rgba(37,99,235,.22)}
+.app-nav-action.active{background:#e8f4ff!important;border-color:#7db8e8!important;color:#1d4ed8!important}
+.app-nav-advanced{background:linear-gradient(90deg,#f3f9ff,#effcf9)!important;border-top-color:#d6e9f5!important}
+.app-nav-advanced button{border-color:#cfe0ee!important;color:#31506f!important}
+.app-nav-advanced button:hover{background:#e6f7f4!important;border-color:#6ed4c6!important;color:#0f766e!important}
+
+/* Primary workflow (3 steps) */
+.s10-row-label{background:linear-gradient(90deg,#eaf4ff,#effcf9)!important;border-color:#cfe6f0!important}
+.s10-row-label span{color:#1d4ed8!important}
+.s10-step-grid .s8-step{background:#fff!important;border-color:#dbe7f3!important}
+.s10-step-grid .s8-step:hover{background:#f2f8ff!important}
+.s10-step-grid .s8-step.active{background:linear-gradient(180deg,#eaf4ff,#f4faff)!important;box-shadow:inset 0 -4px #2563eb!important}
+.s10-step-grid .s8-step.active .s8-num{background:linear-gradient(135deg,#2563eb,#14b8a6)!important;color:#fff!important}
+.s8-num{background:#e9f1f8!important;color:#31506f!important}
+
+/* Six-step guided wizard */
+.gw-steps{border-color:#d4e6f4!important;box-shadow:0 8px 28px rgba(37,99,235,.07)!important}
+.gw-step{border-color:#e2edf5!important;background:#fff!important}
+.gw-step:hover{background:#f5faff!important}
+.gw-step.active{background:linear-gradient(180deg,#eaf4ff,#f3fbff)!important;box-shadow:inset 0 -4px #2563eb!important}
+.gw-step.active .gw-num{background:linear-gradient(135deg,#2563eb,#3b82f6)!important;color:#fff!important}
+.gw-step.done{background:#f4fcfa!important}
+.gw-step.done .gw-num{background:#dff8f1!important;color:#0f766e!important}
+.gw-step.done b{color:#0f766e!important}
+.gw-head{background:linear-gradient(100deg,#f7fbff,#f2fcfa)!important;border-color:#dcebf4!important}
+.gw-eye{color:#2563eb!important}
+.gw-head h2{color:#163e73!important}
+.gw-side-head{background:linear-gradient(90deg,#eef6ff,#eefbf8)!important;border-color:#d9e9f2!important}
+.gw-bar{background:#e4edf5!important}
+.gw-bar i{background:linear-gradient(90deg,#2563eb,#14b8a6)!important}
+.gw-total{background:linear-gradient(90deg,#eaf4ff,#eafaf7)!important;color:#145a8a!important}
+.gw-callout,.gw-help{background:#f7fbff!important;border-color:#d7e8f6!important}
+.gw-callout{border-left-color:#14b8a6!important}
+.gw-help summary{color:#2563eb!important}
+.gw-sub,.gw-review-card{background:#fbfdff!important;border-color:#dce8f2!important}
+.gw-actions{background:#f8fbfe!important;border-color:#e1ebf3!important}
+.gw-expanded-guidance{background:linear-gradient(180deg,#f8fbff,#f3f9ff)!important;border-color:#d7e8f6!important}
+.gw-expanded-guidance strong,.gw-expanded-guidance a{color:#2563eb!important}
+.gw-choice button{border-color:#d6e4ee!important;background:#fff!important}
+.gw-choice button:hover{background:#f4faff!important;border-color:#9dc8eb!important}
+.gw-choice button.active{background:linear-gradient(180deg,#eaf4ff,#effaf8)!important;border-color:#69b7d9!important;box-shadow:0 4px 12px rgba(37,99,235,.08)}
+
+/* Inputs */
+.field input,.field select,.cloud-form textarea,.gw-field input,.gw-field select{background:#fff!important;border-color:#cbddeb!important;box-shadow:inset 0 1px 2px rgba(30,64,175,.025)}
+.field input:focus,.field select:focus,.cloud-form textarea:focus,.gw-field input:focus,.gw-field select:focus{border-color:#3b82f6!important;box-shadow:0 0 0 4px rgba(59,130,246,.13)!important}
+.gw-field-error input,.gw-field-error select{border-color:#ef6b62!important;box-shadow:0 0 0 3px rgba(239,107,98,.12)!important}
+.gw-validation-message{background:#fff5f3!important;border-color:#f5b6b0!important;color:#a63b34!important}
+
+/* Buttons */
+.btn{transition:transform .12s ease,box-shadow .12s ease,filter .12s ease}
+.btn:hover{filter:none!important;transform:translateY(-1px)}
+.btn.primary,.primary.btn{background:linear-gradient(135deg,#2563eb,#3b82f6)!important;color:#fff!important;box-shadow:0 6px 16px rgba(37,99,235,.20)}
+.btn.secondary,.secondary.btn{background:linear-gradient(135deg,#e6faf6,#dcf6f2)!important;color:#0f766e!important;border:1px solid #afe7dc!important}
+.btn.ghost,.ghost.btn{background:#fff!important;border:1px solid #cfe0ee!important;color:#355a7d!important}
+.btn.danger,.danger.btn{background:#fff3f1!important;color:#b23a32!important;border:1px solid #f3c7c2!important}
+
+/* KPI and metric surfaces */
+.kpi{background:linear-gradient(145deg,#f8fbff,#eef7ff)!important;border-color:#d6e8f5!important}
+.kpi:nth-child(3n+2){background:linear-gradient(145deg,#f7fffd,#eafaf6)!important;border-color:#d2eee7!important}
+.kpi:nth-child(3n){background:linear-gradient(145deg,#fffdf7,#fff6dc)!important;border-color:#f6e6b7!important}
+.support-box,.scenario-card,.scenario .box,.report-metric{background:#fbfdff!important;border-color:#dce8f2!important}
+.note,.inputnote,.pdf-preview{background:#f6faff!important;border-color:#dce8f2!important}
+.note{border-left-color:#3b82f6!important}
+.callout{background:linear-gradient(90deg,#edf6ff,#eefaf8)!important;border-color:#d2e9ef!important}
+.progress span,.dot{background:#2563eb!important}.dot.alt{background:#14b8a6!important}
+
+/* Tables */
+.tablewrap{border-color:#d7e5ef!important}
+thead th{background:linear-gradient(180deg,#eaf4ff,#eef8fb)!important;color:#264b6e!important}
+th,td{border-color:#e6eef4!important}
+.total td{border-top-color:#78aee0!important;background:#f6faff!important}
+.subtotal td{background:#f9fcff!important}
+
+/* Status and records */
+.record:hover,.record.active{background:#eaf5ff!important}
+.cloud-status.online{background:#e9faf5!important;border-color:#bde9dc!important;color:#0f766e!important}
+.cloud-status.offline{background:#fff7e8!important;border-color:#f6ddb0!important;color:#a15c00!important}
+.stage-pill{background:#e4faf4!important;color:#0f766e!important;border-color:#9fe2d4!important}
+
+/* Report screen styling only; PDF branding layers remain authoritative */
+#report .toolbar{padding:10px;border-radius:10px;background:#f5faff;border:1px solid #dbe8f2}
+.report-cover{border-bottom-color:#2563eb!important}
+.report-section h2{border-color:#dbe8f2!important;color:#173f70!important}
+
+@media(max-width:650px){
+  .top{background-image:linear-gradient(90deg,rgba(20,55,130,.90),rgba(20,105,155,.64),rgba(13,148,136,.25)),url('assets/investment-header.webp')!important}
+}
