@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=5;
+  const VERSION=6;
   if((window.__protectedAnalysisOpenRouterVersion||0)>=VERSION)return;
   window.__protectedAnalysisOpenRouterVersion=VERSION;
 
@@ -41,6 +41,11 @@
   }
 
   function refreshProtectedValuation(){try{window.ReviewValuation?.apply?.();}catch(_e){}}
+  function refreshMarketRentResults(){
+    try{window.PropertyThesisMarketRentUnderwriting?.renderResultsCard?.();}catch(_e){}
+    try{window.PropertyThesisMarketRentResultsOrder?.pin?.();}catch(_e){}
+    try{window.PropertyThesisMarketRentResultsOrder?.schedule?.();}catch(_e){}
+  }
 
   async function protectedResults(){
     const base=window.PropertyThesisIncomeEngineBridge;
@@ -75,7 +80,13 @@
         try{window.PropertyThesisInvestmentThesis?.apply?.();window.PropertyThesisInvestmentThesis?.pin?.();}catch(_e){}
         try{window.CashFlowChart?.draw?.();}catch(_e){}
       }
-      setTimeout(()=>{try{window.PropertyThesisInvestmentThesis?.apply?.();window.PropertyThesisInvestmentThesis?.pin?.();}catch(_e){}try{window.CashFlowChart?.draw?.();}catch(_e){}},80);
+      refreshMarketRentResults();
+      setTimeout(()=>{
+        try{window.PropertyThesisInvestmentThesis?.apply?.();window.PropertyThesisInvestmentThesis?.pin?.();}catch(_e){}
+        refreshMarketRentResults();
+        try{window.CashFlowChart?.draw?.();}catch(_e){}
+      },80);
+      setTimeout(refreshMarketRentResults,220);
     }catch(e){console.warn('Saved analysis results hydration skipped',e);}
   }
 
@@ -88,6 +99,7 @@
       try{window.ReportAssumptionsNarrative?.apply?.();window.ReportDetailOrder?.apply?.();}catch(_e){}
       try{window.ReportSensitivityAnalysis?.apply?.();window.ReportInvestmentOfferAnalysis?.apply?.();}catch(_e){}
       try{window.ReportExecutiveConclusionCurrent?.apply?.();}catch(_e){}
+      try{window.ReportMarketRentUnderwriting?.apply?.();}catch(_e){}
       try{window.UserBranding?.applyReportBranding?.();window.PropertyThesisReportBranding?.apply?.();}catch(_e){}
     },80);
   }
@@ -98,13 +110,14 @@
     busy=true;status(target==='report'?'Preparing protected report…':'Loading protected analysis…');
     try{
       if(!hydrateAssumptions(a))throw new Error('Saved assumptions could not be loaded.');
+      try{window.MarketRentPriorResearchFix?.restore?.();}catch(_e){}
       try{if(typeof loadCloudScenarios==='function')await loadCloudScenarios(a.id);}catch(_e){}
       if(target!=='assumptions')await protectedResults();
       try{window.PropertyAnalysisManager?.close?.();}catch(_e){}
       if(window.WorkflowNavigationController?.go)window.WorkflowNavigationController.go(target);
       else if(typeof switchTab==='function')switchTab(target);
       if(target==='report')refreshReport();
-      else if(target==='dashboard'){refreshDashboard();await hydrateCurrentResults();}
+      else if(target==='dashboard'){refreshDashboard();await hydrateCurrentResults();refreshMarketRentResults();}
       else {try{window.GuidedAnalysisSetup?.refresh?.();window.GuidedAssumptionGuidance?.apply?.();window.GuidedInitialRepairs?.apply?.();}catch(_e){}}
       try{window.AnalysisHistoryAutosave?.checkDraft?.();window.UnsavedChangeProtection?.markClean?.();}catch(_e){}
       status(target==='report'?'Protected report ready':target==='assumptions'?'Analysis ready to edit':'Saved analysis loaded');
