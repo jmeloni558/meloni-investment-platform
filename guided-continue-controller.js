@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=8;
+  const VERSION=9;
   if((window.__guidedContinueControllerV||0)>=VERSION)return;
   window.__guidedContinueControllerV=VERSION;
 
@@ -63,6 +63,22 @@
     try{window.Stage8Workflow?.refresh?.();}catch(e){}try{window.Stage10Workflow?.refresh?.();}catch(e){}try{window.Stage15Layout?.apply?.();}catch(e){}
     setTimeout(refreshReview,0);window.scrollTo({top:0,behavior:'smooth'});
   }
+  async function hydrateNewAnalysisResults(){
+    const secondary=window.PropertyThesisSecondaryEngine;
+    if(!secondary?.request)throw new Error('Advanced analysis service is unavailable.');
+    const secondaryResult=await secondary.request({refresh:false});
+    if(!secondaryResult?.offer)throw new Error(secondary.status?.().lastError||'Advanced analysis could not be completed.');
+    const hydration=window.PropertyThesisResultsHydration;
+    if(hydration?.hydrate)await hydration.hydrate({force:true});
+    else {
+      try{window.PropertyThesisSecondaryServerUI?.apply?.();}catch(_e){}
+      try{window.PropertyThesisDecisionCenter?.apply?.();}catch(_e){}
+      try{window.PropertyThesisDecisionCenterStability?.refresh?.();}catch(_e){}
+    }
+    try{window.PropertyThesisDecisionCenterStability?.refresh?.();}catch(_e){}
+    try{window.PropertyThesisDecisionCenter?.apply?.();}catch(_e){}
+    return true;
+  }
   function setCalculating(on){
     calculating=!!on;
     const btn=document.getElementById('gwNext');if(!btn)return;
@@ -76,9 +92,10 @@
     clearValidation();setCalculating(true);
     try{
       await safeRecalculate();
-      try{if(typeof setStatus==='function')setStatus('Analysis updated — review the results');}catch(e){}
+      try{if(typeof setStatus==='function')setStatus('Analysis updated — preparing decision results');}catch(e){}
       activateDashboard();
-      setTimeout(()=>{try{window.PropertyThesisSecondaryEngine?.request?.();}catch(_e){}},0);
+      await hydrateNewAnalysisResults();
+      try{if(typeof setStatus==='function')setStatus('Analysis updated — review the results');}catch(e){}
     }
     catch(err){const box=ensureBox();if(box){box.innerHTML=`<b>Unable to calculate the analysis.</b><div>${String(err.message||err)}</div>`;box.classList.add('show');}try{if(typeof setStatus==='function')setStatus('Unable to calculate: '+err.message);}catch(_e){}}
     finally{setCalculating(false);}
@@ -87,6 +104,6 @@
   function bindButton(){const btn=document.getElementById('gwNext');if(!btn)return false;btn.onclick=e=>{e.preventDefault();e.stopPropagation();run();};ensureBox();return true;}
   function clearFieldError(e){const input=e.target?.closest?.('#gwBody [data-src]');if(!input)return;input.removeAttribute('aria-invalid');input.closest('.gw-field')?.classList.remove('gw-missing');if(!document.querySelector('#gwBody .gw-field.gw-missing')){const box=document.getElementById('gwValidation');if(box)box.classList.remove('show');}}
   function start(){window.addEventListener('click',capture,true);document.addEventListener('input',clearFieldError,true);let tries=0;const timer=setInterval(()=>{if(bindButton())clearInterval(timer);if(++tries>60)clearInterval(timer)},120);const host=document.getElementById('guidedSetup');if(host){new MutationObserver(()=>bindButton()).observe(host,{childList:true,subtree:true});}}
-  window.GuidedContinueController={run,bindButton,validate:valid,recalculate:safeRecalculate,refreshReview};
+  window.GuidedContinueController={run,bindButton,validate:valid,recalculate:safeRecalculate,refreshReview,hydrateResults:hydrateNewAnalysisResults};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
