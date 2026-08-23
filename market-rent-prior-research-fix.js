@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__marketRentPriorResearchFixVersion||0)>=VERSION)return;
   window.__marketRentPriorResearchFixVersion=VERSION;
 
@@ -36,21 +36,43 @@
     return null;
   }
 
-  function loadModule(src,id){
-    if(document.getElementById(id))return;
-    const s=document.createElement('script');s.id=id;s.src=src;s.defer=true;document.head.appendChild(s);
+  function loadModule(src,id,onload){
+    const existing=document.getElementById(id);
+    if(existing){if(onload&&window.PropertyThesisMarketRentUnderwriting)setTimeout(onload,0);return existing;}
+    const s=document.createElement('script');
+    s.id=id;
+    s.src=src;
+    s.async=false;
+    if(onload)s.addEventListener('load',onload,{once:true});
+    (document.body||document.head||document.documentElement).appendChild(s);
+    return s;
   }
+
   function activateUnderwriting(){
-    loadModule('market-rent-underwriting.js?v=1&build=20260823-1305-market-rent-underwriting','ptMarketRentUnderwritingLoader');
-    loadModule('report-market-rent-underwriting.js?v=1&build=20260823-1305-market-rent-underwriting','ptReportMarketRentUnderwritingLoader');
+    const afterLoad=()=>{
+      try{window.PropertyThesisMarketRentUnderwriting?.schedule?.();}catch(_e){}
+      try{window.PropertyThesisMarketRentUnderwriting?.enhanceModal?.();}catch(_e){}
+    };
+    loadModule('market-rent-underwriting.js?v=1&build=20260823-1318-market-rent-underwriting','ptMarketRentUnderwritingLoader',afterLoad);
+    loadModule('report-market-rent-underwriting.js?v=1&build=20260823-1318-market-rent-underwriting','ptReportMarketRentUnderwritingLoader');
+    [0,100,300,700].forEach(ms=>setTimeout(afterLoad,ms));
+  }
+
+  function activateWhenReady(){
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',activateUnderwriting,{once:true});
+    else setTimeout(activateUnderwriting,0);
   }
 
   // This script is intentionally loaded before market-rent-support.js so this
   // capture listener restores cloud data before the Market Rent modal renders.
   document.addEventListener('click',e=>{
-    if(e.target?.closest?.('[data-ptr-open]'))restoreBeforeOpen();
+    if(e.target?.closest?.('[data-ptr-open]')){
+      restoreBeforeOpen();
+      setTimeout(()=>{try{window.PropertyThesisMarketRentUnderwriting?.enhanceModal?.();}catch(_e){}},80);
+      setTimeout(()=>{try{window.PropertyThesisMarketRentUnderwriting?.enhanceModal?.();}catch(_e){}},250);
+    }
   },true);
 
   window.MarketRentPriorResearchFix={restore:restoreBeforeOpen,activateUnderwriting};
-  activateUnderwriting();
+  activateWhenReady();
 })();
