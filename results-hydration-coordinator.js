@@ -1,12 +1,13 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__propertyThesisResultsHydrationCoordinatorV||0)>=VERSION)return;
   window.__propertyThesisResultsHydrationCoordinatorV=VERSION;
 
   let busy=false,lastRun=0;
   const status=t=>{try{if(typeof setStatus==='function')setStatus(t);}catch(_e){}};
 
+  function pinDecisionCenter(){try{window.PropertyThesisDecisionCenter?.pin?.();}catch(_e){}}
   function refreshConsumers(){
     const modules=[
       'ReviewValuation','ReviewCashflowStatement','ReviewTaxesOperations','ReviewTaxesSale',
@@ -18,7 +19,10 @@
     try{window.Stage15Layout?.apply?.();}catch(_e){}
     try{window.PropertyThesisSecondaryServerUI?.apply?.();}catch(_e){}
     try{window.CashFlowChart?.draw?.();}catch(_e){}
-    requestAnimationFrame(()=>{try{window.CashFlowChart?.draw?.();}catch(_e){}});
+    pinDecisionCenter();
+    requestAnimationFrame(()=>{try{window.CashFlowChart?.draw?.();}catch(_e){}pinDecisionCenter();});
+    setTimeout(pinDecisionCenter,30);
+    setTimeout(pinDecisionCenter,100);
   }
 
   async function hydrate({force=false}={}){
@@ -41,13 +45,14 @@
 
       const secondary=window.PropertyThesisSecondaryEngine;
       let secondaryResult=secondary?.current?.();
-      if(!secondaryResult?.offer)secondaryResult=await secondary?.request?.({refresh:false});
+      const offerMatches=secondaryResult?.offer&&window.PropertyThesisDecisionCenter?.offerMatchesState?.(secondaryResult.offer,state);
+      if(!offerMatches){try{secondary?.clearCache?.();}catch(_e){}secondaryResult=await secondary?.request?.({refresh:false});}
       if(!secondaryResult?.offer)throw new Error(secondary?.status?.().lastError||'Advanced analysis result is unavailable.');
 
       refreshConsumers();
       setTimeout(refreshConsumers,40);
       setTimeout(refreshConsumers,140);
-      setTimeout(()=>{try{window.CashFlowChart?.draw?.();}catch(_e){}},240);
+      setTimeout(()=>{try{window.CashFlowChart?.draw?.();}catch(_e){}pinDecisionCenter();},240);
       return true;
     }catch(e){
       console.warn('Results hydration incomplete:',e);
@@ -63,5 +68,5 @@
   },true);
   window.addEventListener('pageshow',()=>schedule(false));
 
-  window.PropertyThesisResultsHydration={version:VERSION,hydrate,refresh:refreshConsumers};
+  window.PropertyThesisResultsHydration={version:VERSION,hydrate,refresh:refreshConsumers,pinDecisionCenter};
 })();
