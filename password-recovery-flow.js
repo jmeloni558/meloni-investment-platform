@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__propertyThesisPasswordRecoveryVersion||0)>=VERSION)return;
   window.__propertyThesisPasswordRecoveryVersion=VERSION;
 
@@ -21,7 +21,7 @@
 
   async function waitClient(){
     for(let i=0;i<100;i++){
-      if(window.cloudClient)return window.cloudClient;
+      if(typeof cloudClient!=='undefined'&&cloudClient)return cloudClient;
       await new Promise(r=>setTimeout(r,50));
     }
     throw new Error('Authentication service did not initialize.');
