@@ -1,10 +1,10 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   if((window.__propertyThesisGuidedSaveExistingWorkflowV||0)>=VERSION)return;
   window.__propertyThesisGuidedSaveExistingWorkflowV=VERSION;
 
-  let saving=false;
+  let saving=false,observer=null;
   const status=t=>{try{if(typeof setStatus==='function')setStatus(t);}catch(_e){}};
   const currentStep=()=>{const a=document.querySelector('#gwSteps .gw-step.active[data-step]');return a?Number(a.dataset.step):0;};
 
@@ -40,6 +40,7 @@
         document.querySelectorAll('.nav [data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab==='dashboard'));
       }
       try{window.PropertyThesisIncomeEngineBridge?.browserRender?.();}catch(_e){}
+      try{await window.PropertyThesisResultsHydration?.hydrate?.({force:true});}catch(_e){}
       try{window.GuidedContinueController?.refreshReview?.();}catch(_e){}
       try{window.Stage15Layout?.apply?.();}catch(_e){}
       setTimeout(()=>{try{window.PropertyThesisSecondaryEngine?.request?.();}catch(_e){}},0);
@@ -57,7 +58,12 @@
     const actions=document.querySelector('#guidedSetup .gw-actions>div');
     if(!actions||currentStep()!==5){document.getElementById('gwSaveAndReview')?.remove();return false;}
     let b=document.getElementById('gwSaveAndReview');
-    if(!b){b=document.createElement('button');b.id='gwSaveAndReview';b.type='button';b.className='btn secondary';b.textContent='Calculate, Save & Review Results →';const next=document.getElementById('gwNext');actions.insertBefore(b,next||null);b.onclick=e=>{e.preventDefault();e.stopPropagation();calculateSaveReview();};}
+    if(!b){
+      b=document.createElement('button');b.id='gwSaveAndReview';b.type='button';b.className='btn secondary';b.textContent='Calculate, Save & Review Results →';
+      b.onclick=e=>{e.preventDefault();e.stopPropagation();calculateSaveReview();};
+    }
+    const next=document.getElementById('gwNext');
+    if(b.parentElement!==actions||b.nextElementSibling!==next)actions.insertBefore(b,next||null);
     return true;
   }
 
@@ -100,28 +106,25 @@
     if(!api||typeof api.render!=='function')return false;
     if(api.render.__ptGuidedWorkflowWrapped)return true;
     const original=api.render;
-    const wrapped=function(){
-      const out=original.apply(this,arguments);
-      setTimeout(modernizeHub,0);
-      setTimeout(modernizeHub,60);
-      return out;
-    };
-    wrapped.__ptGuidedWorkflowWrapped=true;
-    wrapped.__original=original;
-    api.render=wrapped;
-    return true;
+    const wrapped=function(){const out=original.apply(this,arguments);setTimeout(modernizeHub,0);setTimeout(modernizeHub,60);return out;};
+    wrapped.__ptGuidedWorkflowWrapped=true;wrapped.__original=original;api.render=wrapped;return true;
   }
 
   function apply(){hookStage6();enhanceStepSix();modernizeHub();}
-  function schedule(){[0,50,140].forEach(ms=>setTimeout(apply,ms));}
+  function schedule(){[0,50,140,320,650].forEach(ms=>setTimeout(apply,ms));}
+  function installGuidedObserver(){
+    const host=document.getElementById('guidedSetup');if(!host||observer)return false;
+    observer=new MutationObserver(()=>{if(currentStep()===5)setTimeout(enhanceStepSix,0);});
+    observer.observe(host,{childList:true,subtree:true});return true;
+  }
   function start(){
-    hookStage6();schedule();
+    hookStage6();installGuidedObserver();schedule();
     document.addEventListener('click',e=>{
       if(e.target.closest('#guidedSetup,[data-tab="propertyhub"],[data-s8-tab="assumptions"],#s10NewAnalysis,[data-pt-new],[data-pt-cloud-refresh]'))schedule();
     },true);
     document.addEventListener('change',e=>{if(e.target.closest('#guidedSetup,#propertyhub'))schedule();},true);
   }
 
-  window.PropertyThesisGuidedSaveExistingWorkflow={version:VERSION,apply,calculateSaveReview,modernizeHub};
+  window.PropertyThesisGuidedSaveExistingWorkflow={version:VERSION,apply,calculateSaveReview,modernizeHub,enhanceStepSix};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
