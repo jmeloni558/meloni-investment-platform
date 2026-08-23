@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=7;
+  const VERSION=8;
   if((window.__guidedContinueControllerV||0)>=VERSION)return;
   window.__guidedContinueControllerV=VERSION;
 
@@ -8,6 +8,7 @@
   const LABELS={f_address:'Property Address',f_price:'Acquisition Price',f_units:'Number of Units',f_hold:'Expected Holding Period',f_rent:'Monthly Rent'};
   const PERCENT_FIELDS=['rentGrowth','vacancy','opEx','mortRate','appreciation','sellCost','ordinaryTax','depTax','capGainsTax','requiredReturn','desiredCap'];
   const NUMBER_FIELDS=['price','land','units','rent','depLife','hold','mortgage','loanYears','points','origFee','desiredGrm'];
+  let calculating=false;
 
   function syncVisible(){
     const root=document.getElementById('gwBody');if(!root)return;
@@ -34,8 +35,15 @@
     state.units=Math.max(1,Math.round(Number(state.units)||1));
     state.land=Math.min(Math.max(0,Number(state.land)||0),Math.max(0,Number(state.price)||0));
   }
-  function safeRecalculate(){
+  async function safeRecalculate(){
     safeReadState();
+    const bridge=window.PropertyThesisIncomeEngineBridge;
+    if(!bridge?.requestServer)throw new Error('Calculation service is not ready. Please refresh the page and try again.');
+    const server=await bridge.requestServer({...state},{refresh:false});
+    if(!server?.years?.length){
+      const status=bridge.status?.();
+      throw new Error(status?.lastError||'The calculation service could not complete this analysis. Please try again.');
+    }
     if(typeof analyze!=='function')throw new Error('Analysis engine is unavailable.');
     result=analyze(state);
     if(!result||!result.years?.length)throw new Error('The analysis could not be calculated from the current inputs.');
@@ -48,18 +56,32 @@
   }
   function activateDashboard(){
     const target=document.getElementById('dashboard');if(!target)throw new Error('Review Results section is unavailable.');
+    try{window.PropertyThesisIncomeEngineBridge?.browserRender?.();}catch(_e){}
     document.querySelectorAll('.section').forEach(sec=>sec.classList.toggle('active',sec===target));
     document.querySelectorAll('.nav [data-tab]').forEach(btn=>btn.classList.toggle('active',btn.dataset.tab==='dashboard'));
     document.querySelectorAll('#stage8Workflow [data-s8-tab]').forEach(btn=>btn.classList.toggle('active',btn.dataset.s8Tab==='dashboard'));
     try{window.Stage8Workflow?.refresh?.();}catch(e){}try{window.Stage10Workflow?.refresh?.();}catch(e){}try{window.Stage15Layout?.apply?.();}catch(e){}
     setTimeout(refreshReview,0);window.scrollTo({top:0,behavior:'smooth'});
   }
-  function run(){
+  function setCalculating(on){
+    calculating=!!on;
+    const btn=document.getElementById('gwNext');if(!btn)return;
+    if(on){btn.dataset.ptPreviousText=btn.textContent||'Calculate & Review Results →';btn.textContent='Calculating…';btn.disabled=true;btn.setAttribute('aria-busy','true');}
+    else{btn.disabled=false;btn.removeAttribute('aria-busy');const prior=btn.dataset.ptPreviousText;if(prior)btn.textContent=prior;delete btn.dataset.ptPreviousText;try{window.PropertyThesisGuidedWorkflowRefinement?.apply?.();}catch(_e){}}
+  }
+  async function run(){
+    if(calculating)return;
     syncVisible();const i=currentStep();
     if(i<5){if(!valid(i))return;try{window.GuidedAnalysisSetup?.go?.(i+1);}catch(err){}setTimeout(()=>{try{window.GuidedAssumptionGuidance?.apply?.();window.GuidedPage1Cleanup?.apply?.();bindButton();ensureBox();clearValidation();}catch(e){}},0);return;}
-    clearValidation();
-    try{safeRecalculate();try{if(typeof setStatus==='function')setStatus('Analysis updated — review the results');}catch(e){}activateDashboard();}
-    catch(err){const box=ensureBox();if(box){box.innerHTML=`<b>Please review the analysis inputs.</b><div>${String(err.message||err)}</div>`;box.classList.add('show');}try{if(typeof setStatus==='function')setStatus('Please review the inputs: '+err.message);}catch(_e){}}
+    clearValidation();setCalculating(true);
+    try{
+      await safeRecalculate();
+      try{if(typeof setStatus==='function')setStatus('Analysis updated — review the results');}catch(e){}
+      activateDashboard();
+      setTimeout(()=>{try{window.PropertyThesisSecondaryEngine?.request?.();}catch(_e){}},0);
+    }
+    catch(err){const box=ensureBox();if(box){box.innerHTML=`<b>Unable to calculate the analysis.</b><div>${String(err.message||err)}</div>`;box.classList.add('show');}try{if(typeof setStatus==='function')setStatus('Unable to calculate: '+err.message);}catch(_e){}}
+    finally{setCalculating(false);}
   }
   function capture(e){if(!e.target?.closest?.('#gwNext'))return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation?.();run();}
   function bindButton(){const btn=document.getElementById('gwNext');if(!btn)return false;btn.onclick=e=>{e.preventDefault();e.stopPropagation();run();};ensureBox();return true;}
