@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__protectedAnalysisOpenRouterVersion||0)>=VERSION)return;
   window.__protectedAnalysisOpenRouterVersion=VERSION;
 
@@ -69,6 +69,21 @@
     setTimeout(refreshProtectedValuation,80);
   }
 
+  async function hydrateCurrentResults(){
+    try{
+      const h=window.PropertyThesisResultsHydration;
+      if(h?.hydrate)await h.hydrate({force:true});
+      else {
+        try{window.ReviewCashflowStatement?.apply?.();}catch(_e){}
+        try{window.ReviewTotalInvestmentCashflow?.apply?.();}catch(_e){}
+        try{window.InvestmentOfferAnalysis?.apply?.();}catch(_e){}
+        try{window.PropertyThesisDecisionCenter?.apply?.();}catch(_e){}
+        try{window.CashFlowChart?.draw?.();}catch(_e){}
+      }
+      setTimeout(()=>{try{window.CashFlowChart?.draw?.();}catch(_e){}},80);
+    }catch(e){console.warn('Saved analysis results hydration skipped',e);}
+  }
+
   function refreshReport(){
     try{window.ReportBuilderV1?.renderReport?.();}catch(_e){}
     try{window.ReportBuilderV1?.render?.();}catch(_e){}
@@ -92,8 +107,11 @@
       try{window.PropertyAnalysisManager?.close?.();}catch(_e){}
       if(window.WorkflowNavigationController?.go)window.WorkflowNavigationController.go(target);
       else if(typeof switchTab==='function')switchTab(target);
-      if(target==='report')refreshReport();else if(target==='dashboard')refreshDashboard();
-      else {
+      if(target==='report')refreshReport();
+      else if(target==='dashboard'){
+        refreshDashboard();
+        await hydrateCurrentResults();
+      } else {
         try{window.GuidedAnalysisSetup?.refresh?.();window.GuidedAssumptionGuidance?.apply?.();window.GuidedInitialRepairs?.apply?.();}catch(_e){}
       }
       try{window.AnalysisHistoryAutosave?.checkDraft?.();window.UnsavedChangeProtection?.markClean?.();}catch(_e){}
