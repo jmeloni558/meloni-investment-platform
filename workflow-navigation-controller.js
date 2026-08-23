@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=5;
+  const VERSION=6;
   if((window.__workflowNavigationControllerVersion||0)>=VERSION)return;
   window.__workflowNavigationControllerVersion=VERSION;
 
@@ -54,6 +54,7 @@
     try{document.querySelectorAll('.pt-unsaved-new').forEach(x=>x.remove());}catch(e){}
     try{const b=document.getElementById('cloudSaveCurrent');if(b)b.textContent='Save Current Analysis to Cloud';}catch(e){}
     try{window.UnsavedChangeProtection?.markClean?.();}catch(e){}
+    try{window.SaveStateFeedback?.clear?.();}catch(e){}
   }
 
   function newAnalysis(){
