@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__marketRentPriorResearchFixVersion||0)>=VERSION)return;
   window.__marketRentPriorResearchFixVersion=VERSION;
 
@@ -38,7 +38,7 @@
 
   function loadModule(src,id,onload){
     const existing=document.getElementById(id);
-    if(existing){if(onload&&window.PropertyThesisMarketRentUnderwriting)setTimeout(onload,0);return existing;}
+    if(existing){if(onload)setTimeout(onload,0);return existing;}
     const s=document.createElement('script');
     s.id=id;
     s.src=src;
@@ -52,9 +52,11 @@
     const afterLoad=()=>{
       try{window.PropertyThesisMarketRentUnderwriting?.schedule?.();}catch(_e){}
       try{window.PropertyThesisMarketRentUnderwriting?.enhanceModal?.();}catch(_e){}
+      try{window.PropertyThesisMarketRentResultsOrder?.schedule?.();}catch(_e){}
     };
     loadModule('market-rent-underwriting.js?v=1&build=20260823-1318-market-rent-underwriting','ptMarketRentUnderwritingLoader',afterLoad);
     loadModule('report-market-rent-underwriting.js?v=1&build=20260823-1318-market-rent-underwriting','ptReportMarketRentUnderwritingLoader');
+    loadModule('market-rent-results-order.js?v=1&build=20260823-1322-market-rent-order','ptMarketRentResultsOrderLoader',afterLoad);
     [0,100,300,700].forEach(ms=>setTimeout(afterLoad,ms));
   }
 
@@ -63,13 +65,14 @@
     else setTimeout(activateUnderwriting,0);
   }
 
-  // This script is intentionally loaded before market-rent-support.js so this
-  // capture listener restores cloud data before the Market Rent modal renders.
   document.addEventListener('click',e=>{
     if(e.target?.closest?.('[data-ptr-open]')){
       restoreBeforeOpen();
       setTimeout(()=>{try{window.PropertyThesisMarketRentUnderwriting?.enhanceModal?.();}catch(_e){}},80);
       setTimeout(()=>{try{window.PropertyThesisMarketRentUnderwriting?.enhanceModal?.();}catch(_e){}},250);
+    }
+    if(e.target?.closest?.('[data-s8-tab="dashboard"],[data-tab="dashboard"],#appNavReview,[data-app-review],[data-hub-open],[data-pt-open]')){
+      setTimeout(()=>{try{window.PropertyThesisMarketRentResultsOrder?.schedule?.();}catch(_e){}},40);
     }
   },true);
 
