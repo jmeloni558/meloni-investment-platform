@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
   const APP_URL='https://propertythesis.com/latest.html';
   const ALLOWED_HOSTS=new Set(['propertythesis.com','www.propertythesis.com']);
@@ -51,7 +51,7 @@
   function injectRecoveryFlow(){
     if(document.querySelector('script[data-pt-recovery-flow]')||document.getElementById('ptRecoveryOverlay'))return;
     const s=document.createElement('script');
-    s.src='password-recovery-flow.js?v=3';
+    s.src='password-recovery-flow.js?v=4';
     s.async=false;
     s.dataset.ptRecoveryFlow='1';
     document.body.appendChild(s);
