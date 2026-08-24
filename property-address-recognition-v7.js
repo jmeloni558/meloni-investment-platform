@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=7;
+  const VERSION=8;
   if((window.__propertyAddressRecognitionV||0)>=VERSION)return;
   window.__propertyAddressRecognitionV=VERSION;
 
@@ -62,7 +62,7 @@
       ac.addListener('place_changed',()=>{const place=ac.getPlace(),address=place?.formatted_address||input.value.trim();if(!address)return;hideSuggestions(input);syncAddress(address);setTimeout(()=>hideSuggestions(input),0);lookup(address);});
       input.addEventListener('input',e=>{if(!syncingAddress&&e.isTrusted&&input.offsetParent!==null)showSuggestions();},{passive:true});
       input.addEventListener('focus',e=>{if(!syncingAddress&&e.isTrusted&&input.offsetParent!==null&&input.value.trim()!==lastLookup)showSuggestions();},{passive:true});
-      input.addEventListener('change',()=>{if(syncingAddress)return;const v=input.value.trim();if(v&&v!==lastLookup)syncAddress(v);});
+      input.addEventListener('change',e=>{if(syncingAddress||!e.isTrusted)return;const v=input.value.trim();if(v&&v!==lastLookup)syncAddress(v);});
       setStatus('Address suggestions ready. Start typing and select the matching property.');
     }catch(e){setStatus('Manual address entry is available. Google suggestions could not load.','err');}
   }
