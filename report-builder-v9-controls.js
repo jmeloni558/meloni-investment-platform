@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=4;
+  const VERSION=5;
   if((window.__reportBuilderV9ControlsVersion||0)>=VERSION)return;
   window.__reportBuilderV9ControlsVersion=VERSION;
 
@@ -53,6 +53,23 @@
     return el;
   }
 
+  function ensureProFormaButton(){
+    let btn=document.getElementById('rbDownloadProForma');
+    if(!btn){
+      btn=document.createElement('button');
+      btn.id='rbDownloadProForma';
+      btn.type='button';
+      btn.className='btn secondary';
+      btn.textContent='Show Pro Forma Report';
+    }
+    btn.onclick=()=>{
+      try{window.ReportBuilderV1?.render?.();}catch(e){}
+      try{window.ReportProFormaRestore?.apply?.();window.ReportProFormaRestore?.addProForma?.();}catch(e){}
+      setTimeout(()=>document.querySelector('#clientReport [data-rb-section="proformaRestored"]')?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+    };
+    return btn;
+  }
+
   function apply(){
     const controls=document.getElementById('rbControls');
     if(!controls)return false;
@@ -72,6 +89,7 @@
     const all=document.getElementById('rbSelectAll');
     const refresh=document.getElementById('rbRefresh');
     const download=document.getElementById('rbDownloadPdf');
+    const proforma=ensureProFormaButton();
     if(refresh)refresh.textContent='Refresh Preview';
 
     if(grid){
@@ -115,18 +133,18 @@
       if(!exportPanel){
         exportPanel=document.createElement('div');
         exportPanel.className='rb-export-panel';
-        exportPanel.appendChild(zoneHead('3 · Preview & Export','Refresh the on-screen report, then download the client PDF or detailed Excel pro forma.'));
+        exportPanel.appendChild(zoneHead('3 · Preview & Export','Refresh the on-screen report, then download the client PDF or view the detailed pro forma.'));
         controls.appendChild(exportPanel);
       }
       if(mainActions.parentElement!==exportPanel)exportPanel.appendChild(mainActions);
       if(refresh&&refresh.parentElement!==mainActions)mainActions.appendChild(refresh);
       if(download&&download.parentElement!==mainActions){download.className='btn primary';mainActions.appendChild(download);}
-      const excel=document.getElementById('rbDownloadProForma');
-      if(excel&&excel.parentElement!==mainActions)mainActions.appendChild(excel);
+      if(proforma&&proforma.parentElement!==mainActions)mainActions.appendChild(proforma);
     }
 
     document.getElementById('rbPrintReport')?.remove();
     document.getElementById('rbRefreshExport')?.remove();
+    document.getElementById('rbProFormaJump')?.remove();
     controls.querySelector('.rb-export-note')?.remove();
     controls.querySelector('.rb-pass3-note')?.remove();
     const emptyPass2=controls.querySelector('.rb-pass2-actions');
@@ -142,6 +160,7 @@
     try{window.ReportAssumptionsNarrative?.apply?.();window.ReportDetailOrder?.apply?.();}catch(e){}
     try{window.ReportSensitivityAnalysis?.apply?.();window.ReportInvestmentOfferAnalysis?.apply?.();}catch(e){}
     try{window.ReportMarketRentSupport?.apply?.();window.ReportMarketRentUnderwriting?.apply?.();}catch(e){}
+    try{window.ReportProFormaRestore?.apply?.();window.ReportProFormaRestore?.addProForma?.();}catch(e){}
     try{window.PropertyThesisReportProForma?.apply?.();window.PropertyThesisReportProForma?.injectControls?.();}catch(e){}
     try{window.ReportExecutiveConclusionCurrent?.apply?.();}catch(e){}
     try{window.PropertyThesisMarketRentConclusion?.enhanceReport?.();}catch(e){}
@@ -151,7 +170,7 @@
   }
 
   function schedule(finalize=false){
-    const times=finalize?[120,320,650]:[0,80,220];
+    const times=finalize?[120,320,650]:[0,80,220,650,1200];
     times.forEach(ms=>setTimeout(()=>{apply();if(finalize)finalizeReport();},ms));
   }
 
@@ -162,10 +181,10 @@
       schedule(true);
       return;
     }
-    if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbDownloadPdf'))schedule(false);
+    if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbDownloadPdf,#rbDownloadProForma'))schedule(false);
   },true);
   document.addEventListener('change',e=>{if(e.target?.matches?.('[data-rb-pref]'))schedule(true);},true);
 
-  window.ReportBuilderV9Controls={version:VERSION,apply,schedule,finalizeReport};
+  window.ReportBuilderV9Controls={version:VERSION,apply,schedule,finalizeReport,ensureProFormaButton};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>schedule(false),{once:true});else schedule(false);
 })();
