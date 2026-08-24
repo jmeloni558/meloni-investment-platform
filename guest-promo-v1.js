@@ -3,7 +3,12 @@
 
   function signedOut(){
     var authUser=document.getElementById('authUser');
-    return !!authUser && /not signed in/i.test((authUser.textContent||'').trim());
+    var authBtn=document.getElementById('authBtn');
+    var signOutBtn=document.getElementById('signOutBtn');
+    var byText=!!authUser && /not signed in/i.test((authUser.textContent||'').trim());
+    var signInVisible=!!authBtn && !authBtn.classList.contains('hidden') && authBtn.offsetParent!==null;
+    var signOutHidden=!signOutBtn || signOutBtn.classList.contains('hidden') || signOutBtn.offsetParent===null;
+    return byText || (signInVisible && signOutHidden);
   }
 
   function openSignIn(){
@@ -44,7 +49,7 @@
     var explore=document.getElementById('ptGuestExplore');
     var signIn=document.getElementById('ptGuestSignIn');
     if(explore) explore.addEventListener('click',function(){
-      var target=document.querySelector('[data-guided-step="1"], #dashboard, .guided-analysis-setup, .section.active');
+      var target=document.getElementById('appNavShell') || document.querySelector('[data-guided-step="1"], #dashboard, .guided-analysis-setup, .section.active');
       if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
     });
     if(signIn) signIn.addEventListener('click',openSignIn);
@@ -57,8 +62,9 @@
   }
 
   var style=document.createElement('style');
+  style.id='ptGuestPromoStyles';
   style.textContent=`
-    #ptGuestPromo{margin:0 0 18px}
+    #ptGuestPromo{margin:0 0 18px;display:block!important}
     .pt-guest-promo{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:28px;padding:30px;border:1px solid #dbe7f5;border-radius:20px;background:linear-gradient(135deg,#f8fbff 0%,#eef6ff 55%,#f8fbff 100%);box-shadow:0 12px 32px rgba(30,64,175,.08);overflow:hidden}
     .pt-guest-copy{max-width:780px}.pt-guest-eyebrow{font-size:12px;font-weight:800;letter-spacing:.12em;color:#2563eb;margin-bottom:8px}
     .pt-guest-copy h2{font-size:30px;line-height:1.12;margin:0 0 12px;color:#17365d}.pt-guest-lead{font-size:17px;line-height:1.6;margin:0 0 8px;color:#344054}.pt-guest-sub{font-size:14px;line-height:1.55;margin:0;color:#667085}
@@ -69,7 +75,13 @@
   `;
   document.head.appendChild(style);
 
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){setTimeout(sync,500);});
-  else setTimeout(sync,500);
-  setTimeout(sync,1500);
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',sync,{once:true});
+  else sync();
+
+  var attempts=0;
+  var timer=setInterval(function(){
+    sync();
+    attempts++;
+    if(attempts>=40) clearInterval(timer);
+  },250);
 })();
