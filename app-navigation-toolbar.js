@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=14;
+  const VERSION=15;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -10,7 +10,6 @@
   let mortgageMode=false;
 
   function activeSection(){return document.querySelector('.section.active')?.id||'';}
-  function signedIn(){try{return typeof cloudUser!=='undefined'&&!!cloudUser}catch(e){return false}}
 
   function ensureMortgagePanel(){
     let panel=document.getElementById('appMortgageToolsPanel');
@@ -127,21 +126,15 @@
 
   function refresh(){
     if(!ensureToolbar())return false;cleanWorkflow();retireLegacyNavigation();
-    const existing=document.getElementById('appNavExisting');
-    if(existing)existing.style.display=signedIn()?'':'none';
     if(mortgageMode){setMortgageMode(true);return true;}
     const active=activeSection();
     const newBtn=document.getElementById('appNavNew');if(newBtn)newBtn.classList.toggle('active',primary.includes(active));
-    if(existing)existing.classList.toggle('active',active==='propertyhub');
+    const existing=document.getElementById('appNavExisting');if(existing)existing.classList.toggle('active',active==='propertyhub');
     const mortgage=document.getElementById('appNavMortgage');if(mortgage)mortgage.classList.remove('active');
     return true;
   }
 
-  function start(){
-    let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);
-    document.addEventListener('click',()=>setTimeout(refresh,0));
-    const auth=document.getElementById('authUser');if(auth)new MutationObserver(()=>refresh()).observe(auth,{childList:true,subtree:true,characterData:true});
-  }
+  function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));}
   window.AppNavigationToolbar={refresh,go,openExisting,openMortgageTools,setMortgageMode};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
