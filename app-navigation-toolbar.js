@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=17;
+  const VERSION=18;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -85,6 +85,10 @@
   }
 
   function openMortgageTools(){
+    if(!isSignedIn()){
+      promptSignIn('Sign in to use PropertyThesis Mortgage Tools and calculators.');
+      return;
+    }
     ensureMortgagePanel();
     setMortgageMode(true);
     window.scrollTo({top:document.getElementById('appNavShell')?.offsetTop||0,behavior:'smooth'});
