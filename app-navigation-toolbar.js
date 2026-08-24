@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=16;
+  const VERSION=17;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -11,6 +11,18 @@
 
   function activeSection(){return document.querySelector('.section.active')?.id||'';}
   function isSignedIn(){try{return typeof cloudUser!=='undefined'&&!!cloudUser}catch(e){return false}}
+  function promptSignIn(message='Sign in to run PropertyThesis calculations.'){
+    try{if(typeof authMsg==='function')authMsg(message);}catch(e){}
+    try{if(typeof showAuth==='function')showAuth();}catch(e){}
+  }
+  function guardCalculatorClick(e){
+    if(isSignedIn())return;
+    const btn=e.target?.closest?.('#gwSave,#gwNext,#calculateBtn,#quickCalc,#supportCalc,#scenarioCalc,#buydownCalc');
+    if(!btn)return;
+    if((btn.id==='gwSave'||btn.id==='gwNext')&&!/calculat/i.test(btn.textContent||''))return;
+    e.preventDefault();e.stopImmediatePropagation();
+    promptSignIn('Sign in to run PropertyThesis calculations and review results.');
+  }
 
   function ensureMortgagePanel(){
     let panel=document.getElementById('appMortgageToolsPanel');
@@ -114,7 +126,7 @@
       document.getElementById('appNavNew').addEventListener('click',newAnalysis);
       document.getElementById('appNavExisting').addEventListener('click',openExisting);
       document.getElementById('appNavMortgage').addEventListener('click',openMortgageTools);
-      document.getElementById('ptGuestSignIn')?.addEventListener('click',()=>{try{if(typeof showAuth==='function')showAuth()}catch(e){}});
+      document.getElementById('ptGuestSignIn')?.addEventListener('click',()=>promptSignIn('Sign in to unlock PropertyThesis calculators, reports, and market comparables.'));
     }
     ensureMortgagePanel();
     return true;
@@ -139,7 +151,12 @@
     return true;
   }
 
-  function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));setTimeout(refresh,700);setTimeout(refresh,1800);}
+  function start(){
+    let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);
+    document.addEventListener('click',()=>setTimeout(refresh,0));
+    document.addEventListener('click',guardCalculatorClick,true);
+    setTimeout(refresh,700);setTimeout(refresh,1800);
+  }
   window.AppNavigationToolbar={refresh,go,openExisting,openMortgageTools,setMortgageMode};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
