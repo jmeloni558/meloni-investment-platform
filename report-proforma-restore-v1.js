@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__reportProFormaRestoreV||0)>=VERSION)return;
   window.__reportProFormaRestoreV=VERSION;
 
@@ -135,6 +135,11 @@
 
   function apply(){styles();ensureControl();addProForma();return true;}
   function schedule(){setTimeout(apply,0);setTimeout(apply,120);setTimeout(apply,350);setTimeout(apply,900);}
+  function watchControls(){
+    let tries=0;
+    const timer=setInterval(()=>{apply();if(document.getElementById('rbProFormaJump')||++tries>160)clearInterval(timer);},125);
+    try{new MutationObserver(()=>apply()).observe(document.body,{childList:true,subtree:true});}catch(e){}
+  }
 
   const old=window.ReportBuilderV1?.render;
   if(typeof old==='function'&&!old.__proformaRestored){
@@ -149,8 +154,8 @@
     window.ReportBuilderV1.apply=wrappedApply;
   }
 
-  document.addEventListener('click',e=>{if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbSelectCore,#rbSelectAll,#refreshReportBtn'))schedule();},true);
+  document.addEventListener('click',e=>{if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbSelectCore,#rbSelectAll,#refreshReportBtn,#appNavNew,#stage8Workflow'))schedule();},true);
   document.addEventListener('change',e=>{if(e.target?.matches?.('[data-rb-pref]'))schedule();},true);
   window.ReportProFormaRestore={apply,schedule,addProForma,ensureControl};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{schedule();watchControls();},{once:true});else{schedule();watchControls();}
 })();
