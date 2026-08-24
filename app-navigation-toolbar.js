@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=15;
+  const VERSION=16;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -10,6 +10,7 @@
   let mortgageMode=false;
 
   function activeSection(){return document.querySelector('.section.active')?.id||'';}
+  function isSignedIn(){try{return typeof cloudUser!=='undefined'&&!!cloudUser}catch(e){return false}}
 
   function ensureMortgagePanel(){
     let panel=document.getElementById('appMortgageToolsPanel');
@@ -83,6 +84,7 @@
       .app-nav-shell{margin:14px 0 12px;border:1px solid #d8e1e9;border-radius:13px;background:#fff;box-shadow:0 7px 24px rgba(16,24,40,.055);overflow:hidden}
       .app-nav-toolbar{display:flex;align-items:center;gap:7px;padding:10px}
       .app-nav-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.app-nav-action{appearance:none;border:1px solid #d7e0e8;border-radius:8px;background:#fff;padding:9px 12px;font-size:9.5px;font-weight:800;color:#344054;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,color .15s,box-shadow .15s}.app-nav-action:hover{background:#f5f8fa}.app-nav-action.active{background:#175c92!important;border-color:#175c92!important;color:#fff!important;box-shadow:0 4px 12px rgba(23,92,146,.18)}
+      .pt-guest-guidance{margin:0 10px 10px;padding:10px 12px;border:1px solid #d7e5f1;border-radius:9px;background:#f7fbff;color:#344054;font-size:12px;line-height:1.45}.pt-guest-guidance strong{color:#175c92}.pt-guest-guidance button{border:0;background:transparent;color:#175c92;font:inherit;font-weight:800;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
       #appMortgageToolsPanel{margin:0 0 24px;background:transparent}
       .tab[data-tab="cashflow"],.tab[data-tab="debt"],.tab[data-tab="taxes"],.tab[data-tab="amort"],.tab[data-tab="support"],.tab[data-tab="cloud"],.tab[data-tab="scenarios"],.tab[data-tab="buydown"],[data-app-advanced="cashflow"],[data-app-advanced="debt"],[data-app-advanced="taxes"],[data-app-advanced="amort"],[data-app-advanced="support"],[data-app-advanced="cloud"],[data-app-advanced="scenarios"],[data-app-advanced="buydown"],[data-s8-advanced="cashflow"],[data-s8-advanced="debt"],[data-s8-advanced="taxes"],[data-s8-advanced="amort"],[data-s8-advanced="support"],[data-s8-advanced="cloud"],[data-s8-advanced="scenarios"],[data-s8-advanced="buydown"]{display:none!important}
       #cashflow,#debt,#taxes,#amort,#support,#cloud,#buydown{display:none!important}
@@ -106,11 +108,13 @@
             <button class="app-nav-action" id="appNavExisting">Existing Properties</button>
             <button class="app-nav-action" id="appNavMortgage">Mortgage Tools</button>
           </div>
-        </nav>`;
+        </nav>
+        <div id="ptGuestGuidance" class="pt-guest-guidance" hidden><strong>Explore PropertyThesis.</strong> You can review the workflow without an account. <button type="button" id="ptGuestSignIn">Sign in</button> to run calculators, generate reports, and access rent and sales comparables.</div>`;
       workflow.insertAdjacentElement('beforebegin',shell);
       document.getElementById('appNavNew').addEventListener('click',newAnalysis);
       document.getElementById('appNavExisting').addEventListener('click',openExisting);
       document.getElementById('appNavMortgage').addEventListener('click',openMortgageTools);
+      document.getElementById('ptGuestSignIn')?.addEventListener('click',()=>{try{if(typeof showAuth==='function')showAuth()}catch(e){}});
     }
     ensureMortgagePanel();
     return true;
@@ -126,6 +130,7 @@
 
   function refresh(){
     if(!ensureToolbar())return false;cleanWorkflow();retireLegacyNavigation();
+    const guest=document.getElementById('ptGuestGuidance');if(guest)guest.hidden=isSignedIn();
     if(mortgageMode){setMortgageMode(true);return true;}
     const active=activeSection();
     const newBtn=document.getElementById('appNavNew');if(newBtn)newBtn.classList.toggle('active',primary.includes(active));
@@ -134,7 +139,7 @@
     return true;
   }
 
-  function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));}
+  function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));setTimeout(refresh,700);setTimeout(refresh,1800);}
   window.AppNavigationToolbar={refresh,go,openExisting,openMortgageTools,setMortgageMode};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
