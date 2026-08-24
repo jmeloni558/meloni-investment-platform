@@ -1,11 +1,11 @@
 'use strict';
 (() => {
-  const VERSION = 1;
+  const VERSION = 2;
   if ((window.__reportProFormaExcelFinalV || 0) >= VERSION) return;
   window.__reportProFormaExcelFinalV = VERSION;
 
   const num = v => Number.isFinite(Number(v)) ? Number(v) : 0;
-  const esc = v => String(v ?? '').replace(/[&<>\"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
+  const esc = v => String(v ?? '').replace(/[&<>\"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
   const safeName = v => String(v || 'PropertyThesis Pro Forma').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 90);
   const money = v => Number.isFinite(Number(v)) ? Number(v).toLocaleString('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0}) : 'N/A';
   const pct = (v, d = 2) => Number.isFinite(Number(v)) ? (Number(v) * 100).toFixed(d) + '%' : 'N/A';
@@ -137,22 +137,34 @@
     return true;
   }
 
+  function hideOldButtons(){
+    document.querySelectorAll('#rbDownloadProForma,#rbProFormaJump').forEach(old=>{
+      if(old.id==='rbExcelWorkbookExportFinal')return;
+      old.disabled=true;
+      old.style.display='none';
+      old.setAttribute('aria-hidden','true');
+    });
+  }
+
   function forceButton() {
     const controls = document.getElementById('rbControls');
     if (!controls) return false;
     const actions = controls.querySelector('.rb-export-panel .rb-actions') || controls.querySelector('.rb-actions') || controls;
-    let btn = document.getElementById('rbDownloadProForma') || document.getElementById('rbProFormaJump');
+    hideOldButtons();
+    let btn = document.getElementById('rbExcelWorkbookExportFinal');
     if (!btn) {
       btn = document.createElement('button');
+      btn.id = 'rbExcelWorkbookExportFinal';
       btn.type = 'button';
       btn.className = 'btn secondary';
       actions.appendChild(btn);
     }
-    btn.id = 'rbDownloadProForma';
-    btn.type = 'button';
-    btn.className = 'btn secondary';
-    btn.textContent = 'Download Pro Forma Excel';
+    btn.textContent = 'Download Excel Workbook';
     btn.style.display = '';
+    btn.style.background = '#fff';
+    btn.style.border = '1px solid #8eb5cf';
+    btn.style.color = '#175f8e';
+    btn.style.minWidth = '190px';
     btn.onclick = e => { e?.preventDefault?.(); e?.stopPropagation?.(); downloadExcel(); return false; };
     if (btn.parentElement !== actions) actions.appendChild(btn);
     return true;
@@ -165,7 +177,7 @@
     const t = setInterval(() => { forceButton(); if (++n > 300) clearInterval(t); }, 125);
   }
   document.addEventListener('click', e => {
-    const btn = e.target?.closest?.('#rbDownloadProForma,#rbProFormaJump');
+    const btn = e.target?.closest?.('#rbExcelWorkbookExportFinal');
     if (!btn) return;
     e.preventDefault();
     e.stopImmediatePropagation();
