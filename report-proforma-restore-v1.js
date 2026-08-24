@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__reportProFormaRestoreV||0)>=VERSION)return;
   window.__reportProFormaRestoreV=VERSION;
 
@@ -13,6 +13,9 @@
     let s=document.getElementById('reportProFormaRestoreStyles');
     if(!s){s=document.createElement('style');s.id='reportProFormaRestoreStyles';document.head.appendChild(s);}
     s.textContent=`
+      #rbProFormaJump{background:linear-gradient(135deg,#0f766e,#13a59a)!important;border-color:#0f766e!important;color:#fff!important;box-shadow:0 6px 16px rgba(19,165,154,.18)!important}
+      #rbProFormaJump:hover{filter:brightness(.96)}
+      #rbProFormaNote{margin-top:8px;font-size:9.5px;color:#667085;line-height:1.45}
       #clientReport .rb-proforma-section{border-left:6px solid #13a59a!important;background:linear-gradient(145deg,#ffffff,#f5fbfb)!important;position:relative;overflow:hidden!important}
       #clientReport .rb-proforma-section:before{content:"";position:absolute;right:-80px;top:-100px;width:240px;height:240px;border-radius:999px;background:rgba(19,165,154,.08);pointer-events:none}
       #clientReport .rb-proforma-brandbar{display:flex;justify-content:space-between;gap:18px;align-items:center;margin:0 0 18px;padding:15px 17px;border:1px solid #d7ebe8;border-radius:12px;background:linear-gradient(120deg,#f0fbfa,#ffffff);position:relative;z-index:1}
@@ -101,7 +104,36 @@
     return true;
   }
 
-  function apply(){styles();addProForma();return true;}
+  function ensureControl(){
+    const controls=document.getElementById('rbControls');
+    if(!controls)return false;
+    const actions=controls.querySelector('.rb-actions')||controls.querySelector('.actions');
+    if(!actions)return false;
+    let btn=document.getElementById('rbProFormaJump');
+    if(!btn){
+      btn=document.createElement('button');
+      btn.id='rbProFormaJump';
+      btn.type='button';
+      btn.className='btn secondary';
+      btn.textContent='Show / Jump to Pro Forma Report';
+      actions.appendChild(btn);
+    }
+    btn.onclick=()=>{
+      try{window.ReportBuilderV1?.render?.();}catch(e){}
+      addProForma();
+      setTimeout(()=>document.querySelector('#clientReport [data-rb-section="proformaRestored"]')?.scrollIntoView({behavior:'smooth',block:'start'}),50);
+    };
+    let note=document.getElementById('rbProFormaNote');
+    if(!note){
+      note=document.createElement('div');
+      note.id='rbProFormaNote';
+      note.textContent='Adds the branded annual pro forma projection into the client report preview.';
+      actions.insertAdjacentElement('afterend',note);
+    }
+    return true;
+  }
+
+  function apply(){styles();ensureControl();addProForma();return true;}
   function schedule(){setTimeout(apply,0);setTimeout(apply,120);setTimeout(apply,350);setTimeout(apply,900);}
 
   const old=window.ReportBuilderV1?.render;
@@ -119,6 +151,6 @@
 
   document.addEventListener('click',e=>{if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbSelectCore,#rbSelectAll,#refreshReportBtn'))schedule();},true);
   document.addEventListener('change',e=>{if(e.target?.matches?.('[data-rb-pref]'))schedule();},true);
-  window.ReportProFormaRestore={apply,schedule};
+  window.ReportProFormaRestore={apply,schedule,addProForma,ensureControl};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 })();
