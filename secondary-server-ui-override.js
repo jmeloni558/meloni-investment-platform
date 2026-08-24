@@ -1,11 +1,12 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__secondaryServerUiOverrideVersion||0)>=VERSION)return;
   window.__secondaryServerUiOverrideVersion=VERSION;
   const finite=v=>Number.isFinite(Number(v));
   const money=v=>finite(v)?Number(v).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'—';
   const pct=(v,d=2)=>finite(v)?(Number(v)*100).toFixed(d)+'%':'—';
+  const signedIn=()=>{try{return typeof cloudUser!=='undefined'&&!!cloudUser;}catch(_e){return false;}};
 
   function badge(){
     let b=document.getElementById('ptSecondaryEngineStatus');if(b)return b;
@@ -15,7 +16,7 @@
   }
   function paint(ok,msg=''){
     const b=badge();if(!b)return;
-    if(ok){b.style.display='none';b.textContent='';b.title='';}
+    if(ok||!signedIn()){b.style.display='none';b.textContent='';b.title='';}
     else{b.style.display='inline-flex';b.textContent='Advanced Analysis Unavailable';b.title=msg||'Some advanced calculations are temporarily unavailable.';b.style.background='#fffaeb';b.style.borderColor='#fedf89';b.style.color='#b54708';}
   }
   function recommendation(d){
@@ -63,12 +64,14 @@
   }
   function apply(){
     badge();installOfferOverride();installSensitivityOverride();
+    if(!signedIn()){paint(true);return false;}
     const engine=window.PropertyThesisSecondaryEngine,current=engine?.current?.();
     if(current){paint(true);patchOffer();patchSensitivity();return true;}
     const st=engine?.status?.();if(st?.lastError)paint(false,st.lastError);
     return false;
   }
   function requestAndApply(){
+    if(!signedIn()){paint(true);return null;}
     const p=window.PropertyThesisSecondaryEngine?.request?.();
     if(p&&typeof p.then==='function')p.then(r=>{if(r)paint(true);setTimeout(apply,0);});
     return p;
