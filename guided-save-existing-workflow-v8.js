@@ -1,12 +1,17 @@
 'use strict';
 (()=>{
-  const VERSION=8;
+  const VERSION=9;
   if((window.__propertyThesisGuidedSaveExistingWorkflowV||0)>=VERSION)return;
   window.__propertyThesisGuidedSaveExistingWorkflowV=VERSION;
 
   let saving=false;
   const status=t=>{try{if(typeof setStatus==='function')setStatus(t);}catch(_e){}};
   const currentStep=()=>{const a=document.querySelector('#gwSteps .gw-step.active[data-step]');return a?Number(a.dataset.step):0;};
+  const isSignedIn=()=>{try{return typeof cloudUser!=='undefined'&&!!cloudUser}catch(_e){return false}};
+  function promptSignIn(message){
+    try{if(typeof authMsg==='function')authMsg(message);}catch(_e){}
+    try{if(typeof showAuth==='function')showAuth();}catch(_e){}
+  }
 
   function ensureStyles(){
     if(document.getElementById('ptGuidedSaveExistingStyles'))return;
@@ -25,6 +30,11 @@
 
   async function saveProgress(){
     if(saving)return;
+    if(!isSignedIn()){
+      status('Sign in to save your analysis and continue later.');
+      promptSignIn('Sign in to save your analysis and continue later.');
+      return;
+    }
     const btn=document.getElementById('gwSave');
     saving=true;
     if(btn){btn.disabled=true;btn.textContent='Saving…';}
@@ -45,6 +55,11 @@
 
   async function calculateSaveReview(){
     if(saving)return;
+    if(!isSignedIn()){
+      status('Sign in to calculate, save, and review results.');
+      promptSignIn('Sign in to run PropertyThesis calculations and review results.');
+      return;
+    }
     const btn=document.getElementById('gwSave');
     saving=true;
     if(btn){btn.disabled=true;btn.textContent='Calculating & Saving…';btn.setAttribute('aria-busy','true');}
