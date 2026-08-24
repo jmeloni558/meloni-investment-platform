@@ -1,0 +1,3 @@
+PropertyThesis deployment refresh marker.
+Created to force GitHub Pages to republish the current known-good main branch after rollback.
+No application code changed.
