@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=19;
+  const VERSION=20;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -46,149 +46,57 @@
     const panel=ensureMortgagePanel();
     if(panel)panel.style.display=on?'block':'none';
     document.querySelectorAll('.section').forEach(s=>{
-      if(on){
-        if(s.classList.contains('active'))s.dataset.ptWasActive='1';
-        s.style.display='none';
-      }else{
-        s.style.removeProperty('display');
-        if(s.dataset.ptWasActive==='1'){delete s.dataset.ptWasActive;}
-      }
+      if(on){if(s.classList.contains('active'))s.dataset.ptWasActive='1';s.style.display='none';}
+      else{s.style.removeProperty('display');if(s.dataset.ptWasActive==='1')delete s.dataset.ptWasActive;}
     });
-    const workflow=document.getElementById('stage8Workflow');
-    if(workflow)workflow.style.display=on?'none':'';
-    const mortgage=document.getElementById('appNavMortgage');
-    if(mortgage)mortgage.classList.toggle('active',on);
+    const workflow=document.getElementById('stage8Workflow');if(workflow)workflow.style.display=on?'none':'';
+    const mortgage=document.getElementById('appNavMortgage');if(mortgage)mortgage.classList.toggle('active',on);
     const newBtn=document.getElementById('appNavNew');if(newBtn)newBtn.classList.toggle('active',!on&&primary.includes(activeSection()));
     const existing=document.getElementById('appNavExisting');if(existing)existing.classList.toggle('active',!on&&activeSection()==='propertyhub');
   }
 
-  function go(id){
-    setMortgageMode(false);
-    if(retired.has(id))id='dashboard';
-    try{if(window.WorkflowNavigationController?.go){window.WorkflowNavigationController.go(id);return;}}catch(e){}
-    try{if(typeof switchTab==='function')switchTab(id);}catch(e){}
-  }
-
+  function go(id){setMortgageMode(false);if(retired.has(id))id='dashboard';try{if(window.WorkflowNavigationController?.go){window.WorkflowNavigationController.go(id);return;}}catch(e){}try{if(typeof switchTab==='function')switchTab(id);}catch(e){}}
   function newAnalysis(){setMortgageMode(false);try{window.WorkflowNavigationController?.newAnalysis?.();}catch(e){}setTimeout(refresh,0);}
   async function openExisting(){
     setMortgageMode(false);
-    try{
-      if(typeof cloudUser!=='undefined'&&!cloudUser){if(typeof showAuth==='function')showAuth();return;}
-      if(typeof refreshCloud==='function')await refreshCloud();
-      if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');
-      try{window.Stage6Dashboard?.render?.();}catch(_e){}
-    }catch(e){
-      try{if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');}catch(_e){}
-      try{window.Stage6Dashboard?.render?.();}catch(_e){}
-    }
+    try{if(typeof cloudUser!=='undefined'&&!cloudUser){if(typeof showAuth==='function')showAuth();return;}if(typeof refreshCloud==='function')await refreshCloud();if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');try{window.Stage6Dashboard?.render?.();}catch(_e){}}
+    catch(e){try{if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');}catch(_e){}try{window.Stage6Dashboard?.render?.();}catch(_e){}}
     setTimeout(refresh,0);
   }
-
-  function openMortgageTools(){
-    if(!isSignedIn()){
-      promptSignIn('Sign in to use PropertyThesis Mortgage Tools and calculators.');
-      return;
-    }
-    ensureMortgagePanel();
-    setMortgageMode(true);
-    window.scrollTo({top:document.getElementById('appNavShell')?.offsetTop||0,behavior:'smooth'});
-  }
+  function openMortgageTools(){if(!isSignedIn()){promptSignIn('Sign in to use PropertyThesis Mortgage Tools and calculators.');return;}ensureMortgagePanel();setMortgageMode(true);window.scrollTo({top:document.getElementById('appNavShell')?.offsetTop||0,behavior:'smooth'});}
 
   function ensureStyles(){
     let st=document.getElementById('appNavigationToolbarStyles');if(!st){st=document.createElement('style');st.id='appNavigationToolbarStyles';document.head.appendChild(st)}
     st.textContent=`
-      .app-nav-shell{margin:14px 0 12px;border:1px solid #d8e1e9;border-radius:13px;background:#fff;box-shadow:0 7px 24px rgba(16,24,40,.055);overflow:hidden}
-      .app-nav-toolbar{display:flex;align-items:center;gap:7px;padding:10px}
-      .app-nav-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.app-nav-action{appearance:none;border:1px solid #d7e0e8;border-radius:8px;background:#fff;padding:9px 12px;font-size:9.5px;font-weight:800;color:#344054;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,color .15s,box-shadow .15s}.app-nav-action:hover{background:#f5f8fa}.app-nav-action.active{background:#175c92!important;border-color:#175c92!important;color:#fff!important;box-shadow:0 4px 12px rgba(23,92,146,.18)}
-      .pt-guest-guidance{margin:0 10px 10px;padding:0;border:1px solid #d7e5f1;border-radius:14px;background:linear-gradient(135deg,#f8fbff 0%,#eef6ff 55%,#f8fbff 100%);color:#344054;overflow:hidden;box-shadow:0 8px 22px rgba(23,92,146,.06)}
-      .pt-guest-promo-inner{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:24px;padding:24px}
-      .pt-guest-eyebrow{font-size:10px;font-weight:900;letter-spacing:.13em;color:#2563eb;margin-bottom:7px}.pt-guest-copy h2{margin:0 0 10px;color:#17365d;font-size:27px;line-height:1.12}.pt-guest-lead{margin:0 0 8px;font-size:15px;line-height:1.55;color:#344054}.pt-guest-sub{margin:0;color:#667085;font-size:12px;line-height:1.5}
-      .pt-guest-promo-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:17px}.pt-guest-promo-actions button{border-radius:9px;padding:10px 14px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}.pt-guest-primary{background:#175c92;color:#fff;border:1px solid #175c92}.pt-guest-secondary{background:#fff;color:#175c92;border:1px solid #bfd3e7}
-      .pt-guest-access-note{margin-top:12px;color:#667085;font-size:10.5px;line-height:1.45}
-      .pt-guest-feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;align-content:center}.pt-guest-feature{padding:13px;border:1px solid #dbe7f2;border-radius:11px;background:rgba(255,255,255,.88);min-height:70px}.pt-guest-feature strong{display:block;color:#17365d;font-size:12px;margin-bottom:4px}.pt-guest-feature span{display:block;color:#667085;font-size:10px;line-height:1.4}
-      #appMortgageToolsPanel{margin:0 0 24px;background:transparent}
-      .tab[data-tab="cashflow"],.tab[data-tab="debt"],.tab[data-tab="taxes"],.tab[data-tab="amort"],.tab[data-tab="support"],.tab[data-tab="cloud"],.tab[data-tab="scenarios"],.tab[data-tab="buydown"],[data-app-advanced="cashflow"],[data-app-advanced="debt"],[data-app-advanced="taxes"],[data-app-advanced="amort"],[data-app-advanced="support"],[data-app-advanced="cloud"],[data-app-advanced="scenarios"],[data-app-advanced="buydown"],[data-s8-advanced="cashflow"],[data-s8-advanced="debt"],[data-s8-advanced="taxes"],[data-s8-advanced="amort"],[data-s8-advanced="support"],[data-s8-advanced="cloud"],[data-s8-advanced="scenarios"],[data-s8-advanced="buydown"]{display:none!important}
-      #cashflow,#debt,#taxes,#amort,#support,#cloud,#buydown{display:none!important}
-      #stage8Workflow.app-toolbar-clean .s8-context{display:none!important}#stage8Workflow.app-toolbar-clean #s10Utilities{display:none!important}#stage8Workflow.app-toolbar-clean .s10-workflow-row{border-top:1px solid var(--line);border-radius:10px}#stage8Workflow.app-toolbar-clean{margin-top:0}
-      #report .s8-help{display:none!important}
-      @media(max-width:850px){.pt-guest-promo-inner{grid-template-columns:1fr}.pt-guest-copy h2{font-size:24px}}
-      @media(max-width:700px){.app-nav-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.app-nav-action{width:100%}}
-      @media(max-width:520px){.pt-guest-feature-grid{grid-template-columns:1fr}.pt-guest-promo-actions button{width:100%}}
-      @media(max-width:480px){.app-nav-actions{grid-template-columns:1fr}}
+      .app-nav-shell{margin:14px 0 12px;border:1px solid #d8e1e9;border-radius:13px;background:#fff;box-shadow:0 7px 24px rgba(16,24,40,.055);overflow:hidden}.app-nav-toolbar{display:flex;align-items:center;gap:7px;padding:10px}.app-nav-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.app-nav-action{appearance:none;border:1px solid #d7e0e8;border-radius:8px;background:#fff;padding:9px 12px;font-size:9.5px;font-weight:800;color:#344054;cursor:pointer;white-space:nowrap}.app-nav-action.active{background:#175c92!important;border-color:#175c92!important;color:#fff!important;box-shadow:0 4px 12px rgba(23,92,146,.18)}
+      .pt-guest-guidance{margin:0 10px 10px;padding:0;border:1px solid #d7e5f1;border-radius:14px;background:linear-gradient(135deg,#f8fbff 0%,#eef6ff 55%,#f8fbff 100%);color:#344054;overflow:hidden;box-shadow:0 8px 22px rgba(23,92,146,.06)}.pt-guest-promo-inner{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:24px;padding:24px}.pt-guest-eyebrow{font-size:10px;font-weight:900;letter-spacing:.13em;color:#2563eb;margin-bottom:7px}.pt-guest-copy h2{margin:0 0 10px;color:#17365d;font-size:27px;line-height:1.12}.pt-guest-lead{margin:0 0 8px;font-size:15px;line-height:1.55;color:#344054}.pt-guest-sub{margin:0;color:#667085;font-size:12px;line-height:1.5}.pt-guest-promo-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:17px}.pt-guest-promo-actions button{border-radius:9px;padding:10px 14px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}.pt-guest-primary{background:#175c92;color:#fff;border:1px solid #175c92}.pt-guest-secondary{background:#fff;color:#175c92;border:1px solid #bfd3e7}.pt-guest-access-note{margin-top:12px;color:#667085;font-size:10.5px;line-height:1.45}.pt-guest-feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;align-content:center}.pt-guest-feature{padding:13px;border:1px solid #dbe7f2;border-radius:11px;background:rgba(255,255,255,.88);min-height:70px}.pt-guest-feature strong{display:block;color:#17365d;font-size:12px;margin-bottom:4px}.pt-guest-feature span{display:block;color:#667085;font-size:10px;line-height:1.4}
+      .pt-sample-showcase{margin:14px 0 20px;padding:22px;border:1px solid #d8e4ef;border-radius:14px;background:#fff;box-shadow:0 7px 24px rgba(16,24,40,.045)}.pt-sample-heading{text-align:center;max-width:760px;margin:0 auto 18px}.pt-sample-heading .eyebrow{font-size:10px;font-weight:900;letter-spacing:.13em;color:#2563eb;margin-bottom:6px}.pt-sample-heading h2{margin:0 0 7px;color:#17365d;font-size:23px}.pt-sample-heading p{margin:0;color:#667085;font-size:12px;line-height:1.55}.pt-sample-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}.pt-sample-card{border:1px solid #dce6ef;border-radius:13px;padding:18px;background:linear-gradient(180deg,#fff,#f9fbfd)}.pt-sample-card h3{margin:0 0 6px;color:#17365d;font-size:17px}.pt-sample-card p{margin:0 0 14px;color:#667085;font-size:11px;line-height:1.5}.pt-sample-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:0 0 14px}.pt-sample-metric{padding:9px;border-radius:9px;background:#f1f6fb;border:1px solid #e0e9f2}.pt-sample-metric span{display:block;color:#667085;font-size:8.5px;text-transform:uppercase;letter-spacing:.05em}.pt-sample-metric strong{display:block;margin-top:3px;color:#17365d;font-size:13px}.pt-sample-preview{height:112px;border:1px solid #dce6ef;border-radius:9px;background:linear-gradient(145deg,#edf5fc,#fff);display:flex;align-items:center;justify-content:center;text-align:center;color:#667085;font-size:10px;line-height:1.5;padding:12px;margin-bottom:14px}.pt-sample-btn{appearance:none;border:1px solid #bfd3e7;border-radius:8px;background:#fff;color:#175c92;padding:9px 12px;font-size:10px;font-weight:800;cursor:default}.pt-sample-coming{font-size:9px;color:#98a2b3;margin-left:7px}
+      #appMortgageToolsPanel{margin:0 0 24px;background:transparent}.tab[data-tab="cashflow"],.tab[data-tab="debt"],.tab[data-tab="taxes"],.tab[data-tab="amort"],.tab[data-tab="support"],.tab[data-tab="cloud"],.tab[data-tab="scenarios"],.tab[data-tab="buydown"],[data-app-advanced],[data-s8-advanced]{display:none!important}#cashflow,#debt,#taxes,#amort,#support,#cloud,#buydown{display:none!important}#stage8Workflow.app-toolbar-clean .s8-context{display:none!important}#stage8Workflow.app-toolbar-clean #s10Utilities{display:none!important}#stage8Workflow.app-toolbar-clean .s10-workflow-row{border-top:1px solid var(--line);border-radius:10px}#stage8Workflow.app-toolbar-clean{margin-top:0}#report .s8-help{display:none!important}
+      @media(max-width:850px){.pt-guest-promo-inner{grid-template-columns:1fr}.pt-guest-copy h2{font-size:24px}.pt-sample-cards{grid-template-columns:1fr}}@media(max-width:700px){.app-nav-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.app-nav-action{width:100%}}@media(max-width:520px){.pt-guest-feature-grid{grid-template-columns:1fr}.pt-guest-promo-actions button{width:100%}.pt-sample-metrics{grid-template-columns:1fr 1fr}}@media(max-width:480px){.app-nav-actions{grid-template-columns:1fr}}
     `;
   }
 
-  function ensureToolbar(){
-    const workflow=document.getElementById('stage8Workflow');if(!workflow)return false;
-    ensureStyles();
-    let shell=document.getElementById('appNavShell');
-    if(!shell){
-      shell=document.createElement('div');shell.id='appNavShell';shell.className='app-nav-shell screen-only';
-      shell.innerHTML=`
-        <nav class="app-nav-toolbar" aria-label="Application tools">
-          <div class="app-nav-actions">
-            <button class="app-nav-action" id="appNavNew">New Analysis</button>
-            <button class="app-nav-action" id="appNavExisting">Existing Properties</button>
-            <button class="app-nav-action" id="appNavMortgage">Mortgage Tools</button>
-          </div>
-        </nav>
-        <div id="ptGuestGuidance" class="pt-guest-guidance" hidden>
-          <div class="pt-guest-promo-inner">
-            <div class="pt-guest-copy">
-              <div class="pt-guest-eyebrow">REAL ESTATE INVESTMENT UNDERWRITING</div>
-              <h2>Know the Numbers. Build the Case.</h2>
-              <p class="pt-guest-lead">PropertyThesis brings income, financing, valuation, returns, market evidence and acquisition strategy into one connected investment analysis.</p>
-              <p class="pt-guest-sub">Go beyond a basic calculator. Understand what drives the deal, what the property supports, and how to present the investment case clearly.</p>
-              <div class="pt-guest-promo-actions">
-                <button type="button" class="pt-guest-primary" id="ptGuestExplore">Start Exploring</button>
-                <button type="button" class="pt-guest-secondary" id="ptGuestSignIn">Sign In / Create Account</button>
-              </div>
-              <div class="pt-guest-access-note">Calculations, professional reports, rental comparables and sales comparables are available after sign-in.</div>
-            </div>
-            <div class="pt-guest-feature-grid" aria-label="PropertyThesis capabilities">
-              <div class="pt-guest-feature"><strong>Underwrite</strong><span>Income, expenses, financing & cash flow</span></div>
-              <div class="pt-guest-feature"><strong>Value</strong><span>Cap rate, GRM & income-supported pricing</span></div>
-              <div class="pt-guest-feature"><strong>Decide</strong><span>Returns, sensitivity & offer analysis</span></div>
-              <div class="pt-guest-feature"><strong>Support</strong><span>Market rent, sales comps & investment thesis</span></div>
-            </div>
-          </div>
-        </div>`;
-      workflow.insertAdjacentElement('beforebegin',shell);
-      document.getElementById('appNavNew').addEventListener('click',newAnalysis);
-      document.getElementById('appNavExisting').addEventListener('click',openExisting);
-      document.getElementById('appNavMortgage').addEventListener('click',openMortgageTools);
-      document.getElementById('ptGuestSignIn')?.addEventListener('click',()=>promptSignIn('Sign in to unlock PropertyThesis calculators, reports, and market comparables.'));
-      document.getElementById('ptGuestExplore')?.addEventListener('click',()=>document.getElementById('stage8Workflow')?.scrollIntoView({behavior:'smooth',block:'start'}));
+  function ensureSampleShowcase(){
+    const workflow=document.getElementById('stage8Workflow');if(!workflow)return null;
+    let section=document.getElementById('ptSampleShowcase');
+    if(!section){
+      section=document.createElement('section');section.id='ptSampleShowcase';section.className='pt-sample-showcase screen-only';
+      section.innerHTML=`<div class="pt-sample-heading"><div class="eyebrow">SEE PROPERTYTHESIS IN ACTION</div><h2>See what a completed investment analysis can become.</h2><p>Explore the structure of a finished underwriting analysis and the professional report produced from the same deal. We’ll connect these previews to a complete sample property next.</p></div><div class="pt-sample-cards"><article class="pt-sample-card"><h3>Sample Investment Analysis</h3><p>A completed pro forma showing the core assumptions, operating performance, financing and investment returns behind the decision.</p><div class="pt-sample-metrics"><div class="pt-sample-metric"><span>Purchase Price</span><strong>$425,000</strong></div><div class="pt-sample-metric"><span>Market Rent</span><strong>$3,600/mo</strong></div><div class="pt-sample-metric"><span>Cap Rate</span><strong>6.2%</strong></div><div class="pt-sample-metric"><span>Cash-on-Cash</span><strong>7.4%</strong></div><div class="pt-sample-metric"><span>10-Year IRR</span><strong>10.8%</strong></div><div class="pt-sample-metric"><span>Analysis</span><strong>Full Pro Forma</strong></div></div><button class="pt-sample-btn" type="button" disabled>Explore Sample Analysis</button><span class="pt-sample-coming">Sample coming next</span></article><article class="pt-sample-card"><h3>Sample Professional Report</h3><p>See how PropertyThesis turns the underlying analysis into a polished, client-ready investment underwriting report.</p><div class="pt-sample-preview"><div><strong style="display:block;color:#17365d;font-size:14px;margin-bottom:5px">PROPERTYTHESIS</strong>Investment Property Analysis<br>Executive conclusion • valuation • returns • sensitivity • market evidence • investment thesis</div></div><button class="pt-sample-btn" type="button" disabled>Open Sample Report</button><span class="pt-sample-coming">PDF coming next</span></article></div>`;
+      workflow.insertAdjacentElement('afterend',section);
     }
-    ensureMortgagePanel();
-    return true;
+    section.hidden=isSignedIn();
+    return section;
   }
 
+  function ensureToolbar(){
+    const workflow=document.getElementById('stage8Workflow');if(!workflow)return false;ensureStyles();
+    let shell=document.getElementById('appNavShell');
+    if(!shell){shell=document.createElement('div');shell.id='appNavShell';shell.className='app-nav-shell screen-only';shell.innerHTML=`<nav class="app-nav-toolbar" aria-label="Application tools"><div class="app-nav-actions"><button class="app-nav-action" id="appNavNew">New Analysis</button><button class="app-nav-action" id="appNavExisting">Existing Properties</button><button class="app-nav-action" id="appNavMortgage">Mortgage Tools</button></div></nav><div id="ptGuestGuidance" class="pt-guest-guidance" hidden><div class="pt-guest-promo-inner"><div class="pt-guest-copy"><div class="pt-guest-eyebrow">REAL ESTATE INVESTMENT UNDERWRITING</div><h2>Know the Numbers. Build the Case.</h2><p class="pt-guest-lead">PropertyThesis brings income, financing, valuation, returns, market evidence and acquisition strategy into one connected investment analysis.</p><p class="pt-guest-sub">Go beyond a basic calculator. Understand what drives the deal, what the property supports, and how to present the investment case clearly.</p><div class="pt-guest-promo-actions"><button type="button" class="pt-guest-primary" id="ptGuestExplore">Start Exploring</button><button type="button" class="pt-guest-secondary" id="ptGuestSignIn">Sign In / Create Account</button></div><div class="pt-guest-access-note">Calculations, professional reports, rental comparables and sales comparables are available after sign-in.</div></div><div class="pt-guest-feature-grid"><div class="pt-guest-feature"><strong>Underwrite</strong><span>Income, expenses, financing & cash flow</span></div><div class="pt-guest-feature"><strong>Value</strong><span>Cap rate, GRM & income-supported pricing</span></div><div class="pt-guest-feature"><strong>Decide</strong><span>Returns, sensitivity & offer analysis</span></div><div class="pt-guest-feature"><strong>Support</strong><span>Market rent, sales comps & investment thesis</span></div></div></div></div>`;workflow.insertAdjacentElement('beforebegin',shell);document.getElementById('appNavNew').addEventListener('click',newAnalysis);document.getElementById('appNavExisting').addEventListener('click',openExisting);document.getElementById('appNavMortgage').addEventListener('click',openMortgageTools);document.getElementById('ptGuestSignIn')?.addEventListener('click',()=>promptSignIn('Sign in to unlock PropertyThesis calculators, reports, and market comparables.'));document.getElementById('ptGuestExplore')?.addEventListener('click',()=>document.getElementById('stage8Workflow')?.scrollIntoView({behavior:'smooth',block:'start'}));}
+    ensureMortgagePanel();ensureSampleShowcase();return true;
+  }
   function cleanWorkflow(){const workflow=document.getElementById('stage8Workflow');if(!workflow)return false;workflow.classList.add('app-toolbar-clean');return true;}
-
-  function retireLegacyNavigation(){
-    document.querySelectorAll('.tab[data-tab],[data-app-advanced],[data-s8-advanced]').forEach(el=>{const id=el.dataset.tab||el.dataset.appAdvanced||el.dataset.s8Advanced;if(retired.has(id)||contextualOnly.has(id))el.hidden=true;});
-    const active=activeSection();
-    if(retired.has(active))go('dashboard');
-  }
-
-  function refresh(){
-    if(!ensureToolbar())return false;cleanWorkflow();retireLegacyNavigation();
-    const guest=document.getElementById('ptGuestGuidance');if(guest)guest.hidden=isSignedIn();
-    if(mortgageMode){setMortgageMode(true);return true;}
-    const active=activeSection();
-    const newBtn=document.getElementById('appNavNew');if(newBtn)newBtn.classList.toggle('active',primary.includes(active));
-    const existing=document.getElementById('appNavExisting');if(existing)existing.classList.toggle('active',active==='propertyhub');
-    const mortgage=document.getElementById('appNavMortgage');if(mortgage)mortgage.classList.remove('active');
-    return true;
-  }
-
-  function start(){
-    let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);
-    document.addEventListener('click',()=>setTimeout(refresh,0));
-    document.addEventListener('click',guardCalculatorClick,true);
-    setTimeout(refresh,700);setTimeout(refresh,1800);
-  }
-  window.AppNavigationToolbar={refresh,go,openExisting,openMortgageTools,setMortgageMode};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+  function retireLegacyNavigation(){document.querySelectorAll('.tab[data-tab],[data-app-advanced],[data-s8-advanced]').forEach(el=>{const id=el.dataset.tab||el.dataset.appAdvanced||el.dataset.s8Advanced;if(retired.has(id)||contextualOnly.has(id))el.hidden=true;});const active=activeSection();if(retired.has(active))go('dashboard');}
+  function refresh(){if(!ensureToolbar())return false;cleanWorkflow();retireLegacyNavigation();const guest=document.getElementById('ptGuestGuidance');if(guest)guest.hidden=isSignedIn();const sample=document.getElementById('ptSampleShowcase');if(sample)sample.hidden=isSignedIn();if(mortgageMode){setMortgageMode(true);return true;}const active=activeSection();const newBtn=document.getElementById('appNavNew');if(newBtn)newBtn.classList.toggle('active',primary.includes(active));const existing=document.getElementById('appNavExisting');if(existing)existing.classList.toggle('active',active==='propertyhub');const mortgage=document.getElementById('appNavMortgage');if(mortgage)mortgage.classList.remove('active');return true;}
+  function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));document.addEventListener('click',guardCalculatorClick,true);setTimeout(refresh,700);setTimeout(refresh,1800);}
+  window.AppNavigationToolbar={refresh,go,openExisting,openMortgageTools,setMortgageMode};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
