@@ -1,9 +1,20 @@
 'use strict';
 (()=>{
-  const VERSION=1;
-  if((window.__reportProFormaExcelOverrideV||0)>=VERSION)return;
+  const VERSION=2;
   window.__reportProFormaExcelOverrideV=VERSION;
-
+  function clickExport(e){
+    try{e?.preventDefault?.();e?.stopImmediatePropagation?.();}catch(_e){}
+    if(window.PropertyThesisProFormaExcelFinal?.downloadExcel){
+      window.PropertyThesisProFormaExcelFinal.downloadExcel();
+      return false;
+    }
+    if(window.ReportProFormaRestore?.downloadExcel){
+      window.ReportProFormaRestore.downloadExcel();
+      return false;
+    }
+    alert('Run the analysis before exporting the pro forma workbook.');
+    return false;
+  }
   function force(){
     const btn=document.getElementById('rbDownloadProForma')||document.getElementById('rbProFormaJump');
     if(!btn)return false;
@@ -11,35 +22,14 @@
     btn.type='button';
     btn.className='btn secondary';
     btn.textContent='Download Pro Forma Excel';
-    btn.onclick=e=>{
-      try{e?.preventDefault?.();e?.stopPropagation?.();}catch(_e){}
-      try{
-        if(window.ReportProFormaRestore?.downloadExcel){
-          window.ReportProFormaRestore.downloadExcel();
-        }else{
-          alert('Pro forma export is still loading. Please click Refresh Preview, then try again.');
-        }
-      }catch(err){
-        console.error('Pro forma export failed',err);
-        alert('Unable to export the pro forma. Please refresh and try again.');
-      }
-      return false;
-    };
+    btn.onclick=clickExport;
     return true;
   }
-
-  function schedule(){[0,50,120,250,500,900,1500,2500].forEach(ms=>setTimeout(force,ms));}
-  function watch(){try{new MutationObserver(()=>force()).observe(document.body,{childList:true,subtree:true});}catch(e){}let n=0;const t=setInterval(()=>{force();if(++n>240)clearInterval(t);},125);}
-
+  function schedule(){[0,80,200,500,1000,2000].forEach(ms=>setTimeout(force,ms));}
   document.addEventListener('click',e=>{
-    const btn=e.target?.closest?.('#rbDownloadProForma,#rbProFormaJump');
-    if(!btn)return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    force();
-    btn.click();
+    if(!e.target?.closest?.('#rbDownloadProForma,#rbProFormaJump'))return;
+    clickExport(e);
   },true);
-
   window.ReportProFormaExcelOverride={force,schedule};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{schedule();watch();},{once:true});else{schedule();watch();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 })();
