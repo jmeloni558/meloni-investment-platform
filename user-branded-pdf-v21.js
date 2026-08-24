@@ -1,0 +1,54 @@
+'use strict';
+(()=>{
+  const VERSION=21;
+  if((window.__userBrandedPdfVersion||0)>=VERSION)return;
+  window.__userBrandedPdfVersion=VERSION;
+  const PRODUCT='PropertyThesis',TAGLINE='Know the Numbers. Build the Case.',REPORT_TYPE='Investment Property Analysis';
+  const HTML2CANVAS_SRC='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+  const CAPTURE_WIDTH=816,PAGE_W=612,PAGE_H=792,MARGIN_X=24,TOP=24,FOOTER=44,BOTTOM=10,GAP=9;
+  let running=false;
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  const status=t=>{try{if(typeof setStatus==='function')setStatus(t);}catch(_e){}};
+  const withTimeout=(p,ms,msg)=>Promise.race([p,new Promise((_,reject)=>setTimeout(()=>reject(new Error(msg)),ms))]);
+  const profile=()=>{try{return window.UserBranding?.getProfile?.()||{};}catch(_e){return {};}};
+  function filename(){const raw=(state?.address||state?.name||REPORT_TYPE).trim();return (raw.replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,70)||'PropertyThesis')+'-Investment-Analysis.pdf';}
+  async function ensureHtml2Canvas(){if(window.html2canvas)return window.html2canvas;if(!window.__ptHtml2CanvasPromise){window.__ptHtml2CanvasPromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=HTML2CANVAS_SRC;s.async=true;s.onload=()=>window.html2canvas?resolve(window.html2canvas):reject(new Error('PDF renderer did not initialize.'));s.onerror=()=>reject(new Error('Unable to load the PDF renderer.'));document.head.appendChild(s);});}return withTimeout(window.__ptHtml2CanvasPromise,15000,'PDF renderer load timed out.');}
+  async function prepare(){status('Preparing report for PDF…');try{window.ReportBuilderV1?.renderReport?.();}catch(_e){}await sleep(120);const calls=[()=>window.ReportBuilderV8?.apply?.(),()=>window.ReportBuilderV8Presentation?.apply?.(),()=>window.ReportAssumptionsNarrative?.apply?.(),()=>window.ReportDetailOrder?.apply?.(),()=>window.ReportSensitivityAnalysis?.apply?.(),()=>window.ReportInvestmentOfferAnalysis?.apply?.(),()=>window.ReportMarketRentSupport?.apply?.(),()=>window.ReportMarketRentUnderwriting?.apply?.(),()=>window.ReportExecutiveConclusionCurrent?.apply?.(),()=>window.PropertyThesisMarketRentConclusion?.enhanceReport?.(),()=>window.UserBranding?.applyReportBranding?.(),()=>window.PropertyThesisReportBranding?.apply?.(),()=>window.ReportSalesComparables?.apply?.()];calls.forEach(fn=>{try{fn();}catch(_e){}});await sleep(280);const report=document.querySelector('#clientReport .rb-report');if(!report)throw new Error('Report preview is not available.');return report;}
+  function normalize(root){root.querySelectorAll('*').forEach(x=>{x.style.setProperty('box-sizing','border-box','important');x.style.setProperty('max-width','100%','important');x.style.setProperty('min-width','0','important');x.style.setProperty('height','auto','important');x.style.setProperty('max-height','none','important');});root.style.setProperty('height','auto','important');root.style.setProperty('max-height','none','important');root.style.setProperty('overflow','visible','important');root.querySelectorAll('.rb-tablewrap').forEach(x=>{x.style.setProperty('overflow','visible','important');x.style.setProperty('width','100%','important');x.style.setProperty('height','auto','important');});root.querySelectorAll('table').forEach(x=>{x.style.setProperty('width','100%','important');x.style.setProperty('max-width','100%','important');x.style.setProperty('min-width','0','important');x.style.setProperty('table-layout','fixed','important');x.style.setProperty('height','auto','important');});root.querySelectorAll('th,td').forEach(x=>{x.style.setProperty('white-space','normal','important');x.style.setProperty('overflow-wrap','anywhere','important');x.style.setProperty('word-break','break-word','important');x.style.setProperty('font-size','8px','important');x.style.setProperty('padding','5px 3px','important');x.style.setProperty('height','auto','important');});}
+  function makeStage(){const host=document.getElementById('clientReport');if(!host)throw new Error('Client report container is unavailable.');const stage=document.createElement('div');stage.className='pt-pdf-stage-v21';Object.assign(stage.style,{position:'fixed',left:'-12000px',top:'0',width:CAPTURE_WIDTH+'px',maxWidth:CAPTURE_WIDTH+'px',height:'auto',zIndex:'-10',background:'#fff',overflow:'visible'});host.appendChild(stage);return stage;}
+  function blockWrap(node,kind='block'){
+    const w=document.createElement('div');w.className='pt-pdf-block pt-pdf-'+kind;Object.assign(w.style,{width:CAPTURE_WIDTH+'px',height:'auto',overflow:'visible',background:'#fff',boxSizing:'border-box',padding:'0',margin:'0'});
+    const c=node.cloneNode(true);if(kind==='section-child'){Object.assign(c.style,{margin:'0 30px',width:'calc(100% - 60px)',maxWidth:'calc(100% - 60px)'});}else{Object.assign(c.style,{margin:'0',width:'100%',maxWidth:'100%'});}w.appendChild(c);normalize(w);return w;
+  }
+  function logicalBlocks(report){
+    const out=[];
+    const push=(node,kind='block',label='Report block',keepNext=false)=>{if(node)out.push({node,kind,label,keepNext});};
+    push(report.querySelector(':scope > .rb-cover'),'major','Cover',false);
+    push(report.querySelector(':scope > .rb-conclusion'),'major','Property Thesis',false);
+    push(report.querySelector(':scope > .rb-findings'),'major','Key findings',false);
+    for(const section of report.querySelectorAll(':scope > .rb-section')){
+      const title=(section.querySelector(':scope > .rb-section-head h2')?.textContent||section.dataset.rbSection||'Report section').trim();
+      const head=section.querySelector(':scope > .rb-section-head');push(head,'section-child',title+' heading',true);
+      const handled=new Set();if(head)handled.add(head);
+      const direct=[...section.children];
+      for(const child of direct){
+        if(handled.has(child))continue;
+        if(child.matches('.rb-stats,.rb-two,.rb-tablewrap,.rb-analysis-copy,.rb-summary-block,.rb-conclusion-box,.rb-final-copy,.ptmri-report-conclusion,.pt-sc-note,.pt-sc-source,.rb-panel')){push(child,'section-child',title,false);handled.add(child);continue;}
+        if(child.matches('h3,p')){push(child,'section-child',title,false);handled.add(child);continue;}
+        const tables=[...child.querySelectorAll(':scope > .rb-tablewrap')];
+        if(tables.length){for(const t of tables)push(t,'section-child',title+' table',false);handled.add(child);continue;}
+        if(child.children.length){push(child,'section-child',title,false);handled.add(child);}
+      }
+    }
+    return out;
+  }
+  async function snapStage(stage,item,index,total){stage.replaceChildren();const wrap=blockWrap(item.node,item.kind);stage.appendChild(wrap);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const r=wrap.getBoundingClientRect();if(r.width<2||r.height<2)return null;status(`Rendering PDF block ${index+1} of ${total}…`);const p=window.html2canvas(wrap,{scale:1.35,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',logging:false,scrollX:0,scrollY:0,width:Math.ceil(r.width),height:Math.ceil(r.height),windowWidth:CAPTURE_WIDTH});return withTimeout(p,18000,`PDF capture timed out on ${item.label}.`);}
+  function addFooter(doc,page,total,p){const company=(p.company_name||p.full_name||'').trim(),y=PAGE_H-30;doc.setFillColor(255,255,255);doc.rect(0,PAGE_H-FOOTER,PAGE_W,FOOTER,'F');doc.setDrawColor(205,217,229);doc.setLineWidth(.7);doc.line(28,y-8,PAGE_W-28,y-8);doc.setFont('helvetica','bold');doc.setFontSize(7.2);doc.setTextColor(34,76,111);doc.text(company?`${company}  |  ${PRODUCT}`:PRODUCT,28,y+4);doc.setFont('helvetica','normal');doc.setTextColor(105,119,137);doc.text(`${TAGLINE}  |  Page ${page} of ${total}`,PAGE_W-28,y+4,{align:'right'});}
+  function addTall(doc,canvas,widthPt,startY){const usableBottom=PAGE_H-FOOTER-BOTTOM,ptPerPx=widthPt/canvas.width;let sy=0,y=startY,pagesAdded=0;while(sy<canvas.height-1){let avail=usableBottom-y;if(avail<40){doc.addPage();pagesAdded++;y=TOP;avail=usableBottom-y;}const take=Math.min(canvas.height-sy,Math.max(1,Math.floor(avail/ptPerPx)));const part=document.createElement('canvas');part.width=canvas.width;part.height=take;const ctx=part.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,part.width,part.height);ctx.drawImage(canvas,0,sy,canvas.width,take,0,0,canvas.width,take);const h=take*ptPerPx;doc.addImage(part.toDataURL('image/jpeg',0.97),'JPEG',MARGIN_X,y,widthPt,h,undefined,'FAST');y+=h;sy+=take;if(sy<canvas.height){doc.addPage();pagesAdded++;y=TOP;}}return{y,pagesAdded};}
+  async function build(doc,report,stage){const blocks=logicalBlocks(report),usableW=PAGE_W-MARGIN_X*2,usableBottom=PAGE_H-FOOTER-BOTTOM,fullH=usableBottom-TOP;let y=TOP,page=1;for(let i=0;i<blocks.length;i++){const item=blocks[i],canvas=await snapStage(stage,item,i,blocks.length);if(!canvas)continue;const h=canvas.height*(usableW/canvas.width);let nextH=0;if(item.keepNext&&blocks[i+1]){const nextCanvas=await snapStage(stage,blocks[i+1],i+1,blocks.length);if(nextCanvas)nextH=Math.min(180,nextCanvas.height*(usableW/nextCanvas.width));}
+      if(h<=fullH){const need=(y>TOP?GAP:0)+h+(item.keepNext?Math.min(nextH,120):0);if(y>TOP&&y+need>usableBottom){doc.addPage();page++;y=TOP;}if(y>TOP)y+=GAP;doc.addImage(canvas.toDataURL('image/jpeg',0.97),'JPEG',MARGIN_X,y,usableW,h,undefined,'FAST');y+=h;}else{if(y>TOP){doc.addPage();page++;y=TOP;}const r=addTall(doc,canvas,usableW,y);page+=r.pagesAdded;y=r.y;}}
+    return page;}
+  async function generate(){if(running)return false;running=true;const btn=document.getElementById('rbDownloadPdf');let stage=null;if(btn){btn.disabled=true;btn.textContent='Generating PDF…';}try{const source=await withTimeout(prepare(),6500,'Report preparation timed out.');await ensureHtml2Canvas();const jsPDF=window.jspdf?.jsPDF;if(!jsPDF)throw new Error('PDF library unavailable.');stage=makeStage();const doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait',compress:true}),p=profile();doc.setProperties({title:`${PRODUCT} | ${REPORT_TYPE}`,author:[p.full_name,p.company_name].filter(Boolean).join(' - ')||PRODUCT,subject:state?.address||state?.name||REPORT_TYPE,creator:PRODUCT});await build(doc,source,stage);const total=doc.getNumberOfPages();for(let i=1;i<=total;i++){doc.setPage(i);addFooter(doc,i,total,p);}doc.save(filename());status('PDF generated successfully.');return true;}catch(e){console.error('PropertyThesis PDF export failed',e);status(e?.message||'Unable to generate PDF.');try{alert(e?.message||'Unable to generate PDF.');}catch(_e){}return false;}finally{stage?.remove();running=false;if(btn){btn.disabled=false;btn.textContent='Download PDF';}}}
+  document.addEventListener('click',e=>{const b=e.target?.closest?.('#rbDownloadPdf');if(!b)return;e.preventDefault();e.stopImmediatePropagation();generate();},true);
+  window.UserBrandedPdf={generate,version:VERSION};
+})();
