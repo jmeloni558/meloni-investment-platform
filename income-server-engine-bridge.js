@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=5;
+  const VERSION=6;
   if((window.__incomeServerEngineBridgeVersion||0)>=VERSION)return;
   window.__incomeServerEngineBridgeVersion=VERSION;
 
@@ -15,15 +15,16 @@
   function signature(s){return JSON.stringify(normalizedState(s));}
   function clone(v){try{return structuredClone(v);}catch(_e){return JSON.parse(JSON.stringify(v));}}
   function calculationReady(s){return Number(s?.price)>0&&Number(s?.rent)>0&&Number(s?.units)>0&&Number(s?.hold)>0;}
+  function signedIn(){try{return typeof cloudUser!=='undefined'&&!!cloudUser;}catch(_e){return false;}}
 
   function ensureBadge(){let badge=document.getElementById('ptEngineSourceStatus');if(badge)return badge;const host=document.querySelector('.topactions');if(!host)return null;badge=document.createElement('span');badge.id='ptEngineSourceStatus';badge.className='pill';badge.style.fontSize='10px';badge.style.fontWeight='800';badge.style.letterSpacing='.01em';badge.style.display='none';const save=document.getElementById('saveStatus');if(save)host.insertBefore(badge,save);else host.appendChild(badge);return badge;}
   function paintStatus(mode,message=''){
     lastSource=mode;const b=ensureBadge();if(!b)return;
-    if(mode==='server'||mode==='checking'||mode==='not-ready'){b.style.display='none';b.textContent='';b.title='';}
+    if(mode==='server'||mode==='checking'||mode==='not-ready'||!signedIn()){b.style.display='none';b.textContent='';b.title='';}
     else{b.style.display='inline-flex';b.textContent='Calculation Service Unavailable';b.title=message||'Secure calculations are temporarily unavailable.';b.style.background='#fef3f2';b.style.borderColor='#fecdca';b.style.color='#b42318';}
   }
   function markNotReady(){lastError='';paintStatus('not-ready');}
-  function showUnavailable(message){lastError=message||lastError||'Calculation service unavailable';paintStatus('unavailable',lastError);try{if(typeof setStatus==='function')setStatus(lastError);}catch(_e){}}
+  function showUnavailable(message){if(!signedIn()){markNotReady();return;}lastError=message||lastError||'Calculation service unavailable';paintStatus('unavailable',lastError);try{if(typeof setStatus==='function')setStatus(lastError);}catch(_e){}}
 
   async function currentSession(){if(typeof cloudClient==='undefined'||!cloudClient?.auth)return null;try{const {data,error}=await cloudClient.auth.getSession();if(error)throw error;return data?.session||null;}catch(e){lastError=String(e?.message||e);return null;}}
   async function callServer(s){if(typeof cloudClient==='undefined'||!cloudClient)throw new Error('Supabase client unavailable');const session=await currentSession();if(!session?.access_token)throw new Error('Sign-in session is required for protected calculations');const invoke=cloudClient.functions.invoke('propertythesis-income-engine',{body:{action:'analyze',state:s},headers:{Authorization:`Bearer ${session.access_token}`}});const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Protected calculation engine timed out')),8000));const {data,error}=await Promise.race([invoke,timeout]);if(error)throw error;if(data?.error)throw new Error(data.error+(data?.details?' — '+data.details:''));if(!data?.result?.years?.length)throw new Error('Protected engine returned an incomplete result');return data.result;}
@@ -50,6 +51,6 @@
   function refreshCurrent(){if(typeof state!=='object'||!state)return Promise.resolve(null);if(!calculationReady(state)){markNotReady();return Promise.resolve(null);}return requestServer({...state},{refresh:true});}
   window.PropertyThesisIncomeEngineBridge={version:VERSION,refreshCurrent,requestServer,signature,browserRender,calculationReady,clearTransientStatus:markNotReady,clearCache:()=>cache.clear(),current:()=>cache.get(signature(typeof state==='object'?state:{}))||null,status:()=>({source:lastSource,lastServerAt,lastError,cachedStates:cache.size,pending:pending.size})};
 
-  async function boot(){ensureBadge();const session=await currentSession();if(session?.access_token)refreshCurrent();else showUnavailable('Sign in to use PropertyThesis calculations.');try{cloudClient?.auth?.onAuthStateChange?.((_event,newSession)=>{if(newSession?.access_token){failedAt.clear();setTimeout(refreshCurrent,0);}else showUnavailable('Sign in to use PropertyThesis calculations.');});}catch(_e){}}
+  async function boot(){ensureBadge();const session=await currentSession();if(session?.access_token)refreshCurrent();else markNotReady();try{cloudClient?.auth?.onAuthStateChange?.((_event,newSession)=>{if(newSession?.access_token){failedAt.clear();setTimeout(refreshCurrent,0);}else markNotReady();});}catch(_e){}}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
