@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=23;
+  const VERSION=24;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -11,6 +11,13 @@
 
   function activeSection(){return document.querySelector('.section.active')?.id||'';}
   function isSignedIn(){try{return typeof cloudUser!=='undefined'&&!!cloudUser}catch(e){return false}}
+  function uiShowsSignedOut(){
+    const authUser=document.getElementById('authUser');
+    const authText=(authUser?.textContent||'').trim().toLowerCase();
+    const signOut=document.getElementById('signOutBtn');
+    const signOutHidden=!signOut||signOut.classList.contains('hidden')||signOut.hidden||getComputedStyle(signOut).display==='none';
+    return authText==='not signed in'||signOutHidden;
+  }
   function promptSignIn(message='Sign in to run PropertyThesis calculations.'){
     try{if(typeof authMsg==='function')authMsg(message);}catch(e){}
     try{if(typeof showAuth==='function')showAuth();}catch(e){}
@@ -84,7 +91,7 @@
       section.innerHTML=`<div class="pt-sample-heading"><div class="eyebrow">SEE PROPERTYTHESIS IN ACTION</div><h2>See what a completed investment analysis can become.</h2><p>Open a completed underwriting analysis, review the full 10-year pro forma, and see the client-ready report produced from the same sample property.</p></div><div class="pt-sample-cards"><article class="pt-sample-card"><h3>Sample Investment Analysis</h3><p>A completed read-only underwriting example showing acquisition terms, operating performance, financing, valuation support and decision analysis.</p><div class="pt-sample-metrics"><div class="pt-sample-metric"><span>Purchase Price</span><strong>$425,000</strong></div><div class="pt-sample-metric"><span>Market Rent</span><strong>$4,750/mo</strong></div><div class="pt-sample-metric"><span>Cap Rate</span><strong>8.1%</strong></div><div class="pt-sample-metric"><span>Cash Flow</span><strong>$10,248/yr</strong></div><div class="pt-sample-metric"><span>DSCR</span><strong>1.42x</strong></div><div class="pt-sample-metric"><span>Analysis</span><strong>10-Year</strong></div></div><div class="pt-sample-actions"><a class="pt-sample-btn" href="sample-analysis.html" target="_blank" rel="noopener">Explore Sample Analysis</a><a class="pt-sample-btn" href="sample-pro-forma.html" target="_blank" rel="noopener">View Sample Pro Forma</a></div></article><article class="pt-sample-card"><h3>Sample Professional Report</h3><p>See how PropertyThesis turns the underlying analysis into a polished, client-ready investment underwriting report.</p><div class="pt-sample-preview"><div><strong style="display:block;color:#17365d;font-size:14px;margin-bottom:5px">PROPERTYTHESIS</strong>Investment Property Analysis<br>Executive conclusion • operating analysis • valuation • pro forma • decision support • investment thesis</div></div><div class="pt-sample-actions"><a class="pt-sample-btn" href="sample-report-current.html" target="_blank" rel="noopener">Open Sample Report</a></div></article></div>`;
       shell.appendChild(section);
     }else if(section.parentElement!==shell){shell.appendChild(section);}
-    section.hidden=isSignedIn();
+    section.hidden=!uiShowsSignedOut();
     return section;
   }
 
@@ -96,7 +103,7 @@
   }
   function cleanWorkflow(){const workflow=document.getElementById('stage8Workflow');if(!workflow)return false;workflow.classList.add('app-toolbar-clean');return true;}
   function retireLegacyNavigation(){document.querySelectorAll('.tab[data-tab],[data-app-advanced],[data-s8-advanced]').forEach(el=>{const id=el.dataset.tab||el.dataset.appAdvanced||el.dataset.s8Advanced;if(retired.has(id)||contextualOnly.has(id))el.hidden=true;});const active=activeSection();if(retired.has(active))go('dashboard');}
-  function refresh(){if(!ensureToolbar())return false;cleanWorkflow();retireLegacyNavigation();const guest=document.getElementById('ptGuestGuidance');if(guest)guest.hidden=isSignedIn();const sample=document.getElementById('ptSampleShowcase');if(sample)sample.hidden=isSignedIn();if(mortgageMode){setMortgageMode(true);return true;}const active=activeSection();const newBtn=document.getElementById('appNavNew');if(newBtn)newBtn.classList.toggle('active',primary.includes(active));const existing=document.getElementById('appNavExisting');if(existing)existing.classList.toggle('active',active==='propertyhub');const mortgage=document.getElementById('appNavMortgage');if(mortgage)mortgage.classList.remove('active');return true;}
+  function refresh(){if(!ensureToolbar())return false;cleanWorkflow();retireLegacyNavigation();const guest=document.getElementById('ptGuestGuidance');if(guest)guest.hidden=!uiShowsSignedOut();const sample=document.getElementById('ptSampleShowcase');if(sample)sample.hidden=!uiShowsSignedOut();if(mortgageMode){setMortgageMode(true);return true;}const active=activeSection();const newBtn=document.getElementById('appNavNew');if(newBtn)newBtn.classList.toggle('active',primary.includes(active));const existing=document.getElementById('appNavExisting');if(existing)existing.classList.toggle('active',active==='propertyhub');const mortgage=document.getElementById('appNavMortgage');if(mortgage)mortgage.classList.remove('active');return true;}
   function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));document.addEventListener('click',guardCalculatorClick,true);setTimeout(refresh,700);setTimeout(refresh,1800);}
   window.AppNavigationToolbar={refresh,go,openExisting,openMortgageTools,setMortgageMode};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
