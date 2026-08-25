@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=7;
+  const VERSION=8;
   if((window.__reportBuilderV9ControlsVersion||0)>=VERSION)return;
   window.__reportBuilderV9ControlsVersion=VERSION;
 
@@ -65,14 +65,34 @@
     btn.disabled=false;
     btn.removeAttribute('aria-hidden');
     btn.style.display='';
-    btn.onclick=e=>{
+    btn.onclick=async e=>{
       try{e?.preventDefault?.();e?.stopPropagation?.();}catch(_e){}
-      const exporter=window.PropertyThesisProFormaDownload;
-      if(exporter?.download){
-        exporter.download();
-      }else{
-        console.error('PropertyThesis pro forma exporter is unavailable');
-        alert('Unable to export the pro forma workbook. Please refresh the page and try again.');
+      try{
+        let exporter=window.PropertyThesisProFormaDownload;
+        if(!exporter?.download){
+          await new Promise((resolve,reject)=>{
+            const existing=document.querySelector('script[data-pt-proforma-exporter]');
+            if(existing){
+              existing.addEventListener('load',resolve,{once:true});
+              existing.addEventListener('error',()=>reject(new Error('The pro forma exporter could not be loaded.')),{once:true});
+              setTimeout(resolve,1200);
+              return;
+            }
+            const script=document.createElement('script');
+            script.src='report-proforma-download-controller-v1.js?direct='+Date.now();
+            script.async=false;
+            script.dataset.ptProformaExporter='1';
+            script.onload=resolve;
+            script.onerror=()=>reject(new Error('The pro forma exporter could not be loaded.'));
+            document.head.appendChild(script);
+          });
+          exporter=window.PropertyThesisProFormaDownload;
+        }
+        if(!exporter?.download) throw new Error('The pro forma exporter did not initialize.');
+        await exporter.download();
+      }catch(err){
+        console.error('PropertyThesis pro forma export launch failed',err);
+        alert(err?.message||'Unable to export the pro forma workbook.');
       }
       return false;
     };
