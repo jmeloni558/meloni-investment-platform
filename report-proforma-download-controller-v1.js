@@ -1,16 +1,25 @@
 'use strict';
 (() => {
-  if (window.__propertyThesisProFormaDownloadControllerV1) return;
-  window.__propertyThesisProFormaDownloadControllerV1 = true;
+  if (window.__propertyThesisProFormaDownloadControllerV2) return;
+  window.__propertyThesisProFormaDownloadControllerV2 = true;
 
   const num = v => Number.isFinite(Number(v)) ? Number(v) : 0;
   const safeName = v => String(v || 'PropertyThesis Pro Forma').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 90);
 
-  function stateObj(){ return window.state || {}; }
-  function resultObj(){ return window.result || {}; }
+  // app.js declares these as top-level `let`, so they live in the global lexical
+  // environment but are not properties of window. Read the actual bindings first.
+  function stateObj(){
+    try { if (typeof state !== 'undefined' && state) return state; } catch (_e) {}
+    return window.state || {};
+  }
+  function resultObj(){
+    try { if (typeof result !== 'undefined' && result) return result; } catch (_e) {}
+    return window.result || {};
+  }
   function years(){
-    const hold = Math.max(1, Math.round(num(stateObj().hold) || 1));
-    return (resultObj().years || []).filter(y => num(y.year) >= 1 && num(y.year) <= hold).slice(0, hold);
+    const s = stateObj(), r = resultObj();
+    const hold = Math.max(1, Math.round(num(s.hold) || 1));
+    return (r.years || []).filter(y => num(y.year) >= 1 && num(y.year) <= hold).slice(0, hold);
   }
 
   function branding(){
@@ -19,7 +28,8 @@
     const company = String(p.company_name || 'PropertyThesis').trim();
     const person = [p.full_name, p.professional_title].filter(Boolean).join(' • ').trim() || company;
     const contact = [p.email, p.phone, p.website].filter(Boolean).join(' • ').trim();
-    const address = String(stateObj().address || stateObj().name || document.querySelector('#clientReport .address')?.textContent || 'Income-Producing Property').trim();
+    const s = stateObj();
+    const address = String(s.address || s.name || document.querySelector('#clientReport .address')?.textContent || 'Income-Producing Property').trim();
     return {company, person, contact, address};
   }
 
@@ -39,18 +49,29 @@
     return {netSale,book,gain,gainRate,taxesGain,accDep,depTax,saleTax};
   }
 
-  function loadXlsx(){
-    if(window.XLSX) return Promise.resolve(window.XLSX);
+  function loadScript(src){
     return new Promise((resolve,reject)=>{
-      const existing=document.querySelector('script[data-pt-xlsx]');
-      if(existing){existing.addEventListener('load',()=>resolve(window.XLSX),{once:true});existing.addEventListener('error',reject,{once:true});return;}
       const s=document.createElement('script');
-      s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-      s.async=true;s.dataset.ptXlsx='1';
+      s.src=src;s.async=true;s.dataset.ptXlsx='1';
       s.onload=()=>window.XLSX?resolve(window.XLSX):reject(new Error('Excel library failed to initialize'));
       s.onerror=()=>reject(new Error('Excel library failed to load'));
       document.head.appendChild(s);
     });
+  }
+  async function loadXlsx(){
+    if(window.XLSX) return window.XLSX;
+    const existing=document.querySelector('script[data-pt-xlsx]');
+    if(existing){
+      await new Promise((resolve,reject)=>{
+        if(window.XLSX) return resolve();
+        existing.addEventListener('load',resolve,{once:true});
+        existing.addEventListener('error',reject,{once:true});
+        setTimeout(()=>window.XLSX?resolve():reject(new Error('Excel library load timed out')),8000);
+      });
+      if(window.XLSX) return window.XLSX;
+    }
+    try { return await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
+    catch (_e) { return await loadScript('https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'); }
   }
 
   function brandedRows(title){
@@ -61,17 +82,18 @@
     return rows;
   }
   function makeSheet(XLSX,title,header,bodyRows){
-    const aoa=[...brandedRows(title),header,...bodyRows];
+    const brand=brandedRows(title);
+    const aoa=[...brand,header,...bodyRows];
     const ws=XLSX.utils.aoa_to_sheet(aoa);
     ws['!cols']=[{wch:34},...header.slice(1).map(()=>({wch:15}))];
-    ws['!freeze']={xSplit:1,ySplit:brandedRows(title).length+1};
+    ws['!freeze']={xSplit:1,ySplit:brand.length+1};
     return ws;
   }
 
   function buildWorkbook(XLSX){
     const ys=years();
-    if(!ys.length) throw new Error('Run the analysis before exporting the pro forma workbook.');
-    const yearHeaders=['',...ys.map(y=>'Year '+y.year)];
+    if(!ys.length) throw new Error('No projected analysis years are available to export. Open Review Results and confirm the analysis has completed.');
+    const yearHeaders=ys.map(y=>'Year '+y.year);
     const wb=XLSX.utils.book_new();
 
     const cfRows=[
@@ -85,7 +107,7 @@
       ['− Taxes from Operations',...ys.map(y=>num(y.opTax))],
       ['= After-Tax Cash Flow',...ys.map(y=>num(y.atcf))]
     ];
-    XLSX.utils.book_append_sheet(wb,makeSheet(XLSX,'Projected After-Tax Cash Flow',['After-Tax Cash Flow (ATCF)',...yearHeaders.slice(1)],cfRows),'After Tax Cash Flow');
+    XLSX.utils.book_append_sheet(wb,makeSheet(XLSX,'Projected After-Tax Cash Flow',['After-Tax Cash Flow (ATCF)',...yearHeaders],cfRows),'After Tax Cash Flow');
 
     const taxRows=[
       ['Net Operating Income',...ys.map(y=>num(y.noi))],
@@ -97,7 +119,7 @@
       ['× Ordinary Income Tax Rate',...ys.map(()=>num(stateObj().ordinaryTax))],
       ['= Taxes from Operations',...ys.map(y=>num(y.opTax))]
     ];
-    XLSX.utils.book_append_sheet(wb,makeSheet(XLSX,'Taxes From Operations',['Taxes From Operations',...yearHeaders.slice(1)],taxRows),'Taxes From Operations');
+    XLSX.utils.book_append_sheet(wb,makeSheet(XLSX,'Taxes From Operations',['Taxes From Operations',...yearHeaders],taxRows),'Taxes From Operations');
 
     const sale=ys.map(y=>saleForYear(num(y.year)||1));
     const saleRows=[
@@ -111,33 +133,30 @@
       ['= Taxes Due on Depreciation',...sale.map(d=>d.depTax)],
       ['Taxes Due on Sale',...sale.map(d=>d.saleTax)]
     ];
-    XLSX.utils.book_append_sheet(wb,makeSheet(XLSX,'Taxes Due on Sale',['Taxes Due on Sale',...yearHeaders.slice(1)],saleRows),'Taxes Due on Sale');
+    XLSX.utils.book_append_sheet(wb,makeSheet(XLSX,'Taxes Due on Sale',['Taxes Due on Sale',...yearHeaders],saleRows),'Taxes Due on Sale');
 
-    const currencyRows={
-      'After Tax Cash Flow':[8,9,10,11,12,13,14,15,16],
-      'Taxes From Operations':[8,9,10,11,12,13,15],
-      'Taxes Due on Sale':[8,9,10,12,13,15,16]
-    };
-    Object.entries(currencyRows).forEach(([name,rows])=>{
-      const ws=wb.Sheets[name];
-      const range=XLSX.utils.decode_range(ws['!ref']);
-      rows.forEach(r=>{for(let c=1;c<=range.e.c;c++){const cell=ws[XLSX.utils.encode_cell({r:r-1,c})];if(cell)cell.z='$#,##0;[Red]-$#,##0';}});
-    });
-    ['Taxes From Operations','Taxes Due on Sale'].forEach(name=>{
-      const ws=wb.Sheets[name],range=XLSX.utils.decode_range(ws['!ref']);
+    for(const name of wb.SheetNames){
+      const ws=wb.Sheets[name], range=XLSX.utils.decode_range(ws['!ref']);
       for(let r=0;r<=range.e.r;r++){
-        const a=ws[XLSX.utils.encode_cell({r,c:0})]?.v||'';
-        if(/Tax Rate/.test(String(a))){for(let c=1;c<=range.e.c;c++){const cell=ws[XLSX.utils.encode_cell({r,c})];if(cell)cell.z='0.00%';}}
+        const label=String(ws[XLSX.utils.encode_cell({r,c:0})]?.v||'');
+        for(let c=1;c<=range.e.c;c++){
+          const cell=ws[XLSX.utils.encode_cell({r,c})];
+          if(!cell||cell.t!=='n') continue;
+          cell.z=/Tax Rate/.test(label)?'0.00%':'$#,##0;[Red]-$#,##0';
+        }
       }
-    });
+    }
     return wb;
   }
 
   async function download(){
     try{
+      const ys=years();
+      if(!ys.length) throw new Error('No projected analysis years are available to export. Open Review Results and confirm the analysis has completed.');
       const XLSX=await loadXlsx();
       const wb=buildWorkbook(XLSX);
-      const filename=safeName((stateObj().address||stateObj().name||'PropertyThesis')+' Pro Forma')+'.xlsx';
+      const s=stateObj();
+      const filename=safeName((s.address||s.name||'PropertyThesis')+' Pro Forma')+'.xlsx';
       XLSX.writeFile(wb,filename,{compression:true});
     }catch(err){
       console.error('PropertyThesis pro forma export failed',err);
@@ -152,6 +171,7 @@
     btn.disabled=false;
     btn.removeAttribute('aria-hidden');
     btn.style.display='';
+    btn.onclick=e=>{e?.preventDefault?.();e?.stopImmediatePropagation?.();download();return false;};
     return true;
   }
   const observer=new MutationObserver(()=>enforceButton());
@@ -164,11 +184,9 @@
   window.addEventListener('click',e=>{
     const btn=e.target?.closest?.('#rbDownloadProForma');
     if(!btn)return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    download();
+    e.preventDefault();e.stopImmediatePropagation();download();
   },true);
 
-  window.PropertyThesisProFormaDownload={download,buildWorkbook,years,enforceButton};
+  window.PropertyThesisProFormaDownload={download,buildWorkbook,years,enforceButton,stateObj,resultObj};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
