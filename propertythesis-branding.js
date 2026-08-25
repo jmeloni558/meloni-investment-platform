@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__propertyThesisBrandingV||0)>=VERSION)return;
   window.__propertyThesisBrandingV=VERSION;
 
@@ -18,6 +18,21 @@
     s.id='ptMarketRentCloudPersistenceLoader';
     s.src='market-rent-cloud-persistence.js?v=1';
     document.head.appendChild(s);
+  }
+
+  function ensureGuestSampleScripts(){
+    if(!document.getElementById('ptGuestSampleProFormaLoader')){
+      const proforma=document.createElement('script');
+      proforma.id='ptGuestSampleProFormaLoader';
+      proforma.src='guest-sample-proforma-download.js?v=2';
+      document.head.appendChild(proforma);
+    }
+    if(!document.getElementById('ptGuestSampleShowcaseLoader')){
+      const showcase=document.createElement('script');
+      showcase.id='ptGuestSampleShowcaseLoader';
+      showcase.src='guest-sample-showcase.js?v=2';
+      document.head.appendChild(showcase);
+    }
   }
 
   function apply(){
@@ -42,6 +57,7 @@
 
     setText(document.querySelector('.footer'),'PropertyThesis • Know the Numbers. Build the Case.');
     ensureMarketRentPersistence();
+    ensureGuestSampleScripts();
   }
 
   let scheduled=false;
