@@ -1,13 +1,31 @@
 'use strict';
 (()=>{
   function openSample(path){window.open(path,'_blank','noopener');}
+  function loadSampleExporter(){
+    if(window.PropertyThesisSampleProForma?.download)return Promise.resolve(window.PropertyThesisSampleProForma);
+    return new Promise((resolve,reject)=>{
+      let s=document.querySelector('script[data-pt-sample-proforma]');
+      if(!s){
+        s=document.createElement('script');
+        s.src='guest-sample-proforma-download.js?cb='+Date.now();
+        s.async=true;
+        s.dataset.ptSampleProforma='1';
+        document.head.appendChild(s);
+      }
+      const done=()=>window.PropertyThesisSampleProForma?.download?resolve(window.PropertyThesisSampleProForma):reject(new Error('The sample pro forma generator did not initialize.'));
+      s.addEventListener('load',done,{once:true});
+      s.addEventListener('error',()=>reject(new Error('The sample pro forma generator could not be loaded.')),{once:true});
+      setTimeout(()=>{if(window.PropertyThesisSampleProForma?.download)resolve(window.PropertyThesisSampleProForma);},1200);
+    });
+  }
   async function downloadSampleProForma(){
-    const exporter=window.PropertyThesisSampleProForma;
-    if(!exporter?.download){
-      alert('The sample pro forma is still loading. Please try again in a moment.');
-      return;
+    try{
+      const exporter=await loadSampleExporter();
+      await exporter.download();
+    }catch(err){
+      console.error('Sample pro forma launch failed',err);
+      alert(err?.message||'Unable to generate the sample pro forma workbook.');
     }
-    await exporter.download();
   }
   function upgrade(){
     const root=document.getElementById('ptSampleShowcase');
