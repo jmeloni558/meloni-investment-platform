@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=6;
+  const VERSION=7;
   if((window.__reportBuilderV9ControlsVersion||0)>=VERSION)return;
   window.__reportBuilderV9ControlsVersion=VERSION;
 
@@ -39,7 +39,7 @@
       #rbControls .rb-actions .btn{min-height:38px!important;padding:9px 14px!important;border-radius:8px!important;font-size:10px!important;font-weight:800!important}
       #rbControls .rb-actions #rbRefresh{background:#fff!important;border:1px solid #b8c9d8!important;color:#36566f!important;min-width:128px!important}
       #rbControls .rb-actions #rbDownloadPdf{background:#17689f!important;border-color:#17689f!important;color:#fff!important;min-width:138px!important;box-shadow:0 3px 8px rgba(23,104,159,.18)!important}
-      #rbControls .rb-actions #rbDownloadProForma{background:#fff!important;border:1px solid #8eb5cf!important;color:#175f8e!important;min-width:190px!important}
+      #rbControls .rb-actions #rbDownloadProForma{background:#fff!important;border:1px solid #8eb5cf!important;color:#175f8e!important;min-width:170px!important}
       #rbControls .rb-pass2-actions,#rbControls .rb-export-note,#rbControls .rb-pass3-note{display:none!important}
       @media(max-width:980px){#rbControls .rb-control-grid{grid-template-columns:1fr!important}#rbControls .rb-toggle-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
       @media(max-width:650px){#rbControls .rb-toggle-grid{grid-template-columns:1fr!important}#rbControls .rb-section-presets{align-items:flex-start;flex-direction:column}#rbControls .rb-actions{display:grid!important;grid-template-columns:1fr!important}#rbControls .rb-actions .btn{width:100%!important}}
@@ -61,18 +61,18 @@
       btn.type='button';
       btn.className='btn secondary';
     }
-    btn.textContent='Download Pro Forma Excel';
+    btn.textContent='Download Pro Forma';
+    btn.disabled=false;
+    btn.removeAttribute('aria-hidden');
+    btn.style.display='';
     btn.onclick=e=>{
       try{e?.preventDefault?.();e?.stopPropagation?.();}catch(_e){}
-      try{
-        if(window.ReportProFormaRestore?.downloadExcel){
-          window.ReportProFormaRestore.downloadExcel();
-        }else{
-          alert('Pro forma export is still loading. Please click Refresh Preview, then try again.');
-        }
-      }catch(err){
-        console.error('Pro forma export failed',err);
-        alert('Unable to export the pro forma. Please refresh and try again.');
+      const exporter=window.PropertyThesisProFormaDownload;
+      if(exporter?.download){
+        exporter.download();
+      }else{
+        console.error('PropertyThesis pro forma exporter is unavailable');
+        alert('Unable to export the pro forma workbook. Please refresh the page and try again.');
       }
       return false;
     };
@@ -154,6 +154,7 @@
     document.getElementById('rbPrintReport')?.remove();
     document.getElementById('rbRefreshExport')?.remove();
     document.getElementById('rbProFormaJump')?.remove();
+    document.getElementById('rbExcelWorkbookExportFinal')?.remove();
     controls.querySelector('.rb-export-note')?.remove();
     controls.querySelector('.rb-pass3-note')?.remove();
     const emptyPass2=controls.querySelector('.rb-pass2-actions');
@@ -169,8 +170,6 @@
     try{window.ReportAssumptionsNarrative?.apply?.();window.ReportDetailOrder?.apply?.();}catch(e){}
     try{window.ReportSensitivityAnalysis?.apply?.();window.ReportInvestmentOfferAnalysis?.apply?.();}catch(e){}
     try{window.ReportMarketRentSupport?.apply?.();window.ReportMarketRentUnderwriting?.apply?.();}catch(e){}
-    try{window.ReportProFormaRestore?.apply?.();}catch(e){}
-    try{window.PropertyThesisReportProForma?.apply?.();window.PropertyThesisReportProForma?.injectControls?.();}catch(e){}
     try{window.ReportExecutiveConclusionCurrent?.apply?.();}catch(e){}
     try{window.PropertyThesisMarketRentConclusion?.enhanceReport?.();}catch(e){}
     try{window.UserBranding?.applyReportBranding?.();}catch(e){}
