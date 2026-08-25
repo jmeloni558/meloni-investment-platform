@@ -1,6 +1,7 @@
 'use strict';
 (()=>{
   function openSample(path){window.open(path,'_blank','noopener');}
+
   function loadSampleExporter(){
     if(window.PropertyThesisSampleProForma?.download)return Promise.resolve(window.PropertyThesisSampleProForma);
     return new Promise((resolve,reject)=>{
@@ -12,12 +13,15 @@
         s.dataset.ptSampleProforma='1';
         document.head.appendChild(s);
       }
-      const done=()=>window.PropertyThesisSampleProForma?.download?resolve(window.PropertyThesisSampleProForma):reject(new Error('The sample pro forma generator did not initialize.'));
+      const done=()=>window.PropertyThesisSampleProForma?.download
+        ? resolve(window.PropertyThesisSampleProForma)
+        : reject(new Error('The sample pro forma generator did not initialize.'));
       s.addEventListener('load',done,{once:true});
       s.addEventListener('error',()=>reject(new Error('The sample pro forma generator could not be loaded.')),{once:true});
       setTimeout(()=>{if(window.PropertyThesisSampleProForma?.download)resolve(window.PropertyThesisSampleProForma);},1200);
     });
   }
+
   async function downloadSampleProForma(){
     try{
       const exporter=await loadSampleExporter();
@@ -27,9 +31,12 @@
       alert(err?.message||'Unable to generate the sample pro forma workbook.');
     }
   }
+
   function upgrade(){
     const root=document.getElementById('ptSampleShowcase');
     if(!root)return false;
+    if(root.dataset.ptFunctional==='1')return true;
+
     const cards=root.querySelectorAll('.pt-sample-card');
     if(cards.length<2)return false;
 
@@ -49,10 +56,13 @@
       first.querySelector('.pt-sample-coming')?.remove();
       actions=document.createElement('div');
       actions.className='pt-sample-live-actions';
-      actions.style.display='flex';actions.style.gap='8px';actions.style.flexWrap='wrap';
+      actions.style.display='flex';
+      actions.style.gap='8px';
+      actions.style.flexWrap='wrap';
       actions.innerHTML='<button type="button" class="pt-sample-btn" data-pt-analysis>Explore Sample Analysis</button><button type="button" class="pt-sample-btn" data-pt-proforma>View Sample Pro Forma</button>';
       first.appendChild(actions);
     }
+
     const analysisBtn=first.querySelector('[data-pt-analysis]');
     const proformaBtn=first.querySelector('[data-pt-proforma]');
     [analysisBtn,proformaBtn].forEach(b=>{if(b){b.disabled=false;b.style.cursor='pointer';}});
@@ -64,23 +74,29 @@
       second.querySelector('.pt-sample-btn')?.remove();
       second.querySelector('.pt-sample-coming')?.remove();
       reportBtn=document.createElement('button');
-      reportBtn.type='button';reportBtn.className='pt-sample-btn';reportBtn.dataset.ptReport='1';reportBtn.textContent='Open Sample Report';reportBtn.style.cursor='pointer';
+      reportBtn.type='button';
+      reportBtn.className='pt-sample-btn';
+      reportBtn.dataset.ptReport='1';
+      reportBtn.textContent='Open Sample Report';
+      reportBtn.style.cursor='pointer';
       second.appendChild(reportBtn);
     }
     reportBtn.disabled=false;
     reportBtn.onclick=()=>openSample('sample-report.html');
 
+    const copy='Explore a completed sample analysis, download a seven-year Excel pro forma, and see the client-ready report produced from a sample property.';
     const p=root.querySelector('.pt-sample-heading p');
-    if(p)p.textContent='Explore a completed sample analysis, download a seven-year Excel pro forma, and see the client-ready report produced from a sample property.';
+    if(p && p.textContent!==copy)p.textContent=copy;
+
     root.dataset.ptFunctional='1';
     return true;
   }
 
   function start(){
-    upgrade();
-    const observer=new MutationObserver(()=>upgrade());
-    observer.observe(document.documentElement,{childList:true,subtree:true});
-    setTimeout(upgrade,250);setTimeout(upgrade,750);setTimeout(upgrade,1500);setTimeout(upgrade,3000);
+    if(upgrade())return;
+    [100,250,500,750,1000,1500,2000,3000,4500,6000].forEach(ms=>setTimeout(upgrade,ms));
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+  else start();
 })();
