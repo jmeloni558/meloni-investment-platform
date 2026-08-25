@@ -1,6 +1,14 @@
 'use strict';
 (()=>{
   function openSample(path){window.open(path,'_blank','noopener');}
+  async function downloadSampleProForma(){
+    const exporter=window.PropertyThesisSampleProForma;
+    if(!exporter?.download){
+      alert('The sample pro forma is still loading. Please try again in a moment.');
+      return;
+    }
+    await exporter.download();
+  }
   function upgrade(){
     const root=document.getElementById('ptSampleShowcase');
     if(!root)return false;
@@ -10,12 +18,12 @@
     const first=cards[0], second=cards[1];
     const metrics=first.querySelector('.pt-sample-metrics');
     if(metrics)metrics.innerHTML=`
-      <div class="pt-sample-metric"><span>Purchase Price</span><strong>$425,000</strong></div>
-      <div class="pt-sample-metric"><span>Market Rent</span><strong>$4,750/mo</strong></div>
-      <div class="pt-sample-metric"><span>Cap Rate</span><strong>8.1%</strong></div>
-      <div class="pt-sample-metric"><span>Cash Flow</span><strong>$10,248/yr</strong></div>
-      <div class="pt-sample-metric"><span>DSCR</span><strong>1.42x</strong></div>
-      <div class="pt-sample-metric"><span>Analysis</span><strong>10-Year</strong></div>`;
+      <div class="pt-sample-metric"><span>Purchase Price</span><strong>$250,000</strong></div>
+      <div class="pt-sample-metric"><span>Starting Rent</span><strong>$1,790/mo</strong></div>
+      <div class="pt-sample-metric"><span>Vacancy</span><strong>10.0%</strong></div>
+      <div class="pt-sample-metric"><span>Ordinary Tax</span><strong>28%</strong></div>
+      <div class="pt-sample-metric"><span>Capital Gains Tax</span><strong>15%</strong></div>
+      <div class="pt-sample-metric"><span>Analysis</span><strong>7-Year</strong></div>`;
 
     let actions=first.querySelector('.pt-sample-live-actions');
     if(!actions){
@@ -31,7 +39,7 @@
     const proformaBtn=first.querySelector('[data-pt-proforma]');
     [analysisBtn,proformaBtn].forEach(b=>{if(b){b.disabled=false;b.style.cursor='pointer';}});
     if(analysisBtn)analysisBtn.onclick=()=>openSample('sample-analysis.html');
-    if(proformaBtn)proformaBtn.onclick=()=>openSample('sample-pro-forma.html');
+    if(proformaBtn)proformaBtn.onclick=()=>downloadSampleProForma();
 
     let reportBtn=second.querySelector('[data-pt-report]');
     if(!reportBtn){
@@ -45,7 +53,7 @@
     reportBtn.onclick=()=>openSample('sample-report.html');
 
     const p=root.querySelector('.pt-sample-heading p');
-    if(p)p.textContent='Open a completed underwriting analysis, review the full pro forma, and see the client-ready report produced from the same sample property.';
+    if(p)p.textContent='Explore a completed sample analysis, download a seven-year Excel pro forma, and see the client-ready report produced from a sample property.';
     root.dataset.ptFunctional='1';
     return true;
   }
