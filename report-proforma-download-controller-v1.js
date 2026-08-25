@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION = 3;
+  const VERSION = 4;
   if ((window.__propertyThesisProFormaDownloadControllerVersion || 0) >= VERSION) return;
   window.__propertyThesisProFormaDownloadControllerVersion = VERSION;
 
@@ -45,23 +45,6 @@
     return s.loanYears && y.year <= s.loanYears ? num(s.origFee) / num(s.loanYears) : 0;
   }
 
-  function saleForYear(n){
-    const s = stateObj(), r = resultObj();
-    const price = num(s.price);
-    const grossSale = price * Math.pow(1 + num(s.appreciation), n);
-    const selling = grossSale * num(s.sellCost);
-    const netSale = grossSale - selling;
-    const annualDep = num(r.depreciation);
-    const depLife = Math.max(0, num(s.depLife) || 27.5);
-    const accDep = Math.min(annualDep * n, annualDep * depLife);
-    const book = price - accDep;
-    const gain = netSale - book;
-    const gainRate = n === 1 ? num(s.ordinaryTax) : num(s.capGainsTax);
-    const taxesGain = gain * gainRate;
-    const depTax = accDep * num(s.depTax);
-    return {netSale, book, gain, gainRate, taxesGain, accDep, depTax, saleTax: taxesGain + depTax};
-  }
-
   function loadScript(src){
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
@@ -101,6 +84,9 @@
     const ys = years();
     if (!ys.length) throw new Error('No projected analysis years are available to export. Open Review Results and confirm the analysis has completed.');
 
+    const s = stateObj();
+    const r = resultObj();
+    const hold = Math.max(1, Math.round(num(s.hold) || 1));
     const yearHeaders = ys.map(y => 'Year ' + y.year);
     const wb = XLSX.utils.book_new();
 
@@ -120,36 +106,41 @@
     const taxRows = [
       ['Net Operating Income', ...ys.map(y => num(y.noi))],
       ['− Interest', ...ys.map(y => num(y.interest))],
-      ['− Depreciation', ...ys.map(() => num(resultObj().depreciation))],
+      ['− Depreciation', ...ys.map(() => num(r.depreciation))],
       ['− Amortization of Points', ...ys.map(y => pointsAmort(y))],
       ['− Amortization of Origination Fee', ...ys.map(y => originationAmort(y))],
       ['= Taxable Income', ...ys.map(y => num(y.taxable))],
-      ['× Ordinary Income Tax Rate', ...ys.map(() => num(stateObj().ordinaryTax))],
+      ['× Ordinary Income Tax Rate', ...ys.map(() => num(s.ordinaryTax))],
       ['= Taxes from Operations', ...ys.map(y => num(y.opTax))]
     ];
     XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, 'Taxes From Operations', ['Taxes From Operations', ...yearHeaders], taxRows), 'Taxes From Operations');
 
-    const sale = ys.map(y => saleForYear(num(y.year) || 1));
+    // Match Review Results exactly: disposition taxes occur only in the selected sale year.
+    // Earlier ownership years remain blank rather than showing hypothetical annual sales.
+    const gainRate = hold === 1 ? num(s.ordinaryTax) : num(s.capGainsTax);
+    const taxesGain = num(r.gain) * gainRate;
+    const depTax = num(r.accDep) * num(s.depTax);
+    const onlySaleYear = value => ys.map(y => num(y.year) === hold ? value : null);
     const saleRows = [
-      ['Net Sales Price', ...sale.map(d => d.netSale)],
-      ['− Book Value', ...sale.map(d => d.book)],
-      ['= Gain (Loss) on Sale', ...sale.map(d => d.gain)],
-      ['× Applicable Gain Tax Rate', ...sale.map(d => d.gainRate)],
-      ['= Taxes Due on Gain/Loss', ...sale.map(d => d.taxesGain)],
-      ['Accumulated Depreciation', ...sale.map(d => d.accDep)],
-      ['× Depreciation Tax Rate', ...sale.map(() => num(stateObj().depTax))],
-      ['= Taxes Due on Depreciation', ...sale.map(d => d.depTax)],
-      ['Taxes Due on Sale', ...sale.map(d => d.saleTax)]
+      ['Net Sales Price', ...onlySaleYear(num(r.netSale))],
+      ['− Book Value', ...onlySaleYear(num(r.book))],
+      ['= Gain (Loss) on Sale', ...onlySaleYear(num(r.gain))],
+      ['× Applicable Gain Tax Rate', ...onlySaleYear(gainRate)],
+      ['= Taxes Due on Gain/Loss', ...onlySaleYear(taxesGain)],
+      ['Accumulated Depreciation', ...onlySaleYear(num(r.accDep))],
+      ['× Depreciation Tax Rate', ...onlySaleYear(num(s.depTax))],
+      ['= Taxes Due on Depreciation', ...onlySaleYear(depTax)],
+      ['Taxes Due on Sale', ...onlySaleYear(num(r.saleTax))]
     ];
     XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, 'Taxes Due on Sale', ['Taxes Due on Sale', ...yearHeaders], saleRows), 'Taxes Due on Sale');
 
     for (const name of wb.SheetNames) {
       const ws = wb.Sheets[name];
       const range = XLSX.utils.decode_range(ws['!ref']);
-      for (let r = 0; r <= range.e.r; r++) {
-        const label = String(ws[XLSX.utils.encode_cell({r, c:0})]?.v || '');
-        for (let c = 1; c <= range.e.c; c++) {
-          const cell = ws[XLSX.utils.encode_cell({r, c})];
+      for (let row = 0; row <= range.e.r; row++) {
+        const label = String(ws[XLSX.utils.encode_cell({r:row, c:0})]?.v || '');
+        for (let col = 1; col <= range.e.c; col++) {
+          const cell = ws[XLSX.utils.encode_cell({r:row, c:col})];
           if (!cell || cell.t !== 'n') continue;
           cell.z = /Tax Rate/.test(label) ? '0.00%' : '$#,##0;[Red]-$#,##0';
         }
