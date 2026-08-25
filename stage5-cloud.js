@@ -1,5 +1,4 @@
 'use strict';
-if((location.hostname==='propertythesis.com'||location.hostname==='www.propertythesis.com')&&(location.pathname==='/'||location.pathname==='')){location.replace('/latest.html');}
 (() => {
   const KEY='meloniStage5ReportPrefs';
   const IDS={clientName:'s5_client',marketRent:'s5_marketRent',marketCap:'s5_marketCap',valueLow:'s5_valueLow',valueHigh:'s5_valueHigh',recommendationNote:'s5_recommendation',reportNotes:'s5_notes'};
