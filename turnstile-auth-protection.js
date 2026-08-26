@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=7;
+  const VERSION=8;
   const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
   const APP_URL=location.origin+'/index.html';
   const ALLOWED_HOSTS=new Set(['propertythesis.com','www.propertythesis.com']);
