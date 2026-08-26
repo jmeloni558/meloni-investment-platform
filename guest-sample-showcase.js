@@ -55,7 +55,7 @@
 
     first.querySelectorAll('.pt-sample-actions,.pt-sample-live-actions').forEach(x=>x.remove());
     first.querySelector('.pt-sample-coming')?.remove();
-    const actions=document.createElement('div');actions.className='pt-sample-live-actions';actions.style.display='flex';actions.style.gap='8px';actions.style.flexWrap='wrap';actions.innerHTML='<a class="pt-sample-btn" data-pt-analysis href="sample-analysis-viewer.html?v=1">Explore Sample Analysis</a><button type="button" class="pt-sample-btn" data-pt-proforma>Download Sample Pro Forma</button>';first.appendChild(actions);
+    const actions=document.createElement('div');actions.className='pt-sample-live-actions';actions.style.display='flex';actions.style.gap='8px';actions.style.flexWrap='wrap';actions.innerHTML='<a class="pt-sample-btn" data-pt-analysis href="sample-analysis-viewer.html?v=2">Explore Guided Sample</a><button type="button" class="pt-sample-btn" data-pt-proforma>Download Sample Pro Forma</button>';first.appendChild(actions);
 
     const analysisBtn=first.querySelector('[data-pt-analysis]');
     const proformaBtn=first.querySelector('[data-pt-proforma]');
