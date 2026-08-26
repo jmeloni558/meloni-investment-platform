@@ -35,7 +35,7 @@
   function upgrade(){
     const root=document.getElementById('ptSampleShowcase');
     if(!root)return false;
-    if(root.dataset.ptFunctional==='1')return true;
+    if(root.dataset.ptFunctional==='2')return true;
 
     const cards=root.querySelectorAll('.pt-sample-card');
     if(cards.length<2)return false;
@@ -69,12 +69,13 @@
     if(analysisBtn)analysisBtn.onclick=()=>openSample('sample-analysis.html');
     if(proformaBtn)proformaBtn.onclick=()=>downloadSampleProForma();
 
-    let reportBtn=second.querySelector('[data-pt-report]');
+    let reportBtn=second.querySelector('[data-pt-sample-report]');
     if(!reportBtn){
       reportBtn=second.querySelector('a.pt-sample-btn')||document.createElement('a');
       second.querySelector('.pt-sample-coming')?.remove();
       reportBtn.className='pt-sample-btn';
-      reportBtn.dataset.ptReport='1';
+      reportBtn.removeAttribute('data-pt-report');
+      reportBtn.dataset.ptSampleReport='1';
       reportBtn.textContent='Open Sample Report';
       if(!reportBtn.isConnected)second.appendChild(reportBtn);
     }
@@ -88,7 +89,8 @@
     const p=root.querySelector('.pt-sample-heading p');
     if(p && p.textContent!==copy)p.textContent=copy;
 
-    root.dataset.ptFunctional='1';
+    reportBtn.removeAttribute('data-pt-report');
+    root.dataset.ptFunctional='2';
     return true;
   }
 
