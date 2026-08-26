@@ -71,18 +71,18 @@
 
     let reportBtn=second.querySelector('[data-pt-report]');
     if(!reportBtn){
-      second.querySelector('.pt-sample-btn')?.remove();
+      reportBtn=second.querySelector('a.pt-sample-btn')||document.createElement('a');
       second.querySelector('.pt-sample-coming')?.remove();
-      reportBtn=document.createElement('button');
-      reportBtn.type='button';
       reportBtn.className='pt-sample-btn';
       reportBtn.dataset.ptReport='1';
       reportBtn.textContent='Open Sample Report';
-      reportBtn.style.cursor='pointer';
-      second.appendChild(reportBtn);
+      if(!reportBtn.isConnected)second.appendChild(reportBtn);
     }
-    reportBtn.disabled=false;
-    reportBtn.onclick=()=>openSample('sample-report.html');
+    reportBtn.href='sample-report.html';
+    reportBtn.removeAttribute('target');
+    reportBtn.removeAttribute('rel');
+    reportBtn.style.cursor='pointer';
+    reportBtn.onclick=null;
 
     const copy='Explore a completed sample analysis, download a seven-year Excel pro forma, and see the client-ready report produced from a sample property.';
     const p=root.querySelector('.pt-sample-heading p');
