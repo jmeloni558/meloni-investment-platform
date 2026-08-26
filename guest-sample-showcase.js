@@ -38,7 +38,7 @@
   function upgrade(){
     const root=document.getElementById('ptSampleShowcase');
     if(!root)return false;
-    if(root.dataset.ptFunctional==='2')return true;
+    if(root.dataset.ptFunctional==='3')return true;
 
     const cards=root.querySelectorAll('.pt-sample-card');
     if(cards.length<2)return false;
@@ -53,23 +53,13 @@
       <div class="pt-sample-metric"><span>Capital Gains Tax</span><strong>15%</strong></div>
       <div class="pt-sample-metric"><span>Analysis</span><strong>7-Year</strong></div>`;
 
-    let actions=first.querySelector('.pt-sample-live-actions');
-    if(!actions){
-      first.querySelector('.pt-sample-btn')?.remove();
-      first.querySelector('.pt-sample-coming')?.remove();
-      actions=document.createElement('div');
-      actions.className='pt-sample-live-actions';
-      actions.style.display='flex';
-      actions.style.gap='8px';
-      actions.style.flexWrap='wrap';
-      actions.innerHTML='<button type="button" class="pt-sample-btn" data-pt-analysis>Explore Sample Analysis</button><button type="button" class="pt-sample-btn" data-pt-proforma>View Sample Pro Forma</button>';
-      first.appendChild(actions);
-    }
+    first.querySelectorAll('.pt-sample-actions,.pt-sample-live-actions').forEach(x=>x.remove());
+    first.querySelector('.pt-sample-coming')?.remove();
+    const actions=document.createElement('div');actions.className='pt-sample-live-actions';actions.style.display='flex';actions.style.gap='8px';actions.style.flexWrap='wrap';actions.innerHTML='<a class="pt-sample-btn" data-pt-analysis href="sample-analysis.html">Explore Sample Analysis</a><button type="button" class="pt-sample-btn" data-pt-proforma>Download Sample Pro Forma</button>';first.appendChild(actions);
 
     const analysisBtn=first.querySelector('[data-pt-analysis]');
     const proformaBtn=first.querySelector('[data-pt-proforma]');
     [analysisBtn,proformaBtn].forEach(b=>{if(b){b.disabled=false;b.style.cursor='pointer';}});
-    if(analysisBtn)analysisBtn.onclick=()=>openSample('sample-analysis.html');
     if(proformaBtn)proformaBtn.onclick=()=>downloadSampleProForma();
 
     let reportBtn=second.querySelector('[data-pt-sample-report]');
@@ -93,7 +83,7 @@
     if(p && p.textContent!==copy)p.textContent=copy;
 
     reportBtn.removeAttribute('data-pt-report');
-    root.dataset.ptFunctional='2';
+    root.dataset.ptFunctional='3';
     return true;
   }
 
