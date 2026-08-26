@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=6;
+  const VERSION=7;
   const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
   const APP_URL=location.origin+'/index.html';
   const ALLOWED_HOSTS=new Set(['propertythesis.com','www.propertythesis.com']);
@@ -51,31 +51,18 @@
   function injectRecoveryFlow(){
     if(document.querySelector('script[data-pt-recovery-flow]')||document.getElementById('ptRecoveryOverlay'))return;
     const s=document.createElement('script');
-    s.src='password-recovery-flow.js?v=4';
+    s.src='password-recovery-flow.js?v=5';
     s.async=false;
     s.dataset.ptRecoveryFlow='1';
     document.body.appendChild(s);
   }
 
-  function decodeJwtPayload(jwt){
-    try{
-      const part=String(jwt||'').split('.')[1];
-      if(!part)return null;
-      let b64=part.replace(/-/g,'+').replace(/_/g,'/');
-      while(b64.length%4)b64+='=';
-      return JSON.parse(atob(b64));
-    }catch(_e){return null;}
-  }
-
-  async function loadRecoveryFlow(){
+  function loadRecoveryFlow(){
     const params=new URLSearchParams(location.hash.replace(/^#/,''));
     if(params.get('type')==='recovery')return injectRecoveryFlow();
     try{
       if(typeof cloudClient==='undefined'||!cloudClient)return;
-      const {data:{session}}=await cloudClient.auth.getSession();
-      const payload=decodeJwtPayload(session?.access_token);
-      const methods=Array.isArray(payload?.amr)?payload.amr.map(x=>String(x?.method||'').toLowerCase()):[];
-      if(methods.includes('otp'))injectRecoveryFlow();
+      cloudClient.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY')injectRecoveryFlow();});
     }catch(_e){}
   }
 
@@ -137,6 +124,8 @@
     try{
       const {data,error}=await cloudClient.auth.signUp({email,password,options:{emailRedirectTo:APP_URL,captchaToken:token}});
       if(error)return message(error.message,'error');
+      if(!data?.user?.id)return message('The account was not created. Please retry the security check and submit the form again.','error');
+      if(Array.isArray(data.user.identities)&&data.user.identities.length===0)return message('An account already exists for this email. Choose Sign In or use Forgot Password.','error');
       if(data.session)message('Account created and signed in.','success');
       else if(window.PropertyThesisAuth?.showVerification)window.PropertyThesisAuth.showVerification(email);
       else message('Account created. Check your email and click the verification link before signing in.','success');

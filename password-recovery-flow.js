@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   const SUPABASE_URL='https://lmaiqpkogmmsldkziggy.supabase.co';
   const SUPABASE_KEY='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
   if((window.__propertyThesisPasswordRecoveryVersion||0)>=VERSION)return;
@@ -47,7 +47,7 @@
       msg('Password updated successfully. Signing you out…');
       try{await client.auth.signOut({scope:'global'});}catch(_e){try{await client.auth.signOut();}catch(_e2){}}
       history.replaceState(null,'',location.pathname+location.search);
-      setTimeout(()=>location.replace('https://propertythesis.com/latest.html'),700);
+      setTimeout(()=>location.replace('https://propertythesis.com/index.html'),700);
     }catch(e){msg(e?.message||'Unable to update password.');button.disabled=false;}
   }
 
