@@ -94,18 +94,27 @@
     const scalePt=(pageW-(SIDE_PAD*2))/reportW,bodyBottom=pageH-FOOTER_H-BOTTOM_PAD;let page=1,y=0;
     const baseX=SIDE_PAD;
     const newPage=()=>{doc.addPage();page++;y=TOP_PAD;};
-    for(let i=0;i<list.length;i++){
-      const it=list[i];
+    const BATCH_SIZE=3;
+    for(let start=0;start<list.length;start+=BATCH_SIZE){
+      const batch=list.slice(start,start+BATCH_SIZE);
+      const captured=await Promise.all(batch.map(async it=>{
+        if(it.kind==='row')return{it,row:await snapRow(it.els)};
+        const el=it.els[0],rect=el.getBoundingClientRect();
+        return{it,el,rect,canvas:await snap(el)};
+      }));
+      for(let offset=0;offset<captured.length;offset++){
+      const i=start+offset,{it,row,el,rect:r,canvas:c}=captured[offset];
       if(it.kind==='row'){
-        const row=await snapRow(it.els);if(!row)continue;
+        if(!row)continue;
         const rightExtent=Math.max(1,row.right-reportRect.left+ROW_BLEED),rowScale=Math.min(scalePt,(pageW-(ROW_PAD*2))/rightExtent),hPt=(row.height+ROW_BLEED*2)*rowScale,gapPt=it.gap;
         let nextExtra=0;if(it.keepNext&&list[i+1]){const nr=list[i+1].els[0].getBoundingClientRect();nextExtra=(nr.height*scalePt)+PAGE_GAP;}
         if(y+gapPt+hPt+nextExtra>bodyBottom&&y>TOP_PAD+4)newPage();y+=gapPt;
         const x=ROW_PAD+(row.left-reportRect.left-ROW_BLEED)*rowScale,w=(row.width+ROW_BLEED*2)*rowScale;
         doc.addImage(row.canvas.toDataURL('image/jpeg',JPEG_QUALITY),'JPEG',x,y,w,hPt,undefined,'FAST');
+        row.canvas.width=row.canvas.height=1;
         y+=hPt;continue;
       }
-      const el=it.els[0],r=el.getBoundingClientRect(),c=await snap(el);if(!c)continue;
+      if(!c)continue;
       const wPt=r.width*scalePt,hPt=r.height*scalePt,xPt=baseX+(r.left-reportRect.left)*scalePt,gapPt=it.gap;
       let nextExtra=0;if(it.keepNext&&list[i+1]){const nr=list[i+1].els[0].getBoundingClientRect();nextExtra=(nr.height*scalePt)+PAGE_GAP;}
       const fullPageCapacity=bodyBottom-TOP_PAD;
@@ -113,6 +122,8 @@
       else{
         let sy=0;const pxPerPt=c.width/wPt;
         while(sy<c.height-1){if(y>TOP_PAD+4)newPage();const avail=bodyBottom-y;const take=Math.min(c.height-sy,Math.floor(avail*pxPerPt));if(take<10){newPage();continue;}const part=document.createElement('canvas');part.width=c.width;part.height=take;const ctx=part.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,part.width,part.height);ctx.drawImage(c,0,sy,c.width,take,0,0,c.width,take);const ph=take/pxPerPt;doc.addImage(part.toDataURL('image/jpeg',JPEG_QUALITY),'JPEG',xPt,y,wPt,ph,undefined,'FAST');y+=ph;sy+=take;if(sy<c.height)newPage();}
+      }
+      c.width=c.height=1;
       }
     }
   }

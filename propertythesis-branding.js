@@ -30,7 +30,7 @@
     if(!document.getElementById('ptGuestSampleShowcaseLoader')){
       const showcase=document.createElement('script');
       showcase.id='ptGuestSampleShowcaseLoader';
-      showcase.src='guest-sample-showcase.js?v=5';
+      showcase.src='guest-sample-showcase.js?v=6';
       document.head.appendChild(showcase);
     }
   }
