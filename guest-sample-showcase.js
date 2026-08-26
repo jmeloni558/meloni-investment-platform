@@ -82,7 +82,7 @@
       reportBtn.textContent='Open Sample Report';
       if(!reportBtn.isConnected)second.appendChild(reportBtn);
     }
-    reportBtn.href='sample-report-viewer.html';
+    reportBtn.href='sample-report-viewer.html?v=2';
     reportBtn.removeAttribute('target');
     reportBtn.removeAttribute('rel');
     reportBtn.style.cursor='pointer';
