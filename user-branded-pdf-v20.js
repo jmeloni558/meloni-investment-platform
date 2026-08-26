@@ -94,18 +94,13 @@
     const scalePt=(pageW-(SIDE_PAD*2))/reportW,bodyBottom=pageH-FOOTER_H-BOTTOM_PAD;let page=1,y=0;
     const baseX=SIDE_PAD;
     const newPage=()=>{doc.addPage();page++;y=TOP_PAD;};
-    const BATCH_SIZE=3;
-    for(let start=0;start<list.length;start+=BATCH_SIZE){
-      const batch=list.slice(start,start+BATCH_SIZE);
-      const captured=await Promise.all(batch.map(async it=>{
-        if(it.kind==='row')return{it,row:await snapRow(it.els)};
-        const el=it.els[0],rect=el.getBoundingClientRect();
-        return{it,el,rect,canvas:await snap(el)};
-      }));
-      for(let offset=0;offset<captured.length;offset++){
-      const i=start+offset,{it,row,el,rect:r,canvas:c}=captured[offset];
+    const master=await snap(report);if(!master)throw new Error('Report could not be rendered.');
+    const pxX=master.width/reportRect.width,pxY=master.height/reportRect.height;
+    const crop=(r,bleed=0)=>{const c=document.createElement('canvas'),w=r.width+bleed*2,h=r.height+bleed*2;c.width=Math.max(1,Math.round(w*pxX));c.height=Math.max(1,Math.round(h*pxY));const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(master,Math.round((r.left-reportRect.left-bleed)*pxX),Math.round((r.top-reportRect.top-bleed)*pxY),c.width,c.height,0,0,c.width,c.height);return c;};
+    for(let i=0;i<list.length;i++){
+      const it=list[i];
       if(it.kind==='row'){
-        if(!row)continue;
+        const rects=it.els.map(el=>el.getBoundingClientRect()),row={left:Math.min(...rects.map(r=>r.left)),top:Math.min(...rects.map(r=>r.top)),right:Math.max(...rects.map(r=>r.right)),bottom:Math.max(...rects.map(r=>r.bottom))};row.width=row.right-row.left;row.height=row.bottom-row.top;row.canvas=crop(row,ROW_BLEED);
         const rightExtent=Math.max(1,row.right-reportRect.left+ROW_BLEED),rowScale=Math.min(scalePt,(pageW-(ROW_PAD*2))/rightExtent),hPt=(row.height+ROW_BLEED*2)*rowScale,gapPt=it.gap;
         let nextExtra=0;if(it.keepNext&&list[i+1]){const nr=list[i+1].els[0].getBoundingClientRect();nextExtra=(nr.height*scalePt)+PAGE_GAP;}
         if(y+gapPt+hPt+nextExtra>bodyBottom&&y>TOP_PAD+4)newPage();y+=gapPt;
@@ -114,7 +109,7 @@
         row.canvas.width=row.canvas.height=1;
         y+=hPt;continue;
       }
-      if(!c)continue;
+      const r=it.els[0].getBoundingClientRect(),c=crop(r);
       const wPt=r.width*scalePt,hPt=r.height*scalePt,xPt=baseX+(r.left-reportRect.left)*scalePt,gapPt=it.gap;
       let nextExtra=0;if(it.keepNext&&list[i+1]){const nr=list[i+1].els[0].getBoundingClientRect();nextExtra=(nr.height*scalePt)+PAGE_GAP;}
       const fullPageCapacity=bodyBottom-TOP_PAD;
@@ -124,8 +119,8 @@
         while(sy<c.height-1){if(y>TOP_PAD+4)newPage();const avail=bodyBottom-y;const take=Math.min(c.height-sy,Math.floor(avail*pxPerPt));if(take<10){newPage();continue;}const part=document.createElement('canvas');part.width=c.width;part.height=take;const ctx=part.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,part.width,part.height);ctx.drawImage(c,0,sy,c.width,take,0,0,c.width,take);const ph=take/pxPerPt;doc.addImage(part.toDataURL('image/jpeg',JPEG_QUALITY),'JPEG',xPt,y,wPt,ph,undefined,'FAST');y+=ph;sy+=take;if(sy<c.height)newPage();}
       }
       c.width=c.height=1;
-      }
     }
+    master.width=master.height=1;
   }
 
   async function generate(){const btn=document.getElementById('rbDownloadPdf');if(btn){btn.disabled=true;btn.textContent='Generating PDF...';}let clone=null;try{await preparePreview();await ensureHtml2Canvas();const jsPDF=window.jspdf?.jsPDF;if(!jsPDF)throw new Error('PDF library unavailable.');const source=document.querySelector('#clientReport .rb-report');if(!source)throw new Error('Report preview is not available.');clone=makeClone(source);await new Promise(r=>setTimeout(r,260));const list=items(clone);if(!list.length)throw new Error('Report components could not be prepared.');const doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait',compress:true}),p=prof();doc.setProperties({title:`${PRODUCT} | ${REPORT_TYPE}`,author:[p.full_name,p.company_name].filter(Boolean).join(' - ')||PRODUCT,subject:state?.address||state?.name||REPORT_TYPE,creator:PRODUCT});await render(doc,clone,list);const total=doc.getNumberOfPages();for(let i=1;i<=total;i++){doc.setPage(i);addFooter(doc,i,total,p);}doc.save(filename());status('PDF generated with historical row renderer');}catch(e){console.error(e);status(e?.message||'Unable to generate PDF');alert(e?.message||'Unable to generate PDF.');}finally{clone?.remove();if(btn){btn.disabled=false;btn.textContent='Download PDF';}}}
