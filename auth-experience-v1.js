@@ -32,7 +32,7 @@
     const m=el('authMessage');if(!m)return;m.textContent=text;m.classList.toggle('pt-auth-error',kind==='error');m.classList.toggle('pt-auth-success',kind==='success');
   }
   function setMode(next,customMessage=''){
-    ensureUi();restoreForm();mode=next==='signup'?'signup':'signin';const verification=el('ptAuthVerification');if(verification)verification.hidden=true;
+    ensureUi();restoreForm();window.clearPendingAuthAction?.();mode=next==='signup'?'signup':'signin';const verification=el('ptAuthVerification');if(verification)verification.hidden=true;
     const signup=mode==='signup';
     el('ptAuthConfirmWrap')?.classList.toggle('pt-auth-mode-hidden',!signup);el('ptAuthPasswordHint')?.classList.toggle('pt-auth-mode-hidden',!signup);el('signInAction')?.classList.toggle('pt-auth-mode-hidden',signup);el('signUpAction')?.classList.toggle('pt-auth-mode-hidden',!signup);el('forgotPasswordAction')?.classList.toggle('pt-auth-mode-hidden',signup);
     const title=el('authModal')?.querySelector('.sectionhead h2');if(title)title.textContent=signup?'Create your free account':'Sign in to PropertyThesis';const p=el('authPassword');if(p)p.autocomplete=signup?'new-password':'current-password';const intro=el('authModal')?.querySelector('.sectionhead p');if(intro)intro.textContent=signup?'Verify your email once, then continue with the analysis you already entered.':'Access your saved analyses and continue your PropertyThesis work.';const altText=el('ptAuthAlternativeText'),altAction=el('ptAuthAlternativeAction');if(altText)altText.textContent=signup?'Already have an account? ':'New to PropertyThesis? ';if(altAction)altAction.textContent=signup?'Sign in':'Create a free account';

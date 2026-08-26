@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=9;
+  const VERSION=10;
   const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
   const APP_URL=location.origin+'/index.html';
   const ALLOWED_HOSTS=new Set(['propertythesis.com','www.propertythesis.com']);
@@ -11,6 +11,7 @@
   let widgetId=null;
   let scriptPromise=null;
   let busy=false;
+  let pendingAction='';
 
   const el=id=>document.getElementById(id);
   const message=(text,kind='')=>{if(window.PropertyThesisAuth?.message)return window.PropertyThesisAuth.message(text,kind);const m=el('authMessage');if(m)m.textContent=text;};
@@ -79,9 +80,9 @@
       widgetId=ts.render(host,{
         sitekey:SITE_KEY,
         theme:'auto',
-        callback:v=>{token=v||'';message('Security check complete.');},
+        callback:v=>{token=v||'';const action=pendingAction;pendingAction='';message(action?'Security check complete. Continuing automatically…':'Security check complete.');if(action)setTimeout(()=>runProtectedAction(action),0);},
         'expired-callback':()=>{token='';message('Security check expired. Please complete it again.');},
-        'error-callback':()=>{token='';message('Security check could not load. Please retry.');}
+        'error-callback':()=>{token='';pendingAction='';message('Security check could not load. Please retry.');}
       });
     }catch(e){message(e?.message||'Unable to load security check.');}
   }
@@ -91,12 +92,12 @@
     try{if(window.turnstile&&widgetId!==null)window.turnstile.reset(widgetId);}catch(_e){}
   }
 
-  function requireToken(){
+  function requireToken(action){
     if(!ALLOWED_HOSTS.has(location.hostname)){
       message('For secure sign-in, open PropertyThesis at propertythesis.com.');
       return false;
     }
-    if(!token){message('Complete the security check before continuing.');renderChallenge();return false;}
+    if(!token){pendingAction=action||'';message(action==='signup'?'Completing the security check. Your account will be created automatically…':'Completing the security check. We will continue automatically…');renderChallenge();return false;}
     return true;
   }
 
@@ -104,7 +105,7 @@
     if(busy)return;
     const email=el('authEmail')?.value.trim()||'',password=el('authPassword')?.value||'';
     if(!email||!password)return message('Enter an email and password.');
-    if(!requireToken())return;
+    if(!requireToken('signin'))return;
     busy=true;message('Signing in…');
     try{
       const {error}=await cloudClient.auth.signInWithPassword({email,password,options:{captchaToken:token}});
@@ -119,7 +120,7 @@
     const confirmation=el('authPasswordConfirm')?.value||'';
     if(!email||password.length<12)return message('Enter an email and a password of at least 12 characters.','error');
     if(confirmation!==password)return message('The password confirmation does not match.','error');
-    if(!requireToken())return;
+    if(!requireToken('signup'))return;
     busy=true;message('Creating account…');
     try{
       const {data,error}=await cloudClient.auth.signUp({email,password,options:{emailRedirectTo:APP_URL,captchaToken:token}});
@@ -137,7 +138,7 @@
     if(busy)return;
     const email=window.PropertyThesisAuth?.getVerificationEmail?.()||el('authEmail')?.value.trim()||'';
     if(!email)return message('Enter the email address used to create the account.','error');
-    if(!requireToken())return;
+    if(!requireToken('resend'))return;
     busy=true;message('Resending verification email…');
     try{const {error}=await cloudClient.auth.resend({type:'signup',email,options:{emailRedirectTo:APP_URL,captchaToken:token}});message(error?error.message:'Verification email resent. Check your inbox and spam folder.',error?'error':'success');}
     catch(e){message(e?.message||'Verification email could not be resent. Please try again.','error');}
@@ -148,7 +149,7 @@
     if(busy)return;
     const email=el('authEmail')?.value.trim()||'';
     if(!email)return message('Enter your email address first.');
-    if(!requireToken())return;
+    if(!requireToken('reset'))return;
     busy=true;message('Sending password reset email…');
     try{
       const {error}=await cloudClient.auth.resetPasswordForEmail(email,{redirectTo:APP_URL,captchaToken:token});
@@ -170,6 +171,13 @@
     return null;
   }
 
+  function runProtectedAction(action){
+    if(action==='signin')protectedSignIn();
+    else if(action==='signup')protectedSignUp();
+    else if(action==='resend')protectedResend();
+    else if(action==='reset')protectedReset();
+  }
+
   function bind(){
     loadRecoveryFlow();
     const auth=el('authBtn');
@@ -182,10 +190,7 @@
         const action=classifyButton(e.target);
         if(!action)return;
         e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-        if(action==='signin')protectedSignIn();
-        else if(action==='signup')protectedSignUp();
-        else if(action==='resend')protectedResend();
-        else protectedReset();
+        runProtectedAction(action);
       },true);
       modal.addEventListener('keydown',e=>{
         if(e.key!=='Enter'||!el('authPassword')?.contains?.(e.target)&&e.target!==el('authPassword')&&e.target!==el('authEmail'))return;
@@ -198,6 +203,7 @@
     window.signUpCloud=protectedSignUp;
     window.forgotPasswordCloud=protectedReset;
     window.resendConfirmationCloud=protectedResend;
+    window.clearPendingAuthAction=()=>{pendingAction='';};
     if(modal&&!modal.classList.contains('hidden'))renderChallenge();
   }
 
