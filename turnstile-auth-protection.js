@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=8;
+  const VERSION=9;
   const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
   const APP_URL=location.origin+'/index.html';
   const ALLOWED_HOSTS=new Set(['propertythesis.com','www.propertythesis.com']);
@@ -162,6 +162,7 @@
     if(!button||!el('authModal')?.contains(button))return null;
     const text=String(button.textContent||button.value||'').trim().toLowerCase();
     const id=String(button.id||'').toLowerCase();
+    if(id==='ptauthalternativeaction'||id.startsWith('ptauthmode'))return null;
     if(id.includes('resend')||text.includes('resend verification'))return 'resend';
     if(id.includes('forgot')||text.includes('forgot')||text.includes('reset'))return 'reset';
     if(id.includes('signup')||id.includes('create')||text.includes('create account')||text.includes('sign up'))return 'signup';
