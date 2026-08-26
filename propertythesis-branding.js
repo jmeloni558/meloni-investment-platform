@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   if((window.__propertyThesisBrandingV||0)>=VERSION)return;
   window.__propertyThesisBrandingV=VERSION;
 
@@ -46,6 +46,11 @@
     if(brand){
       setText(brand.querySelector('h1'),BRAND);
       setText(brand.querySelector('p'),TAGLINE);
+      if(!brand.dataset.ptHomeLink){
+        brand.dataset.ptHomeLink='1';brand.setAttribute('role','link');brand.setAttribute('tabindex','0');brand.setAttribute('aria-label','PropertyThesis home');brand.style.cursor='pointer';
+        const home=()=>location.assign('index.html?cb='+Date.now());
+        brand.addEventListener('click',home);brand.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();home();}});
+      }
     }
 
     setText(document.querySelector('.print-only .mini'),'Prepared with PropertyThesis • Know the Numbers. Build the Case.');
