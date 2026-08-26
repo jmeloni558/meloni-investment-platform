@@ -20,7 +20,8 @@
     const signOutHidden=!signOut||signOut.classList.contains('hidden')||signOut.hidden||getComputedStyle(signOut).display==='none';
     return authText==='not signed in'||signOutHidden;
   }
-  function promptSignIn(message='Sign in to run PropertyThesis calculations.'){
+  function promptSignIn(message='Sign in to run PropertyThesis calculations.',mode='signin'){
+    if(window.PropertyThesisAuth?.open){window.PropertyThesisAuth.open(mode,message);return;}
     try{if(typeof authMsg==='function')authMsg(message);}catch(e){}
     try{if(typeof showAuth==='function')showAuth();}catch(e){}
   }
@@ -65,7 +66,7 @@
     if((btn.id==='gwSave'||btn.id==='gwNext')&&!guidedFinal&&!/calculat/i.test(btn.textContent||''))return;
     e.preventDefault();e.stopImmediatePropagation();
     if(freeMode())captureFreeDraft();
-    promptSignIn('Create a free account or sign in to calculate, display, and save these results. Your entered assumptions will be preserved.');
+    promptSignIn('Create your free account to calculate, display, and save these results. Already have an account? Choose Sign In above. Your entered assumptions will be preserved.','signup');
   }
 
   function ensureMortgagePanel(){

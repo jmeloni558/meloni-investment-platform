@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -9,7 +9,7 @@
     const out=document.getElementById('signOutBtn');
     return text==='not signed in'||!out||out.hidden||out.classList.contains('hidden')||getComputedStyle(out).display==='none';
   }
-  function auth(){try{if(typeof showAuth==='function')showAuth();else document.getElementById('authBtn')?.click();}catch(_e){document.getElementById('authBtn')?.click();}}
+  function auth(mode='signin',message=''){try{if(window.PropertyThesisAuth?.open)window.PropertyThesisAuth.open(mode,message);else if(typeof showAuth==='function')showAuth();else document.getElementById('authBtn')?.click();}catch(_e){document.getElementById('authBtn')?.click();}}
   const freeMode=()=>new URLSearchParams(location.search).get('free-analysis')==='1';
   function sample(){location.href='index.html?free-analysis=1&cb='+Date.now();}
   let freeEntered=false;
@@ -24,7 +24,7 @@
   function ensureNav(shell){
     const toolbar=shell.querySelector('.app-nav-toolbar'),standard=toolbar?.querySelector('.app-nav-actions');if(!toolbar||!standard)return;
     let nav=toolbar.querySelector('.pt-guest-nav');
-    if(!nav){nav=document.createElement('nav');nav.className='pt-guest-nav';nav.setAttribute('aria-label','Explore PropertyThesis');nav.innerHTML='<button type="button" class="primary" data-pt-home-start>Start Free Analysis</button><a href="sample-report-viewer.html?v=2">Sample Report</a><a href="mortgage-tools.html">Mortgage Tools</a><button type="button" data-pt-home-signin>Sign In</button>';toolbar.appendChild(nav);nav.querySelector('[data-pt-home-start]').onclick=sample;nav.querySelector('[data-pt-home-signin]').onclick=auth;}
+    if(!nav){nav=document.createElement('nav');nav.className='pt-guest-nav';nav.setAttribute('aria-label','Explore PropertyThesis');nav.innerHTML='<button type="button" class="primary" data-pt-home-start>Start Free Analysis</button><a href="sample-report-viewer.html?v=2">Sample Report</a><a href="mortgage-tools.html">Mortgage Tools</a><button type="button" data-pt-home-signin>Sign In</button>';toolbar.appendChild(nav);nav.querySelector('[data-pt-home-start]').onclick=sample;nav.querySelector('[data-pt-home-signin]').onclick=()=>auth('signin');}
     standard.hidden=true;nav.hidden=false;
   }
   function upgradeHero(root){
@@ -35,7 +35,7 @@
     if(lead)lead.textContent='Analyze income, financing, value, returns and market evidence—then produce a client-ready investment report.';
     if(sub)sub.textContent='See what the property supports, understand the risks, and build a clear acquisition case without stitching together separate calculators.';
     let audience=root.querySelector('.pt-home-audience');if(!audience){audience=document.createElement('p');audience.className='pt-home-audience';sub?.insertAdjacentElement('afterend',audience);}audience.textContent='Built for real estate investors, agents, brokers and acquisition professionals who need more than a basic rental calculator.';
-    if(actions){actions.innerHTML='<button type="button" class="pt-guest-primary" data-pt-home-sample>Start Free Analysis</button><button type="button" class="pt-guest-secondary" data-pt-home-report>View a Sample Report</button><button type="button" class="pt-home-tertiary" data-pt-home-create>Create Free Account</button>';actions.querySelector('[data-pt-home-sample]').onclick=sample;actions.querySelector('[data-pt-home-report]').onclick=()=>location.href='sample-report-viewer.html?v=2';actions.querySelector('[data-pt-home-create]').onclick=auth;}
+    if(actions){actions.innerHTML='<button type="button" class="pt-guest-primary" data-pt-home-sample>Start Free Analysis</button><button type="button" class="pt-guest-secondary" data-pt-home-report>View a Sample Report</button><button type="button" class="pt-home-tertiary" data-pt-home-create>Create Free Account</button>';actions.querySelector('[data-pt-home-sample]').onclick=sample;actions.querySelector('[data-pt-home-report]').onclick=()=>location.href='sample-report-viewer.html?v=2';actions.querySelector('[data-pt-home-create]').onclick=()=>auth('signup');}
     if(features)features.innerHTML='<div class="pt-guest-feature"><span>Purchase Price</span><strong>$250,000</strong><em>Sample acquisition</em></div><div class="pt-guest-feature"><span>Market Rent</span><strong>$1,790/mo</strong><em>Supported by rental evidence</em></div><div class="pt-guest-feature"><span>Cap Rate</span><strong>4.64%</strong><em>Compared with a 6.50% target</em></div><div class="pt-guest-feature"><span>Maximum Supported Price</span><strong>$178,449</strong><em>See how the conclusion was reached</em></div>';
     const note=root.querySelector('.pt-guest-access-note');if(note)note.textContent='Build the complete analysis setup without an account. Create a free account only when you are ready to calculate and save the results.';
   }

@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=5;
+  const VERSION=6;
   if((window.__propertyThesisBrandingV||0)>=VERSION)return;
   window.__propertyThesisBrandingV=VERSION;
 
@@ -55,10 +55,12 @@
 
     setText(document.querySelector('.print-only .mini'),'Prepared with PropertyThesis • Know the Numbers. Build the Case.');
 
-    const authTitle=document.querySelector('#authModal .modal h2');
-    setText(authTitle,BRAND);
-    const authIntro=document.querySelector('#authModal .modal .sectionhead p');
-    setText(authIntro,'Sign in or create an account to access your PropertyThesis analyses across devices.');
+    if(!document.getElementById('ptAuthModes')){
+      const authTitle=document.querySelector('#authModal .modal h2');
+      setText(authTitle,BRAND);
+      const authIntro=document.querySelector('#authModal .modal .sectionhead p');
+      setText(authIntro,'Sign in or create an account to access your PropertyThesis analyses across devices.');
+    }
 
     setText(document.querySelector('.footer'),'PropertyThesis • Know the Numbers. Build the Case.');
     ensureMarketRentPersistence();

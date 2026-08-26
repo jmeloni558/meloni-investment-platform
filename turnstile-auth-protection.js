@@ -1,8 +1,8 @@
 'use strict';
 (()=>{
-  const VERSION=5;
+  const VERSION=6;
   const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
-  const APP_URL='https://propertythesis.com/latest.html';
+  const APP_URL=location.origin+'/index.html';
   const ALLOWED_HOSTS=new Set(['propertythesis.com','www.propertythesis.com']);
   if((window.__propertyThesisTurnstileAuthVersion||0)>=VERSION)return;
   window.__propertyThesisTurnstileAuthVersion=VERSION;
@@ -13,7 +13,7 @@
   let busy=false;
 
   const el=id=>document.getElementById(id);
-  const message=text=>{const m=el('authMessage');if(m)m.textContent=text;};
+  const message=(text,kind='')=>{if(window.PropertyThesisAuth?.message)return window.PropertyThesisAuth.message(text,kind);const m=el('authMessage');if(m)m.textContent=text;};
 
   function ensureUi(){
     const modal=el('authModal');
@@ -121,7 +121,7 @@
     busy=true;message('Signing in…');
     try{
       const {error}=await cloudClient.auth.signInWithPassword({email,password,options:{captchaToken:token}});
-      if(error)message(error.message);else message('Signed in.');
+      if(error){const raw=String(error.message||'');if(/invalid login credentials|email not confirmed/i.test(raw))message('Unable to sign in. Check that the email is verified and the password is correct. If you just created this account, open the verification email before signing in.','error');else message(raw,'error');}else message('Signed in.','success');
     }catch(e){message(e?.message||'Sign in failed. Please try again.');}
     finally{busy=false;resetChallenge();}
   }
@@ -129,14 +129,29 @@
   async function protectedSignUp(){
     if(busy)return;
     const email=el('authEmail')?.value.trim()||'',password=el('authPassword')?.value||'';
-    if(!email||password.length<12)return message('Enter an email and a password of at least 12 characters.');
+    const confirmation=el('authPasswordConfirm')?.value||'';
+    if(!email||password.length<12)return message('Enter an email and a password of at least 12 characters.','error');
+    if(confirmation!==password)return message('The password confirmation does not match.','error');
     if(!requireToken())return;
     busy=true;message('Creating account…');
     try{
       const {data,error}=await cloudClient.auth.signUp({email,password,options:{emailRedirectTo:APP_URL,captchaToken:token}});
-      if(error)return message(error.message);
-      message(data.session?'Account created and signed in.':'Account created. Check your email to verify it, then return here and sign in.');
-    }catch(e){message(e?.message||'Account creation failed. Please try again.');}
+      if(error)return message(error.message,'error');
+      if(data.session)message('Account created and signed in.','success');
+      else if(window.PropertyThesisAuth?.showVerification)window.PropertyThesisAuth.showVerification(email);
+      else message('Account created. Check your email and click the verification link before signing in.','success');
+    }catch(e){message(e?.message||'Account creation failed. Please try again.','error');}
+    finally{busy=false;resetChallenge();}
+  }
+
+  async function protectedResend(){
+    if(busy)return;
+    const email=window.PropertyThesisAuth?.getVerificationEmail?.()||el('authEmail')?.value.trim()||'';
+    if(!email)return message('Enter the email address used to create the account.','error');
+    if(!requireToken())return;
+    busy=true;message('Resending verification email…');
+    try{const {error}=await cloudClient.auth.resend({type:'signup',email,options:{emailRedirectTo:APP_URL,captchaToken:token}});message(error?error.message:'Verification email resent. Check your inbox and spam folder.',error?'error':'success');}
+    catch(e){message(e?.message||'Verification email could not be resent. Please try again.','error');}
     finally{busy=false;resetChallenge();}
   }
 
@@ -158,6 +173,7 @@
     if(!button||!el('authModal')?.contains(button))return null;
     const text=String(button.textContent||button.value||'').trim().toLowerCase();
     const id=String(button.id||'').toLowerCase();
+    if(id.includes('resend')||text.includes('resend verification'))return 'resend';
     if(id.includes('forgot')||text.includes('forgot')||text.includes('reset'))return 'reset';
     if(id.includes('signup')||id.includes('create')||text.includes('create account')||text.includes('sign up'))return 'signup';
     if(id.includes('signin')||id.includes('login')||text==='sign in'||text==='login')return 'signin';
@@ -178,18 +194,20 @@
         e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
         if(action==='signin')protectedSignIn();
         else if(action==='signup')protectedSignUp();
+        else if(action==='resend')protectedResend();
         else protectedReset();
       },true);
       modal.addEventListener('keydown',e=>{
         if(e.key!=='Enter'||!el('authPassword')?.contains?.(e.target)&&e.target!==el('authPassword')&&e.target!==el('authEmail'))return;
         e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-        protectedSignIn();
+        if(window.PropertyThesisAuth?.getMode?.()==='signup')protectedSignUp();else protectedSignIn();
       },true);
     }
 
     window.signInCloud=protectedSignIn;
     window.signUpCloud=protectedSignUp;
     window.forgotPasswordCloud=protectedReset;
+    window.resendConfirmationCloud=protectedResend;
     if(modal&&!modal.classList.contains('hidden'))renderChallenge();
   }
 
