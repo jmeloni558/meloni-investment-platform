@@ -1,13 +1,15 @@
 'use strict';
 (()=>{
-  const VERSION=24;
+  const VERSION=26;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
   const retired=new Set(['cashflow','debt','taxes','amort','support','cloud','buydown']);
   const contextualOnly=new Set(['scenarios']);
   const primary=['assumptions','dashboard','report'];
+  const PENDING_FREE='ptPendingFreeAnalysisV1';
   let mortgageMode=false;
+  let resumingFree=false;
 
   function activeSection(){return document.querySelector('.section.active')?.id||'';}
   function isSignedIn(){try{return typeof cloudUser!=='undefined'&&!!cloudUser}catch(e){return false}}
@@ -22,13 +24,48 @@
     try{if(typeof authMsg==='function')authMsg(message);}catch(e){}
     try{if(typeof showAuth==='function')showAuth();}catch(e){}
   }
+  function pendingFree(){try{const draft=JSON.parse(localStorage.getItem(PENDING_FREE)||'null');if(!draft?.createdAt||Date.now()-draft.createdAt>86400000){localStorage.removeItem(PENDING_FREE);return null;}return draft;}catch(_e){localStorage.removeItem(PENDING_FREE);return null;}}
+  function freeMode(){return new URLSearchParams(location.search).get('free-analysis')==='1'||!!pendingFree();}
+  function captureFreeDraft(){
+    try{
+      document.querySelectorAll('#guidedSetup [data-src]').forEach(input=>{const src=document.getElementById(input.dataset.src);if(src)src.value=input.value;});
+      const values={};document.querySelectorAll('#assumptions input[id],#assumptions select[id],#assumptions textarea[id]').forEach(el=>{values[el.id]=el.type==='checkbox'?el.checked:el.value;});
+      localStorage.setItem(PENDING_FREE,JSON.stringify({values,createdAt:Date.now()}));return true;
+    }catch(_e){return false;}
+  }
+  function restoreFreeDraft(){
+    try{const draft=pendingFree();if(!draft?.values)return false;Object.entries(draft.values).forEach(([id,value])=>{const el=document.getElementById(id);if(!el)return;if(el.type==='checkbox')el.checked=!!value;else el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});return true;}catch(_e){return false;}
+  }
+  async function resumeFreeAnalysis(){
+    if(resumingFree||!pendingFree()||!isSignedIn())return false;
+    if(!window.GuidedContinueController?.recalculate||typeof saveCurrentCloud!=='function')return false;
+    resumingFree=true;
+    try{
+      restoreFreeDraft();try{if(typeof readFields==='function')readFields();}catch(_e){}
+      try{selectedPropertyId=null;selectedAnalysisId=null;selectedScenarioId=null;}catch(_e){}
+      try{if(typeof setStatus==='function')setStatus('Account connected — calculating and saving your analysis…');}catch(_e){}
+      await window.GuidedContinueController.recalculate();
+      await saveCurrentCloud(false);
+      if(typeof selectedAnalysisId==='undefined'||!selectedAnalysisId)throw new Error('The analysis was calculated but could not be saved.');
+      try{await window.GuidedContinueController.hydrateResults?.();}catch(_e){}
+      localStorage.removeItem(PENDING_FREE);
+      go('dashboard');
+      try{if(typeof setStatus==='function')setStatus('Analysis calculated and saved — review your results');}catch(_e){}
+      window.scrollTo({top:0,behavior:'smooth'});return true;
+    }catch(err){
+      try{if(typeof setStatus==='function')setStatus('Unable to finish the free analysis: '+String(err?.message||err));}catch(_e){}
+      return false;
+    }finally{resumingFree=false;}
+  }
   function guardCalculatorClick(e){
     if(isSignedIn())return;
     const btn=e.target?.closest?.('#gwSave,#gwNext,#calculateBtn,#quickCalc,#supportCalc,#scenarioCalc,#buydownCalc');
     if(!btn)return;
-    if((btn.id==='gwSave'||btn.id==='gwNext')&&!/calculat/i.test(btn.textContent||''))return;
+    const guidedFinal=freeMode()&&(btn.id==='gwSave'||btn.id==='gwNext')&&Number(document.querySelector('#gwSteps .gw-step.active[data-step]')?.dataset.step)===6;
+    if((btn.id==='gwSave'||btn.id==='gwNext')&&!guidedFinal&&!/calculat/i.test(btn.textContent||''))return;
     e.preventDefault();e.stopImmediatePropagation();
-    promptSignIn('Sign in to run PropertyThesis calculations and review results.');
+    if(freeMode())captureFreeDraft();
+    promptSignIn('Create a free account or sign in to calculate, display, and save these results. Your entered assumptions will be preserved.');
   }
 
   function ensureMortgagePanel(){
@@ -104,6 +141,6 @@
   function cleanWorkflow(){const workflow=document.getElementById('stage8Workflow');if(!workflow)return false;workflow.classList.add('app-toolbar-clean');return true;}
   function retireLegacyNavigation(){document.querySelectorAll('.tab[data-tab],[data-app-advanced],[data-s8-advanced]').forEach(el=>{const id=el.dataset.tab||el.dataset.appAdvanced||el.dataset.s8Advanced;if(retired.has(id)||contextualOnly.has(id))el.hidden=true;});const active=activeSection();if(retired.has(active))go('dashboard');}
   function refresh(){if(!ensureToolbar())return false;cleanWorkflow();retireLegacyNavigation();const guest=document.getElementById('ptGuestGuidance');if(guest)guest.hidden=!uiShowsSignedOut();const sample=document.getElementById('ptSampleShowcase');if(sample)sample.hidden=!uiShowsSignedOut();if(mortgageMode){setMortgageMode(true);return true;}const active=activeSection();const newBtn=document.getElementById('appNavNew');if(newBtn)newBtn.classList.toggle('active',primary.includes(active));const existing=document.getElementById('appNavExisting');if(existing)existing.classList.toggle('active',active==='propertyhub');const mortgage=document.getElementById('appNavMortgage');if(mortgage)mortgage.classList.remove('active');return true;}
-  function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));document.addEventListener('click',guardCalculatorClick,true);setTimeout(refresh,700);setTimeout(refresh,1800);}
-  window.AppNavigationToolbar={refresh,go,openExisting,openMortgageTools,setMortgageMode};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+  function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));window.addEventListener('click',guardCalculatorClick,true);try{cloudClient?.auth?.onAuthStateChange?.((_event,session)=>{if(session?.user)setTimeout(resumeFreeAnalysis,700);});}catch(_e){}[700,1400,2400,4000,6500].forEach(ms=>setTimeout(resumeFreeAnalysis,ms));setTimeout(refresh,700);setTimeout(refresh,1800);}
+  window.AppNavigationToolbar={refresh,go,openExisting,openMortgageTools,setMortgageMode,resumeFreeAnalysis};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
