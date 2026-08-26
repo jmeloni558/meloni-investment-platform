@@ -1,5 +1,8 @@
 'use strict';
 (()=>{
+  const loader=document.currentScript;
+  if(loader&&!document.getElementById('ptGuestSampleShowcaseLoader'))loader.id='ptGuestSampleShowcaseLoader';
+
   function openSample(path){window.open(path,'_blank','noopener');}
 
   function loadSampleExporter(){
