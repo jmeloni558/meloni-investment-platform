@@ -1,1 +1,26 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PropertyThesis Sample Pro Forma</title><style>body{font-family:Arial,sans-serif;margin:0;background:#f5f8fb;color:#344054;min-height:100vh;display:grid;place-items:center}.card{max-width:560px;margin:24px;background:#fff;border:1px solid #dbe5ee;border-radius:14px;box-shadow:0 8px 26px rgba(16,24,40,.08);padding:28px}.brand{font-size:26px;font-weight:900;color:#17365d}.tag{font-size:12px;color:#667085;margin-top:4px}.card h1{color:#17365d;margin:22px 0 8px}.card p{color:#667085;font-size:13px;line-height:1.55}.btn{display:inline-block;margin-top:14px;padding:10px 14px;border:1px solid #17689f;border-radius:8px;background:#17689f;color:#fff;font-weight:800;cursor:pointer}.small{font-size:11px;color:#98a2b3;margin-top:14px}</style></head><body><div class="card"><div class="brand">PropertyThesis</div><div class="tag">Know the Numbers. Build the Case.</div><h1>Sample 7-Year Pro Forma</h1><p>Your sample Excel workbook should download automatically. It includes the same three-tab format used by PropertyThesis: After Tax Cash Flow, Taxes From Operations, and Taxes Due on Sale. Sale taxes appear only in Year 7.</p><button class="btn" id="downloadSample">Download Sample Pro Forma</button><div class="small">Illustrative sample figures only.</div></div><script src="guest-sample-proforma-download.js?sample=7year"></script><script>async function run(){const x=window.PropertyThesisSampleProForma;if(!x?.download)return;await x.download();}document.getElementById('downloadSample').addEventListener('click',run);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(run,250),{once:true});else setTimeout(run,250);</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PropertyThesis Sample Pro Forma</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;background:#f5f8fb;color:#344054;min-height:100vh;display:grid;place-items:center}.card{max-width:560px;margin:24px;background:#fff;border:1px solid #dbe5ee;border-radius:14px;box-shadow:0 8px 26px rgba(16,24,40,.08);padding:28px}.brand-home{display:inline-block;color:inherit;text-decoration:none}.brand{font-size:26px;font-weight:900;color:#17365d}.tag{font-size:12px;color:#667085;margin-top:4px}.card h1{color:#17365d;margin:22px 0 8px}.card p{color:#667085;font-size:13px;line-height:1.55}.btn{display:inline-block;margin-top:14px;padding:10px 14px;border:1px solid #17689f;border-radius:8px;background:#17689f;color:#fff;font-weight:800;cursor:pointer}.small{font-size:11px;color:#98a2b3;margin-top:14px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <a class="brand-home" href="index.html" onclick="this.href='index.html?cb='+Date.now()" aria-label="PropertyThesis home"><div class="brand">PropertyThesis</div><div class="tag">Know the Numbers. Build the Case.</div></a>
+    <h1>Sample 7-Year Pro Forma</h1>
+    <p>Your sample Excel workbook should download automatically. It includes the same three-tab format used by PropertyThesis: After Tax Cash Flow, Taxes From Operations, and Taxes Due on Sale. Sale taxes appear only in Year 7.</p>
+    <button class="btn" id="downloadSample">Download Sample Pro Forma</button>
+    <div class="small">Illustrative sample figures only.</div>
+  </div>
+  <script src="guest-sample-proforma-download.js?sample=7year"></script>
+  <script>
+    async function run(){const x=window.PropertyThesisSampleProForma;if(!x?.download)return;await x.download();}
+    document.getElementById('downloadSample').addEventListener('click',run);
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(run,250),{once:true});else setTimeout(run,250);
+  </script>
+</body>
+</html>
