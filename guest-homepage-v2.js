@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=5;
+  const VERSION=6;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -11,6 +11,7 @@
   }
   function auth(mode='signin',message=''){try{if(window.PropertyThesisAuth?.open)window.PropertyThesisAuth.open(mode,message);else if(typeof showAuth==='function')showAuth();else document.getElementById('authBtn')?.click();}catch(_e){document.getElementById('authBtn')?.click();}}
   const freeMode=()=>new URLSearchParams(location.search).get('free-analysis')==='1';
+  let signInRequestHandled=false;
   function sample(){location.href='index.html?free-analysis=1&cb='+Date.now();}
   let freeEntered=false;
   function enterFreeAnalysis(){
@@ -24,7 +25,7 @@
   function ensureNav(shell){
     const toolbar=shell.querySelector('.app-nav-toolbar'),standard=toolbar?.querySelector('.app-nav-actions');if(!toolbar||!standard)return;
     let nav=toolbar.querySelector('.pt-guest-nav');
-    if(!nav){nav=document.createElement('nav');nav.className='pt-guest-nav';nav.setAttribute('aria-label','Explore PropertyThesis');nav.innerHTML='<button type="button" class="primary" data-pt-home-start>Start Free Analysis</button><a href="sample-report-viewer.html?v=2">Sample Report</a><a href="mortgage-tools.html">Mortgage Tools</a><button type="button" data-pt-home-signin>Sign In</button>';toolbar.appendChild(nav);nav.querySelector('[data-pt-home-start]').onclick=sample;nav.querySelector('[data-pt-home-signin]').onclick=()=>auth('signin');}
+    if(!nav){nav=document.createElement('nav');nav.className='pt-guest-nav';nav.setAttribute('aria-label','Explore PropertyThesis');nav.innerHTML='<button type="button" class="primary" data-pt-home-start>Start Free Analysis</button><a href="sample-report-viewer.html?v=2">Sample Report</a><a href="pricing.html">Pricing</a><a href="mortgage-tools.html">Mortgage Tools</a><button type="button" data-pt-home-signin>Sign In</button>';toolbar.appendChild(nav);nav.querySelector('[data-pt-home-start]').onclick=sample;nav.querySelector('[data-pt-home-signin]').onclick=()=>auth('signin');}
     standard.hidden=true;nav.hidden=false;
   }
   function upgradeHero(root){
@@ -62,7 +63,8 @@
   }
   function apply(){
     const shell=document.getElementById('appNavShell'),hero=document.getElementById('ptGuestGuidance'),sampleSection=document.getElementById('ptSampleShowcase');if(!shell||!hero||!sampleSection)return false;
-    const guest=signedOut(),free=freeMode();document.body.classList.toggle('pt-guest-landing',guest&&!free);document.body.classList.toggle('pt-guest-analysis',free);
+    const guest=signedOut(),free=freeMode(),params=new URLSearchParams(location.search);document.body.classList.toggle('pt-guest-landing',guest&&!free);document.body.classList.toggle('pt-guest-analysis',free);
+    if(guest&&!free&&!signInRequestHandled&&params.get('signin')==='1'){signInRequestHandled=true;const plan=params.get('plan');setTimeout(()=>auth('signin',plan?'Sign in to continue with the selected PropertyThesis plan.':'Sign in to your PropertyThesis account.'),80);}
     const standard=shell.querySelector('.app-nav-actions'),guestNav=shell.querySelector('.pt-guest-nav');
     if(guest&&free){if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;enterFreeAnalysis();return true;}
     if(!guest){if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;document.querySelectorAll('#ptHomeClarity').forEach(x=>x.hidden=true);return true;}
