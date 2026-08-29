@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=23;
+  const VERSION=24;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -11,8 +11,8 @@
   }
   function auth(mode='signin',message=''){try{if(window.PropertyThesisAuth?.open)window.PropertyThesisAuth.open(mode,message);else if(typeof showAuth==='function')showAuth();else document.getElementById('authBtn')?.click();}catch(_e){document.getElementById('authBtn')?.click();}}
   const entryParams=new URLSearchParams(location.search);
-  const freeAnalysisEntry=entryParams.get('free-analysis')==='1';
-  const freeMode=()=>freeAnalysisEntry;
+  let freeAnalysisActive=entryParams.get('free-analysis')==='1';
+  const freeMode=()=>freeAnalysisActive;
   let signInRequestHandled=false;
   let returnRouteInstalled=false;
   function installReturnRoute(){
@@ -132,9 +132,9 @@
     }
     const standard=shell.querySelector('.app-nav-actions'),guestNav=shell.querySelector('.pt-guest-nav');
     if(guest&&free){if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;enterFreeAnalysis();return true;}
-    if(!guest){if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=true);accountNotice();return true;}
+    if(!guest){freeAnalysisActive=false;if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=true);accountNotice();return true;}
     ensureNav(shell);upgradeHero(hero);ensureExperience(sampleSection);document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=false);return true;
   }
-  function start(){installReturnRoute();apply();[100,250,500,800,1200,1800,2600,4000,6000].forEach(ms=>setTimeout(apply,ms));setInterval(apply,2000);window.addEventListener('pt:billing-updated',()=>{[700,1800,4000].forEach(ms=>setTimeout(()=>{noticeUser='';accountNotice()},ms))});}
+  function start(){installReturnRoute();apply();[100,250,500,800,1200,1800,2600,4000,6000].forEach(ms=>setTimeout(apply,ms));setInterval(apply,2000);try{cloudClient?.auth?.onAuthStateChange?.((event)=>{if(event==='SIGNED_OUT'){freeAnalysisActive=false;freeEntered=false;noticeUser='';document.getElementById('ptAccountUpgradeBanner')?.remove();setTimeout(()=>{apply();window.scrollTo({top:0,behavior:'auto'});},0);}else if(event==='SIGNED_IN'){freeAnalysisActive=false;setTimeout(apply,0);}});}catch(_e){}window.addEventListener('pt:billing-updated',()=>{[700,1800,4000].forEach(ms=>setTimeout(()=>{noticeUser='';accountNotice()},ms))});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
