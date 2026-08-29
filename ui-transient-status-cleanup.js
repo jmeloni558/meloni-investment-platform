@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__ptTransientStatusCleanupV||0)>=VERSION)return;
   window.__ptTransientStatusCleanupV=VERSION;
 
@@ -75,9 +75,9 @@
       </section>
       <section id="ptSampleShowcase" class="pt-fallback-samples">
         <h2>See what a completed investment analysis can become.</h2>
-        <p>Explore a completed sample analysis, a seven-year Excel pro forma, and a client-ready report.</p>
+        <p>Explore a completed sample analysis, a multiyear Excel pro forma, and a client-ready report.</p>
         <div class="pt-fallback-cards">
-          <article class="pt-fallback-card"><h3>Sample Investment Analysis</h3><p>A completed read-only underwriting example showing acquisition terms, operating performance, financing, valuation support and decision analysis.</p><div class="pt-fallback-metrics"><div class="pt-fallback-metric"><span>Purchase Price</span><strong>$250,000</strong></div><div class="pt-fallback-metric"><span>Starting Rent</span><strong>$1,790/mo</strong></div><div class="pt-fallback-metric"><span>Vacancy</span><strong>10.0%</strong></div><div class="pt-fallback-metric"><span>Ordinary Tax</span><strong>28%</strong></div><div class="pt-fallback-metric"><span>Capital Gains Tax</span><strong>15%</strong></div><div class="pt-fallback-metric"><span>Analysis</span><strong>7-Year</strong></div></div><div class="pt-fallback-actions"><a class="pt-fallback-btn" href="sample-analysis.html" target="_blank" rel="noopener">Explore Sample Analysis</a><a class="pt-fallback-btn" href="sample-pro-forma.html" target="_blank" rel="noopener">View Sample Pro Forma</a></div></article>
+          <article class="pt-fallback-card"><h3>Sample Investment Analysis</h3><p>A completed read-only underwriting example showing acquisition terms, operating performance, financing, valuation support and decision analysis.</p><div class="pt-fallback-metrics"><div class="pt-fallback-metric"><span>Purchase Price</span><strong>$250,000</strong></div><div class="pt-fallback-metric"><span>Starting Rent</span><strong>$1,790/mo</strong></div><div class="pt-fallback-metric"><span>Vacancy</span><strong>10.0%</strong></div><div class="pt-fallback-metric"><span>Ordinary Tax</span><strong>28%</strong></div><div class="pt-fallback-metric"><span>Capital Gains Tax</span><strong>15%</strong></div><div class="pt-fallback-metric"><span>Holding Period</span><strong>User Selected</strong></div></div><div class="pt-fallback-actions"><a class="pt-fallback-btn" href="sample-analysis.html" target="_blank" rel="noopener">Explore Sample Analysis</a><a class="pt-fallback-btn" href="sample-pro-forma.html" target="_blank" rel="noopener">View Sample Pro Forma</a></div></article>
           <article class="pt-fallback-card"><h3>Sample Professional Report</h3><p>See how PropertyThesis turns the underlying analysis into a polished, client-ready investment underwriting report.</p><div class="pt-fallback-actions"><a class="pt-fallback-btn" href="sample-report.html">Open Sample Report</a></div></article>
         </div>
       </section>`;

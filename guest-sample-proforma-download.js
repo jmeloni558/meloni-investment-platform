@@ -42,7 +42,7 @@
       [title],
       ['Sample Investment Property • Tampa, FL'],
       ['Prepared by: PropertyThesis Sample Analysis'],
-      ['Illustrative figures only • 7-year hold'],
+      ['Illustrative figures only • sample holding period'],
       ['PropertyThesis • Know the Numbers. Build the Case.'],
       []
     ];

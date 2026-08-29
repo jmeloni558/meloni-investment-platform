@@ -51,7 +51,7 @@
       <div class="pt-sample-metric"><span>Vacancy</span><strong>10.0%</strong></div>
       <div class="pt-sample-metric"><span>Ordinary Tax</span><strong>28%</strong></div>
       <div class="pt-sample-metric"><span>Capital Gains Tax</span><strong>15%</strong></div>
-      <div class="pt-sample-metric"><span>Analysis</span><strong>7-Year</strong></div>`;
+      <div class="pt-sample-metric"><span>Holding Period</span><strong>User Selected</strong></div>`;
 
     first.querySelectorAll('.pt-sample-actions,.pt-sample-live-actions').forEach(x=>x.remove());
     first.querySelector('.pt-sample-coming')?.remove();
@@ -78,7 +78,7 @@
     reportBtn.style.cursor='pointer';
     reportBtn.onclick=null;
 
-    const copy='Explore a completed sample analysis, download a seven-year Excel pro forma, and see the client-ready report produced from a sample property.';
+    const copy='Explore a completed sample analysis, download a multiyear Excel pro forma, and see the client-ready report produced from a sample property.';
     const p=root.querySelector('.pt-sample-heading p');
     if(p && p.textContent!==copy)p.textContent=copy;
 

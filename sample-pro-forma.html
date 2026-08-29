@@ -11,12 +11,12 @@
 <body>
   <div class="card">
     <a class="brand-home" href="https://propertythesis.com/" aria-label="PropertyThesis home"><div class="brand">PropertyThesis</div><div class="tag">Know the Numbers. Build the Case.</div></a>
-    <div class="title-row"><div><h1>Sample 7-Year Pro Forma</h1><p>Review the complete sample below, then download the same three-schedule presentation as an Excel workbook.</p></div><button class="btn" id="downloadSample">Download Excel Pro Forma</button></div>
+    <div class="title-row"><div><h1>Sample Multiyear Pro Forma</h1><p>Review the complete sample below, then download the same three-schedule presentation as an Excel workbook. Your analysis can use a holding period from 1 to 40 years.</p></div><button class="btn" id="downloadSample">Download Excel Pro Forma</button></div>
     <div class="summary" id="summary"></div>
     <div id="proFormaPreview"></div>
-    <div class="note"><strong>Illustrative sample figures only.</strong> The Excel version contains these same After-Tax Cash Flow, Taxes From Operations, and Taxes Due on Sale schedules. Sale taxes appear only in Year 7.</div>
+    <div class="note"><strong>Illustrative sample figures only.</strong> The Excel version contains these same After-Tax Cash Flow, Taxes From Operations, and Taxes Due on Sale schedules. Sale taxes appear in the final modeled year.</div>
   </div>
-  <script src="guest-sample-proforma-download.js?sample=7year"></script>
+  <script src="guest-sample-proforma-download.js?sample=multiyear-v2"></script>
   <script>
     const money=value=>value==null?'<span class="blank">—</span>':(value<0?'(':'')+'$'+Math.abs(value).toLocaleString(undefined,{maximumFractionDigits:0})+(value<0?')':'');
     const rate=value=>value==null?'<span class="blank">—</span>':(value*100).toFixed(0)+'%';
@@ -24,7 +24,7 @@
     function render(){
       const data=window.PropertyThesisSampleProForma?.data;if(!data)return;
       const {years,cf,dep,sale}=data,blanks=[null,null,null,null,null,null];
-      document.getElementById('summary').innerHTML=`<div class="metric"><span>Year 1 Gross Income</span><strong>${money(cf.pgi[0])}</strong></div><div class="metric"><span>Year 1 NOI</span><strong>${money(cf.noi[0])}</strong></div><div class="metric"><span>Annual Debt Service</span><strong>${money(cf.debt[0])}</strong></div><div class="metric"><span>Year 7 Net Sale Price</span><strong>${money(sale.netSale)}</strong></div>`;
+      document.getElementById('summary').innerHTML=`<div class="metric"><span>Year 1 Gross Income</span><strong>${money(cf.pgi[0])}</strong></div><div class="metric"><span>Year 1 NOI</span><strong>${money(cf.noi[0])}</strong></div><div class="metric"><span>Annual Debt Service</span><strong>${money(cf.debt[0])}</strong></div><div class="metric"><span>Projected Net Sale Price</span><strong>${money(sale.netSale)}</strong></div>`;
       const cash=[{label:'Potential Gross Income',values:cf.pgi},{label:'− Vacancy and Credit Losses',values:cf.vac},{label:'= Effective Gross Income',values:cf.egi,total:true},{label:'− Operating Expenses',values:cf.opex},{label:'= Net Operating Income',values:cf.noi,total:true},{label:'− Debt Service',values:cf.debt},{label:'= Before-Tax Cash Flow',values:cf.btcf,total:true},{label:'− Taxes from Operations',values:cf.tax},{label:'= After-Tax Cash Flow',values:cf.atcf,total:true}];
       const taxes=[{label:'Net Operating Income',values:cf.noi},{label:'− Interest',values:cf.interest},{label:'− Depreciation',values:years.map(()=>dep)},{label:'− Amortization of Points',values:years.map(()=>0)},{label:'− Amortization of Origination Fee',values:years.map(()=>0)},{label:'= Taxable Income',values:cf.taxable,total:true},{label:'× Ordinary Income Tax Rate',values:years.map(()=>.28),rate:true},{label:'= Taxes from Operations',values:cf.tax,total:true}];
       const saleRows=[{label:'Net Sales Price',values:[...blanks,sale.netSale]},{label:'− Book Value',values:[...blanks,sale.book]},{label:'= Gain (Loss) on Sale',values:[...blanks,sale.gain],total:true},{label:'× Applicable Gain Tax Rate',values:[...blanks,sale.gainRate],rate:true},{label:'= Taxes Due on Gain/Loss',values:[...blanks,sale.taxesGain]},{label:'Accumulated Depreciation',values:[...blanks,sale.accDep]},{label:'× Depreciation Tax Rate',values:[...blanks,sale.depRate],rate:true},{label:'= Taxes Due on Depreciation',values:[...blanks,sale.depTax]},{label:'Taxes Due on Sale',values:[...blanks,sale.saleTax],total:true}];
