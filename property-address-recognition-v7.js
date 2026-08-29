@@ -1,13 +1,14 @@
 'use strict';
 (()=>{
-  const VERSION=9;
+  const VERSION=10;
   if((window.__propertyAddressRecognitionV||0)>=VERSION)return;
   window.__propertyAddressRecognitionV=VERSION;
 
   const GOOGLE_KEY_STORAGE='pt_step1_google_places_key';
   let googlePromise=null,lastLookup='',lookupBusy=false,syncingAddress=false;
   const addressInputs=()=>[...document.querySelectorAll('#f_address,[data-src="f_address"],[data-pt-home-address]')];
-  const visibleAddressInputs=()=>addressInputs().filter(el=>el.offsetParent!==null);
+  const isVisible=el=>{if(!el)return false;const style=getComputedStyle(el),rect=el.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0;};
+  const visibleAddressInputs=()=>addressInputs().filter(isVisible);
   const key=()=>window.PROPERTYTHESIS_CONFIG?.googlePlacesKey||window.PROPERTYTHESIS_GOOGLE_PLACES_KEY||localStorage.getItem(GOOGLE_KEY_STORAGE)||'';
 
   function ensureDismissStyle(){
@@ -60,8 +61,8 @@
       await loadGoogle();if(!window.google?.maps?.places?.Autocomplete)throw new Error('Google Places unavailable');
       const ac=new google.maps.places.Autocomplete(input,{componentRestrictions:{country:'us'},types:['address'],fields:['formatted_address','place_id','geometry']});
       ac.addListener('place_changed',()=>{const place=ac.getPlace(),address=place?.formatted_address||input.value.trim();if(!address)return;const lat=place?.geometry?.location?.lat?.(),lng=place?.geometry?.location?.lng?.();input.dataset.placeId=place?.place_id||'';input.dataset.lat=Number.isFinite(lat)?String(lat):'';input.dataset.lng=Number.isFinite(lng)?String(lng):'';hideSuggestions(input);syncAddress(address);setTimeout(()=>hideSuggestions(input),0);if(input.matches('[data-pt-home-address]')){setStatus('Address recognized. Property details will be researched after you create or sign in to your account.','ok');return;}lookup(address);});
-      input.addEventListener('input',e=>{if(!syncingAddress&&e.isTrusted&&input.offsetParent!==null)showSuggestions();},{passive:true});
-      input.addEventListener('focus',e=>{if(!syncingAddress&&e.isTrusted&&input.offsetParent!==null&&input.value.trim()!==lastLookup)showSuggestions();},{passive:true});
+      input.addEventListener('input',e=>{if(!syncingAddress&&e.isTrusted&&isVisible(input))showSuggestions();},{passive:true});
+      input.addEventListener('focus',e=>{if(!syncingAddress&&e.isTrusted&&isVisible(input)&&input.value.trim()!==lastLookup)showSuggestions();},{passive:true});
       input.addEventListener('change',e=>{if(syncingAddress||!e.isTrusted)return;const v=input.value.trim();if(v&&v!==lastLookup)syncAddress(v);});
       setStatus('Address suggestions ready. Start typing and select the matching property.');
     }catch(e){setStatus('Manual address entry is available. Google suggestions could not load.','err');}
