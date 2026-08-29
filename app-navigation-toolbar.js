@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=27;
+  const VERSION=28;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -45,6 +45,8 @@
       restoreFreeDraft();try{if(typeof readFields==='function')readFields();}catch(_e){}
       try{selectedPropertyId=null;selectedAnalysisId=null;selectedScenarioId=null;}catch(_e){}
       try{if(typeof setStatus==='function')setStatus('Account connected — calculating and saving your analysis…');}catch(_e){}
+      const access=await window.PropertyThesisBilling?.ensureAccessForCurrent?.();
+      if(!access?.allowed)throw new Error('The free property could not be activated. Please try Calculate, Save & Review Results again.');
       await window.GuidedContinueController.recalculate();
       await saveCurrentCloud(false);
       if(typeof selectedAnalysisId==='undefined'||!selectedAnalysisId)throw new Error('The analysis was calculated but could not be saved.');
