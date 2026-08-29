@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=21;
+  const VERSION=22;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -47,17 +47,24 @@
   let noticeUser='',noticeLoading=false;
   function guestNotice(note){note.hidden=false;note.className='';note.innerHTML='<strong>Build your analysis free—no account required yet.</strong><span>Enter and review every assumption. When you calculate the results, create or sign in to a free account so PropertyThesis can display and save your analysis.</span>';}
   async function accountNotice(){
-    const note=document.getElementById('ptFreeAnalysisNotice');if(!note||signedOut())return;
+    const shell=document.getElementById('appNavShell');if(!shell||signedOut())return;
+    let note=document.getElementById('ptAccountUpgradeBanner');
+    if(!note){note=document.createElement('aside');note.id='ptAccountUpgradeBanner';note.className='pt-account-upgrade';note.hidden=true;note.setAttribute('aria-label','PropertyThesis professional plans');shell.insertAdjacentElement('afterend',note);}
+    else if(note.previousElementSibling!==shell)shell.insertAdjacentElement('afterend',note);
+    const oldNotice=document.getElementById('ptFreeAnalysisNotice');if(oldNotice&&oldNotice!==note)oldNotice.hidden=true;
     let uid='';try{uid=cloudUser?.id||'';}catch(_e){}if(!uid||noticeLoading||noticeUser===uid)return;
     noticeLoading=true;
     try{
-      const {data,error}=await cloudClient.from('billing_subscriptions').select('plan,status,current_period_end').eq('user_id',uid).in('status',['active','trialing']).maybeSingle();
-      if(error)throw error;
+      const [subscriptionResult,propertyResult]=await Promise.all([
+        cloudClient.from('billing_subscriptions').select('plan,status,current_period_end').eq('user_id',uid).in('status',['active','trialing']).maybeSingle(),
+        cloudClient.from('properties').select('id').eq('user_id',uid).limit(1)
+      ]);
+      if(subscriptionResult.error)throw subscriptionResult.error;if(propertyResult.error)throw propertyResult.error;
       noticeUser=uid;
-      const active=!!data&&(!data.current_period_end||new Date(data.current_period_end).getTime()>Date.now());
-      if(active){note.hidden=true;return;}
-      note.hidden=false;note.className='pt-account-upgrade';
-      note.innerHTML='<div><strong>Your free property is saved.</strong><span>Ready to analyze more properties? Upgrade to a professional monthly plan for additional property analyses, reports and pro formas.</span></div><div class="pt-account-upgrade-actions"><button type="button" data-pt-upgrade="professional_50_monthly">Professional 50 — $29/month</button><button type="button" class="secondary" data-pt-upgrade="unlimited_monthly">Unlimited — $59/month</button><a href="pricing.html">Compare all plans</a></div>';
+      const data=subscriptionResult.data,active=!!data&&(!data.current_period_end||new Date(data.current_period_end).getTime()>Date.now());
+      if(active||!propertyResult.data?.length){note.hidden=true;return;}
+      note.hidden=false;
+      note.innerHTML='<div class="pt-account-upgrade-copy"><span class="pt-account-upgrade-kicker">KEEP BUILDING YOUR PIPELINE</span><strong>Your first property is saved. Ready to analyze the next opportunity?</strong><span>Upgrade for additional property analyses, professional reports and multiyear pro formas.</span></div><div class="pt-account-upgrade-actions"><button type="button" data-pt-upgrade="professional_50_monthly">Professional 50 — $29/month</button><button type="button" class="secondary" data-pt-upgrade="unlimited_monthly">Unlimited — $59/month</button><a href="pricing.html">Compare all plans</a></div>';
       note.querySelectorAll('[data-pt-upgrade]').forEach(button=>button.onclick=()=>{location.href='pricing.html';});
     }catch(_e){note.hidden=true;}finally{noticeLoading=false;}
   }
