@@ -11,10 +11,15 @@
   const release=()=>{
     if(!locked)return;
     locked=false;
-    removeEventListener('scroll',holdTop);
   };
+  const lockTop=()=>{locked=true;top();setTimeout(release,2500)};
+  const releaseForIntent=()=>release();
+  addEventListener('wheel',releaseForIntent,{passive:true});
+  addEventListener('touchstart',releaseForIntent,{passive:true});
+  addEventListener('pointerdown',releaseForIntent,{passive:true});
+  addEventListener('keydown',releaseForIntent,{passive:true});
   addEventListener('DOMContentLoaded',top,{once:true});
-  addEventListener('load',()=>{top();setTimeout(release,100)},{once:true});
-  addEventListener('pageshow',top,{once:true});
-  setTimeout(release,1200);
+  addEventListener('load',lockTop,{once:true});
+  addEventListener('pageshow',event=>{if(event.persisted)lockTop()});
+  setTimeout(release,3000);
 })();
