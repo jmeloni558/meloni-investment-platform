@@ -25,9 +25,10 @@
         <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
         <button id="submitButton" class="submit" type="submit">Sign In</button>
       </form>
-      <div id="turnstile" class="turnstile" aria-label="Security check"></div>
+      <div id="turnstile" class="turnstile cf-turnstile" data-sitekey="0x4AAAAAAEZOKm51JtNNvBzG" data-callback="ptLoginVerified" data-expired-callback="ptLoginExpired" data-error-callback="ptLoginError" aria-label="Security check"></div>
       <div id="message" class="message" role="status">Complete the security check, then sign in.</div>
       <div class="links"><a href="/?create-account=1">Create a free account</a><a href="/?forgot-password=1">Forgot password?</a></div>
+      <div class="links"><a href="/?signin-popup=1">Security check not loading? Use standard sign-in</a></div>
     </section>
     </div></main>
   </div>
@@ -36,7 +37,6 @@
     'use strict';
     const SUPABASE_URL='https://lmaiqpkogmmsldkziggy.supabase.co';
     const SUPABASE_KEY='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
-    const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
     const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
     const form=document.getElementById('loginForm'),button=document.getElementById('submitButton'),message=document.getElementById('message');
     let token='',pending=false,busy=false;
@@ -57,17 +57,14 @@
       finally{busy=false;button.disabled=false}
     }
     form.addEventListener('submit',event=>{event.preventDefault();signIn()});
-    async function render(){
-      if(typeof window.turnstile?.render!=='function')return;
-      window.turnstile.render('#turnstile',{sitekey:SITE_KEY,theme:'auto',callback:value=>{token=value||'';setMessage('Security check complete. You can sign in.');if(pending){pending=false;signIn()}},'expired-callback':()=>{token='';setMessage('Security check expired. Please complete it again.')},'error-callback':()=>setMessage('Security check could not load. Please refresh and try again.',true)});
-    }
     function loadSecurityCheck(){
-      if(typeof window.turnstile?.render==='function')return render();
-      window.ptLoginTurnstileReady=render;
+      window.ptLoginVerified=value=>{token=value||'';setMessage('Security check complete. You can sign in.');if(pending){pending=false;signIn()}};
+      window.ptLoginExpired=()=>{token='';setMessage('Security check expired. Please complete it again.')};
+      window.ptLoginError=()=>setMessage('Security check could not load. Use standard sign-in below.',true);
       const script=document.createElement('script');
-      script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?onload=ptLoginTurnstileReady&render=explicit';
+      script.src='https://challenges.cloudflare.com/turnstile/v0/api.js';
       script.async=true;script.defer=true;
-      script.onerror=()=>setMessage('Security check could not load. Please refresh and try again.',true);
+      script.onerror=()=>setMessage('Security check could not load. Use standard sign-in below.',true);
       document.head.appendChild(script);
     }
     client.auth.getSession().then(({data})=>{if(data?.session?.user)location.replace(destination());else loadSecurityCheck()});

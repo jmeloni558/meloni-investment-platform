@@ -9,7 +9,7 @@
   }
   function openRequestedAuth(){
     if(document.documentElement.dataset.ptRequestedAuthOpened)return;
-    const params=new URLSearchParams(location.search),mode=params.has('create-account')?'signup':params.has('forgot-password')?'signin':'';
+    const params=new URLSearchParams(location.search),mode=params.has('create-account')?'signup':params.has('forgot-password')||params.has('signin-popup')?'signin':'';
     if(!mode)return;
     document.documentElement.dataset.ptRequestedAuthOpened='1';
     history.replaceState(null,'',location.pathname+location.hash);
