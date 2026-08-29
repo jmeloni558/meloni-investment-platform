@@ -6,15 +6,19 @@
   <meta name="robots" content="noindex">
   <title>Sign In | PropertyThesis</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="header-hero.css">
+  <link rel="stylesheet" href="propertythesis-ui-shell-v1.css">
   <style>
-    :root{font-family:Arial,sans-serif;color:#102d46;background:#f3f8fc}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#eaf4fb,#f8fbfd);display:grid;grid-template-rows:auto 1fr}.site-header{background:#0f2d46;color:#fff;padding:24px}.site-header a{display:block;width:max-content;color:inherit;text-decoration:none}.site-header strong{display:block;font-size:28px}.site-header span{display:block;margin-top:4px;font-size:13px;font-weight:700}.page{display:grid;place-items:center;padding:32px 18px}.card{width:min(100%,460px);padding:30px;border:1px solid #cbdde9;border-radius:16px;background:#fff;box-shadow:0 18px 50px rgba(15,45,70,.12)}h1{margin:0 0 8px;font-size:28px}p{margin:0 0 22px;color:#526b7d;line-height:1.5}.field{margin:0 0 16px}.field label{display:block;margin:0 0 7px;font-size:13px;font-weight:700}.field input{width:100%;padding:13px;border:1px solid #b9cfde;border-radius:8px;font:inherit}.field input:focus{outline:3px solid rgba(22,111,166,.18);border-color:#166fa6}.submit{width:100%;padding:13px;border:0;border-radius:8px;background:#126da4;color:#fff;font:inherit;font-weight:800;cursor:pointer}.submit:disabled{opacity:.65;cursor:wait}.links{display:flex;justify-content:space-between;gap:16px;margin-top:18px;font-size:13px}.links a{color:#145f8d;font-weight:700}.message{min-height:20px;margin:16px 0 0;padding:10px;border-left:4px solid #2476a9;background:#f2f8fc;color:#35576c;font-size:13px;line-height:1.45}.message.error{border-color:#c43d3d;background:#fff5f5;color:#842828}.turnstile{display:flex;justify-content:center;min-height:65px;margin:18px 0 12px}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh}.login-brand{color:#fff;text-decoration:none}.login-brand h1{margin:0}.login-top-actions{color:#e5eff2;font-weight:700}.login-shell{width:min(1320px,calc(100% - 36px));margin:-1px auto 40px;padding:28px 32px 48px;border:1px solid #c5d4dc;border-radius:0 0 16px 16px;background:rgba(255,255,255,.96);box-shadow:0 18px 45px rgba(16,45,70,.08)}.login-nav{display:flex;align-items:center;gap:8px;margin:0 0 28px;padding:12px 14px;border:1px solid #d7e0e5;border-radius:12px;background:#fbfcfb}.login-nav a{padding:10px 15px;border:1px solid #d2dde2;border-radius:9px;color:#425665;font-size:11px;font-weight:800;text-decoration:none}.login-nav a:first-child{border-color:#102d46;background:#102d46;color:#fff}.page{display:grid;place-items:center;padding:16px 18px}.login-card{width:min(100%,460px);padding:30px;border:1px solid #cbdde9;border-radius:16px;background:#fff;box-shadow:0 18px 50px rgba(15,45,70,.12)}.login-card h2{margin:0 0 8px;font-size:28px}.login-card>p{margin:0 0 22px;color:#526b7d;line-height:1.5}.field{margin:0 0 16px}.field label{display:block;margin:0 0 7px;font-size:13px;font-weight:700}.field input{width:100%;padding:13px;border:1px solid #b9cfde;border-radius:8px;font:inherit}.field input:focus{outline:3px solid rgba(22,111,166,.18);border-color:#166fa6}.submit{width:100%;padding:13px;border:0;border-radius:8px;background:#126da4;color:#fff;font:inherit;font-weight:800;cursor:pointer}.submit:disabled{opacity:.65;cursor:wait}.links{display:flex;justify-content:space-between;gap:16px;margin-top:18px;font-size:13px}.links a{color:#145f8d;font-weight:700}.message{min-height:20px;margin:16px 0 0;padding:10px;border-left:4px solid #2476a9;background:#f2f8fc;color:#35576c;font-size:13px;line-height:1.45}.message.error{border-color:#c43d3d;background:#fff5f5;color:#842828}.turnstile{display:flex;justify-content:center;min-height:65px;margin:18px 0 12px}@media(max-width:700px){.login-shell{width:calc(100% - 20px);padding:20px 10px 36px}.login-nav{overflow:auto}.login-nav a{white-space:nowrap}.login-card{padding:24px}}
   </style>
 </head>
 <body>
-  <header class="site-header"><a href="https://propertythesis.com/" aria-label="PropertyThesis home"><strong>PropertyThesis</strong><span>Know the Numbers. Build the Case.</span></a></header>
-  <main class="page">
-    <section class="card" aria-labelledby="loginTitle">
-      <h1 id="loginTitle">Sign in to PropertyThesis</h1>
+  <div class="app">
+  <header class="top"><div class="topin"><a class="brand login-brand" href="https://propertythesis.com/" aria-label="PropertyThesis home"><h1>PropertyThesis</h1><p>Know the Numbers. Build the Case.</p></a><div class="topactions login-top-actions">Secure account access</div></div></header>
+  <main class="login-shell"><nav class="login-nav" aria-label="PropertyThesis navigation"><a href="https://propertythesis.com/">Home</a><a href="pricing.html">Pricing</a><a href="sample-report-viewer.html?v=2">Sample Report</a><a href="mortgage-tools.html">Mortgage Tools</a></nav><div class="page">
+    <section class="login-card" aria-labelledby="loginTitle">
+      <h2 id="loginTitle">Sign in to PropertyThesis</h2>
       <p>Access your saved properties, analyses and reports.</p>
       <form id="loginForm" action="/login.html" method="post" autocomplete="on">
         <div class="field"><label for="email">Email</label><input id="email" name="username" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus></div>
@@ -25,8 +29,8 @@
       <div id="message" class="message" role="status">Complete the security check, then sign in.</div>
       <div class="links"><a href="/?create-account=1">Create a free account</a><a href="/?forgot-password=1">Forgot password?</a></div>
     </section>
-  </main>
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
+    </div></main>
+  </div>
   <script>
   (()=>{
     'use strict';
@@ -54,10 +58,19 @@
     }
     form.addEventListener('submit',event=>{event.preventDefault();signIn()});
     async function render(){
-      if(!window.turnstile)return setTimeout(render,50);
+      if(typeof window.turnstile?.render!=='function')return;
       window.turnstile.render('#turnstile',{sitekey:SITE_KEY,theme:'auto',callback:value=>{token=value||'';setMessage('Security check complete. You can sign in.');if(pending){pending=false;signIn()}},'expired-callback':()=>{token='';setMessage('Security check expired. Please complete it again.')},'error-callback':()=>setMessage('Security check could not load. Please refresh and try again.',true)});
     }
-    client.auth.getSession().then(({data})=>{if(data?.session?.user)location.replace(destination());else render()});
+    function loadSecurityCheck(){
+      if(typeof window.turnstile?.render==='function')return render();
+      window.ptLoginTurnstileReady=render;
+      const script=document.createElement('script');
+      script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?onload=ptLoginTurnstileReady&render=explicit';
+      script.async=true;script.defer=true;
+      script.onerror=()=>setMessage('Security check could not load. Please refresh and try again.',true);
+      document.head.appendChild(script);
+    }
+    client.auth.getSession().then(({data})=>{if(data?.session?.user)location.replace(destination());else loadSecurityCheck()});
   })();
   </script>
 </body>
