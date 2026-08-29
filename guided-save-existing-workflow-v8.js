@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=10;
+  const VERSION=11;
   if((window.__propertyThesisGuidedSaveExistingWorkflowV||0)>=VERSION)return;
   window.__propertyThesisGuidedSaveExistingWorkflowV=VERSION;
 
@@ -25,6 +25,7 @@
       #propertyhub .pt-hub-admin-flow{display:flex;gap:7px;flex-wrap:wrap;width:100%;padding-top:8px;margin-top:2px;border-top:1px solid #edf1f5}
       #propertyhub .pt-hub-admin-flow .hub-delete{margin-left:auto}
       #propertyhub .hub-actions{display:block}
+      #propertyhub .pt-unavailable-action[disabled]{opacity:.55;cursor:not-allowed;background:#f8fafc!important;color:#667085!important}
       @media(max-width:950px){#propertyhub .pt-hub-admin-flow .hub-delete{margin-left:0}}
     `;document.head.appendChild(s);
   }
@@ -120,14 +121,15 @@
     const hasAnalysis=!!report;
     clone?.remove();
     if(manage)manage.textContent='Manage Analyses';
-    if(report)report.textContent='Client Report';
-    if(hasAnalysis&&open)open.textContent='Open Property';
-    if(!hasAnalysis&&open)open.remove();
-    if(edit)edit.textContent=hasAnalysis?'Edit Guided Analysis':'Start Guided Analysis';
+    if(open)open.textContent='Open Property';
+    if(edit)edit.textContent='Edit Guided Analysis';
+    let reportBtn=report;
+    if(!reportBtn){reportBtn=document.createElement('button');reportBtn.type='button';reportBtn.className='btn secondary pt-unavailable-action';reportBtn.textContent='Client Report';reportBtn.disabled=true;reportBtn.title='Save the first analysis to create a client report.';}else reportBtn.textContent='Client Report';
     let newBtn=card.querySelector('[data-pt-new]');
     if(hasAnalysis&&!newBtn){newBtn=document.createElement('button');newBtn.type='button';newBtn.className='btn ghost';newBtn.dataset.ptNew=pid;newBtn.textContent='Start New Analysis';}
+    if(!newBtn){newBtn=document.createElement('button');newBtn.type='button';newBtn.className='btn ghost pt-unavailable-action';newBtn.textContent='Start New Analysis';newBtn.disabled=true;newBtn.title='Save the first analysis before starting another.';}
     const primary=document.createElement('div');primary.className='pt-hub-primary-flow';
-    [hasAnalysis?open:null,edit,newBtn,report,manage].forEach(x=>{if(x)primary.appendChild(x);});
+    [open,edit,newBtn,reportBtn,manage].forEach(x=>{if(x)primary.appendChild(x);});
     const admin=document.createElement('div');admin.className='pt-hub-admin-flow';
     [archive,del].forEach(x=>{if(x)admin.appendChild(x);});
     actions.replaceChildren(primary,admin);

@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__propertyThesisProtectedCloudSaveBridgeV||0)>=VERSION)return;
   window.__propertyThesisProtectedCloudSaveBridgeV=VERSION;
 
@@ -26,6 +26,7 @@
     const current=existingAnalysis();
     if(cloneMode)return (current?.name||state?.name||'Base Analysis')+' — Copy';
     if(current)return current.name||state?.name||'Base Analysis';
+    if(localStorage.getItem('ptBillingResumeV1')==='1')return suggestedName();
     const name=window.prompt(`Name this new analysis for ${propertyLabel()}:`,suggestedName());
     if(name===null)return null;
     return name.trim()||'';
