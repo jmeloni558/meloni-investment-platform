@@ -197,6 +197,10 @@
         e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
         if(window.PropertyThesisAuth?.getMode?.()==='signup')protectedSignUp();else protectedSignIn();
       },true);
+      el('propertyThesisLoginForm')?.addEventListener('submit',e=>{
+        e.preventDefault();
+        if(window.PropertyThesisAuth?.getMode?.()==='signup')protectedSignUp();else protectedSignIn();
+      });
     }
 
     window.signInCloud=protectedSignIn;
