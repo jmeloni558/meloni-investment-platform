@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=10;
+  const VERSION=11;
   if((window.__propertyAddressRecognitionV||0)>=VERSION)return;
   window.__propertyAddressRecognitionV=VERSION;
 
@@ -61,8 +61,8 @@
       await loadGoogle();if(!window.google?.maps?.places?.Autocomplete)throw new Error('Google Places unavailable');
       const ac=new google.maps.places.Autocomplete(input,{componentRestrictions:{country:'us'},types:['address'],fields:['formatted_address','place_id','geometry']});
       ac.addListener('place_changed',()=>{const place=ac.getPlace(),address=place?.formatted_address||input.value.trim();if(!address)return;const lat=place?.geometry?.location?.lat?.(),lng=place?.geometry?.location?.lng?.();input.dataset.placeId=place?.place_id||'';input.dataset.lat=Number.isFinite(lat)?String(lat):'';input.dataset.lng=Number.isFinite(lng)?String(lng):'';hideSuggestions(input);syncAddress(address);setTimeout(()=>hideSuggestions(input),0);if(input.matches('[data-pt-home-address]')){setStatus('Address recognized. Property details will be researched after you create or sign in to your account.','ok');return;}lookup(address);});
-      input.addEventListener('input',e=>{if(!syncingAddress&&e.isTrusted&&isVisible(input))showSuggestions();},{passive:true});
-      input.addEventListener('focus',e=>{if(!syncingAddress&&e.isTrusted&&isVisible(input)&&input.value.trim()!==lastLookup)showSuggestions();},{passive:true});
+      input.addEventListener('input',()=>{if(!syncingAddress&&isVisible(input))showSuggestions();},{passive:true});
+      input.addEventListener('focus',()=>{if(!syncingAddress&&isVisible(input)&&input.value.trim()!==lastLookup)showSuggestions();},{passive:true});
       input.addEventListener('change',e=>{if(syncingAddress||!e.isTrusted)return;const v=input.value.trim();if(v&&v!==lastLookup)syncAddress(v);});
       setStatus('Address suggestions ready. Start typing and select the matching property.');
     }catch(e){setStatus('Manual address entry is available. Google suggestions could not load.','err');}
