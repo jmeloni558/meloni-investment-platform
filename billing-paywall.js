@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
-  if((window.__propertyThesisBillingV||0)>=2)return;window.__propertyThesisBillingV=2;
-  let bypass=false,busy=false,propertyId=null;
+  if((window.__propertyThesisBillingV||0)>=3)return;window.__propertyThesisBillingV=3;
+  let bypass=false,busy=false,propertyId=null,pendingPlan='',planPromptOpened=false;
   const signedIn=()=>{try{return typeof cloudUser!=='undefined'&&!!cloudUser&&!!cloudClient}catch(_e){return false}};
   const status=t=>{const e=document.getElementById('ptBillingStatus');if(e)e.textContent=t||'';try{if(t&&typeof setStatus==='function')setStatus(t)}catch(_e){}};
   function banner(t){const e=document.createElement('div');e.className='pt-billing-banner';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),6500)}
@@ -9,12 +9,32 @@
   function saveDraft(){try{const values={};document.querySelectorAll('input[id],select[id],textarea[id]').forEach(e=>values[e.id]=e.type==='checkbox'?e.checked:e.value);localStorage.setItem('ptBillingDraftV1',JSON.stringify({values,propertyId,createdAt:Date.now()}))}catch(_e){}}
   async function checkout(plan){if(busy)return;busy=true;status('Opening secure Stripe checkout…');saveDraft();localStorage.setItem('ptBillingResumeV1','1');try{const {data,error}=await cloudClient.functions.invoke('create-checkout',{body:{plan,propertyId}});if(error)throw error;if(!data?.url)throw new Error(data?.error||'Checkout could not be created.');try{window.UnsavedChangeProtection?.markClean?.()}catch(_e){}location.href=data.url}catch(e){localStorage.removeItem('ptBillingResumeV1');busy=false;status('Checkout could not open: '+String(e?.message||e))}}
   async function claim(){const {data,error}=await cloudClient.functions.invoke('billing-access',{body:{propertyId}});if(error)throw error;return data}
-  async function requestedPlan(){const q=new URLSearchParams(location.search),plan=q.get('plan')||localStorage.getItem('ptPendingPlan');if(!plan)return;if(!signedIn()){localStorage.setItem('ptPendingPlan',plan);setTimeout(()=>{try{window.PropertyThesisAuth?.open?.('signin','Sign in to continue to secure checkout.')}catch(_e){}},700);return}localStorage.removeItem('ptPendingPlan');if(plan==='single'){banner('Build or open the property you want to unlock, then calculate its results.');return}await checkout(plan)}
+  async function requestedPlan(){
+    const q=new URLSearchParams(location.search),requested=q.get('plan');
+    try{localStorage.removeItem('ptPendingPlan')}catch(_e){}
+    if(requested){
+      pendingPlan=requested;
+      q.delete('plan');
+      const clean=q.toString();
+      history.replaceState(null,'',location.pathname+(clean?'?'+clean:'')+location.hash);
+    }
+    const plan=pendingPlan;
+    if(!plan)return;
+    if(!signedIn()){
+      if(planPromptOpened)return;
+      planPromptOpened=true;
+      setTimeout(()=>{try{window.PropertyThesisAuth?.open?.('signin','Sign in to continue to secure checkout.')}catch(_e){}},700);
+      return;
+    }
+    pendingPlan='';planPromptOpened=false;
+    if(plan==='single'){banner('Build or open the property you want to unlock, then calculate its results.');return}
+    await checkout(plan);
+  }
   function finalGuidedStep(){const active=Number(document.querySelector('#gwSteps .gw-step.active[data-step]')?.dataset.step);return window.GuidedAnalysisSetup?.getStep?.()===6||active===6}
   function calculation(b){return b&&(b.id==='calculateBtn'||b.id==='quickCalc'||((b.id==='gwNext'||b.id==='gwSave')&&(finalGuidedStep()||/calculat/i.test(b.textContent||''))))}
   async function guard(e){if(bypass||busy||!signedIn())return;const b=e.target?.closest?.('#gwNext,#gwSave,#calculateBtn,#quickCalc');if(!calculation(b))return;e.preventDefault();e.stopImmediatePropagation();busy=true;try{try{if(typeof readFields==='function')readFields()}catch(_e){}propertyId=await ensurePropertyForCurrent();status('Checking property access…');const a=await claim();if(a?.allowed){bypass=true;busy=false;b.click();setTimeout(()=>bypass=false,0);return}busy=false;modal().hidden=false;status('Choose how you would like to unlock this property.')}catch(err){busy=false;status('Unable to verify property access: '+String(err?.message||err))}}
   async function resumePaidAnalysis(){if(localStorage.getItem('ptBillingResumeV1')!=='1')return;const d=JSON.parse(localStorage.getItem('ptBillingDraftV1')||'null');if(!d?.propertyId)return;propertyId=d.propertyId;try{selectedPropertyId=d.propertyId}catch(_e){}for(let i=0;i<20;i++){try{if(signedIn()&&window.PropertyThesisGuidedSaveExistingWorkflow?.calculateSaveReview){const a=await claim();if(a?.allowed){window.GuidedAnalysisSetup?.go?.(6);await new Promise(r=>setTimeout(r,250));await window.PropertyThesisGuidedSaveExistingWorkflow.calculateSaveReview();localStorage.removeItem('ptBillingResumeV1');banner('Payment confirmed — your analysis is calculated, saved and ready to review.');return}}}catch(_e){}await new Promise(r=>setTimeout(r,500))}banner('Payment confirmed. Open this property and save the analysis to finish.')}
   function restore(){const q=new URLSearchParams(location.search);if(q.get('billing')==='success'){banner('Payment received. Restoring and saving your analysis…');history.replaceState({},'',location.pathname);setTimeout(resumePaidAnalysis,1200)}else if(q.get('billing')==='cancelled'){localStorage.removeItem('ptBillingResumeV1');banner('Checkout was cancelled. No charge was made.');history.replaceState({},'',location.pathname)}try{const d=JSON.parse(localStorage.getItem('ptBillingDraftV1')||'null');if(!d?.createdAt||Date.now()-d.createdAt>86400000)return;Object.entries(d.values||{}).forEach(([id,v])=>{const e=document.getElementById(id);if(!e)return;if(e.type==='checkbox')e.checked=!!v;else e.value=v;e.dispatchEvent(new Event('change',{bubbles:true}))});if(d.propertyId)try{selectedPropertyId=d.propertyId}catch(_e){}}catch(_e){}}
-  function start(){modal();window.addEventListener('click',guard,true);setTimeout(restore,900);setTimeout(requestedPlan,1200);try{cloudClient?.auth?.onAuthStateChange?.((_e,s)=>{if(s?.user)setTimeout(requestedPlan,500)})}catch(_e){}}
+  function start(){try{localStorage.removeItem('ptPendingPlan')}catch(_e){}modal();window.addEventListener('click',guard,true);setTimeout(restore,900);setTimeout(requestedPlan,100);try{cloudClient?.auth?.onAuthStateChange?.((_e,s)=>{if(s?.user)setTimeout(requestedPlan,500)})}catch(_e){}}
   window.PropertyThesisBilling={checkout,claim};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
