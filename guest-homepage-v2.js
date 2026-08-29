@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=16;
+  const VERSION=17;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -83,6 +83,9 @@
 
       `;
     sampleSection.insertAdjacentElement('beforebegin',experience);
+    experience.querySelector('.pt-home-deliverables')?.remove();
+    experience.querySelector('.pt-home-consolidated-cta')?.remove();
+    experience.querySelector('.pt-home-faq')?.insertAdjacentHTML('beforeend','<div class="pt-home-faq-cta"><div><strong>Ready to test your property thesis?</strong><span>Start with the acquisition price and expected rent. No credit card is required.</span></div><button type="button" data-pt-home-sample>Start My Free Analysis →</button></div>');
     const form=experience.querySelector('#ptHomeStarterForm');form.onsubmit=e=>{e.preventDefault();const data=new FormData(form),addressInput=form.querySelector('[name="address"]');startFromHomepage(data.get('address')||'',data.get('price')||'',data.get('rent')||'',{placeId:addressInput?.dataset.placeId||'',lat:addressInput?.dataset.lat||'',lng:addressInput?.dataset.lng||''});};
     experience.querySelectorAll('[data-pt-home-sample]').forEach(button=>button.onclick=sample);
     experience.querySelectorAll('[data-pt-home-report]').forEach(button=>button.onclick=()=>location.href='sample-report-viewer.html?v=2');
