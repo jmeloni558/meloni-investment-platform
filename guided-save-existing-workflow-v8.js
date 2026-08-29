@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=9;
+  const VERSION=10;
   if((window.__propertyThesisGuidedSaveExistingWorkflowV||0)>=VERSION)return;
   window.__propertyThesisGuidedSaveExistingWorkflowV=VERSION;
 
@@ -17,6 +17,7 @@
     if(document.getElementById('ptGuidedSaveExistingStyles'))return;
     const s=document.createElement('style');s.id='ptGuidedSaveExistingStyles';s.textContent=`
       #guidedSetup #gwSave.gw-hide{display:inline-flex!important}
+      #guidedSetup #gwNext.pt-final-action-hidden{display:none!important}
       #gwSave[disabled]{opacity:.62;cursor:wait}
       #propertyhub .pt-hub-primary-flow{display:flex;gap:7px;flex-wrap:wrap;width:100%}
       #propertyhub .pt-hub-primary-flow [data-hub-open]{order:-2!important}
@@ -94,6 +95,8 @@
     const b=document.getElementById('gwSave');if(!b)return false;
     const step=currentStep();
     const review=step===6;
+    const next=document.getElementById('gwNext');
+    if(next){next.classList.toggle('pt-final-action-hidden',review);next.setAttribute('aria-hidden',review?'true':'false');}
     b.classList.toggle('gw-hide',false);
     b.textContent=review?'Calculate, Save & Review Results':'Save Progress';
     b.onclick=e=>{
