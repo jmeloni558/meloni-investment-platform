@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=19;
+  const VERSION=20;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -44,13 +44,30 @@
     if(changed)try{window.GuidedAnalysisSetup?.refresh?.();}catch(_e){}
   }
   let freeEntered=false;
+  let noticeUser='',noticeLoading=false;
+  function guestNotice(note){note.hidden=false;note.className='';note.innerHTML='<strong>Build your analysis free—no account required yet.</strong><span>Enter and review every assumption. When you calculate the results, create or sign in to a free account so PropertyThesis can display and save your analysis.</span>';}
+  async function accountNotice(){
+    const note=document.getElementById('ptFreeAnalysisNotice');if(!note||signedOut())return;
+    let uid='';try{uid=cloudUser?.id||'';}catch(_e){}if(!uid||noticeLoading||noticeUser===uid)return;
+    noticeLoading=true;
+    try{
+      const {data,error}=await cloudClient.from('billing_subscriptions').select('plan,status,current_period_end').eq('user_id',uid).in('status',['active','trialing']).maybeSingle();
+      if(error)throw error;
+      noticeUser=uid;
+      const active=!!data&&(!data.current_period_end||new Date(data.current_period_end).getTime()>Date.now());
+      if(active){note.hidden=true;return;}
+      note.hidden=false;note.className='pt-account-upgrade';
+      note.innerHTML='<div><strong>Your free property is saved.</strong><span>Ready to analyze more properties? Upgrade to a professional monthly plan for additional property analyses, reports and pro formas.</span></div><div class="pt-account-upgrade-actions"><button type="button" data-pt-upgrade="professional_50_monthly">Professional 50 — $29/month</button><button type="button" class="secondary" data-pt-upgrade="unlimited_monthly">Unlimited — $59/month</button><a href="pricing.html">Compare all plans</a></div>';
+      note.querySelectorAll('[data-pt-upgrade]').forEach(button=>button.onclick=()=>window.PropertyThesisBilling?.upgrade?.(button.dataset.ptUpgrade));
+    }catch(_e){note.hidden=true;}finally{noticeLoading=false;}
+  }
   function enterFreeAnalysis(){
     if(freeEntered)return;const assumptions=document.getElementById('assumptions'),workflow=document.getElementById('stage8Workflow');if(!assumptions||!workflow)return;
     freeEntered=true;
     try{history.replaceState(null,'','/');}catch(_e){}
     try{window.WorkflowNavigationController?.newAnalysis?.();}catch(_e){}
     try{if(window.WorkflowNavigationController?.go)window.WorkflowNavigationController.go('assumptions');else if(typeof switchTab==='function')switchTab('assumptions');}catch(_e){}
-    let note=document.getElementById('ptFreeAnalysisNotice');if(!note){note=document.createElement('div');note.id='ptFreeAnalysisNotice';note.innerHTML='<strong>Build your analysis free—no account required yet.</strong><span>Enter and review every assumption. When you calculate the results, create or sign in to a free account so PropertyThesis can display and save your analysis.</span>';workflow.insertAdjacentElement('afterend',note);}
+    let note=document.getElementById('ptFreeAnalysisNotice');if(!note){note=document.createElement('div');note.id='ptFreeAnalysisNotice';workflow.insertAdjacentElement('afterend',note);}guestNotice(note);
     setTimeout(()=>{try{window.GuidedAnalysisSetup?.reset?.();applyStarterValues();}catch(_e){}},100);
     setTimeout(()=>{document.getElementById('guidedSetup')?.scrollIntoView({behavior:'smooth',block:'start'});},350);
     [250,500,900].forEach(ms=>setTimeout(applyStarterValues,ms));
@@ -107,9 +124,9 @@
     }
     const standard=shell.querySelector('.app-nav-actions'),guestNav=shell.querySelector('.pt-guest-nav');
     if(guest&&free){if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;enterFreeAnalysis();return true;}
-    if(!guest){if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=true);return true;}
+    if(!guest){if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=true);accountNotice();return true;}
     ensureNav(shell);upgradeHero(hero);ensureExperience(sampleSection);document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=false);return true;
   }
-  function start(){installReturnRoute();apply();[100,250,500,800,1200,1800,2600,4000,6000].forEach(ms=>setTimeout(apply,ms));setInterval(apply,2000);}
+  function start(){installReturnRoute();apply();[100,250,500,800,1200,1800,2600,4000,6000].forEach(ms=>setTimeout(apply,ms));setInterval(apply,2000);window.addEventListener('pt:billing-updated',()=>{[700,1800,4000].forEach(ms=>setTimeout(()=>{noticeUser='';accountNotice()},ms))});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
