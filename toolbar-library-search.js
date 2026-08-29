@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__toolbarLibrarySearchVersion||0)>=VERSION)return;
   window.__toolbarLibrarySearchVersion=VERSION;
 
@@ -32,10 +32,6 @@
     return m;
   }
   function close(){document.getElementById('ptLibrarySearchModal')?.classList.add('hidden');}
-
-  async function ensureCloudFresh(){
-    try{if(typeof cloudUser!=='undefined'&&!cloudUser){if(typeof showAuth==='function')showAuth();return false;}if(typeof refreshCloud==='function')await refreshCloud();return true;}catch(_e){return false;}
-  }
 
   async function goProperty(pid,action){
     close();
@@ -75,8 +71,8 @@
 
   function bindResultActions(host){host.querySelectorAll('[data-pts-open]').forEach(b=>b.onclick=()=>goProperty(b.dataset.ptsOpen,'open'));host.querySelectorAll('[data-pts-manage]').forEach(b=>b.onclick=()=>goProperty(b.dataset.ptsManage,'manage'));}
 
-  async function open(mode){
-    if(!await ensureCloudFresh())return;
+  function open(mode){
+    try{if(typeof cloudUser!=='undefined'&&!cloudUser){if(typeof showAuth==='function')showAuth();return;}}catch(_e){}
     const m=ensureModal(),host=document.getElementById('ptLibrarySearchContent');m.classList.remove('hidden');
     const propertyMode=mode==='property';
     host.innerHTML=`<div class="pts-head"><div><h3>${propertyMode?'Search Properties':'Search Clients'}</h3><p>${propertyMode?'Search by property name, street address, city, ZIP, or assigned client.':'Search saved client names and open any property assigned to that client.'}</p></div><button class="pts-close" type="button">×</button></div><div class="pts-body"><div class="pts-search"><label>${propertyMode?'Property or address':'Client name'}</label><input id="ptLibrarySearchInput" autocomplete="off" placeholder="${propertyMode?'Start typing an address or property name…':'Start typing a client name…'}"></div><div class="pts-results" id="ptLibrarySearchResults"></div></div>`;
@@ -84,6 +80,7 @@
     const input=host.querySelector('#ptLibrarySearchInput'),results=host.querySelector('#ptLibrarySearchResults');
     const draw=()=>{results.innerHTML=propertyMode?renderPropertyRows(input.value):renderClientRows(input.value);bindResultActions(results);};
     input.addEventListener('input',draw);draw();setTimeout(()=>input.focus(),30);
+    if(typeof refreshCloud==='function')Promise.resolve(refreshCloud()).then(()=>draw()).catch(()=>{});
   }
 
   function ensureToolbar(){

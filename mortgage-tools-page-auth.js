@@ -5,6 +5,13 @@
   const reveal=()=>document.documentElement.classList.remove('pt-auth-checking');
   const redirect=()=>location.replace(LOGIN_URL);
 
+  // The parent application has already authenticated the user before it creates
+  // the embedded Mortgage Tools view. Avoid a duplicate network session check.
+  if(new URLSearchParams(location.search).get('embedded')==='1'&&window.parent!==window){
+    reveal();
+    return;
+  }
+
   async function verifySession(){
     try{
       if(!window.supabase?.createClient)return redirect();
