@@ -114,5 +114,5 @@
       return false;
     }
   }
-  window.PropertyThesisSampleProForma={version:VERSION,download,buildWorkbook};
+  window.PropertyThesisSampleProForma={version:VERSION,download,buildWorkbook,data:{years,cf,dep,sale}};
 })();

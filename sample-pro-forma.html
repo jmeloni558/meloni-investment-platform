@@ -5,22 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>PropertyThesis Sample Pro Forma</title>
   <style>
-    body{font-family:Arial,sans-serif;margin:0;background:#f5f8fb;color:#344054;min-height:100vh;display:grid;place-items:center}.card{max-width:560px;margin:24px;background:#fff;border:1px solid #dbe5ee;border-radius:14px;box-shadow:0 8px 26px rgba(16,24,40,.08);padding:28px}.brand-home{display:inline-block;color:inherit;text-decoration:none}.brand{font-size:26px;font-weight:900;color:#17365d}.tag{font-size:12px;color:#667085;margin-top:4px}.card h1{color:#17365d;margin:22px 0 8px}.card p{color:#667085;font-size:13px;line-height:1.55}.btn{display:inline-block;margin-top:14px;padding:10px 14px;border:1px solid #17689f;border-radius:8px;background:#17689f;color:#fff;font-weight:800;cursor:pointer}.small{font-size:11px;color:#98a2b3;margin-top:14px}
+    *{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;background:#f5f8fb;color:#344054;min-height:100vh}.card{max-width:1120px;margin:24px auto;background:#fff;border:1px solid #dbe5ee;border-radius:14px;box-shadow:0 8px 26px rgba(16,24,40,.08);padding:28px}.brand-home{display:inline-block;color:inherit;text-decoration:none}.brand{font-size:26px;font-weight:900;color:#17365d}.tag{font-size:12px;color:#667085;margin-top:4px}.title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:22px 0 8px}.card h1{color:#17365d;margin:0}.card p{color:#667085;font-size:13px;line-height:1.55}.btn{display:inline-block;flex:none;padding:10px 14px;border:1px solid #17689f;border-radius:8px;background:#17689f;color:#fff;font-weight:800;cursor:pointer}.small{font-size:11px;color:#98a2b3;margin-top:14px}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:22px 0}.metric{padding:13px;border:1px solid #dce6ee;border-radius:10px;background:#f4f8fb}.metric span{display:block;color:#718096;font-size:9px;text-transform:uppercase;letter-spacing:.06em}.metric strong{display:block;margin-top:5px;color:#17365d;font-size:16px}.sheet{margin-top:18px;border:1px solid #dbe5ed;border-radius:11px;overflow:hidden}.sheet h2{margin:0;padding:14px 16px;background:#eaf2f7;color:#17365d;font-size:16px}.table-wrap{overflow-x:auto}table{width:100%;min-width:870px;border-collapse:collapse;font-size:11px}th,td{padding:9px 10px;border-bottom:1px solid #e8edf1;text-align:right;white-space:nowrap}th{background:#f5f8fa;color:#52677a;font-size:10px}th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:inherit;font-weight:700}tbody tr:nth-child(even){background:#fafcfd}tbody tr.total{background:#edf5fa;color:#17365d;font-weight:900}tbody tr:last-child td{border-bottom:0}.blank{color:#aab4bd}.note{margin:16px 0 0;padding:12px 14px;border-left:4px solid #17877d;background:#f0f7f6;color:#526a72;font-size:11px;line-height:1.55}@media(max-width:700px){.card{margin:10px;padding:18px}.title-row{align-items:stretch;flex-direction:column}.summary{grid-template-columns:1fr 1fr}.btn{width:100%}}
   </style>
 </head>
 <body>
   <div class="card">
     <a class="brand-home" href="https://propertythesis.com/" aria-label="PropertyThesis home"><div class="brand">PropertyThesis</div><div class="tag">Know the Numbers. Build the Case.</div></a>
-    <h1>Sample 7-Year Pro Forma</h1>
-    <p>Your sample Excel workbook should download automatically. It includes the same three-tab format used by PropertyThesis: After Tax Cash Flow, Taxes From Operations, and Taxes Due on Sale. Sale taxes appear only in Year 7.</p>
-    <button class="btn" id="downloadSample">Download Sample Pro Forma</button>
-    <div class="small">Illustrative sample figures only.</div>
+    <div class="title-row"><div><h1>Sample 7-Year Pro Forma</h1><p>Review the complete sample below, then download the same three-schedule presentation as an Excel workbook.</p></div><button class="btn" id="downloadSample">Download Excel Pro Forma</button></div>
+    <div class="summary" id="summary"></div>
+    <div id="proFormaPreview"></div>
+    <div class="note"><strong>Illustrative sample figures only.</strong> The Excel version contains these same After-Tax Cash Flow, Taxes From Operations, and Taxes Due on Sale schedules. Sale taxes appear only in Year 7.</div>
   </div>
   <script src="guest-sample-proforma-download.js?sample=7year"></script>
   <script>
-    async function run(){const x=window.PropertyThesisSampleProForma;if(!x?.download)return;await x.download();}
-    document.getElementById('downloadSample').addEventListener('click',run);
-    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(run,250),{once:true});else setTimeout(run,250);
+    const money=value=>value==null?'<span class="blank">—</span>':(value<0?'(':'')+'$'+Math.abs(value).toLocaleString(undefined,{maximumFractionDigits:0})+(value<0?')':'');
+    const rate=value=>value==null?'<span class="blank">—</span>':(value*100).toFixed(0)+'%';
+    function table(title,rows,years){return `<section class="sheet"><h2>${title}</h2><div class="table-wrap"><table><thead><tr><th>Schedule</th>${years.map(y=>`<th>${y}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr class="${row.total?'total':''}"><td>${row.label}</td>${row.values.map((v,i)=>`<td>${row.rate?rate(v):money(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>`;}
+    function render(){
+      const data=window.PropertyThesisSampleProForma?.data;if(!data)return;
+      const {years,cf,dep,sale}=data,blanks=[null,null,null,null,null,null];
+      document.getElementById('summary').innerHTML=`<div class="metric"><span>Year 1 Gross Income</span><strong>${money(cf.pgi[0])}</strong></div><div class="metric"><span>Year 1 NOI</span><strong>${money(cf.noi[0])}</strong></div><div class="metric"><span>Annual Debt Service</span><strong>${money(cf.debt[0])}</strong></div><div class="metric"><span>Year 7 Net Sale Price</span><strong>${money(sale.netSale)}</strong></div>`;
+      const cash=[{label:'Potential Gross Income',values:cf.pgi},{label:'− Vacancy and Credit Losses',values:cf.vac},{label:'= Effective Gross Income',values:cf.egi,total:true},{label:'− Operating Expenses',values:cf.opex},{label:'= Net Operating Income',values:cf.noi,total:true},{label:'− Debt Service',values:cf.debt},{label:'= Before-Tax Cash Flow',values:cf.btcf,total:true},{label:'− Taxes from Operations',values:cf.tax},{label:'= After-Tax Cash Flow',values:cf.atcf,total:true}];
+      const taxes=[{label:'Net Operating Income',values:cf.noi},{label:'− Interest',values:cf.interest},{label:'− Depreciation',values:years.map(()=>dep)},{label:'− Amortization of Points',values:years.map(()=>0)},{label:'− Amortization of Origination Fee',values:years.map(()=>0)},{label:'= Taxable Income',values:cf.taxable,total:true},{label:'× Ordinary Income Tax Rate',values:years.map(()=>.28),rate:true},{label:'= Taxes from Operations',values:cf.tax,total:true}];
+      const saleRows=[{label:'Net Sales Price',values:[...blanks,sale.netSale]},{label:'− Book Value',values:[...blanks,sale.book]},{label:'= Gain (Loss) on Sale',values:[...blanks,sale.gain],total:true},{label:'× Applicable Gain Tax Rate',values:[...blanks,sale.gainRate],rate:true},{label:'= Taxes Due on Gain/Loss',values:[...blanks,sale.taxesGain]},{label:'Accumulated Depreciation',values:[...blanks,sale.accDep]},{label:'× Depreciation Tax Rate',values:[...blanks,sale.depRate],rate:true},{label:'= Taxes Due on Depreciation',values:[...blanks,sale.depTax]},{label:'Taxes Due on Sale',values:[...blanks,sale.saleTax],total:true}];
+      document.getElementById('proFormaPreview').innerHTML=table('After-Tax Cash Flow',cash,years)+table('Taxes From Operations',taxes,years)+table('Taxes Due on Sale',saleRows,years);
+    }
+    document.getElementById('downloadSample').addEventListener('click',()=>window.PropertyThesisSampleProForma?.download());
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render,{once:true});else render();
   </script>
 </body>
 </html>
