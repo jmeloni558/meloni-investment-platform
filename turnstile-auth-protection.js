@@ -186,21 +186,14 @@
     const modal=el('authModal');
     if(modal&&!modal.dataset.ptTurnstileDelegated){
       modal.dataset.ptTurnstileDelegated='1';
-      modal.addEventListener('click',e=>{
-        const action=classifyButton(e.target);
-        if(!action)return;
-        e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-        runProtectedAction(action);
-      },true);
-      modal.addEventListener('keydown',e=>{
-        if(e.key!=='Enter'||!el('authPassword')?.contains?.(e.target)&&e.target!==el('authPassword')&&e.target!==el('authEmail'))return;
-        e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-        if(window.PropertyThesisAuth?.getMode?.()==='signup')protectedSignUp();else protectedSignIn();
-      },true);
+      ['signInAction','signUpAction','forgotPasswordAction','resendConfirmationAction'].forEach(id=>{const button=el(id);if(button)button.onclick=null;});
       el('propertyThesisLoginForm')?.addEventListener('submit',e=>{
         e.preventDefault();
         if(window.PropertyThesisAuth?.getMode?.()==='signup')protectedSignUp();else protectedSignIn();
       });
+      el('signUpAction')?.addEventListener('click',protectedSignUp);
+      el('forgotPasswordAction')?.addEventListener('click',protectedReset);
+      el('resendConfirmationAction')?.addEventListener('click',protectedResend);
     }
 
     window.signInCloud=protectedSignIn;
