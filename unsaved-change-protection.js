@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__unsavedChangeProtectionVersion||0)>=VERSION)return;
   window.__unsavedChangeProtectionVersion=VERSION;
 
@@ -54,8 +54,8 @@
     return window.confirm(`You have unsaved changes for ${label()}.\n\nIf you continue, those changes may be lost.\n\nPress Cancel to stay here and save the analysis first.`);
   }
 
-  document.addEventListener('input',e=>{if(isTrackedInput(e.target))markDirty();},true);
-  document.addEventListener('change',e=>{if(isTrackedInput(e.target))markDirty();},true);
+  document.addEventListener('input',e=>{if(e.isTrusted&&isTrackedInput(e.target))markDirty();},true);
+  document.addEventListener('change',e=>{if(e.isTrusted&&isTrackedInput(e.target))markDirty();},true);
 
   document.addEventListener('click',e=>{
     const t=e.target?.closest?.(destructiveSelector);
