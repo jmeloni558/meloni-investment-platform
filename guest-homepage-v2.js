@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=11;
+  const VERSION=12;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -48,13 +48,14 @@
   function upgradeHero(root){
     root.classList.add('pt-home-v2');
     const eyebrow=root.querySelector('.pt-guest-eyebrow'),title=root.querySelector('.pt-guest-copy h2'),lead=root.querySelector('.pt-guest-lead'),sub=root.querySelector('.pt-guest-sub'),actions=root.querySelector('.pt-guest-promo-actions'),features=root.querySelector('.pt-guest-feature-grid');
-    if(eyebrow)eyebrow.textContent='REAL ESTATE INVESTMENT DECISIONS, EXPLAINED';
-    if(title)title.textContent='Turn a property address into a complete investment decision.';
-    if(lead)lead.textContent='Analyze income, financing, value, returns and market evidence—then produce a client-ready investment report.';
-    if(sub)sub.textContent='See what the property supports, understand the risks, and build a clear acquisition case without stitching together separate calculators.';
-    let audience=root.querySelector('.pt-home-audience');if(!audience){audience=document.createElement('p');audience.className='pt-home-audience';sub?.insertAdjacentElement('afterend',audience);}audience.textContent='Built for real estate investors, agents, brokers and acquisition professionals who need more than a basic rental calculator.';
+    if(eyebrow)eyebrow.textContent='EVERY PROPERTY BEGINS WITH A THESIS';
+    if(title)title.textContent='Form the thesis. Test the numbers. Build the case.';
+    if(lead)lead.textContent='A property thesis is the idea that a deal can produce the income, value and returns you expect. PropertyThesis tests that idea against the numbers—so you can see whether the evidence supports it.';
+    if(sub)sub.textContent='Analyze income, expenses, financing, taxes, value, returns, sensitivity and market evidence in one guided workflow, then turn the conclusion into a client-ready investment report.';
+    let pathway=root.querySelector('.pt-home-thesis-path');if(!pathway){pathway=document.createElement('div');pathway.className='pt-home-thesis-path';sub?.insertAdjacentElement('afterend',pathway);}pathway.innerHTML='<span><b>01</b>Form the idea</span><i>→</i><span><b>02</b>Test the assumptions</span><i>→</i><span><b>03</b>Build the case</span>';
+    let audience=root.querySelector('.pt-home-audience');if(!audience){audience=document.createElement('p');audience.className='pt-home-audience';}pathway.insertAdjacentElement('afterend',audience);audience.textContent='Built for real estate investors, agents, brokers and acquisition professionals who need more than a basic rental calculator.';
     if(actions){actions.innerHTML='<button type="button" class="pt-guest-primary" data-pt-home-sample>Start Free Analysis</button><button type="button" class="pt-guest-secondary" data-pt-home-report>View a Sample Report</button><button type="button" class="pt-home-tertiary" data-pt-home-create>Create Free Account</button>';actions.querySelector('[data-pt-home-sample]').onclick=sample;actions.querySelector('[data-pt-home-report]').onclick=()=>location.href='sample-report-viewer.html?v=2';actions.querySelector('[data-pt-home-create]').onclick=()=>auth('signup');}
-    if(features)features.innerHTML='<div class="pt-guest-feature"><span>Purchase Price</span><strong>$250,000</strong><em>Sample acquisition</em></div><div class="pt-guest-feature"><span>Market Rent</span><strong>$1,790/mo</strong><em>Supported by rental evidence</em></div><div class="pt-guest-feature"><span>Cap Rate</span><strong>4.64%</strong><em>Compared with a 6.50% target</em></div><div class="pt-guest-feature"><span>Maximum Supported Price</span><strong>$178,449</strong><em>See how the conclusion was reached</em></div>';
+    if(features)features.innerHTML='<div class="pt-guest-feature"><span>Premise • Purchase Price</span><strong>$250,000</strong><em>The proposed acquisition</em></div><div class="pt-guest-feature"><span>Evidence • Market Rent</span><strong>$1,790/mo</strong><em>Supported by rental evidence</em></div><div class="pt-guest-feature"><span>Test • Cap Rate</span><strong>4.64%</strong><em>Compared with a 6.50% target</em></div><div class="pt-guest-feature"><span>Conclusion • Supported Price</span><strong>$178,449</strong><em>What the analysis supports</em></div>';
     const note=root.querySelector('.pt-guest-access-note');if(note)note.textContent='Build the complete analysis setup without an account. Create a free account only when you are ready to calculate and save the results.';
   }
   function ensureExperience(sampleSection){
