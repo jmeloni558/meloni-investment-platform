@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=7;
+  const VERSION=8;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -13,11 +13,14 @@
   const freeMode=()=>new URLSearchParams(location.search).get('free-analysis')==='1';
   let signInRequestHandled=false;
   function sample(){location.href='index.html?free-analysis=1&cb='+Date.now();}
-  function startFromHomepage(address='',price='',rent=''){
+  function startFromHomepage(address='',price='',rent='',place={}){
     const params=new URLSearchParams({"free-analysis":'1',cb:String(Date.now())});
     if(address.trim())params.set('starter-address',address.trim());
     if(String(price).trim())params.set('starter-price',String(price).replace(/[^0-9.]/g,''));
     if(String(rent).trim())params.set('starter-rent',String(rent).replace(/[^0-9.]/g,''));
+    if(place.placeId)params.set('starter-place-id',place.placeId);
+    if(place.lat)params.set('starter-lat',place.lat);
+    if(place.lng)params.set('starter-lng',place.lng);
     location.href='index.html?'+params.toString();
   }
   function applyStarterValues(){
@@ -58,7 +61,7 @@
     let experience=document.getElementById('ptHomeExperience');
     if(experience)return;
     experience=document.createElement('div');experience.id='ptHomeExperience';experience.innerHTML=`
-      <section class="pt-home-section pt-home-starter"><div class="pt-home-starter-copy"><div class="pt-home-eyebrow">START WITH YOUR PROPERTY</div><h2>See your deal begin to take shape.</h2><p>Enter the three facts you already know. We will carry them into the free guided analysis and help you complete the rest.</p><div class="pt-home-no-card">No credit card. No account until you calculate and save the results.</div></div><form class="pt-home-starter-form" id="ptHomeStarterForm"><label>Property address<input name="address" autocomplete="street-address" placeholder="123 Main Street, Tampa, FL" required></label><div class="pt-home-starter-numbers"><label>Acquisition price<input name="price" inputmode="decimal" placeholder="$425,000" required></label><label>Expected monthly rent<input name="rent" inputmode="decimal" placeholder="$4,750" required></label></div><button type="submit">Build My Free Analysis <span>→</span></button></form></section>
+      <section class="pt-home-section pt-home-starter"><div class="pt-home-starter-copy"><div class="pt-home-eyebrow">START WITH YOUR PROPERTY</div><h2>See your deal begin to take shape.</h2><p>Enter the three facts you already know. We will carry them into the free guided analysis and help you complete the rest.</p><div class="pt-home-no-card">No credit card. No account until you calculate and save the results.</div></div><form class="pt-home-starter-form" id="ptHomeStarterForm"><label class="pt-home-address-field">Property address<input name="address" data-pt-home-address autocomplete="off" placeholder="Start typing a U.S. property address" required></label><div class="pt-home-starter-numbers"><label>Acquisition price<input name="price" inputmode="decimal" placeholder="$425,000" required></label><label>Expected monthly rent<input name="rent" inputmode="decimal" placeholder="$4,750" required></label></div><button type="submit">Build My Free Analysis <span>→</span></button></form></section>
 
       <section class="pt-home-section pt-home-how"><div class="pt-home-section-head"><div class="pt-home-eyebrow">A CLEAR PATH FROM PROPERTY TO DECISION</div><h2>A professional analysis in three guided steps.</h2><p>PropertyThesis keeps the workflow approachable without hiding the assumptions or reasoning behind the conclusion.</p></div><div class="pt-home-steps"><article class="pt-home-step"><b>1</b><h3>Enter the property</h3><p>Begin with the address, acquisition price and expected rent. Practical defaults fill in the first-pass model.</p></article><article class="pt-home-step"><b>2</b><h3>Review and refine</h3><p>Adjust income, expenses, financing, taxes, growth, sale assumptions and market evidence as information becomes available.</p></article><article class="pt-home-step"><b>3</b><h3>Make the case</h3><p>Review value support, returns, risks and offer guidance—then produce the professional report and Excel pro forma.</p></article></div></section>
 
@@ -74,7 +77,7 @@
 
       <section class="pt-home-section pt-home-final"><div class="pt-home-eyebrow">YOU ALREADY KNOW ENOUGH TO BEGIN</div><h2>Enter the price and expected rent. PropertyThesis will help with the rest.</h2><p>Build the assumptions before creating an account. Sign up only when you are ready to calculate, display and save your first complete analysis.</p><div class="pt-home-final-actions"><button class="pt-home-final-primary" type="button" data-pt-home-sample>Start My Free Analysis</button><button class="pt-home-final-secondary" type="button" data-pt-home-report>View a Sample Report</button></div></section>`;
     sampleSection.insertAdjacentElement('beforebegin',experience);
-    const form=experience.querySelector('#ptHomeStarterForm');form.onsubmit=e=>{e.preventDefault();const data=new FormData(form);startFromHomepage(data.get('address')||'',data.get('price')||'',data.get('rent')||'');};
+    const form=experience.querySelector('#ptHomeStarterForm');form.onsubmit=e=>{e.preventDefault();const data=new FormData(form),addressInput=form.querySelector('[name="address"]');startFromHomepage(data.get('address')||'',data.get('price')||'',data.get('rent')||'',{placeId:addressInput?.dataset.placeId||'',lat:addressInput?.dataset.lat||'',lng:addressInput?.dataset.lng||''});};
     experience.querySelectorAll('[data-pt-home-sample]').forEach(button=>button.onclick=sample);
     experience.querySelectorAll('[data-pt-home-report]').forEach(button=>button.onclick=()=>location.href='sample-report-viewer.html?v=2');
   }

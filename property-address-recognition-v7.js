@@ -1,14 +1,14 @@
 'use strict';
 (()=>{
-  const VERSION=8;
+  const VERSION=9;
   if((window.__propertyAddressRecognitionV||0)>=VERSION)return;
   window.__propertyAddressRecognitionV=VERSION;
 
   const GOOGLE_KEY_STORAGE='pt_step1_google_places_key';
   let googlePromise=null,lastLookup='',lookupBusy=false,syncingAddress=false;
-  const addressInputs=()=>[...document.querySelectorAll('#f_address,[data-src="f_address"]')];
+  const addressInputs=()=>[...document.querySelectorAll('#f_address,[data-src="f_address"],[data-pt-home-address]')];
   const visibleAddressInputs=()=>addressInputs().filter(el=>el.offsetParent!==null);
-  const key=()=>localStorage.getItem(GOOGLE_KEY_STORAGE)||'';
+  const key=()=>window.PROPERTYTHESIS_CONFIG?.googlePlacesKey||window.PROPERTYTHESIS_GOOGLE_PLACES_KEY||localStorage.getItem(GOOGLE_KEY_STORAGE)||'';
 
   function ensureDismissStyle(){
     if(document.getElementById('ptAddressDismissStyle'))return;
@@ -29,7 +29,7 @@
   }
   function enforceStepVisibility(){if(!visibleAddressInputs().length)hideSuggestions();}
   function focusNextField(){const next=[...document.querySelectorAll('[data-src="f_price"],#f_price')].find(el=>el.offsetParent!==null&&!el.disabled);if(next){try{next.focus({preventScroll:true});}catch(_e){try{next.focus();}catch(__e){}}}}
-  function statusHost(input){const parent=input.closest('.gw-field,.field')||input.parentElement;if(!parent)return null;let el=parent.querySelector(':scope > .pt-address-recognition-status');if(!el){el=document.createElement('div');el.className='pt-address-recognition-status';el.style.cssText='margin-top:6px;font-size:9px;line-height:1.4;color:#667085';parent.appendChild(el);}return el;}
+  function statusHost(input){const parent=input.closest('.gw-field,.field,.pt-home-address-field')||input.parentElement;if(!parent)return null;let el=parent.querySelector(':scope > .pt-address-recognition-status');if(!el){el=document.createElement('div');el.className='pt-address-recognition-status';el.style.cssText='margin-top:6px;font-size:9px;line-height:1.4;color:#667085';parent.appendChild(el);}return el;}
   function setStatus(text,kind=''){addressInputs().forEach(input=>{const el=statusHost(input);if(!el)return;el.textContent=text;el.style.color=kind==='ok'?'#067647':kind==='err'?'#b42318':'#667085';});}
   function syncAddress(value){syncingAddress=true;try{addressInputs().forEach(input=>{if(input.value===value)return;input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));});try{if(typeof state!=='undefined'&&state)state.address=value;}catch(_e){}}finally{queueMicrotask(()=>{syncingAddress=false;});}}
   function saveProperty(property){try{if(typeof state!=='undefined'&&state)state.subjectProperty={...property,recognizedAt:new Date().toISOString()};}catch(_e){}window.PropertyThesisSubjectProperty=property;}
@@ -59,7 +59,7 @@
     try{
       await loadGoogle();if(!window.google?.maps?.places?.Autocomplete)throw new Error('Google Places unavailable');
       const ac=new google.maps.places.Autocomplete(input,{componentRestrictions:{country:'us'},types:['address'],fields:['formatted_address','place_id','geometry']});
-      ac.addListener('place_changed',()=>{const place=ac.getPlace(),address=place?.formatted_address||input.value.trim();if(!address)return;hideSuggestions(input);syncAddress(address);setTimeout(()=>hideSuggestions(input),0);lookup(address);});
+      ac.addListener('place_changed',()=>{const place=ac.getPlace(),address=place?.formatted_address||input.value.trim();if(!address)return;const lat=place?.geometry?.location?.lat?.(),lng=place?.geometry?.location?.lng?.();input.dataset.placeId=place?.place_id||'';input.dataset.lat=Number.isFinite(lat)?String(lat):'';input.dataset.lng=Number.isFinite(lng)?String(lng):'';hideSuggestions(input);syncAddress(address);setTimeout(()=>hideSuggestions(input),0);if(input.matches('[data-pt-home-address]')){setStatus('Address recognized. Property details will be researched after you create or sign in to your account.','ok');return;}lookup(address);});
       input.addEventListener('input',e=>{if(!syncingAddress&&e.isTrusted&&input.offsetParent!==null)showSuggestions();},{passive:true});
       input.addEventListener('focus',e=>{if(!syncingAddress&&e.isTrusted&&input.offsetParent!==null&&input.value.trim()!==lastLookup)showSuggestions();},{passive:true});
       input.addEventListener('change',e=>{if(syncingAddress||!e.isTrusted)return;const v=input.value.trim();if(v&&v!==lastLookup)syncAddress(v);});
