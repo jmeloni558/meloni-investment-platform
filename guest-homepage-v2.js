@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=17;
+  const VERSION=18;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -10,7 +10,9 @@
     return text==='not signed in'||!out||out.hidden||out.classList.contains('hidden')||getComputedStyle(out).display==='none';
   }
   function auth(mode='signin',message=''){try{if(window.PropertyThesisAuth?.open)window.PropertyThesisAuth.open(mode,message);else if(typeof showAuth==='function')showAuth();else document.getElementById('authBtn')?.click();}catch(_e){document.getElementById('authBtn')?.click();}}
-  const freeMode=()=>new URLSearchParams(location.search).get('free-analysis')==='1';
+  const entryParams=new URLSearchParams(location.search);
+  const freeAnalysisEntry=entryParams.get('free-analysis')==='1';
+  const freeMode=()=>freeAnalysisEntry;
   let signInRequestHandled=false;
   let returnRouteInstalled=false;
   function installReturnRoute(){
@@ -36,7 +38,7 @@
     location.href='index.html?'+params.toString();
   }
   function applyStarterValues(){
-    const params=new URLSearchParams(location.search),values={f_address:params.get('starter-address'),f_price:params.get('starter-price'),f_rent:params.get('starter-rent')};
+    const values={f_address:entryParams.get('starter-address'),f_price:entryParams.get('starter-price'),f_rent:entryParams.get('starter-rent')};
     let changed=false;
     Object.entries(values).forEach(([id,value])=>{if(!value)return;const input=document.getElementById(id);if(!input)return;input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));changed=true;});
     if(changed)try{window.GuidedAnalysisSetup?.refresh?.();}catch(_e){}
@@ -45,6 +47,7 @@
   function enterFreeAnalysis(){
     if(freeEntered)return;const assumptions=document.getElementById('assumptions'),workflow=document.getElementById('stage8Workflow');if(!assumptions||!workflow)return;
     freeEntered=true;
+    try{history.replaceState(null,'','/');}catch(_e){}
     try{window.WorkflowNavigationController?.newAnalysis?.();}catch(_e){}
     try{if(window.WorkflowNavigationController?.go)window.WorkflowNavigationController.go('assumptions');else if(typeof switchTab==='function')switchTab('assumptions');}catch(_e){}
     let note=document.getElementById('ptFreeAnalysisNotice');if(!note){note=document.createElement('div');note.id='ptFreeAnalysisNotice';note.innerHTML='<strong>Build your analysis free—no account required yet.</strong><span>Enter and review every assumption. When you calculate the results, create or sign in to a free account so PropertyThesis can display and save your analysis.</span>';workflow.insertAdjacentElement('afterend',note);}
