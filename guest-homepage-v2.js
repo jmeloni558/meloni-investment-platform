@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=15;
+  const VERSION=16;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -49,6 +49,7 @@
     try{if(window.WorkflowNavigationController?.go)window.WorkflowNavigationController.go('assumptions');else if(typeof switchTab==='function')switchTab('assumptions');}catch(_e){}
     let note=document.getElementById('ptFreeAnalysisNotice');if(!note){note=document.createElement('div');note.id='ptFreeAnalysisNotice';note.innerHTML='<strong>Build your analysis free—no account required yet.</strong><span>Enter and review every assumption. When you calculate the results, create or sign in to a free account so PropertyThesis can display and save your analysis.</span>';workflow.insertAdjacentElement('afterend',note);}
     setTimeout(()=>{try{window.GuidedAnalysisSetup?.reset?.();applyStarterValues();}catch(_e){}},100);
+    setTimeout(()=>{document.getElementById('guidedSetup')?.scrollIntoView({behavior:'smooth',block:'start'});},350);
     [250,500,900].forEach(ms=>setTimeout(applyStarterValues,ms));
   }
   function ensureNav(shell){
