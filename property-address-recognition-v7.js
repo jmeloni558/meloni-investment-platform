@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=11;
+  const VERSION=12;
   if((window.__propertyAddressRecognitionV||0)>=VERSION)return;
   window.__propertyAddressRecognitionV=VERSION;
 
@@ -21,7 +21,6 @@
     ensureDismissStyle();
     document.body.classList.add('pt-hide-address-suggestions');
     document.querySelectorAll('.pac-container').forEach(el=>{el.style.setProperty('display','none','important');el.setAttribute('aria-hidden','true');});
-    try{input?.blur();}catch(_e){}
   }
   function showSuggestions(){
     if(syncingAddress||!visibleAddressInputs().length)return;

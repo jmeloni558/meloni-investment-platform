@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=26;
+  const VERSION=27;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -78,7 +78,7 @@
     panel.id='appMortgageToolsPanel';
     panel.className='screen-only';
     panel.style.display='none';
-    panel.innerHTML=`<iframe id="appMortgageToolsFrame" title="PropertyThesis Mortgage Tools" src="mortgage-tools.html?embedded=1&v=20260823-1619" style="width:100%;min-height:1500px;border:0;background:transparent;display:block"></iframe>`;
+    panel.innerHTML=`<iframe id="appMortgageToolsFrame" title="PropertyThesis Mortgage Tools" data-src="mortgage-tools.html?embedded=1&v=20260829-1535" style="width:100%;min-height:1500px;border:0;background:transparent;display:block"></iframe>`;
     workflow.insertAdjacentElement('beforebegin',panel);
     const frame=panel.querySelector('iframe');
     const fit=()=>{try{const d=frame.contentDocument;if(!d)return;const h=Math.max(d.documentElement.scrollHeight,d.body.scrollHeight);frame.style.height=(h+20)+'px';}catch(e){}};
@@ -88,7 +88,7 @@
 
   function setMortgageMode(on){
     mortgageMode=!!on;
-    const panel=ensureMortgagePanel();
+    const panel=on?ensureMortgagePanel():document.getElementById('appMortgageToolsPanel');
     if(panel)panel.style.display=on?'block':'none';
     document.querySelectorAll('.section').forEach(s=>{
       if(on){if(s.classList.contains('active'))s.dataset.ptWasActive='1';s.style.display='none';}
@@ -108,7 +108,7 @@
     catch(e){try{if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');}catch(_e){}try{window.Stage6Dashboard?.render?.();}catch(_e){}}
     setTimeout(refresh,0);
   }
-  function openMortgageTools(){if(!isSignedIn()){promptSignIn('Sign in to use PropertyThesis Mortgage Tools and calculators.');return;}ensureMortgagePanel();setMortgageMode(true);window.scrollTo({top:document.getElementById('appNavShell')?.offsetTop||0,behavior:'smooth'});}
+  function openMortgageTools(){if(!isSignedIn()){promptSignIn('Sign in to use PropertyThesis Mortgage Tools and calculators.');return;}const panel=ensureMortgagePanel(),frame=panel?.querySelector('iframe');if(frame&&!frame.getAttribute('src'))frame.setAttribute('src',frame.dataset.src);setMortgageMode(true);window.scrollTo({top:document.getElementById('appNavShell')?.offsetTop||0,behavior:'smooth'});}
 
   function ensureStyles(){
     let st=document.getElementById('appNavigationToolbarStyles');if(!st){st=document.createElement('style');st.id='appNavigationToolbarStyles';document.head.appendChild(st)}
@@ -137,7 +137,7 @@
     const workflow=document.getElementById('stage8Workflow');if(!workflow)return false;ensureStyles();
     let shell=document.getElementById('appNavShell');
     if(!shell){shell=document.createElement('div');shell.id='appNavShell';shell.className='app-nav-shell screen-only';shell.innerHTML=`<nav class="app-nav-toolbar" aria-label="Application tools"><div class="app-nav-actions"><button class="app-nav-action" id="appNavNew">New Analysis</button><button class="app-nav-action" id="appNavExisting">Existing Properties</button><button class="app-nav-action" id="appNavMortgage">Mortgage Tools</button></div></nav><div id="ptGuestGuidance" class="pt-guest-guidance" hidden><div class="pt-guest-promo-inner"><div class="pt-guest-copy"><div class="pt-guest-eyebrow">REAL ESTATE INVESTMENT UNDERWRITING</div><h2>Know the Numbers. Build the Case.</h2><p class="pt-guest-lead">PropertyThesis brings income, financing, valuation, returns, market evidence and acquisition strategy into one connected investment analysis.</p><p class="pt-guest-sub">Go beyond a basic calculator. Understand what drives the deal, what the property supports, and how to present the investment case clearly.</p><div class="pt-guest-promo-actions"><button type="button" class="pt-guest-primary" id="ptGuestExplore">Start Exploring</button><button type="button" class="pt-guest-secondary" id="ptGuestSignIn">Sign In / Create Account</button></div><div class="pt-guest-access-note">Calculations, professional reports, rental comparables and sales comparables are available after sign-in.</div></div><div class="pt-guest-feature-grid"><div class="pt-guest-feature"><strong>Underwrite</strong><span>Income, expenses, financing & cash flow</span></div><div class="pt-guest-feature"><strong>Value</strong><span>Cap rate, GRM & income-supported pricing</span></div><div class="pt-guest-feature"><strong>Decide</strong><span>Returns, sensitivity & offer analysis</span></div><div class="pt-guest-feature"><strong>Support</strong><span>Market rent, sales comps & investment thesis</span></div></div></div></div>`;workflow.insertAdjacentElement('beforebegin',shell);document.getElementById('appNavNew').addEventListener('click',newAnalysis);document.getElementById('appNavExisting').addEventListener('click',openExisting);document.getElementById('appNavMortgage').addEventListener('click',openMortgageTools);document.getElementById('ptGuestSignIn')?.addEventListener('click',()=>promptSignIn('Sign in to unlock PropertyThesis calculators, reports, and market comparables.'));document.getElementById('ptGuestExplore')?.addEventListener('click',()=>document.getElementById('stage8Workflow')?.scrollIntoView({behavior:'smooth',block:'start'}));}
-    ensureMortgagePanel();ensureSampleShowcase();return true;
+    ensureSampleShowcase();return true;
   }
   function cleanWorkflow(){const workflow=document.getElementById('stage8Workflow');if(!workflow)return false;workflow.classList.add('app-toolbar-clean');return true;}
   function retireLegacyNavigation(){document.querySelectorAll('.tab[data-tab],[data-app-advanced],[data-s8-advanced]').forEach(el=>{const id=el.dataset.tab||el.dataset.appAdvanced||el.dataset.s8Advanced;if(retired.has(id)||contextualOnly.has(id))el.hidden=true;});const active=activeSection();if(retired.has(active))go('dashboard');}
