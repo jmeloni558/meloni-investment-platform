@@ -51,7 +51,7 @@
   function loadGoogle(){
     const k=key();if(!k)return Promise.reject(new Error('Google Places key not configured'));
     if(window.google?.maps?.places)return Promise.resolve(window.google.maps.places);if(googlePromise)return googlePromise;
-    googlePromise=new Promise((resolve,reject)=>{const cb='__ptAddressRecognitionReady';window[cb]=()=>resolve(window.google?.maps?.places);const s=document.createElement('script');s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(k)+'&libraries=places&callback='+cb+'&v=weekly';s.async=true;s.defer=true;s.dataset.ptAddressRecognitionGoogle='1';s.onerror=()=>reject(new Error('Unable to load Google address suggestions'));document.head.appendChild(s);});return googlePromise;
+    googlePromise=new Promise((resolve,reject)=>{const cb='__ptAddressRecognitionReady';window[cb]=()=>resolve(window.google?.maps?.places);const s=document.createElement('script');s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(k)+'&libraries=places&callback='+cb+'&v=weekly&auth_referrer_policy=origin';s.async=true;s.defer=true;s.dataset.ptAddressRecognitionGoogle='1';s.onerror=()=>reject(new Error('Unable to load Google address suggestions'));document.head.appendChild(s);});return googlePromise;
   }
   async function attachInput(input){
     if(!input||input.dataset.ptAddressRecognition==='1')return;input.dataset.ptAddressRecognition='1';input.setAttribute('autocomplete','off');
