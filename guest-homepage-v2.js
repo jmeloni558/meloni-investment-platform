@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=13;
+  const VERSION=14;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -12,6 +12,18 @@
   function auth(mode='signin',message=''){try{if(window.PropertyThesisAuth?.open)window.PropertyThesisAuth.open(mode,message);else if(typeof showAuth==='function')showAuth();else document.getElementById('authBtn')?.click();}catch(_e){document.getElementById('authBtn')?.click();}}
   const freeMode=()=>new URLSearchParams(location.search).get('free-analysis')==='1';
   let signInRequestHandled=false;
+  let returnRouteInstalled=false;
+  function installReturnRoute(){
+    if(returnRouteInstalled)return;
+    const params=new URLSearchParams(location.search),raw=params.get('return');
+    if(params.get('signin')!=='1'||!raw)return;
+    let target;
+    try{const url=new URL(raw,location.origin);if(url.origin!==location.origin)return;target=url.href;}catch(_e){return;}
+    if(typeof cloudClient==='undefined'||!cloudClient)return;
+    returnRouteInstalled=true;
+    cloudClient.auth.getSession().then(({data})=>{if(data?.session?.user)location.replace(target);}).catch(()=>{});
+    cloudClient.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_IN'&&session?.user)location.replace(target);});
+  }
   function sample(){location.href='index.html?free-analysis=1&cb='+Date.now();}
   function startFromHomepage(address='',price='',rent='',place={}){
     const params=new URLSearchParams({"free-analysis":'1',cb:String(Date.now())});
@@ -83,6 +95,6 @@
     if(!guest){if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=true);return true;}
     ensureNav(shell);upgradeHero(hero);ensureExperience(sampleSection);document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=false);return true;
   }
-  function start(){apply();[100,250,500,800,1200,1800,2600,4000,6000].forEach(ms=>setTimeout(apply,ms));setInterval(apply,2000);}
+  function start(){installReturnRoute();apply();[100,250,500,800,1200,1800,2600,4000,6000].forEach(ms=>setTimeout(apply,ms));setInterval(apply,2000);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
