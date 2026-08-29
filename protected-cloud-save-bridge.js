@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__propertyThesisProtectedCloudSaveBridgeV||0)>=VERSION)return;
   window.__propertyThesisProtectedCloudSaveBridgeV=VERSION;
 
@@ -26,6 +26,7 @@
     const current=existingAnalysis();
     if(cloneMode)return (current?.name||state?.name||'Base Analysis')+' — Copy';
     if(current)return current.name||state?.name||'Base Analysis';
+    try{if((cloudAnalyses||[]).filter(a=>a.property_id===selectedPropertyId).length===0)return 'Base Case';}catch(_e){}
     if(localStorage.getItem('ptBillingResumeV1')==='1')return suggestedName();
     const name=window.prompt(`Name this new analysis for ${propertyLabel()}:`,suggestedName());
     if(name===null)return null;
