@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=10;
+  const VERSION=11;
   const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
   const APP_URL=location.origin+'/index.html';
   const ALLOWED_HOSTS=new Set(['propertythesis.com','www.propertythesis.com']);
@@ -12,9 +12,30 @@
   let scriptPromise=null;
   let busy=false;
   let pendingAction='';
+  let signupClient=null;
 
   const el=id=>document.getElementById(id);
   const message=(text,kind='')=>{if(window.PropertyThesisAuth?.message)return window.PropertyThesisAuth.message(text,kind);const m=el('authMessage');if(m)m.textContent=text;};
+
+  function setBusy(next){
+    busy=next;
+    ['signInAction','signUpAction','forgotPasswordAction','resendConfirmationAction'].forEach(id=>{const button=el(id);if(button)button.disabled=next;});
+  }
+
+  function withTimeout(promise,ms,label){
+    return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label)),ms))]);
+  }
+
+  function getSignupClient(){
+    if(signupClient)return signupClient;
+    if(!window.supabase?.createClient)return cloudClient;
+    signupClient=window.supabase.createClient(
+      'https://lmaiqpkogmmsldkziggy.supabase.co',
+      'sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7',
+      {auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'propertythesis-signup-v1'}}
+    );
+    return signupClient;
+  }
 
   function ensureUi(){
     const modal=el('authModal');
@@ -121,9 +142,10 @@
     if(!email||password.length<12)return message('Enter an email and a password of at least 12 characters.','error');
     if(confirmation!==password)return message('The password confirmation does not match.','error');
     if(!requireToken('signup'))return;
-    busy=true;message('Creating account…');
+    setBusy(true);message('Creating account…');
     try{
-      const {data,error}=await cloudClient.auth.signUp({email,password,options:{emailRedirectTo:APP_URL,captchaToken:token}});
+      const client=getSignupClient();
+      const {data,error}=await withTimeout(client.auth.signUp({email,password,options:{emailRedirectTo:APP_URL,captchaToken:token}}),25000,'Account creation took too long. Close any other PropertyThesis tabs, then retry.');
       if(error)return message(error.message,'error');
       if(!data?.user?.id)return message('The account was not created. Please retry the security check and submit the form again.','error');
       if(Array.isArray(data.user.identities)&&data.user.identities.length===0)return message('An account already exists for this email. Choose Sign In or use Forgot Password.','error');
@@ -131,7 +153,7 @@
       else if(window.PropertyThesisAuth?.showVerification)window.PropertyThesisAuth.showVerification(email);
       else message('Account created. Check your email and click the verification link before signing in.','success');
     }catch(e){message(e?.message||'Account creation failed. Please try again.','error');}
-    finally{busy=false;resetChallenge();}
+    finally{setBusy(false);resetChallenge();}
   }
 
   async function protectedResend(){
