@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=31;
+  const VERSION=32;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -151,6 +151,11 @@
   function retireLegacyNavigation(){document.querySelectorAll('.tab[data-tab],[data-app-advanced],[data-s8-advanced]').forEach(el=>{const id=el.dataset.tab||el.dataset.appAdvanced||el.dataset.s8Advanced;if(retired.has(id)||contextualOnly.has(id))el.hidden=true;});const active=activeSection();if(retired.has(active))go('dashboard');}
   function refresh(){if(!ensureToolbar())return false;cleanWorkflow();retireLegacyNavigation();const guest=document.getElementById('ptGuestGuidance');if(guest)guest.hidden=!uiShowsSignedOut();const sample=document.getElementById('ptSampleShowcase');if(sample)sample.hidden=!uiShowsSignedOut();if(mortgageMode){setMortgageMode(true);return true;}const active=activeSection();const newBtn=document.getElementById('appNavNew');if(newBtn)newBtn.classList.toggle('active',primary.includes(active));const existing=document.getElementById('appNavExisting');if(existing)existing.classList.toggle('active',active==='propertyhub');const mortgage=document.getElementById('appNavMortgage');if(mortgage)mortgage.classList.remove('active');return true;}
   function scheduleResume(){[150,500,1000,1800,3000].forEach(ms=>setTimeout(resumeFreeAnalysis,ms));}
-  function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));window.addEventListener('click',guardCalculatorClick,true);try{cloudClient?.auth?.onAuthStateChange?.((_event,session)=>{if(session?.user){scheduleResume();setTimeout(handleRequestedAction,500);}});}catch(_e){}window.addEventListener('storage',e=>{if(e.key==='ptEmailConfirmedAt')scheduleResume();});try{const channel=new BroadcastChannel('propertythesis-auth');channel.onmessage=e=>{if(e.data?.type==='email-confirmed'){try{window.focus();}catch(_e){}scheduleResume();}};}catch(_e){}[700,1400,2400,4000,6500].forEach(ms=>{setTimeout(resumeFreeAnalysis,ms);setTimeout(handleRequestedAction,ms+100);});setTimeout(refresh,700);setTimeout(refresh,1800);}
+  function finishSignInNavigation(){
+    [0,100,350].forEach(ms=>setTimeout(refresh,ms));
+    if(pendingFree()){scheduleResume();return;}
+    setTimeout(()=>{if(handleRequestedAction())return;setMortgageMode(false);try{if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');window.Stage6Dashboard?.render?.();}catch(_e){}setTimeout(refresh,0);},180);
+  }
+  function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));window.addEventListener('click',guardCalculatorClick,true);try{cloudClient?.auth?.onAuthStateChange?.((event,session)=>{if(session?.user){if(event==='SIGNED_IN')finishSignInNavigation();else{scheduleResume();setTimeout(handleRequestedAction,500);}}});}catch(_e){}window.addEventListener('storage',e=>{if(e.key==='ptEmailConfirmedAt')scheduleResume();});try{const channel=new BroadcastChannel('propertythesis-auth');channel.onmessage=e=>{if(e.data?.type==='email-confirmed'){try{window.focus();}catch(_e){}scheduleResume();}};}catch(_e){}[700,1400,2400,4000,6500].forEach(ms=>{setTimeout(resumeFreeAnalysis,ms);setTimeout(handleRequestedAction,ms+100);});setTimeout(refresh,700);setTimeout(refresh,1800);}
   window.AppNavigationToolbar={refresh,go,openExisting,openMortgageTools,setMortgageMode,resumeFreeAnalysis};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

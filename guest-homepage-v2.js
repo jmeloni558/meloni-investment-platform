@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=24;
+  const VERSION=26;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -135,6 +135,6 @@
     if(!guest){freeAnalysisActive=false;if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=true);accountNotice();return true;}
     ensureNav(shell);upgradeHero(hero);ensureExperience(sampleSection);document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=false);return true;
   }
-  function start(){installReturnRoute();apply();[100,250,500,800,1200,1800,2600,4000,6000].forEach(ms=>setTimeout(apply,ms));setInterval(apply,2000);try{cloudClient?.auth?.onAuthStateChange?.((event)=>{if(event==='SIGNED_OUT'){freeAnalysisActive=false;freeEntered=false;noticeUser='';document.getElementById('ptAccountUpgradeBanner')?.remove();setTimeout(()=>{apply();window.scrollTo({top:0,behavior:'auto'});},0);}else if(event==='SIGNED_IN'){freeAnalysisActive=false;setTimeout(apply,0);}});}catch(_e){}window.addEventListener('pt:billing-updated',()=>{[700,1800,4000].forEach(ms=>setTimeout(()=>{noticeUser='';accountNotice()},ms))});}
+  function start(){installReturnRoute();apply();[100,250,500,800,1200,1800,2600,4000,6000].forEach(ms=>setTimeout(apply,ms));setInterval(apply,2000);try{cloudClient?.auth?.onAuthStateChange?.((event)=>{if(event==='SIGNED_OUT'){freeAnalysisActive=false;freeEntered=false;noticeUser='';document.getElementById('ptAccountUpgradeBanner')?.remove();setTimeout(()=>{apply();window.scrollTo({top:0,behavior:'auto'});},0);}else if(event==='SIGNED_IN'){freeAnalysisActive=false;[0,100,350].forEach(ms=>setTimeout(apply,ms));}});}catch(_e){}window.addEventListener('pt:billing-updated',()=>{[700,1800,4000].forEach(ms=>setTimeout(()=>{noticeUser='';accountNotice()},ms))});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
