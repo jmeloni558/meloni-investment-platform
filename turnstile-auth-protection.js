@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=11;
+  const VERSION=12;
   const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
   const APP_URL=location.origin+'/index.html';
   const ALLOWED_HOSTS=new Set(['propertythesis.com','www.propertythesis.com']);
@@ -12,7 +12,7 @@
   let scriptPromise=null;
   let busy=false;
   let pendingAction='';
-  let signupClient=null;
+  let signupRetries=0;
 
   const el=id=>document.getElementById(id);
   const message=(text,kind='')=>{if(window.PropertyThesisAuth?.message)return window.PropertyThesisAuth.message(text,kind);const m=el('authMessage');if(m)m.textContent=text;};
@@ -22,19 +22,27 @@
     ['signInAction','signUpAction','forgotPasswordAction','resendConfirmationAction'].forEach(id=>{const button=el(id);if(button)button.disabled=next;});
   }
 
-  function withTimeout(promise,ms,label){
-    return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label)),ms))]);
-  }
-
-  function getSignupClient(){
-    if(signupClient)return signupClient;
-    if(!window.supabase?.createClient)return cloudClient;
-    signupClient=window.supabase.createClient(
-      'https://lmaiqpkogmmsldkziggy.supabase.co',
-      'sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7',
-      {auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'propertythesis-signup-v1'}}
-    );
-    return signupClient;
+  async function directSignUp(email,password,captchaToken){
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),25000);
+    try{
+      const key='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
+      const url='https://lmaiqpkogmmsldkziggy.supabase.co/auth/v1/signup?redirect_to='+encodeURIComponent(APP_URL);
+      const response=await fetch(url,{
+        method:'POST',signal:controller.signal,
+        headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json','X-Client-Info':'propertythesis-web'},
+        body:JSON.stringify({email,password,data:{},gotrue_meta_security:{captcha_token:captchaToken}})
+      });
+      let payload={};
+      try{payload=await response.json();}catch(_e){}
+      if(!response.ok)throw new Error(payload?.msg||payload?.message||payload?.error_description||payload?.error||'Account creation failed. Please try again.');
+      const user=payload?.user||(payload?.id?payload:null);
+      const session=payload?.session||(payload?.access_token?payload:null);
+      return {data:{user,session},error:null};
+    }catch(e){
+      if(e?.name==='AbortError'){const timeoutError=new Error('Account creation took too long.');timeoutError.code='signup_timeout';throw timeoutError;}
+      throw e;
+    }finally{clearTimeout(timer);}
   }
 
   function ensureUi(){
@@ -144,15 +152,18 @@
     if(!requireToken('signup'))return;
     setBusy(true);message('Creating account…');
     try{
-      const client=getSignupClient();
-      const {data,error}=await withTimeout(client.auth.signUp({email,password,options:{emailRedirectTo:APP_URL,captchaToken:token}}),25000,'Account creation took too long. Close any other PropertyThesis tabs, then retry.');
+      const {data,error}=await directSignUp(email,password,token);
       if(error)return message(error.message,'error');
       if(!data?.user?.id)return message('The account was not created. Please retry the security check and submit the form again.','error');
       if(Array.isArray(data.user.identities)&&data.user.identities.length===0)return message('An account already exists for this email. Choose Sign In or use Forgot Password.','error');
+      signupRetries=0;
       if(data.session)message('Account created and signed in.','success');
       else if(window.PropertyThesisAuth?.showVerification)window.PropertyThesisAuth.showVerification(email);
       else message('Account created. Check your email and click the verification link before signing in.','success');
-    }catch(e){message(e?.message||'Account creation failed. Please try again.','error');}
+    }catch(e){
+      if(e?.code==='signup_timeout'&&signupRetries<1){signupRetries++;pendingAction='signup';message('The security service was slow to respond. Refreshing the security check and retrying once automatically…');}
+      else{signupRetries=0;message(e?.message||'Account creation failed. Please try again.','error');}
+    }
     finally{setBusy(false);resetChallenge();}
   }
 
