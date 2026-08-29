@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=11;
+  const VERSION=12;
   if((window.__propertyThesisGuidedSaveExistingWorkflowV||0)>=VERSION)return;
   window.__propertyThesisGuidedSaveExistingWorkflowV=VERSION;
 
@@ -71,6 +71,7 @@
       await controller.recalculate();
       const saved=await window.saveCurrentCloud?.(false);
       if(!saved)throw new Error('The analysis could not be saved. Review the save message and try again.');
+      try{localStorage.removeItem('ptPendingFreeAnalysisV1');}catch(_e){}
       status('Analysis calculated and saved — review the results');
       if(window.WorkflowNavigationController?.go)window.WorkflowNavigationController.go('dashboard');
       else{

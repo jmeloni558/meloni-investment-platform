@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=20;
+  const VERSION=21;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -58,7 +58,7 @@
       if(active){note.hidden=true;return;}
       note.hidden=false;note.className='pt-account-upgrade';
       note.innerHTML='<div><strong>Your free property is saved.</strong><span>Ready to analyze more properties? Upgrade to a professional monthly plan for additional property analyses, reports and pro formas.</span></div><div class="pt-account-upgrade-actions"><button type="button" data-pt-upgrade="professional_50_monthly">Professional 50 — $29/month</button><button type="button" class="secondary" data-pt-upgrade="unlimited_monthly">Unlimited — $59/month</button><a href="pricing.html">Compare all plans</a></div>';
-      note.querySelectorAll('[data-pt-upgrade]').forEach(button=>button.onclick=()=>window.PropertyThesisBilling?.upgrade?.(button.dataset.ptUpgrade));
+      note.querySelectorAll('[data-pt-upgrade]').forEach(button=>button.onclick=()=>{location.href='pricing.html';});
     }catch(_e){note.hidden=true;}finally{noticeLoading=false;}
   }
   function enterFreeAnalysis(){

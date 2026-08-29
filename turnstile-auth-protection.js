@@ -1,8 +1,9 @@
 'use strict';
 (()=>{
-  const VERSION=12;
+  const VERSION=13;
   const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
   const APP_URL=location.origin+'/index.html';
+  const FREE_RESUME_URL=APP_URL+'?resume-free=1';
   const ALLOWED_HOSTS=new Set(['propertythesis.com','www.propertythesis.com']);
   if((window.__propertyThesisTurnstileAuthVersion||0)>=VERSION)return;
   window.__propertyThesisTurnstileAuthVersion=VERSION;
@@ -27,7 +28,7 @@
     const timer=setTimeout(()=>controller.abort(),25000);
     try{
       const key='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
-      const url='https://lmaiqpkogmmsldkziggy.supabase.co/auth/v1/signup?redirect_to='+encodeURIComponent(APP_URL);
+      const url='https://lmaiqpkogmmsldkziggy.supabase.co/auth/v1/signup?redirect_to='+encodeURIComponent(FREE_RESUME_URL);
       const response=await fetch(url,{
         method:'POST',signal:controller.signal,
         headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json','X-Client-Info':'propertythesis-web'},
@@ -173,7 +174,7 @@
     if(!email)return message('Enter the email address used to create the account.','error');
     if(!requireToken('resend'))return;
     busy=true;message('Resending verification email…');
-    try{const {error}=await cloudClient.auth.resend({type:'signup',email,options:{emailRedirectTo:APP_URL,captchaToken:token}});message(error?error.message:'Verification email resent. Check your inbox and spam folder.',error?'error':'success');}
+    try{const {error}=await cloudClient.auth.resend({type:'signup',email,options:{emailRedirectTo:FREE_RESUME_URL,captchaToken:token}});message(error?error.message:'Verification email resent. Check your inbox and spam folder.',error?'error':'success');}
     catch(e){message(e?.message||'Verification email could not be resent. Please try again.','error');}
     finally{busy=false;resetChallenge();}
   }

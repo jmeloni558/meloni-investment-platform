@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=29;
+  const VERSION=30;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -10,6 +10,7 @@
   const PENDING_FREE='ptPendingFreeAnalysisV1';
   let mortgageMode=false;
   let resumingFree=false;
+  let freeDraftReady=false;
 
   function activeSection(){return document.querySelector('.section.active')?.id||'';}
   function isSignedIn(){try{return typeof cloudUser!=='undefined'&&!!cloudUser}catch(e){return false}}
@@ -38,25 +39,17 @@
     try{const draft=pendingFree();if(!draft?.values)return false;Object.entries(draft.values).forEach(([id,value])=>{const el=document.getElementById(id);if(!el)return;if(el.type==='checkbox')el.checked=!!value;else el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});return true;}catch(_e){return false;}
   }
   async function resumeFreeAnalysis(){
-    if(resumingFree||!pendingFree()||!isSignedIn())return false;
-    if(!window.GuidedContinueController?.recalculate||typeof saveCurrentCloud!=='function')return false;
+    if(resumingFree||freeDraftReady||!pendingFree()||!isSignedIn())return false;
+    if(!window.GuidedAnalysisSetup?.go)return false;
     resumingFree=true;
     try{
       restoreFreeDraft();try{if(typeof readFields==='function')readFields();}catch(_e){}
-      try{selectedPropertyId=null;selectedAnalysisId=null;selectedScenarioId=null;}catch(_e){}
-      try{if(typeof setStatus==='function')setStatus('Account connected — calculating and saving your analysis…');}catch(_e){}
-      const access=await window.PropertyThesisBilling?.ensureAccessForCurrent?.();
-      if(!access?.allowed)throw new Error('The free property could not be activated. Please try Calculate, Save & Review Results again.');
-      await window.GuidedContinueController.recalculate();
-      await saveCurrentCloud(false);
-      if(typeof selectedAnalysisId==='undefined'||!selectedAnalysisId)throw new Error('The analysis was calculated but could not be saved.');
-      try{await window.GuidedContinueController.hydrateResults?.();}catch(_e){}
-      localStorage.removeItem(PENDING_FREE);
-      go('dashboard');
-      try{if(typeof setStatus==='function')setStatus('Analysis calculated and saved — review your results');}catch(_e){}
-      window.scrollTo({top:0,behavior:'smooth'});return true;
+      go('assumptions');window.GuidedAnalysisSetup.go(6);freeDraftReady=true;
+      const q=new URLSearchParams(location.search);if(q.has('resume-free')){q.delete('resume-free');history.replaceState(null,'',location.pathname+(q.toString()?'?'+q:'')+location.hash);}
+      try{if(typeof setStatus==='function')setStatus('Your analysis has been restored. Review the assumptions, then calculate and save the results.');}catch(_e){}
+      return true;
     }catch(err){
-      try{if(typeof setStatus==='function')setStatus('Unable to finish the free analysis: '+String(err?.message||err));}catch(_e){}
+      try{if(typeof setStatus==='function')setStatus('Unable to restore the free analysis: '+String(err?.message||err));}catch(_e){}
       return false;
     }finally{resumingFree=false;}
   }
