@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Sign In | PropertyThesis</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{font-family:Arial,sans-serif;color:#102d46;background:#f3f8fc}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#eaf4fb,#f8fbfd);display:grid;grid-template-rows:auto 1fr}.site-header{background:#0f2d46;color:#fff;padding:24px}.site-header a{display:block;width:max-content;color:inherit;text-decoration:none}.site-header strong{display:block;font-size:28px}.site-header span{display:block;margin-top:4px;font-size:13px;font-weight:700}.page{display:grid;place-items:center;padding:32px 18px}.card{width:min(100%,460px);padding:30px;border:1px solid #cbdde9;border-radius:16px;background:#fff;box-shadow:0 18px 50px rgba(15,45,70,.12)}h1{margin:0 0 8px;font-size:28px}p{margin:0 0 22px;color:#526b7d;line-height:1.5}.field{margin:0 0 16px}.field label{display:block;margin:0 0 7px;font-size:13px;font-weight:700}.field input{width:100%;padding:13px;border:1px solid #b9cfde;border-radius:8px;font:inherit}.field input:focus{outline:3px solid rgba(22,111,166,.18);border-color:#166fa6}.submit{width:100%;padding:13px;border:0;border-radius:8px;background:#126da4;color:#fff;font:inherit;font-weight:800;cursor:pointer}.submit:disabled{opacity:.65;cursor:wait}.links{display:flex;justify-content:space-between;gap:16px;margin-top:18px;font-size:13px}.links a{color:#145f8d;font-weight:700}.message{min-height:20px;margin:16px 0 0;padding:10px;border-left:4px solid #2476a9;background:#f2f8fc;color:#35576c;font-size:13px;line-height:1.45}.message.error{border-color:#c43d3d;background:#fff5f5;color:#842828}.turnstile{display:flex;justify-content:center;min-height:65px;margin:18px 0 12px}
+  </style>
+</head>
+<body>
+  <header class="site-header"><a href="https://propertythesis.com/" aria-label="PropertyThesis home"><strong>PropertyThesis</strong><span>Know the Numbers. Build the Case.</span></a></header>
+  <main class="page">
+    <section class="card" aria-labelledby="loginTitle">
+      <h1 id="loginTitle">Sign in to PropertyThesis</h1>
+      <p>Access your saved properties, analyses and reports.</p>
+      <form id="loginForm" action="/login.html" method="post" autocomplete="on">
+        <div class="field"><label for="email">Email</label><input id="email" name="username" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus></div>
+        <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
+        <button id="submitButton" class="submit" type="submit">Sign In</button>
+      </form>
+      <div id="turnstile" class="turnstile" aria-label="Security check"></div>
+      <div id="message" class="message" role="status">Complete the security check, then sign in.</div>
+      <div class="links"><a href="/?create-account=1">Create a free account</a><a href="/?forgot-password=1">Forgot password?</a></div>
+    </section>
+  </main>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
+  <script>
+  (()=>{
+    'use strict';
+    const SUPABASE_URL='https://lmaiqpkogmmsldkziggy.supabase.co';
+    const SUPABASE_KEY='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
+    const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
+    const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    const form=document.getElementById('loginForm'),button=document.getElementById('submitButton'),message=document.getElementById('message');
+    let token='',pending=false,busy=false;
+    function setMessage(text,error=false){message.textContent=text;message.classList.toggle('error',error)}
+    function destination(){const raw=new URLSearchParams(location.search).get('return')||'/';try{const url=new URL(raw,location.origin);return url.origin===location.origin?url.href:location.origin+'/'}catch(_e){return location.origin+'/'}}
+    async function signIn(){
+      if(busy)return;
+      const email=document.getElementById('email').value.trim(),password=document.getElementById('password').value;
+      if(!email||!password)return setMessage('Enter your email and password.',true);
+      if(!token){pending=true;setMessage('Complete the security check to continue.');return;}
+      busy=true;button.disabled=true;setMessage('Signing in…');
+      try{
+        const {error}=await client.auth.signInWithPassword({email,password,options:{captchaToken:token}});
+        if(error)throw error;
+        setMessage('Signed in. Returning to PropertyThesis…');
+        location.assign(destination());
+      }catch(error){setMessage(/invalid login credentials|email not confirmed/i.test(String(error?.message))?'Unable to sign in. Check that your email is verified and your password is correct.':String(error?.message||'Sign in failed.'),true);try{window.turnstile.reset()}catch(_e){}token='';}
+      finally{busy=false;button.disabled=false}
+    }
+    form.addEventListener('submit',event=>{event.preventDefault();signIn()});
+    async function render(){
+      if(!window.turnstile)return setTimeout(render,50);
+      window.turnstile.render('#turnstile',{sitekey:SITE_KEY,theme:'auto',callback:value=>{token=value||'';setMessage('Security check complete. You can sign in.');if(pending){pending=false;signIn()}},'expired-callback':()=>{token='';setMessage('Security check expired. Please complete it again.')},'error-callback':()=>setMessage('Security check could not load. Please refresh and try again.',true)});
+    }
+    client.auth.getSession().then(({data})=>{if(data?.session?.user)location.replace(destination());else render()});
+  })();
+  </script>
+</body>
+</html>
