@@ -48,7 +48,7 @@
       setText(brand.querySelector('p'),TAGLINE);
       if(!brand.dataset.ptHomeLink){
         brand.dataset.ptHomeLink='1';brand.setAttribute('role','link');brand.setAttribute('tabindex','0');brand.setAttribute('aria-label','PropertyThesis home');brand.style.cursor='pointer';
-        const home=()=>location.assign('index.html?cb='+Date.now());
+        const home=()=>location.assign('https://propertythesis.com/');
         brand.addEventListener('click',home);brand.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();home();}});
       }
     }
