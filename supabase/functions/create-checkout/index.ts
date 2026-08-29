@@ -54,6 +54,7 @@ export default {
       ...(selected.mode === 'subscription' ? { subscription_data: { metadata } } : {}),
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
+      wallet_options: { link: { display: 'never' } },
     });
     return json({ url: session.url });
   }),
