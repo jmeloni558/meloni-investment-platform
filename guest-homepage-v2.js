@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=22;
+  const VERSION=23;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -51,7 +51,7 @@
     let note=document.getElementById('ptAccountUpgradeBanner');
     if(!note){note=document.createElement('aside');note.id='ptAccountUpgradeBanner';note.className='pt-account-upgrade';note.hidden=true;note.setAttribute('aria-label','PropertyThesis professional plans');shell.insertAdjacentElement('afterend',note);}
     else if(note.previousElementSibling!==shell)shell.insertAdjacentElement('afterend',note);
-    const oldNotice=document.getElementById('ptFreeAnalysisNotice');if(oldNotice&&oldNotice!==note)oldNotice.hidden=true;
+    const oldNotice=document.getElementById('ptFreeAnalysisNotice');if(oldNotice&&oldNotice!==note)oldNotice.remove();
     let uid='';try{uid=cloudUser?.id||'';}catch(_e){}if(!uid||noticeLoading||noticeUser===uid)return;
     noticeLoading=true;
     try{
@@ -60,9 +60,10 @@
         cloudClient.from('properties').select('id').eq('user_id',uid).limit(1)
       ]);
       if(subscriptionResult.error)throw subscriptionResult.error;if(propertyResult.error)throw propertyResult.error;
-      noticeUser=uid;
       const data=subscriptionResult.data,active=!!data&&(!data.current_period_end||new Date(data.current_period_end).getTime()>Date.now());
-      if(active||!propertyResult.data?.length){note.hidden=true;return;}
+      if(active){noticeUser=uid;note.hidden=true;return;}
+      if(!propertyResult.data?.length){noticeUser='';note.hidden=true;return;}
+      noticeUser=uid;
       note.hidden=false;
       note.innerHTML='<div class="pt-account-upgrade-copy"><span class="pt-account-upgrade-kicker">KEEP BUILDING YOUR PIPELINE</span><strong>Your first property is saved. Ready to analyze the next opportunity?</strong><span>Upgrade for additional property analyses, professional reports and multiyear pro formas.</span></div><div class="pt-account-upgrade-actions"><button type="button" data-pt-upgrade="professional_50_monthly">Professional 50 — $29/month</button><button type="button" class="secondary" data-pt-upgrade="unlimited_monthly">Unlimited — $59/month</button><a href="pricing.html">Compare all plans</a></div>';
       note.querySelectorAll('[data-pt-upgrade]').forEach(button=>button.onclick=()=>{location.href='pricing.html';});
