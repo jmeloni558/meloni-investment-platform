@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=14;
+  const VERSION=15;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -89,7 +89,15 @@
   function apply(){
     const shell=document.getElementById('appNavShell'),hero=document.getElementById('ptGuestGuidance'),sampleSection=document.getElementById('ptSampleShowcase');if(!shell||!hero||!sampleSection)return false;
     const guest=signedOut(),free=freeMode(),params=new URLSearchParams(location.search);document.body.classList.toggle('pt-guest-landing',guest&&!free);document.body.classList.toggle('pt-guest-analysis',free);
-    if(guest&&!free&&!signInRequestHandled&&params.get('signin')==='1'){signInRequestHandled=true;const plan=params.get('plan');setTimeout(()=>auth('signin',plan?'Sign in to continue with the selected PropertyThesis plan.':'Sign in to your PropertyThesis account.'),80);}
+    if(guest&&!free&&!signInRequestHandled&&params.get('signin')==='1'){
+      signInRequestHandled=true;
+      const plan=params.get('plan'),cleanParams=new URLSearchParams(params);
+      cleanParams.delete('signin');
+      cleanParams.delete('return');
+      const cleanQuery=cleanParams.toString();
+      history.replaceState(null,'',location.pathname+(cleanQuery?'?'+cleanQuery:'')+location.hash);
+      setTimeout(()=>auth('signin',plan?'Sign in to continue with the selected PropertyThesis plan.':'Sign in to your PropertyThesis account.'),80);
+    }
     const standard=shell.querySelector('.app-nav-actions'),guestNav=shell.querySelector('.pt-guest-nav');
     if(guest&&free){if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;enterFreeAnalysis();return true;}
     if(!guest){if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=true);return true;}
