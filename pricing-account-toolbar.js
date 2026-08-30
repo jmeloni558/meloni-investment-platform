@@ -8,7 +8,7 @@
   function render(user){
     const nav=document.querySelector('.pricing-nav');if(!nav||!user)return;
     nav.dataset.accountToolbar='true';
-    nav.innerHTML='<a href="index.html?app-action=new">New Analysis</a><a href="index.html?app-action=existing">Existing Properties</a><a href="index.html?app-action=search-properties">Search Properties</a><a href="index.html?app-action=search-clients">Search Clients</a><a href="index.html?app-action=mortgage">Mortgage Tools</a>';
+    nav.innerHTML='<a href="index.html?app-action=new">New Analysis</a><a href="index.html?app-action=existing">Existing Properties</a><a href="index.html?app-action=search-listings">Search Listings</a><a href="index.html?app-action=search-properties">Search Saved</a><a href="index.html?app-action=search-clients">Search Clients</a><a href="index.html?app-action=mortgage">Mortgage Tools</a>';
   }
   async function start(){
     try{

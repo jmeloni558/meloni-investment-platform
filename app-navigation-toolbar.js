@@ -113,6 +113,7 @@
     if(action==='new')newAnalysis();
     else if(action==='existing')openExisting();
     else if(action==='mortgage')openMortgageTools();
+    else if(action==='search-listings')window.PropertyThesisListingSearch?.open?.();
     else if(action==='search-properties')window.ToolbarLibrarySearch?.open?.('property');
     else if(action==='search-clients')window.ToolbarLibrarySearch?.open?.('client');
     return true;

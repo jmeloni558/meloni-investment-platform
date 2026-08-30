@@ -85,7 +85,7 @@
 
   function ensureToolbar(){
     ensureStyles();const actions=document.querySelector('.app-nav-actions');if(!actions)return false;
-    let prop=document.getElementById('appNavSearchProperties');if(!prop){prop=document.createElement('button');prop.type='button';prop.id='appNavSearchProperties';prop.className='app-nav-action pt-search-action';prop.textContent='Search Properties';prop.onclick=()=>open('property');const existing=document.getElementById('appNavExisting');if(existing)existing.insertAdjacentElement('afterend',prop);else actions.appendChild(prop);}
+    let prop=document.getElementById('appNavSearchProperties');if(!prop){prop=document.createElement('button');prop.type='button';prop.id='appNavSearchProperties';prop.className='app-nav-action pt-search-action';prop.textContent='Search Saved';prop.onclick=()=>open('property');const existing=document.getElementById('appNavExisting');if(existing)existing.insertAdjacentElement('afterend',prop);else actions.appendChild(prop);}
     let client=document.getElementById('appNavSearchClients');if(!client){client=document.createElement('button');client.type='button';client.id='appNavSearchClients';client.className='app-nav-action pt-search-action';client.textContent='Search Clients';client.onclick=()=>open('client');prop.insertAdjacentElement('afterend',client);}
     const legacy=document.getElementById('hubSearch');if(legacy){legacy.value='';legacy.dispatchEvent(new Event('input',{bubbles:true}));}
     return true;
