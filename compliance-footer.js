@@ -13,7 +13,7 @@
     footer.setAttribute('aria-label','PropertyThesis company and licensing information');
     footer.innerHTML=`<div class="pt-footer-inner">
       <div class="pt-footer-grid">
-        <section><p class="pt-footer-brand">PropertyThesis</p><p class="pt-footer-division">A division of MELONI REALTY INC<br>Florida Licensed Real Estate Brokerage</p></section>
+        <section><p class="pt-footer-brand">PropertyThesis</p><p class="pt-footer-division">A division and registered fictitious name of MELONI REALTY INC<br>Florida Fictitious Name Registration G26000120794<br>Florida Licensed Real Estate Brokerage</p></section>
         <section><p class="pt-footer-heading">Licensing</p><p class="pt-footer-copy">Jamie Meloni, Licensed Real Estate Broker<br>Broker License BK3167461<br>Brokerage License CQ1067291</p></section>
         <section id="ptFooterContact"><p class="pt-footer-heading">Contact</p><address class="pt-footer-contact">18012 Loretta Lane<br>Lutz, FL 33548<br><a href="tel:+18137608516">813-760-8516</a><br><a href="mailto:jamie@propertythesis.com">jamie@propertythesis.com</a></address></section>
       </div>
