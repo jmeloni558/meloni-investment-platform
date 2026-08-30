@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=14,IMPORT_KEY='ptPendingListingImportV1';
+  const VERSION=15,IMPORT_KEY='ptPendingListingImportV1';
   if((window.__ptRentCastListingSearchV||0)>=VERSION)return;
   window.__ptRentCastListingSearchV=VERSION;
   let panel=null,results=[],offset=0,activeListing=null;const featureCache=new Map(),rentCache=new Map();
@@ -127,6 +127,11 @@
     const minimumUnits=l.propertyType==='Apartment'?5:l.propertyType==='Multi-Family'?2:1;
     const imported={name:l.formattedAddress||l.addressLine1||'Imported Listing',address:l.formattedAddress||l.addressLine1||'',price:Number(l.price)||0,units:Number(l.units)||minimumUnits,propertyType:l.propertyType||'',listing:{...l,source:'RentCast',importedAt:new Date().toISOString()}};
     localStorage.setItem(IMPORT_KEY,JSON.stringify(imported));
+    if(!signedIn()){
+      const params=new URLSearchParams({'free-analysis':'1','starter-address':imported.address,'starter-price':String(imported.price||''),'starter-units':String(imported.units||1),cb:String(Date.now())});
+      location.href='index.html?'+params.toString();
+      return;
+    }
     try{state={...defaults,name:imported.name,address:imported.address,price:imported.price,rent:0,units:imported.units,marketRentSupport:{inputs:{propertyType:imported.propertyType,bedrooms:l.bedrooms??'',bathrooms:l.bathrooms??'',squareFootage:l.squareFootage??''}},sourceListing:imported.listing};renderFields();render();}catch(_e){}
     document.getElementById('ptListingDetail')?.classList.remove('is-open');close();
     try{window.AppNavigationToolbar?.go?.('assumptions');window.GuidedAnalysisSetup?.go?.(1);}catch(_e){}
