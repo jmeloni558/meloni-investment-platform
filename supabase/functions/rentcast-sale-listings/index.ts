@@ -2,6 +2,7 @@ import { withSupabase } from 'npm:@supabase/server@^1';
 import { corsHeaders, json } from '../_shared/cors.ts';
 
 const allowedTypes = new Set(['Single Family', 'Condo', 'Townhouse', 'Manufactured', 'Multi-Family', 'Apartment', 'Land']);
+const allowedListingTypes = new Set(['Standard', 'New Construction', 'Foreclosure', 'Short Sale']);
 const clean = (value: unknown, max = 120) => String(value ?? '').trim().slice(0, max);
 const numberInRange = (value: unknown, min: number, max: number) => {
   if (value === null || value === undefined || String(value).trim() === '') return null;
@@ -53,6 +54,8 @@ export default {
     const daysOld = numberInRange(body.daysOld, 1, 3650);
     const requestedTypes = Array.isArray(body.propertyTypes) ? body.propertyTypes.map((value: unknown) => clean(value, 30)).filter((value: string) => allowedTypes.has(value)) : [];
     const propertyTypes = requestedTypes.length ? [...new Set(requestedTypes)] : [...allowedTypes];
+    const requestedListingTypes = Array.isArray(body.listingTypes) ? body.listingTypes.map((value: unknown) => clean(value, 40)).filter((value: string) => allowedListingTypes.has(value)) : [];
+    const listingTypes = requestedListingTypes.length ? [...new Set(requestedListingTypes)] : [...allowedListingTypes];
     const bedroomsMin = numberInRange(body.bedroomsMin, 0, 1000);
     const bedroomsMax = numberInRange(body.bedroomsMax, 0, 1000);
     const bathroomsMin = numberInRange(body.bathroomsMin, 0, 1000);
@@ -63,6 +66,13 @@ export default {
     const lotSizeMax = numberInRange(body.lotSizeMax, 0, 1000000000);
     const yearBuiltMin = numberInRange(body.yearBuiltMin, 1600, new Date().getFullYear() + 5);
     const yearBuiltMax = numberInRange(body.yearBuiltMax, 1600, new Date().getFullYear() + 5);
+    const maxPricePerUnit = numberInRange(body.maxPricePerUnit, 0, 1000000000);
+    const minEstimatedRent = numberInRange(body.minEstimatedRent, 0, 100000000);
+    const minNoi = numberInRange(body.minNoi, 0, 1000000000);
+    const minCapRate = numberInRange(body.minCapRate, 0, 100);
+    const minSupportedValue = numberInRange(body.minSupportedValue, 0, 1000000000);
+    const expenseRatio = (numberInRange(body.expenseRatio, 0, 95) ?? 40) / 100;
+    const targetCapRate = (numberInRange(body.targetCapRate, 0.1, 100) ?? 6.5) / 100;
     if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) return json({ error: 'Minimum price cannot exceed maximum price' }, 400);
     if (bedroomsMin !== null && bedroomsMax !== null && bedroomsMin > bedroomsMax) return json({ error: 'Minimum bedrooms cannot exceed maximum bedrooms' }, 400);
     if (bathroomsMin !== null && bathroomsMax !== null && bathroomsMin > bathroomsMax) return json({ error: 'Minimum bathrooms cannot exceed maximum bathrooms' }, 400);
@@ -89,8 +99,8 @@ export default {
       return json({ error: response.status === 429 ? 'Listing search limit reached. Try again shortly.' : 'Unable to retrieve listings' }, response.status === 429 ? 429 : 502);
     }
 
-    const listings = (Array.isArray(payload) ? payload : [])
-      .filter((item) => propertyTypes.includes(item?.propertyType) && item?.status === 'Active')
+    let listings = (Array.isArray(payload) ? payload : [])
+      .filter((item) => propertyTypes.includes(item?.propertyType) && item?.status === 'Active' && listingTypes.includes(item?.listingType))
       .map((item) => ({
         id: item.id, formattedAddress: item.formattedAddress, addressLine1: item.addressLine1,
         city: item.city, state: item.state, zipCode: item.zipCode, county: item.county,
@@ -101,8 +111,33 @@ export default {
         daysOnMarket: item.daysOnMarket, mlsName: item.mlsName, mlsNumber: item.mlsNumber,
         hoa: item.hoa ?? null, listingAgent: item.listingAgent ?? null, listingOffice: item.listingOffice ?? null,
       }));
+    if (maxPricePerUnit !== null) listings = listings.filter((item) => Number(item.units) > 0 && Number(item.price) / Number(item.units) <= maxPricePerUnit);
+    const needsRentEstimate = minEstimatedRent !== null || minNoi !== null || minCapRate !== null || minSupportedValue !== null;
+    if (needsRentEstimate) {
+      const enriched = await Promise.all(listings.map(async (item) => {
+        if (!item.formattedAddress || !Number(item.price)) return null;
+        try {
+          const rentParams = new URLSearchParams({ address: item.formattedAddress });
+          const rentResponse = await fetch(`https://api.rentcast.io/v1/avm/rent/long-term?${rentParams}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
+          if (!rentResponse.ok) return null;
+          const rentData = await rentResponse.json().catch(() => null);
+          const estimatedRent = Number(rentData?.rent);
+          if (!Number.isFinite(estimatedRent)) return null;
+          const noi = estimatedRent * 12 * (1 - expenseRatio);
+          const capRate = noi / Number(item.price) * 100;
+          const supportedValue = noi / targetCapRate;
+          if (minEstimatedRent !== null && estimatedRent < minEstimatedRent) return null;
+          if (minNoi !== null && noi < minNoi) return null;
+          if (minCapRate !== null && capRate < minCapRate) return null;
+          if (minSupportedValue !== null && supportedValue < minSupportedValue) return null;
+          return { ...item, investment: { estimatedRent, noi, capRate, supportedValue, expenseRatio: expenseRatio * 100, targetCapRate: targetCapRate * 100 } };
+        } catch { return null; }
+      }));
+      listings = enriched.filter((item): item is NonNullable<typeof item> => item !== null);
+    }
     const totalCount = Number(response.headers.get('x-total-count'));
     console.log('[rentcast-sale-listings] success', { count: listings.length, totalCount: Number.isFinite(totalCount) ? totalCount : null });
-    return json({ listings, offset, limit, totalCount: Number.isFinite(totalCount) ? totalCount : null, hasMore: listings.length === limit, filters: { propertyTypes, status: 'Active' }, source: 'RentCast' });
+    const postFiltered = needsRentEstimate || maxPricePerUnit !== null || listingTypes.length < allowedListingTypes.size;
+    return json({ listings, offset, limit, totalCount: postFiltered ? listings.length : (Number.isFinite(totalCount) ? totalCount : null), hasMore: !postFiltered && listings.length === limit, filters: { propertyTypes, listingTypes, status: 'Active' }, source: 'RentCast' });
   }),
 };
