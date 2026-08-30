@@ -20,10 +20,18 @@ export default {
     if (!apiKey) return json({ error: 'Listing search is not configured' }, 503);
     const body = await req.json().catch(() => ({}));
     const userId = ctx.userClaims!.id;
+    const userEmail = clean(ctx.userClaims!.email, 320).toLowerCase();
+    const unrestrictedTestEmails = new Set(
+      String(Deno.env.get('RENTCAST_UNRESTRICTED_TEST_EMAILS') || '')
+        .split(',')
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    const unrestrictedTester = unrestrictedTestEmails.has(userEmail);
     const monthlyLimit = Math.max(1, Number(Deno.env.get('RENTCAST_MONTHLY_CALL_LIMIT') || 900));
     const { data: subscription } = await ctx.supabaseAdmin.from('billing_subscriptions').select('plan,status,current_period_end').eq('user_id', userId).in('status', ['active', 'trialing']).gt('current_period_end', new Date().toISOString()).maybeSingle();
-    const plan = String(subscription?.plan || 'free');
-    const dailyUserLimit = plan.startsWith('unlimited_') ? 100 : plan.startsWith('professional_50_') ? 50 : 5;
+    const plan = unrestrictedTester ? 'tester' : String(subscription?.plan || 'free');
+    const dailyUserLimit = unrestrictedTester ? Number.MAX_SAFE_INTEGER : plan.startsWith('unlimited_') ? 100 : plan.startsWith('professional_50_') ? 50 : 5;
     const getCached = async (cacheKey: string) => {
       const { data } = await ctx.supabaseAdmin.from('external_api_cache').select('payload,expires_at').eq('cache_key', cacheKey).gt('expires_at', new Date().toISOString()).maybeSingle();
       return data?.payload ?? null;
@@ -44,7 +52,7 @@ export default {
     const enforceUsageLimit = async () => {
       const usage = await usageState();
       if (usage.monthlyUsed >= monthlyLimit) throw Object.assign(new Error('MONTHLY_LIMIT'), { usage });
-      if (usage.dailyUsed >= dailyUserLimit) throw Object.assign(new Error('DAILY_LIMIT'), { usage });
+      if (!unrestrictedTester && usage.dailyUsed >= dailyUserLimit) throw Object.assign(new Error('DAILY_LIMIT'), { usage });
       return usage;
     };
     const recordUsage = async (endpoint: string) => {
