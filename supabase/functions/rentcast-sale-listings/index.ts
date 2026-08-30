@@ -20,7 +20,9 @@ export default {
     const body = await req.json().catch(() => ({}));
     const userId = ctx.userClaims!.id;
     const monthlyLimit = Math.max(1, Number(Deno.env.get('RENTCAST_MONTHLY_CALL_LIMIT') || 40));
-    const dailyUserLimit = Math.max(1, Number(Deno.env.get('RENTCAST_DAILY_USER_LIMIT') || 20));
+    const { data: subscription } = await ctx.supabaseAdmin.from('billing_subscriptions').select('plan,status,current_period_end').eq('user_id', userId).in('status', ['active', 'trialing']).gt('current_period_end', new Date().toISOString()).maybeSingle();
+    const plan = String(subscription?.plan || 'free');
+    const dailyUserLimit = plan.startsWith('unlimited_') ? 40 : plan.startsWith('professional_50_') ? 20 : 5;
     const getCached = async (cacheKey: string) => {
       const { data } = await ctx.supabaseAdmin.from('external_api_cache').select('payload,expires_at').eq('cache_key', cacheKey).gt('expires_at', new Date().toISOString()).maybeSingle();
       return data?.payload ?? null;
@@ -28,7 +30,7 @@ export default {
     const saveCached = async (cacheKey: string, endpoint: string, payload: unknown, ttlMs: number) => {
       await ctx.supabaseAdmin.from('external_api_cache').upsert({ cache_key: cacheKey, provider: 'rentcast', endpoint, payload, expires_at: new Date(Date.now() + ttlMs).toISOString(), created_at: new Date().toISOString() });
     };
-    const enforceUsageLimit = async () => {
+    const usageState = async () => {
       const now = new Date();
       const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
       const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
@@ -36,8 +38,13 @@ export default {
         ctx.supabaseAdmin.from('external_api_usage').select('id', { count: 'exact', head: true }).eq('provider', 'rentcast').gte('created_at', monthStart),
         ctx.supabaseAdmin.from('external_api_usage').select('id', { count: 'exact', head: true }).eq('provider', 'rentcast').eq('user_id', userId).gte('created_at', dayStart),
       ]);
-      if ((monthlyCount ?? 0) >= monthlyLimit) throw new Error('MONTHLY_LIMIT');
-      if ((dailyCount ?? 0) >= dailyUserLimit) throw new Error('DAILY_LIMIT');
+      return { plan, dailyUsed: dailyCount ?? 0, dailyLimit: dailyUserLimit, dailyRemaining: Math.max(0, dailyUserLimit - (dailyCount ?? 0)), monthlyUsed: monthlyCount ?? 0, monthlyLimit };
+    };
+    const enforceUsageLimit = async () => {
+      const usage = await usageState();
+      if (usage.monthlyUsed >= monthlyLimit) throw Object.assign(new Error('MONTHLY_LIMIT'), { usage });
+      if (usage.dailyUsed >= dailyUserLimit) throw Object.assign(new Error('DAILY_LIMIT'), { usage });
+      return usage;
     };
     const recordUsage = async (endpoint: string) => {
       await ctx.supabaseAdmin.from('external_api_usage').insert({ user_id: userId, provider: 'rentcast', endpoint });
@@ -47,9 +54,11 @@ export default {
       if (!propertyId) return json({ error: 'A property id is required' }, 400);
       const cacheKey = `rentcast:property-features:${propertyId}`;
       const cached = await getCached(cacheKey);
-      if (cached) return json({ ...cached, cached: true });
-      try { await enforceUsageLimit(); } catch (error) {
-        return json({ error: error instanceof Error && error.message === 'DAILY_LIMIT' ? 'Daily property-data limit reached. Try again tomorrow.' : 'Monthly property-data allowance reached.' }, 429);
+      if (cached) return json({ ...cached, cached: true, usage: await usageState() });
+      let usage;
+      try { usage = await enforceUsageLimit(); } catch (error) {
+        const daily = error instanceof Error && error.message === 'DAILY_LIMIT';
+        return json({ error: daily ? (plan === 'free' ? 'You have used today’s free listing allowance. Upgrade for additional daily searches.' : 'Your plan’s daily listing allowance has been reached. Try again tomorrow.') : 'The site-wide monthly listing-data allowance has been reached.', usage: (error as { usage?: unknown }).usage, upgradeRequired: daily && plan === 'free' }, 429);
       }
       const featureResponse = await fetch(`https://api.rentcast.io/v1/properties/${encodeURIComponent(propertyId)}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
       const property = await featureResponse.json().catch(() => null);
@@ -70,7 +79,7 @@ export default {
         source: 'RentCast public property records',
       };
       await Promise.all([recordUsage('property-features'), saveCached(cacheKey, 'property-features', featurePayload, 30 * 24 * 60 * 60 * 1000)]);
-      return json(featurePayload);
+      return json({ ...featurePayload, usage: { ...usage, dailyUsed: usage.dailyUsed + 1, dailyRemaining: Math.max(0, usage.dailyRemaining - 1) } });
     }
     const city = clean(body.city, 80);
     const state = clean(body.state, 2).toUpperCase();
@@ -119,9 +128,11 @@ export default {
 
     const cacheKey = `rentcast:sale-listings:${params.toString()}:listingTypes=${listingTypes.sort().join('|')}:maxPricePerUnit=${maxPricePerUnit ?? ''}`;
     const cached = await getCached(cacheKey);
-    if (cached) return json({ ...cached, cached: true });
-    try { await enforceUsageLimit(); } catch (error) {
-      return json({ error: error instanceof Error && error.message === 'DAILY_LIMIT' ? 'Daily listing-search limit reached. Try again tomorrow.' : 'Monthly listing-data allowance reached.' }, 429);
+    if (cached) return json({ ...cached, cached: true, usage: await usageState() });
+    let usage;
+    try { usage = await enforceUsageLimit(); } catch (error) {
+      const daily = error instanceof Error && error.message === 'DAILY_LIMIT';
+      return json({ error: daily ? (plan === 'free' ? 'You have used today’s free listing allowance. Upgrade for additional daily searches.' : 'Your plan’s daily listing allowance has been reached. Try again tomorrow.') : 'The site-wide monthly listing-data allowance has been reached.', usage: (error as { usage?: unknown }).usage, upgradeRequired: daily && plan === 'free' }, 429);
     }
     console.log('[rentcast-sale-listings] request', { city, state, zipCode, propertyTypes, offset, limit, filtered: [...params.keys()].filter((key) => !['city', 'state', 'zipCode', 'propertyType', 'status', 'limit', 'offset', 'includeTotalCount'].includes(key)) });
     const response = await fetch(`https://api.rentcast.io/v1/listings/sale?${params}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
@@ -149,6 +160,6 @@ export default {
     const postFiltered = maxPricePerUnit !== null || listingTypes.length < allowedListingTypes.size;
     const result = { listings, offset, limit, totalCount: postFiltered ? listings.length : (Number.isFinite(totalCount) ? totalCount : null), hasMore: !postFiltered && listings.length === limit, filters: { propertyTypes, listingTypes, status: 'Active' }, source: 'RentCast' };
     await Promise.all([recordUsage('sale-listings'), saveCached(cacheKey, 'sale-listings', result, 10 * 60 * 1000)]);
-    return json(result);
+    return json({ ...result, usage: { ...usage, dailyUsed: usage.dailyUsed + 1, dailyRemaining: Math.max(0, usage.dailyRemaining - 1) } });
   }),
 };
