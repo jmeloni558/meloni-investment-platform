@@ -3,6 +3,9 @@ import { corsHeaders, json } from '../_shared/cors.ts';
 
 const allowedTypes = new Set(['Single Family', 'Condo', 'Townhouse', 'Manufactured', 'Multi-Family', 'Apartment', 'Land']);
 const allowedListingTypes = new Set(['Standard', 'New Construction', 'Foreclosure', 'Short Sale']);
+// Temporary QA override: keep anonymous listing discovery open while the site is being tested.
+// Set this back to false before public launch to restore the normal guest allowance.
+const TEMPORARY_UNRESTRICTED_GUEST_TESTING = true;
 const clean = (value: unknown, max = 120) => String(value ?? '').trim().slice(0, max);
 const finiteNumber = (value: unknown) => value !== null && value !== undefined && Number.isFinite(Number(value)) ? Number(value) : null;
 const numberInRange = (value: unknown, min: number, max: number) => {
@@ -43,8 +46,9 @@ export default {
     const { data: subscription } = userId
       ? await ctx.supabaseAdmin.from('billing_subscriptions').select('plan,status,current_period_end').eq('user_id', userId).in('status', ['active', 'trialing']).gt('current_period_end', new Date().toISOString()).maybeSingle()
       : { data: null };
-    const plan = userId ? (unrestrictedTester ? 'tester' : String(subscription?.plan || 'free')) : 'guest';
-    const dailyUserLimit = unrestrictedTester ? Number.MAX_SAFE_INTEGER : plan.startsWith('unlimited_') ? 100 : plan.startsWith('professional_50_') ? 50 : 5;
+    const unrestrictedGuestTester = !userId && TEMPORARY_UNRESTRICTED_GUEST_TESTING;
+    const plan = userId ? (unrestrictedTester ? 'tester' : String(subscription?.plan || 'free')) : (unrestrictedGuestTester ? 'guest_testing' : 'guest');
+    const dailyUserLimit = unrestrictedTester || unrestrictedGuestTester ? 1_000_000 : plan.startsWith('unlimited_') ? 100 : plan.startsWith('professional_50_') ? 50 : 5;
     const getCached = async (cacheKey: string) => {
       const { data } = await ctx.supabaseAdmin.from('external_api_cache').select('payload,expires_at').eq('cache_key', cacheKey).gt('expires_at', new Date().toISOString()).maybeSingle();
       return data?.payload ?? null;
@@ -68,8 +72,8 @@ export default {
     };
     const enforceUsageLimit = async () => {
       const usage = await usageState();
-      if (usage.monthlyUsed >= monthlyLimit) throw Object.assign(new Error('MONTHLY_LIMIT'), { usage });
-      if (!unrestrictedTester && usage.dailyUsed >= dailyUserLimit) throw Object.assign(new Error('DAILY_LIMIT'), { usage });
+      if (!unrestrictedGuestTester && usage.monthlyUsed >= monthlyLimit) throw Object.assign(new Error('MONTHLY_LIMIT'), { usage });
+      if (!unrestrictedTester && !unrestrictedGuestTester && usage.dailyUsed >= dailyUserLimit) throw Object.assign(new Error('DAILY_LIMIT'), { usage });
       return usage;
     };
     const recordUsage = async (endpoint: string) => {
