@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sample Property Card | PropertyThesis</title>
+  <meta name="description" content="Explore an interactive PropertyThesis property card and test rent and desired cap-rate assumptions.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="site-shell-v2.css?v=5">
+  <link rel="stylesheet" href="sample-property-card.css?v=1">
+</head>
+<body><div class="app">
+  <header class="top pt-site-header"><div class="topin"><a class="brand pt-site-brand" href="https://propertythesis.com/" aria-label="PropertyThesis home"><img class="pt-site-logo" src="assets/propertythesis-logo.png?v=1" alt="PropertyThesis — Know the Numbers. Prove the Case."></a></div></header>
+  <main class="sample-card-shell">
+    <nav class="pt-site-nav" aria-label="PropertyThesis navigation"><a class="primary" href="index.html?free-analysis=1">Start Free Analysis</a><a href="index.html?app-action=search-listings">Search Listings</a><a href="sample-report-viewer.html?v=2">Sample Report</a><a class="active" data-sample-property-card href="sample-property-card.html" aria-current="page">Sample Property Card</a><a href="pricing.html">Pricing</a><a href="mortgage-tools.html">Mortgage Tools</a><a href="glossary.html">Glossary</a><a href="index.html?signin=1">Sign In</a></nav>
+    <section class="sample-card-intro"><div><span>INTERACTIVE PROPERTY SCREEN</span><h1>See how PropertyThesis tests a listing.</h1><p>The Property Card turns a listing price and rent assumption into an immediate income screen. Change the monthly rent or your desired cap rate below to see the NOI, implied cap rate, and income-supported values recalculate.</p></div><aside><strong>This is a demonstration—not a live listing.</strong><p>No listing search or external data call occurs on this page. Actual listing cards can also carry property details into the full PropertyThesis analysis, where users can refine every assumption, save the property, and produce a professional report and multiyear pro forma.</p></aside></section>
+    <section class="sample-property-stage" aria-labelledby="samplePropertyTitle"><article class="sample-property-card">
+      <div class="sample-property-image" role="img" aria-label="Illustrative apartment property"><div><span>PROPERTYTHESIS SAMPLE</span><b>Illustrative property preview</b></div></div>
+      <header><div><span class="property-type">MULTI-FAMILY</span><h2 id="samplePropertyTitle">1250 Market Avenue, Tampa, FL 33602</h2></div><strong class="sample-price">$500,000</strong></header>
+      <div class="sample-facts"><div><b>4</b><span>Units reported</span></div><div><b>3,600</b><span>Square feet</span></div><div><b>1988</b><span>Year built</span></div><div><b>Standard</b><span>Listing type</span></div></div>
+      <section class="sample-value-view"><div class="value-heading"><div><span>PROPERTYTHESIS VALUE VIEW</span><h3>What does the income support?</h3></div><small>Sample rent assumption</small></div>
+        <div class="value-summary"><div><span>Monthly gross rent</span><b data-gross>$4,000</b></div><div><span>Estimated NOI</span><b data-noi>$25,920</b></div><div class="primary"><span>Cap rate at list price</span><b data-list-cap>5.18%</b></div><div class="desired"><span data-desired-label>Value at your 6.50% cap</span><b data-desired-value>$398,769</b></div></div>
+        <div class="value-controls"><div class="control-intro"><span>TEST YOUR ASSUMPTIONS</span><b>Adjust either field and see the card respond</b></div><label><span>Monthly gross rent</span><div class="input-wrap"><i>$</i><input id="sampleMonthlyRent" type="number" min="0" step="25" value="4000" inputmode="decimal"></div><em>Use total rent for the property</em></label><label><span>Desired cap rate</span><div class="input-wrap suffix"><input id="sampleDesiredCap" type="number" min="1" max="20" step="0.1" value="6.5" inputmode="decimal"><i>%</i></div><em>Your investment benchmark</em></label></div>
+        <div class="value-ladder"><div class="ladder-head"><b>Cap-rate benchmark</b><b>Income-supported value</b></div><div data-rate="5"><span>5.0%</span><b></b></div><div data-rate="5.5"><span>5.5%</span><b></b></div><div data-rate="6"><span>6.0%</span><b></b></div><div class="benchmark" data-rate="6.5"><span>6.5% · benchmark</span><b></b></div><div data-rate="7"><span>7.0%</span><b></b></div></div>
+        <p class="value-method"><strong>Quick-screen assumptions:</strong> 10% vacancy and credit loss is deducted from potential gross rent, then operating expenses equal 40% of Effective Gross Income. This is a preliminary income screen, not a substitute for verified leases, expenses, reserves, capital costs, or complete underwriting.</p>
+      </section>
+      <section class="sample-next-step"><div><span>FROM SCREEN TO COMPLETE ANALYSIS</span><h3>Use the Property Card to decide what deserves deeper work.</h3><p>A live listing can be carried into the guided analysis with its address, price, and available property details already started.</p></div><div class="next-grid"><div><b>Control the assumptions</b><span>Rent, vacancy, expenses, financing, taxes, growth, holding period, and exit terms.</span></div><div><b>Understand the decision</b><span>Cash flow, cap rate, DSCR, IRR, NPV, supported value, sensitivity, and offer guidance.</span></div><div><b>Save and present</b><span>Preserve the analysis and create a professional report and multiyear Excel pro forma.</span></div></div><a href="index.html?free-analysis=1">Start My Free Analysis →</a></section>
+    </article></section>
+  </main>
+</div><script src="sample-property-card.js?v=1"></script><script src="sample-property-card-nav.js?v=1"></script><script src="page-refresh-top.js?v=6"></script><script src="compliance-footer.js?v=3"></script></body></html>
