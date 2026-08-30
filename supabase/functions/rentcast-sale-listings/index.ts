@@ -32,13 +32,20 @@ export default {
     const requestedTypes = Array.isArray(body.propertyTypes) ? body.propertyTypes.map((value: unknown) => clean(value, 30)).filter((value: string) => allowedTypes.has(value)) : [];
     const propertyTypes = requestedTypes.length ? [...new Set(requestedTypes)] : [...allowedTypes];
     const bedroomsMin = numberInRange(body.bedroomsMin, 0, 1000);
+    const bedroomsMax = numberInRange(body.bedroomsMax, 0, 1000);
     const bathroomsMin = numberInRange(body.bathroomsMin, 0, 1000);
+    const bathroomsMax = numberInRange(body.bathroomsMax, 0, 1000);
     const squareFootageMin = numberInRange(body.squareFootageMin, 0, 10000000);
     const squareFootageMax = numberInRange(body.squareFootageMax, 0, 10000000);
+    const lotSizeMin = numberInRange(body.lotSizeMin, 0, 1000000000);
+    const lotSizeMax = numberInRange(body.lotSizeMax, 0, 1000000000);
     const yearBuiltMin = numberInRange(body.yearBuiltMin, 1600, new Date().getFullYear() + 5);
     const yearBuiltMax = numberInRange(body.yearBuiltMax, 1600, new Date().getFullYear() + 5);
     if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) return json({ error: 'Minimum price cannot exceed maximum price' }, 400);
+    if (bedroomsMin !== null && bedroomsMax !== null && bedroomsMin > bedroomsMax) return json({ error: 'Minimum bedrooms cannot exceed maximum bedrooms' }, 400);
+    if (bathroomsMin !== null && bathroomsMax !== null && bathroomsMin > bathroomsMax) return json({ error: 'Minimum bathrooms cannot exceed maximum bathrooms' }, 400);
     if (squareFootageMin !== null && squareFootageMax !== null && squareFootageMin > squareFootageMax) return json({ error: 'Minimum square footage cannot exceed maximum square footage' }, 400);
+    if (lotSizeMin !== null && lotSizeMax !== null && lotSizeMin > lotSizeMax) return json({ error: 'Minimum lot size cannot exceed maximum lot size' }, 400);
     if (yearBuiltMin !== null && yearBuiltMax !== null && yearBuiltMin > yearBuiltMax) return json({ error: 'Minimum year built cannot exceed maximum year built' }, 400);
     const params = new URLSearchParams({ propertyType: propertyTypes.join('|'), status: 'Active', limit: String(limit), offset: String(offset), includeTotalCount: 'true' });
     if (address) { params.set('address', address); params.set('radius', String(radius)); }
@@ -46,9 +53,10 @@ export default {
     else if (city && state) { params.set('city', city); params.set('state', state); }
     if (minPrice !== null || maxPrice !== null) params.set('price', `${minPrice ?? 0}:${maxPrice ?? 1000000000}`);
     if (daysOld !== null) params.set('daysOld', `1:${Math.round(daysOld)}`);
-    if (bedroomsMin !== null) params.set('bedrooms', `${bedroomsMin}:1000`);
-    if (bathroomsMin !== null) params.set('bathrooms', `${bathroomsMin}:1000`);
+    if (bedroomsMin !== null || bedroomsMax !== null) params.set('bedrooms', `${bedroomsMin ?? 0}:${bedroomsMax ?? 1000}`);
+    if (bathroomsMin !== null || bathroomsMax !== null) params.set('bathrooms', `${bathroomsMin ?? 0}:${bathroomsMax ?? 1000}`);
     if (squareFootageMin !== null || squareFootageMax !== null) params.set('squareFootage', `${squareFootageMin ?? 0}:${squareFootageMax ?? 10000000}`);
+    if (lotSizeMin !== null || lotSizeMax !== null) params.set('lotSize', `${lotSizeMin ?? 0}:${lotSizeMax ?? 1000000000}`);
     if (yearBuiltMin !== null || yearBuiltMax !== null) params.set('yearBuilt', `${yearBuiltMin ?? 1600}:${yearBuiltMax ?? new Date().getFullYear() + 5}`);
 
     console.log('[rentcast-sale-listings] request', { city, state, zipCode, propertyTypes, offset, limit, filtered: [...params.keys()].filter((key) => !['city', 'state', 'zipCode', 'propertyType', 'status', 'limit', 'offset', 'includeTotalCount'].includes(key)) });
