@@ -15,5 +15,5 @@ entrypoint = "./functions/notify-new-registration/index.ts"
 
 [functions.rentcast-sale-listings]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 entrypoint = "./functions/rentcast-sale-listings/index.ts"
