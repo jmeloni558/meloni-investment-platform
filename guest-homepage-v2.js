@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=27;
+  const VERSION=28;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -77,7 +77,7 @@
     try{if(window.WorkflowNavigationController?.go)window.WorkflowNavigationController.go('assumptions');else if(typeof switchTab==='function')switchTab('assumptions');}catch(_e){}
     let note=document.getElementById('ptFreeAnalysisNotice');if(!note){note=document.createElement('div');note.id='ptFreeAnalysisNotice';workflow.insertAdjacentElement('afterend',note);}guestNotice(note);
     setTimeout(()=>{try{window.GuidedAnalysisSetup?.reset?.();applyStarterValues();}catch(_e){}},100);
-    setTimeout(()=>{document.getElementById('guidedSetup')?.scrollIntoView({behavior:'smooth',block:'start'});},350);
+    setTimeout(()=>{applyStarterValues();document.getElementById('guidedSetup')?.scrollIntoView({behavior:'smooth',block:'start'});},350);
     [250,500,900].forEach(ms=>setTimeout(applyStarterValues,ms));
   }
   function ensureNav(shell){
