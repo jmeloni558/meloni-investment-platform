@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=15,IMPORT_KEY='ptPendingListingImportV1';
+  const VERSION=16,IMPORT_KEY='ptPendingListingImportV1';
   if((window.__ptRentCastListingSearchV||0)>=VERSION)return;
   window.__ptRentCastListingSearchV=VERSION;
   let panel=null,results=[],offset=0,activeListing=null;const featureCache=new Map(),rentCache=new Map();
@@ -60,8 +60,9 @@
   }
   function hideApplication(on){document.querySelectorAll('.section').forEach(s=>s.style.display=on?'none':'');const workflow=document.getElementById('stage8Workflow');if(workflow)workflow.style.display=on?'none':'';document.getElementById('appMortgageToolsPanel')?.style.setProperty('display','none');}
   function refreshAccess(){if(!panel)return;const guest=!signedIn(),path=panel.querySelector('.pt-listings-guest-path'),note=panel.querySelector('.pt-listings-note');if(path)path.hidden=!guest;if(note)note.innerHTML=guest?'<strong>Guest access:</strong> Two uncached listing searches are available each day. Cached results do not use another call. Open and analyze any returned listing with no account required.':'<strong>Cost-conscious search:</strong> Listing results and property features are cached. Price-per-unit uses reported listing data and avoids unnecessary data calls.';}
-  function open(){ensurePanel();refreshAccess();hideApplication(true);panel.classList.add('is-open');document.getElementById('appNavListings')?.classList.add('active');window.scrollTo({top:document.getElementById('appNavShell')?.offsetTop||0,behavior:'auto'});}
-  function close(){panel?.classList.remove('is-open');hideApplication(false);document.getElementById('appNavListings')?.classList.remove('active');}
+  function dedicatedGuestRoute(){return !signedIn()&&new URLSearchParams(location.search).get('listing-search')==='1';}
+  function open(){ensurePanel();refreshAccess();hideApplication(true);panel.classList.add('is-open');document.getElementById('appNavListings')?.classList.add('active');window.scrollTo({top:dedicatedGuestRoute()?0:document.getElementById('appNavShell')?.offsetTop||0,behavior:'auto'});}
+  function close(){if(dedicatedGuestRoute()){location.href='index.html';return;}panel?.classList.remove('is-open');hideApplication(false);document.getElementById('appNavListings')?.classList.remove('active');}
   function query(){
     const form=panel.querySelector('form');
     const raw=name=>form.elements[name].value.trim().replace(/[$,]/g,'');
@@ -139,7 +140,7 @@
     window.scrollTo({top:document.getElementById('guidedSetup')?.offsetTop||document.getElementById('appNavShell')?.offsetTop||0,behavior:'smooth'});
   }
   function requested(){
-    if(new URLSearchParams(location.search).get('app-action')!=='search-listings')return;
+    const params=new URLSearchParams(location.search);if(params.get('app-action')!=='search-listings'&&params.get('listing-search')!=='1')return;
     open();
   }
   function start(){ensurePanel();let tries=0;const timer=setInterval(()=>{ensureButton();if(++tries>40)clearInterval(timer)},180);document.addEventListener('click',e=>{if(e.target.closest('#appNavShell .app-nav-action:not(#appNavListings)'))close()});document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('ptListingDetail')?.classList.remove('is-open')});try{cloudClient?.auth?.onAuthStateChange?.(()=>setTimeout(ensureButton,120));}catch(_e){}setTimeout(requested,900);}
