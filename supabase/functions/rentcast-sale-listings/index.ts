@@ -28,12 +28,27 @@ export default {
     const minPrice = numberInRange(body.minPrice, 0, 1000000000);
     const maxPrice = numberInRange(body.maxPrice, 0, 1000000000);
     const daysOld = numberInRange(body.daysOld, 1, 3650);
-    const params = new URLSearchParams({ propertyType: 'Multi-Family|Apartment', status: 'Active', limit: String(limit), offset: String(offset) });
+    const requestedTypes = Array.isArray(body.propertyTypes) ? body.propertyTypes.map((value: unknown) => clean(value, 30)).filter((value: string) => allowedTypes.has(value)) : [];
+    const propertyTypes = requestedTypes.length ? [...new Set(requestedTypes)] : [...allowedTypes];
+    const bedroomsMin = numberInRange(body.bedroomsMin, 0, 1000);
+    const bathroomsMin = numberInRange(body.bathroomsMin, 0, 1000);
+    const squareFootageMin = numberInRange(body.squareFootageMin, 0, 10000000);
+    const squareFootageMax = numberInRange(body.squareFootageMax, 0, 10000000);
+    const yearBuiltMin = numberInRange(body.yearBuiltMin, 1600, new Date().getFullYear() + 5);
+    const yearBuiltMax = numberInRange(body.yearBuiltMax, 1600, new Date().getFullYear() + 5);
+    if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) return json({ error: 'Minimum price cannot exceed maximum price' }, 400);
+    if (squareFootageMin !== null && squareFootageMax !== null && squareFootageMin > squareFootageMax) return json({ error: 'Minimum square footage cannot exceed maximum square footage' }, 400);
+    if (yearBuiltMin !== null && yearBuiltMax !== null && yearBuiltMin > yearBuiltMax) return json({ error: 'Minimum year built cannot exceed maximum year built' }, 400);
+    const params = new URLSearchParams({ propertyType: propertyTypes.join('|'), status: 'Active', limit: String(limit), offset: String(offset), includeTotalCount: 'true' });
     if (zipCode) params.set('zipCode', zipCode);
     else if (city && state) { params.set('city', city); params.set('state', state); }
     else { params.set('address', address); params.set('radius', String(radius)); }
     if (minPrice !== null || maxPrice !== null) params.set('price', `${minPrice ?? 0}:${maxPrice ?? 1000000000}`);
-    if (daysOld !== null) params.set('daysOld', String(Math.round(daysOld)));
+    if (daysOld !== null) params.set('daysOld', `1:${Math.round(daysOld)}`);
+    if (bedroomsMin !== null) params.set('bedrooms', `${bedroomsMin}:1000`);
+    if (bathroomsMin !== null) params.set('bathrooms', `${bathroomsMin}:1000`);
+    if (squareFootageMin !== null || squareFootageMax !== null) params.set('squareFootage', `${squareFootageMin ?? 0}:${squareFootageMax ?? 10000000}`);
+    if (yearBuiltMin !== null || yearBuiltMax !== null) params.set('yearBuilt', `${yearBuiltMin ?? 1600}:${yearBuiltMax ?? new Date().getFullYear() + 5}`);
 
     const response = await fetch(`https://api.rentcast.io/v1/listings/sale?${params}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
     const payload = await response.json().catch(() => null);
@@ -43,7 +58,7 @@ export default {
     }
 
     const listings = (Array.isArray(payload) ? payload : [])
-      .filter((item) => allowedTypes.has(item?.propertyType) && item?.status === 'Active')
+      .filter((item) => propertyTypes.includes(item?.propertyType) && item?.status === 'Active')
       .map((item) => ({
         id: item.id, formattedAddress: item.formattedAddress, addressLine1: item.addressLine1,
         city: item.city, state: item.state, zipCode: item.zipCode, county: item.county,
@@ -54,6 +69,7 @@ export default {
         daysOnMarket: item.daysOnMarket, mlsName: item.mlsName, mlsNumber: item.mlsNumber,
         hoa: item.hoa ?? null, listingAgent: item.listingAgent ?? null, listingOffice: item.listingOffice ?? null,
       }));
-    return json({ listings, offset, limit, hasMore: listings.length === limit, filters: { propertyTypes: [...allowedTypes], status: 'Active' }, source: 'RentCast' });
+    const totalCount = Number(response.headers.get('x-total-count'));
+    return json({ listings, offset, limit, totalCount: Number.isFinite(totalCount) ? totalCount : null, hasMore: listings.length === limit, filters: { propertyTypes, status: 'Active' }, source: 'RentCast' });
   }),
 };
