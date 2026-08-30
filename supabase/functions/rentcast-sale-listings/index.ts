@@ -22,7 +22,7 @@ export default {
     const monthlyLimit = Math.max(1, Number(Deno.env.get('RENTCAST_MONTHLY_CALL_LIMIT') || 40));
     const { data: subscription } = await ctx.supabaseAdmin.from('billing_subscriptions').select('plan,status,current_period_end').eq('user_id', userId).in('status', ['active', 'trialing']).gt('current_period_end', new Date().toISOString()).maybeSingle();
     const plan = String(subscription?.plan || 'free');
-    const dailyUserLimit = plan.startsWith('unlimited_') ? 40 : plan.startsWith('professional_50_') ? 20 : 5;
+    const dailyUserLimit = plan.startsWith('unlimited_') ? 250 : plan.startsWith('professional_50_') ? 100 : 5;
     const getCached = async (cacheKey: string) => {
       const { data } = await ctx.supabaseAdmin.from('external_api_cache').select('payload,expires_at').eq('cache_key', cacheKey).gt('expires_at', new Date().toISOString()).maybeSingle();
       return data?.payload ?? null;
@@ -107,7 +107,6 @@ export default {
     const lotSizeMax = numberInRange(body.lotSizeMax, 0, 1000000000);
     const yearBuiltMin = numberInRange(body.yearBuiltMin, 1600, new Date().getFullYear() + 5);
     const yearBuiltMax = numberInRange(body.yearBuiltMax, 1600, new Date().getFullYear() + 5);
-    const maxPricePerUnit = numberInRange(body.maxPricePerUnit, 0, 1000000000);
     if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) return json({ error: 'Minimum price cannot exceed maximum price' }, 400);
     if (bedroomsMin !== null && bedroomsMax !== null && bedroomsMin > bedroomsMax) return json({ error: 'Minimum bedrooms cannot exceed maximum bedrooms' }, 400);
     if (bathroomsMin !== null && bathroomsMax !== null && bathroomsMin > bathroomsMax) return json({ error: 'Minimum bathrooms cannot exceed maximum bathrooms' }, 400);
@@ -126,7 +125,7 @@ export default {
     if (lotSizeMin !== null || lotSizeMax !== null) params.set('lotSize', `${lotSizeMin ?? 0}:${lotSizeMax ?? 1000000000}`);
     if (yearBuiltMin !== null || yearBuiltMax !== null) params.set('yearBuilt', `${yearBuiltMin ?? 1600}:${yearBuiltMax ?? new Date().getFullYear() + 5}`);
 
-    const cacheKey = `rentcast:sale-listings:${params.toString()}:listingTypes=${listingTypes.sort().join('|')}:maxPricePerUnit=${maxPricePerUnit ?? ''}`;
+    const cacheKey = `rentcast:sale-listings:${params.toString()}:listingTypes=${listingTypes.sort().join('|')}`;
     const cached = await getCached(cacheKey);
     if (cached) return json({ ...cached, cached: true, usage: await usageState() });
     let usage;
@@ -154,10 +153,9 @@ export default {
         daysOnMarket: item.daysOnMarket, mlsName: item.mlsName, mlsNumber: item.mlsNumber,
         hoa: item.hoa ?? null, listingAgent: item.listingAgent ?? null, listingOffice: item.listingOffice ?? null,
       }));
-    if (maxPricePerUnit !== null) listings = listings.filter((item) => Number(item.units) > 0 && Number(item.price) / Number(item.units) <= maxPricePerUnit);
     const totalCount = Number(response.headers.get('x-total-count'));
     console.log('[rentcast-sale-listings] success', { count: listings.length, totalCount: Number.isFinite(totalCount) ? totalCount : null });
-    const postFiltered = maxPricePerUnit !== null || listingTypes.length < allowedListingTypes.size;
+    const postFiltered = listingTypes.length < allowedListingTypes.size;
     const result = { listings, offset, limit, totalCount: postFiltered ? listings.length : (Number.isFinite(totalCount) ? totalCount : null), hasMore: !postFiltered && listings.length === limit, filters: { propertyTypes, listingTypes, status: 'Active' }, source: 'RentCast' };
     await Promise.all([recordUsage('sale-listings'), saveCached(cacheKey, 'sale-listings', result, 10 * 60 * 1000)]);
     return json({ ...result, usage: { ...usage, dailyUsed: usage.dailyUsed + 1, dailyRemaining: Math.max(0, usage.dailyRemaining - 1) } });

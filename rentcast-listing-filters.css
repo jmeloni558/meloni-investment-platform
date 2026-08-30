@@ -46,7 +46,7 @@
 .pt-filter-intro{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:2px 3px 4px}.pt-filter-intro strong{color:#17324a;font-size:13px}.pt-filter-intro span{color:#667b8b;font-size:10px}
 .pt-filter-section{min-width:0;padding:14px;border:1px solid #d6e3ea;border-radius:12px;background:#fff;box-shadow:0 5px 14px rgba(24,56,79,.045)}
 .pt-filter-section header{margin:0 0 12px;padding:0 0 9px;border-bottom:1px solid #e6edf1}.pt-filter-section h3{margin:0;color:#17324a;font-size:12px}.pt-filter-section p{margin:3px 0 0;color:#718493;font-size:9px;line-height:1.4}
-.pt-filter-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 12px}.pt-filter-section:nth-of-type(2){grid-row:span 2}.pt-filter-section:nth-of-type(2) .pt-filter-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.pt-filter-section:last-child{grid-column:1/-1;background:linear-gradient(145deg,#f1faf8,#fff)}.pt-filter-section:last-child .pt-filter-fields{grid-template-columns:repeat(4,minmax(0,1fr))}
+.pt-filter-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 12px}.pt-filter-section:nth-of-type(2){grid-row:span 2}.pt-filter-section:nth-of-type(2) .pt-filter-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
 .pt-filter-section .pt-listings-field label{margin-bottom:6px;color:#476071;font-size:9px}.pt-filter-section .pt-listings-field input,.pt-filter-section .pt-listings-field select{height:42px;border-color:#bfd0dc;background:#fbfdfe;transition:border-color .15s,box-shadow .15s,background .15s}.pt-filter-section .pt-listings-field input:focus,.pt-filter-section .pt-listings-field select:focus{outline:0;border-color:#188d87;background:#fff;box-shadow:0 0 0 3px rgba(24,141,135,.12)}
 
 .pt-listings-check {
@@ -136,7 +136,6 @@
 @media (max-width: 1000px) {
   .pt-listings-filter-grid { grid-template-columns: 1fr; }
   .pt-filter-intro{display:block}.pt-filter-intro span{display:block;margin-top:3px}
-  .pt-filter-section:last-child .pt-filter-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
 @media (max-width: 650px) {
