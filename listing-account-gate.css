@@ -1,0 +1,52 @@
+.pt-listing-account-gate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 18px 0;
+  padding: 15px 16px;
+  border: 1px solid #9bcfc8;
+  border-left: 5px solid #138e85;
+  border-radius: 10px;
+  background: #edf8f6;
+  color: #315563;
+}
+.pt-listing-account-gate strong,
+.pt-listing-account-gate span { display: block; }
+.pt-listing-account-gate strong {
+  margin-bottom: 4px;
+  color: #0d4d4a;
+  font-size: 13px;
+}
+.pt-listing-account-gate span {
+  max-width: 500px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.pt-listing-account-gate > div:last-child {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 7px;
+}
+.pt-listing-account-gate button {
+  min-height: 36px;
+  padding: 8px 11px;
+  border: 1px solid #147c76;
+  border-radius: 7px;
+  background: #147c76;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.pt-listing-account-gate button.secondary {
+  background: #fff;
+  color: #175b58;
+}
+@media (max-width: 650px) {
+  .pt-listing-account-gate { display: block; }
+  .pt-listing-account-gate > div:last-child {
+    margin-top: 11px;
+    flex-wrap: wrap;
+  }
+}

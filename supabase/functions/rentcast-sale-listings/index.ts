@@ -44,7 +44,7 @@ export default {
       ? await ctx.supabaseAdmin.from('billing_subscriptions').select('plan,status,current_period_end').eq('user_id', userId).in('status', ['active', 'trialing']).gt('current_period_end', new Date().toISOString()).maybeSingle()
       : { data: null };
     const plan = userId ? (unrestrictedTester ? 'tester' : String(subscription?.plan || 'free')) : 'guest';
-    const dailyUserLimit = unrestrictedTester ? Number.MAX_SAFE_INTEGER : plan.startsWith('unlimited_') ? 100 : plan.startsWith('professional_50_') ? 50 : plan === 'guest' ? 2 : 5;
+    const dailyUserLimit = unrestrictedTester ? Number.MAX_SAFE_INTEGER : plan.startsWith('unlimited_') ? 100 : plan.startsWith('professional_50_') ? 50 : 5;
     const getCached = async (cacheKey: string) => {
       const { data } = await ctx.supabaseAdmin.from('external_api_cache').select('payload,expires_at').eq('cache_key', cacheKey).gt('expires_at', new Date().toISOString()).maybeSingle();
       return data?.payload ?? null;
