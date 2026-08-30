@@ -4,7 +4,7 @@
   if((window.__propertyThesisReportBrandingV||0)>=VERSION)return;
   window.__propertyThesisReportBrandingV=VERSION;
   const PRODUCT='PropertyThesis';
-  const TAGLINE='Know the Numbers. Build the Case.';
+  const TAGLINE='Know the Numbers. Prove the Case.';
   const TYPE='Investment Property Analysis';
   const esc=v=>String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
   const safeColor=v=>/^#[0-9a-f]{6}$/i.test(v||'')?v:'#14b8a6';

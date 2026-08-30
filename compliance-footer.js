@@ -18,7 +18,7 @@
         <section id="ptFooterContact"><p class="pt-footer-heading">Contact</p><address class="pt-footer-contact">18012 Loretta Lane<br>Lutz, FL 33548<br><a href="tel:+18137608516">813-760-8516</a><br><a href="mailto:jamie@propertythesis.com">jamie@propertythesis.com</a></address></section>
       </div>
       <div class="pt-footer-disclaimer">PropertyThesis provides real estate investment analysis software and educational information. Analyses are estimates based on user-provided information and assumptions and are not appraisals, guarantees, lending decisions, or legal, tax, or accounting advice. Use of this website does not create a brokerage or agency relationship. Any brokerage services are provided separately by MELONI REALTY INC under an applicable written agreement.</div>
-      <div class="pt-footer-bottom"><span>&copy; ${new Date().getFullYear()} MELONI REALTY INC. All rights reserved.</span><span>PropertyThesis &bull; Know the Numbers. Build the Case.</span></div>
+      <div class="pt-footer-bottom"><span>&copy; ${new Date().getFullYear()} MELONI REALTY INC. All rights reserved.</span><span>PropertyThesis &bull; Know the Numbers. Prove the Case.</span></div>
     </div>`;
     (document.querySelector('.app')||document.body).appendChild(footer);
   };

@@ -66,7 +66,7 @@
       <section id="ptGuestGuidance" class="pt-fallback-hero">
         <div class="pt-fallback-copy">
           <div class="pt-fallback-eyebrow">REAL ESTATE INVESTMENT UNDERWRITING</div>
-          <h2>Know the Numbers. Build the Case.</h2>
+          <h2>Know the Numbers. Prove the Case.</h2>
           <p>PropertyThesis brings income, financing, valuation, returns, market evidence and acquisition strategy into one connected investment analysis.</p>
           <p>Go beyond a basic calculator. Understand what drives the deal, what the property supports, and how to present the investment case clearly.</p>
           <div class="pt-fallback-actions"><button class="pt-fallback-btn pt-fallback-primary" id="ptGuestExplore" type="button">Start Exploring</button><button class="pt-fallback-btn" id="ptGuestSignIn" type="button">Sign In / Create Account</button></div>

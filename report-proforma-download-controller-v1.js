@@ -69,7 +69,7 @@
     const b = branding();
     const rows = [[b.company], [title], [b.address], ['Prepared by: ' + b.person]];
     if (b.contact) rows.push(['Contact: ' + b.contact]);
-    rows.push(['PropertyThesis • Know the Numbers. Build the Case.'], []);
+    rows.push(['PropertyThesis • Know the Numbers. Prove the Case.'], []);
     return rows;
   }
 

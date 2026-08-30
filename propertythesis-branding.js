@@ -1,12 +1,12 @@
 'use strict';
 (()=>{
-  const VERSION=6;
+  const VERSION=7;
   if((window.__propertyThesisBrandingV||0)>=VERSION)return;
   window.__propertyThesisBrandingV=VERSION;
 
   const BRAND='PropertyThesis';
-  const TAGLINE='Know the Numbers. Build the Case.';
-  const TITLE='PropertyThesis | Know the Numbers. Build the Case.';
+  const TAGLINE='Know the Numbers. Prove the Case.';
+  const TITLE='PropertyThesis | Know the Numbers. Prove the Case.';
 
   function setText(el,text){
     if(el && el.textContent!==text) el.textContent=text;
@@ -44,8 +44,11 @@
 
     const brand=document.querySelector('.brand');
     if(brand){
-      setText(brand.querySelector('h1'),BRAND);
-      setText(brand.querySelector('p'),TAGLINE);
+      const logo=brand.querySelector('.pt-site-logo');
+      if(logo){logo.alt=`${BRAND} — ${TAGLINE}`;}else{
+        setText(brand.querySelector('h1'),BRAND);
+        setText(brand.querySelector('p'),TAGLINE);
+      }
       if(!brand.dataset.ptHomeLink){
         brand.dataset.ptHomeLink='1';brand.setAttribute('role','link');brand.setAttribute('tabindex','0');brand.setAttribute('aria-label','PropertyThesis home');brand.style.cursor='pointer';
         const home=()=>location.assign('https://propertythesis.com/');
@@ -53,7 +56,7 @@
       }
     }
 
-    setText(document.querySelector('.print-only .mini'),'Prepared with PropertyThesis • Know the Numbers. Build the Case.');
+    setText(document.querySelector('.print-only .mini'),'Prepared with PropertyThesis • Know the Numbers. Prove the Case.');
 
     if(!document.getElementById('ptAuthModes')){
       const authTitle=document.querySelector('#authModal .modal h2');
@@ -62,7 +65,7 @@
       setText(authIntro,'Sign in or create an account to access your PropertyThesis analyses across devices.');
     }
 
-    setText(document.querySelector('.footer'),'PropertyThesis • Know the Numbers. Build the Case.');
+    setText(document.querySelector('.footer'),'PropertyThesis • Know the Numbers. Prove the Case.');
     ensureMarketRentPersistence();
     ensureGuestSampleScripts();
   }
