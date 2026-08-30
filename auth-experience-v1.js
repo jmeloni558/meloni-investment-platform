@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=5;
+  const VERSION=6;
   if((window.__propertyThesisAuthExperienceV||0)>=VERSION)return;
   window.__propertyThesisAuthExperienceV=VERSION;
 
@@ -12,7 +12,7 @@
   function ensureStyles(){
     if(el('ptAuthExperienceStyles'))return;
     const s=document.createElement('style');s.id='ptAuthExperienceStyles';s.textContent=`
-      #authModal .modal{max-width:520px}#ptAuthModes{display:none!important}#ptAuthAlternative{margin:13px 0 4px;padding-top:12px;border-top:1px solid #dce6eb;color:#617682;font-size:10.5px}#ptAuthAlternative button{border:0;padding:2px 4px;background:transparent;color:#175f8d;font:inherit;font-weight:850;text-decoration:underline;cursor:pointer}#ptAuthPasswordHint{margin:-2px 0 12px;color:#667085;font-size:9.5px;line-height:1.45}#ptAuthVerification{padding:20px;border:1px solid #b9d5d2;border-radius:11px;background:#edf7f5;color:#425f67}#ptAuthVerification[hidden]{display:none!important}#ptAuthVerification h3{margin:0 0 7px;color:#102d46;font-size:20px}#ptAuthVerification p{margin:0 0 10px;font-size:11px;line-height:1.55}#ptAuthVerification ol{margin:14px 0 18px;padding-left:20px;color:#294c58;font-size:11px;line-height:1.7}#ptAuthVerification .pt-auth-email{font-weight:850;color:#105c55;overflow-wrap:anywhere}#ptAuthVerification .actions{margin-top:13px}.pt-auth-mode-hidden{display:none!important}#authMessage.pt-auth-error{border-left:4px solid #c43d3d;background:#fff5f5;color:#842828}#authMessage.pt-auth-success{border-left:4px solid #17877d;background:#edf7f5;color:#105c55}
+      #authModal{z-index:13000}#authModal .modal{max-width:520px}#ptAuthModes{display:none!important}#ptAuthAlternative{margin:13px 0 4px;padding-top:12px;border-top:1px solid #dce6eb;color:#617682;font-size:10.5px}#ptAuthAlternative button{border:0;padding:2px 4px;background:transparent;color:#175f8d;font:inherit;font-weight:850;text-decoration:underline;cursor:pointer}#ptAuthPasswordHint{margin:-2px 0 12px;color:#667085;font-size:9.5px;line-height:1.45}#ptAuthVerification{padding:20px;border:1px solid #b9d5d2;border-radius:11px;background:#edf7f5;color:#425f67}#ptAuthVerification[hidden]{display:none!important}#ptAuthVerification h3{margin:0 0 7px;color:#102d46;font-size:20px}#ptAuthVerification p{margin:0 0 10px;font-size:11px;line-height:1.55}#ptAuthVerification ol{margin:14px 0 18px;padding-left:20px;color:#294c58;font-size:11px;line-height:1.7}#ptAuthVerification .pt-auth-email{font-weight:850;color:#105c55;overflow-wrap:anywhere}#ptAuthVerification .actions{margin-top:13px}.pt-auth-mode-hidden{display:none!important}#authMessage.pt-auth-error{border-left:4px solid #c43d3d;background:#fff5f5;color:#842828}#authMessage.pt-auth-success{border-left:4px solid #17877d;background:#edf7f5;color:#105c55}
     `;document.head.appendChild(s);
   }
 
