@@ -1,7 +1,7 @@
 import { withSupabase } from 'npm:@supabase/server@^1';
 import { corsHeaders, json } from '../_shared/cors.ts';
 
-const allowedTypes = new Set(['Multi-Family', 'Apartment']);
+const allowedTypes = new Set(['Single Family', 'Condo', 'Townhouse', 'Manufactured', 'Multi-Family', 'Apartment', 'Land']);
 const clean = (value: unknown, max = 120) => String(value ?? '').trim().slice(0, max);
 const numberInRange = (value: unknown, min: number, max: number) => {
   if (value === null || value === undefined || String(value).trim() === '') return null;
@@ -41,9 +41,9 @@ export default {
     if (squareFootageMin !== null && squareFootageMax !== null && squareFootageMin > squareFootageMax) return json({ error: 'Minimum square footage cannot exceed maximum square footage' }, 400);
     if (yearBuiltMin !== null && yearBuiltMax !== null && yearBuiltMin > yearBuiltMax) return json({ error: 'Minimum year built cannot exceed maximum year built' }, 400);
     const params = new URLSearchParams({ propertyType: propertyTypes.join('|'), status: 'Active', limit: String(limit), offset: String(offset), includeTotalCount: 'true' });
-    if (zipCode) params.set('zipCode', zipCode);
+    if (address) { params.set('address', address); params.set('radius', String(radius)); }
+    else if (zipCode) params.set('zipCode', zipCode);
     else if (city && state) { params.set('city', city); params.set('state', state); }
-    else { params.set('address', address); params.set('radius', String(radius)); }
     if (minPrice !== null || maxPrice !== null) params.set('price', `${minPrice ?? 0}:${maxPrice ?? 1000000000}`);
     if (daysOld !== null) params.set('daysOld', `1:${Math.round(daysOld)}`);
     if (bedroomsMin !== null) params.set('bedrooms', `${bedroomsMin}:1000`);

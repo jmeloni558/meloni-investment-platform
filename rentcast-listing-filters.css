@@ -27,6 +27,11 @@
   gap: 10px;
 }
 
+.pt-listings-address { grid-column: span 2; }
+.pt-listings-location-or { grid-column: 1 / -1; display:flex;align-items:center;gap:10px;color:#718493;font-size:8px;font-weight:900;letter-spacing:.12em; }
+.pt-listings-location-or::before,.pt-listings-location-or::after{content:'';height:1px;background:#dce6eb;flex:1}
+.pt-listings-type-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 14px}
+
 .pt-listings-filter-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
@@ -120,4 +125,6 @@
 @media (max-width: 650px) {
   .pt-listings-location,
   .pt-listings-filter-grid { grid-template-columns: 1fr 1fr; }
+  .pt-listings-address { grid-column: 1 / -1; }
+  .pt-listings-type-grid { grid-template-columns:1fr 1fr; }
 }
