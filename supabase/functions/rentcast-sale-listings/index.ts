@@ -11,16 +11,46 @@ const numberInRange = (value: unknown, min: number, max: number) => {
 };
 
 export default {
-  fetch: withSupabase({ auth: 'user' }, async (req) => {
+  fetch: withSupabase({ auth: 'user' }, async (req, ctx) => {
     if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
     if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
     const apiKey = Deno.env.get('RENTCAST_API_KEY');
     if (!apiKey) return json({ error: 'Listing search is not configured' }, 503);
     const body = await req.json().catch(() => ({}));
+    const userId = ctx.userClaims!.id;
+    const monthlyLimit = Math.max(1, Number(Deno.env.get('RENTCAST_MONTHLY_CALL_LIMIT') || 40));
+    const dailyUserLimit = Math.max(1, Number(Deno.env.get('RENTCAST_DAILY_USER_LIMIT') || 20));
+    const getCached = async (cacheKey: string) => {
+      const { data } = await ctx.supabaseAdmin.from('external_api_cache').select('payload,expires_at').eq('cache_key', cacheKey).gt('expires_at', new Date().toISOString()).maybeSingle();
+      return data?.payload ?? null;
+    };
+    const saveCached = async (cacheKey: string, endpoint: string, payload: unknown, ttlMs: number) => {
+      await ctx.supabaseAdmin.from('external_api_cache').upsert({ cache_key: cacheKey, provider: 'rentcast', endpoint, payload, expires_at: new Date(Date.now() + ttlMs).toISOString(), created_at: new Date().toISOString() });
+    };
+    const enforceUsageLimit = async () => {
+      const now = new Date();
+      const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+      const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
+      const [{ count: monthlyCount }, { count: dailyCount }] = await Promise.all([
+        ctx.supabaseAdmin.from('external_api_usage').select('id', { count: 'exact', head: true }).eq('provider', 'rentcast').gte('created_at', monthStart),
+        ctx.supabaseAdmin.from('external_api_usage').select('id', { count: 'exact', head: true }).eq('provider', 'rentcast').eq('user_id', userId).gte('created_at', dayStart),
+      ]);
+      if ((monthlyCount ?? 0) >= monthlyLimit) throw new Error('MONTHLY_LIMIT');
+      if ((dailyCount ?? 0) >= dailyUserLimit) throw new Error('DAILY_LIMIT');
+    };
+    const recordUsage = async (endpoint: string) => {
+      await ctx.supabaseAdmin.from('external_api_usage').insert({ user_id: userId, provider: 'rentcast', endpoint });
+    };
     if (body.action === 'property-features') {
       const propertyId = clean(body.propertyId, 240);
       if (!propertyId) return json({ error: 'A property id is required' }, 400);
+      const cacheKey = `rentcast:property-features:${propertyId}`;
+      const cached = await getCached(cacheKey);
+      if (cached) return json({ ...cached, cached: true });
+      try { await enforceUsageLimit(); } catch (error) {
+        return json({ error: error instanceof Error && error.message === 'DAILY_LIMIT' ? 'Daily property-data limit reached. Try again tomorrow.' : 'Monthly property-data allowance reached.' }, 429);
+      }
       const featureResponse = await fetch(`https://api.rentcast.io/v1/properties/${encodeURIComponent(propertyId)}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
       const property = await featureResponse.json().catch(() => null);
       if (!featureResponse.ok) {
@@ -28,7 +58,7 @@ export default {
         return json({ error: featureResponse.status === 404 ? 'Property features are not available' : 'Unable to retrieve property features' }, featureResponse.status === 404 ? 404 : 502);
       }
       const features = property?.features ?? {};
-      return json({
+      const featurePayload = {
         propertyId,
         features: {
           garage: typeof features.garage === 'boolean' ? features.garage : null,
@@ -38,7 +68,9 @@ export default {
           poolType: clean(features.poolType, 80) || null,
         },
         source: 'RentCast public property records',
-      });
+      };
+      await Promise.all([recordUsage('property-features'), saveCached(cacheKey, 'property-features', featurePayload, 30 * 24 * 60 * 60 * 1000)]);
+      return json(featurePayload);
     }
     const city = clean(body.city, 80);
     const state = clean(body.state, 2).toUpperCase();
@@ -67,12 +99,6 @@ export default {
     const yearBuiltMin = numberInRange(body.yearBuiltMin, 1600, new Date().getFullYear() + 5);
     const yearBuiltMax = numberInRange(body.yearBuiltMax, 1600, new Date().getFullYear() + 5);
     const maxPricePerUnit = numberInRange(body.maxPricePerUnit, 0, 1000000000);
-    const minEstimatedRent = numberInRange(body.minEstimatedRent, 0, 100000000);
-    const minNoi = numberInRange(body.minNoi, 0, 1000000000);
-    const minCapRate = numberInRange(body.minCapRate, 0, 100);
-    const minSupportedValue = numberInRange(body.minSupportedValue, 0, 1000000000);
-    const expenseRatio = (numberInRange(body.expenseRatio, 0, 95) ?? 40) / 100;
-    const targetCapRate = (numberInRange(body.targetCapRate, 0.1, 100) ?? 6.5) / 100;
     if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) return json({ error: 'Minimum price cannot exceed maximum price' }, 400);
     if (bedroomsMin !== null && bedroomsMax !== null && bedroomsMin > bedroomsMax) return json({ error: 'Minimum bedrooms cannot exceed maximum bedrooms' }, 400);
     if (bathroomsMin !== null && bathroomsMax !== null && bathroomsMin > bathroomsMax) return json({ error: 'Minimum bathrooms cannot exceed maximum bathrooms' }, 400);
@@ -91,6 +117,12 @@ export default {
     if (lotSizeMin !== null || lotSizeMax !== null) params.set('lotSize', `${lotSizeMin ?? 0}:${lotSizeMax ?? 1000000000}`);
     if (yearBuiltMin !== null || yearBuiltMax !== null) params.set('yearBuilt', `${yearBuiltMin ?? 1600}:${yearBuiltMax ?? new Date().getFullYear() + 5}`);
 
+    const cacheKey = `rentcast:sale-listings:${params.toString()}:listingTypes=${listingTypes.sort().join('|')}:maxPricePerUnit=${maxPricePerUnit ?? ''}`;
+    const cached = await getCached(cacheKey);
+    if (cached) return json({ ...cached, cached: true });
+    try { await enforceUsageLimit(); } catch (error) {
+      return json({ error: error instanceof Error && error.message === 'DAILY_LIMIT' ? 'Daily listing-search limit reached. Try again tomorrow.' : 'Monthly listing-data allowance reached.' }, 429);
+    }
     console.log('[rentcast-sale-listings] request', { city, state, zipCode, propertyTypes, offset, limit, filtered: [...params.keys()].filter((key) => !['city', 'state', 'zipCode', 'propertyType', 'status', 'limit', 'offset', 'includeTotalCount'].includes(key)) });
     const response = await fetch(`https://api.rentcast.io/v1/listings/sale?${params}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
     const payload = await response.json().catch(() => null);
@@ -112,32 +144,11 @@ export default {
         hoa: item.hoa ?? null, listingAgent: item.listingAgent ?? null, listingOffice: item.listingOffice ?? null,
       }));
     if (maxPricePerUnit !== null) listings = listings.filter((item) => Number(item.units) > 0 && Number(item.price) / Number(item.units) <= maxPricePerUnit);
-    const needsRentEstimate = minEstimatedRent !== null || minNoi !== null || minCapRate !== null || minSupportedValue !== null;
-    if (needsRentEstimate) {
-      const enriched = await Promise.all(listings.map(async (item) => {
-        if (!item.formattedAddress || !Number(item.price)) return null;
-        try {
-          const rentParams = new URLSearchParams({ address: item.formattedAddress });
-          const rentResponse = await fetch(`https://api.rentcast.io/v1/avm/rent/long-term?${rentParams}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
-          if (!rentResponse.ok) return null;
-          const rentData = await rentResponse.json().catch(() => null);
-          const estimatedRent = Number(rentData?.rent);
-          if (!Number.isFinite(estimatedRent)) return null;
-          const noi = estimatedRent * 12 * (1 - expenseRatio);
-          const capRate = noi / Number(item.price) * 100;
-          const supportedValue = noi / targetCapRate;
-          if (minEstimatedRent !== null && estimatedRent < minEstimatedRent) return null;
-          if (minNoi !== null && noi < minNoi) return null;
-          if (minCapRate !== null && capRate < minCapRate) return null;
-          if (minSupportedValue !== null && supportedValue < minSupportedValue) return null;
-          return { ...item, investment: { estimatedRent, noi, capRate, supportedValue, expenseRatio: expenseRatio * 100, targetCapRate: targetCapRate * 100 } };
-        } catch { return null; }
-      }));
-      listings = enriched.filter((item): item is NonNullable<typeof item> => item !== null);
-    }
     const totalCount = Number(response.headers.get('x-total-count'));
     console.log('[rentcast-sale-listings] success', { count: listings.length, totalCount: Number.isFinite(totalCount) ? totalCount : null });
-    const postFiltered = needsRentEstimate || maxPricePerUnit !== null || listingTypes.length < allowedListingTypes.size;
-    return json({ listings, offset, limit, totalCount: postFiltered ? listings.length : (Number.isFinite(totalCount) ? totalCount : null), hasMore: !postFiltered && listings.length === limit, filters: { propertyTypes, listingTypes, status: 'Active' }, source: 'RentCast' });
+    const postFiltered = maxPricePerUnit !== null || listingTypes.length < allowedListingTypes.size;
+    const result = { listings, offset, limit, totalCount: postFiltered ? listings.length : (Number.isFinite(totalCount) ? totalCount : null), hasMore: !postFiltered && listings.length === limit, filters: { propertyTypes, listingTypes, status: 'Active' }, source: 'RentCast' };
+    await Promise.all([recordUsage('sale-listings'), saveCached(cacheKey, 'sale-listings', result, 10 * 60 * 1000)]);
+    return json(result);
   }),
 };
