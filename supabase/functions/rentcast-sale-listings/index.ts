@@ -17,6 +17,28 @@ export default {
     const apiKey = Deno.env.get('RENTCAST_API_KEY');
     if (!apiKey) return json({ error: 'Listing search is not configured' }, 503);
     const body = await req.json().catch(() => ({}));
+    if (body.action === 'property-features') {
+      const propertyId = clean(body.propertyId, 240);
+      if (!propertyId) return json({ error: 'A property id is required' }, 400);
+      const featureResponse = await fetch(`https://api.rentcast.io/v1/properties/${encodeURIComponent(propertyId)}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
+      const property = await featureResponse.json().catch(() => null);
+      if (!featureResponse.ok) {
+        console.error('[rentcast-sale-listings] property feature lookup failed', featureResponse.status, { propertyId });
+        return json({ error: featureResponse.status === 404 ? 'Property features are not available' : 'Unable to retrieve property features' }, featureResponse.status === 404 ? 404 : 502);
+      }
+      const features = property?.features ?? {};
+      return json({
+        propertyId,
+        features: {
+          garage: typeof features.garage === 'boolean' ? features.garage : null,
+          garageSpaces: features.garageSpaces !== null && features.garageSpaces !== undefined && Number.isFinite(Number(features.garageSpaces)) ? Number(features.garageSpaces) : null,
+          garageType: clean(features.garageType, 80) || null,
+          pool: typeof features.pool === 'boolean' ? features.pool : null,
+          poolType: clean(features.poolType, 80) || null,
+        },
+        source: 'RentCast public property records',
+      });
+    }
     const city = clean(body.city, 80);
     const state = clean(body.state, 2).toUpperCase();
     const zipCode = clean(body.zipCode, 10);
