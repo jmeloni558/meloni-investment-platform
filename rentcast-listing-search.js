@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3,IMPORT_KEY='ptPendingListingImportV1';
+  const VERSION=4,IMPORT_KEY='ptPendingListingImportV1';
   if((window.__ptRentCastListingSearchV||0)>=VERSION)return;
   window.__ptRentCastListingSearchV=VERSION;
   let panel=null,results=[],offset=0,activeListing=null;
@@ -17,13 +17,29 @@
     const beforeYear=host.querySelector('[name="yearBuiltMin"]')?.closest('.pt-listings-field');
     beforeYear?.insertAdjacentHTML('beforebegin','<div class="pt-listings-field"><label>Minimum lot size (sq. ft.)</label><input name="lotSizeMin" inputmode="numeric"></div><div class="pt-listings-field"><label>Maximum lot size (sq. ft.)</label><input name="lotSizeMax" inputmode="numeric"></div>');
   }
+  function organizePropertyFilters(host){
+    const groups=[
+      ['Purchase price','Set the acquisition range you want to review.',['minPrice','maxPrice']],
+      ['Interior','Narrow results by reported rooms and living area.',['bedroomsMin','bedroomsMax','bathroomsMin','bathroomsMax','squareFootageMin','squareFootageMax']],
+      ['Site & building','Refine by lot area and construction year.',['lotSizeMin','lotSizeMax','yearBuiltMin','yearBuiltMax']],
+      ['Listing activity','Control recency and how results are ordered.',['daysOld','sort']],
+    ];
+    host.insertAdjacentHTML('afterbegin','<div class="pt-filter-intro"><strong>Refine the opportunity</strong><span>Leave any field blank to keep the search broad.</span></div>');
+    groups.forEach(([title,description,names])=>{
+      const section=document.createElement('section');section.className='pt-filter-section';
+      section.innerHTML=`<header><h3>${title}</h3><p>${description}</p></header><div class="pt-filter-fields"></div>`;
+      const fields=section.querySelector('.pt-filter-fields');
+      names.forEach(name=>{const field=host.querySelector(`[name="${name}"]`)?.closest('.pt-listings-field');if(field)fields.appendChild(field);});
+      host.appendChild(section);
+    });
+  }
 
   function ensurePanel(){
     if(panel)return panel;
     const workflow=document.getElementById('stage8Workflow');if(!workflow)return null;
     panel=document.createElement('section');panel.id='ptListingsPanel';panel.className='pt-listings-panel screen-only';
     panel.innerHTML=`<header class="pt-listings-head"><div><div class="pt-listings-eyebrow">NATIONWIDE INVESTMENT DISCOVERY</div><h2>Search Investment Listings</h2><p>Search active listings nationwide. Multifamily and apartment properties are selected initially, and you can include other property types when they fit your investment strategy.</p></div><button class="pt-listings-close" type="button" aria-label="Close listing search">Close</button></header><form class="pt-listings-search"><fieldset class="pt-listings-location"><legend>Location</legend><div class="pt-listings-field pt-listings-address"><label>Starting address</label><input name="address" autocomplete="street-address" placeholder="Enter an address for a radius search"></div><div class="pt-listings-field"><label>Radius</label><select name="radius"><option value="1">1 mile</option><option value="3">3 miles</option><option value="5">5 miles</option><option value="10" selected>10 miles</option><option value="25">25 miles</option><option value="50">50 miles</option><option value="100">100 miles</option></select></div><div class="pt-listings-location-or" aria-hidden="true">OR SEARCH AN AREA</div><div class="pt-listings-field"><label>City</label><input name="city" autocomplete="address-level2"></div><div class="pt-listings-field"><label>State</label><input name="state" maxlength="2" autocomplete="address-level1"></div><div class="pt-listings-field"><label>ZIP code</label><input name="zipCode" inputmode="numeric" maxlength="5" autocomplete="postal-code"></div></fieldset><fieldset><legend>Property type</legend><div class="pt-listings-type-grid"><label class="pt-listings-check"><input type="checkbox" name="multiFamily" checked> 2–4 unit multifamily</label><label class="pt-listings-check"><input type="checkbox" name="apartment" checked> 5+ unit apartment</label><label class="pt-listings-check"><input type="checkbox" name="singleFamily"> Single family</label><label class="pt-listings-check"><input type="checkbox" name="condo"> Condo</label><label class="pt-listings-check"><input type="checkbox" name="townhouse"> Townhouse</label><label class="pt-listings-check"><input type="checkbox" name="manufactured"> Manufactured</label><label class="pt-listings-check"><input type="checkbox" name="land"> Land</label></div></fieldset><fieldset class="pt-listings-filter-grid"><legend>Property filters</legend><div class="pt-listings-field"><label>Minimum price</label><input name="minPrice" inputmode="numeric"></div><div class="pt-listings-field"><label>Maximum price</label><input name="maxPrice" inputmode="numeric"></div><div class="pt-listings-field"><label>Minimum bedrooms</label><input name="bedroomsMin" type="number" min="0"></div><div class="pt-listings-field"><label>Minimum bathrooms</label><input name="bathroomsMin" type="number" min="0" step=".5"></div><div class="pt-listings-field"><label>Minimum square feet</label><input name="squareFootageMin" inputmode="numeric"></div><div class="pt-listings-field"><label>Maximum square feet</label><input name="squareFootageMax" inputmode="numeric"></div><div class="pt-listings-field"><label>Built no earlier than</label><input name="yearBuiltMin" inputmode="numeric" maxlength="4"></div><div class="pt-listings-field"><label>Built no later than</label><input name="yearBuiltMax" inputmode="numeric" maxlength="4"></div><div class="pt-listings-field"><label>Listed within (days)</label><input name="daysOld" type="number" min="1"></div><div class="pt-listings-field"><label>Sort results</label><select name="sort"><option value="newest">Newest listings</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="units-desc">Most units</option></select></div></fieldset><button class="pt-listings-submit" type="submit">Search Listings</button></form><div class="pt-listings-note"><strong>Investment-first defaults:</strong> Multifamily and Apartment begin selected. Add or remove property types to match the opportunity you want to analyze.</div><div class="pt-listings-status" role="status">Enter a starting address and radius, a city and state, or a ZIP code to begin.</div><div class="pt-listings-grid"></div>`;
-    addRangeFields(panel.querySelector('.pt-listings-filter-grid'));
+    const propertyFilters=panel.querySelector('.pt-listings-filter-grid');addRangeFields(propertyFilters);organizePropertyFilters(propertyFilters);
     workflow.insertAdjacentElement('beforebegin',panel);
     panel.querySelector('form').addEventListener('submit',e=>{e.preventDefault();search()});
     panel.querySelector('.pt-listings-close').onclick=close;
