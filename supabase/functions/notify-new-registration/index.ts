@@ -1,16 +1,19 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 
+type AuthUserRecord = {
+  id?: string;
+  email?: string;
+  created_at?: string;
+  email_confirmed_at?: string | null;
+  raw_app_meta_data?: { provider?: string };
+};
+
 type RegistrationWebhook = {
   type?: string;
   table?: string;
   schema?: string;
-  record?: {
-    id?: string;
-    email?: string;
-    created_at?: string;
-    email_confirmed_at?: string | null;
-    raw_app_meta_data?: { provider?: string };
-  };
+  record?: AuthUserRecord;
+  old_record?: AuthUserRecord | null;
 };
 
 function escapeHtml(value: unknown) {
@@ -51,8 +54,14 @@ export default {
 
     const payload = await req.json() as RegistrationWebhook;
     const user = payload.record;
-    if (payload.type !== "INSERT" || payload.schema !== "auth" || payload.table !== "users" || !user?.id || !user.email) {
-      return new Response("Invalid registration event", { status: 400 });
+    const isRegistration = payload.type === "INSERT";
+    const isNewVerification = payload.type === "UPDATE" &&
+      !payload.old_record?.email_confirmed_at && Boolean(user?.email_confirmed_at);
+    if (
+      payload.schema !== "auth" || payload.table !== "users" || !user?.id || !user.email ||
+      (!isRegistration && !isNewVerification)
+    ) {
+      return new Response("Ignored auth event", { status: 202 });
     }
 
     const recipient = Deno.env.get("REGISTRATION_NOTIFICATION_EMAIL") || "jamie@propertythesis.com";
@@ -60,20 +69,29 @@ export default {
     const createdAt = user.created_at ? new Date(user.created_at).toLocaleString("en-US", { timeZone: "America/New_York", dateStyle: "long", timeStyle: "short" }) : "Unknown";
     const provider = user.raw_app_meta_data?.provider || "email";
     const verification = user.email_confirmed_at ? "Confirmed" : "Pending";
+    const eventLabel = isNewVerification ? "PropertyThesis account verified" : "New PropertyThesis registration — verification pending";
+    const eventDescription = isNewVerification
+      ? "A registered user has confirmed their email address and activated their PropertyThesis account."
+      : "A new user has created a PropertyThesis account and has not yet confirmed their email address.";
+    const eventTimeLabel = isNewVerification ? "Verified" : "Registered";
+    const eventTime = isNewVerification && user.email_confirmed_at
+      ? new Date(user.email_confirmed_at).toLocaleString("en-US", { timeZone: "America/New_York", dateStyle: "long", timeStyle: "short" })
+      : createdAt;
+    const idempotencyEvent = isNewVerification ? "verification" : "registration";
 
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${resendKey}`,
         "Content-Type": "application/json",
-        "Idempotency-Key": `propertythesis-registration-${user.id}`,
+        "Idempotency-Key": `propertythesis-${idempotencyEvent}-${user.id}`,
       },
       body: JSON.stringify({
         from: sender,
         to: [recipient],
-        subject: "New PropertyThesis registration",
-        html: `<div style="font-family:Arial,sans-serif;color:#102d46;line-height:1.55"><h2 style="margin:0 0 16px">New PropertyThesis registration</h2><p>A new user has created a PropertyThesis account.</p><table style="border-collapse:collapse"><tr><td style="padding:6px 18px 6px 0;font-weight:bold">Email</td><td>${escapeHtml(user.email)}</td></tr><tr><td style="padding:6px 18px 6px 0;font-weight:bold">Registered</td><td>${escapeHtml(createdAt)} ET</td></tr><tr><td style="padding:6px 18px 6px 0;font-weight:bold">Provider</td><td>${escapeHtml(provider)}</td></tr><tr><td style="padding:6px 18px 6px 0;font-weight:bold">Email verification</td><td>${escapeHtml(verification)}</td></tr><tr><td style="padding:6px 18px 6px 0;font-weight:bold">User ID</td><td>${escapeHtml(user.id)}</td></tr></table><p style="margin-top:20px;color:#627384;font-size:12px">This is an automated administrative notification from PropertyThesis.</p></div>`,
-        text: `New PropertyThesis registration\n\nEmail: ${user.email}\nRegistered: ${createdAt} ET\nProvider: ${provider}\nEmail verification: ${verification}\nUser ID: ${user.id}`,
+        subject: eventLabel,
+        html: `<div style="font-family:Arial,sans-serif;color:#102d46;line-height:1.55"><h2 style="margin:0 0 16px">${escapeHtml(eventLabel)}</h2><p>${escapeHtml(eventDescription)}</p><table style="border-collapse:collapse"><tr><td style="padding:6px 18px 6px 0;font-weight:bold">Email</td><td>${escapeHtml(user.email)}</td></tr><tr><td style="padding:6px 18px 6px 0;font-weight:bold">${escapeHtml(eventTimeLabel)}</td><td>${escapeHtml(eventTime)} ET</td></tr><tr><td style="padding:6px 18px 6px 0;font-weight:bold">Provider</td><td>${escapeHtml(provider)}</td></tr><tr><td style="padding:6px 18px 6px 0;font-weight:bold">Email verification</td><td>${escapeHtml(verification)}</td></tr><tr><td style="padding:6px 18px 6px 0;font-weight:bold">User ID</td><td>${escapeHtml(user.id)}</td></tr></table><p style="margin-top:20px;color:#627384;font-size:12px">This is an automated administrative notification from PropertyThesis.</p></div>`,
+        text: `${eventLabel}\n\n${eventDescription}\n\nEmail: ${user.email}\n${eventTimeLabel}: ${eventTime} ET\nProvider: ${provider}\nEmail verification: ${verification}\nUser ID: ${user.id}`,
       }),
     });
 
