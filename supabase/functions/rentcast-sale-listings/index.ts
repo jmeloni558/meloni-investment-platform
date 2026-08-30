@@ -4,6 +4,7 @@ import { corsHeaders, json } from '../_shared/cors.ts';
 const allowedTypes = new Set(['Single Family', 'Condo', 'Townhouse', 'Manufactured', 'Multi-Family', 'Apartment', 'Land']);
 const allowedListingTypes = new Set(['Standard', 'New Construction', 'Foreclosure', 'Short Sale']);
 const clean = (value: unknown, max = 120) => String(value ?? '').trim().slice(0, max);
+const finiteNumber = (value: unknown) => value !== null && value !== undefined && Number.isFinite(Number(value)) ? Number(value) : null;
 const numberInRange = (value: unknown, min: number, max: number) => {
   if (value === null || value === undefined || String(value).trim() === '') return null;
   const parsed = Number(value);
@@ -81,6 +82,51 @@ export default {
       await Promise.all([recordUsage('property-features'), saveCached(cacheKey, 'property-features', featurePayload, 30 * 24 * 60 * 60 * 1000)]);
       return json({ ...featurePayload, usage: { ...usage, dailyUsed: usage.dailyUsed + 1, dailyRemaining: Math.max(0, usage.dailyRemaining - 1) } });
     }
+    if (body.action === 'rent-estimate') {
+      const address = clean(body.address, 180);
+      const latitude = numberInRange(body.latitude, -90, 90);
+      const longitude = numberInRange(body.longitude, -180, 180);
+      const propertyType = clean(body.propertyType, 30);
+      if (!address && (latitude === null || longitude === null)) return json({ error: 'A property address or coordinates are required' }, 400);
+      if (propertyType === 'Land') return json({ error: 'A rent estimate is not available for land listings' }, 400);
+      const bedrooms = numberInRange(body.bedrooms, 0, 1000);
+      const bathrooms = numberInRange(body.bathrooms, 0, 1000);
+      const squareFootage = numberInRange(body.squareFootage, 0, 10000000);
+      const params = new URLSearchParams({ compCount: '10', lookupSubjectAttributes: 'true' });
+      if (address) params.set('address', address);
+      else { params.set('latitude', String(latitude)); params.set('longitude', String(longitude)); }
+      if (allowedTypes.has(propertyType) && propertyType !== 'Land') params.set('propertyType', propertyType);
+      if (bedrooms !== null) params.set('bedrooms', String(bedrooms));
+      if (bathrooms !== null) params.set('bathrooms', String(bathrooms));
+      if (squareFootage !== null) params.set('squareFootage', String(squareFootage));
+      const cacheKey = `rentcast:rent-estimate:${params.toString()}`;
+      const cached = await getCached(cacheKey);
+      if (cached) return json({ ...cached, cached: true, usage: await usageState() });
+      let usage;
+      try { usage = await enforceUsageLimit(); } catch (error) {
+        const daily = error instanceof Error && error.message === 'DAILY_LIMIT';
+        return json({ error: daily ? (plan === 'free' ? 'You have used today’s free listing allowance. Upgrade for additional daily searches.' : 'Your plan’s daily listing allowance has been reached. Try again tomorrow.') : 'The site-wide monthly listing-data allowance has been reached.', usage: (error as { usage?: unknown }).usage, upgradeRequired: daily && plan === 'free' }, 429);
+      }
+      const estimateResponse = await fetch(`https://api.rentcast.io/v1/avm/rent/long-term?${params}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
+      const estimate = await estimateResponse.json().catch(() => null);
+      if (!estimateResponse.ok) {
+        console.error('[rentcast-sale-listings] rent estimate failed', estimateResponse.status, { address, propertyType });
+        return json({ error: estimateResponse.status === 404 ? 'A market rent estimate is not available for this property' : 'Unable to retrieve a market rent estimate' }, estimateResponse.status === 404 ? 404 : 502);
+      }
+      const rentPayload = {
+        estimate: {
+          monthlyRent: finiteNumber(estimate?.rent),
+          rangeLow: finiteNumber(estimate?.rentRangeLow),
+          rangeHigh: finiteNumber(estimate?.rentRangeHigh),
+          comparableCount: Array.isArray(estimate?.comparables) ? estimate.comparables.length : 0,
+          estimatedAt: new Date().toISOString(),
+        },
+        source: 'RentCast market rent estimate',
+      };
+      if (rentPayload.estimate.monthlyRent === null) return json({ error: 'A market rent estimate is not available for this property' }, 404);
+      await Promise.all([recordUsage('rent-estimate'), saveCached(cacheKey, 'rent-estimate', rentPayload, 30 * 24 * 60 * 60 * 1000)]);
+      return json({ ...rentPayload, usage: { ...usage, dailyUsed: usage.dailyUsed + 1, dailyRemaining: Math.max(0, usage.dailyRemaining - 1) } });
+    }
     const city = clean(body.city, 80);
     const state = clean(body.state, 2).toUpperCase();
     const zipCode = clean(body.zipCode, 10);
@@ -141,9 +187,15 @@ export default {
       return json({ error: response.status === 429 ? 'Listing search limit reached. Try again shortly.' : 'Unable to retrieve listings' }, response.status === 429 ? 429 : 502);
     }
 
+    const latestRentalListing = (history: unknown) => Object.entries(history && typeof history === 'object' ? history as Record<string, unknown> : {})
+      .map(([date, entry]) => ({ date, ...(entry && typeof entry === 'object' ? entry as Record<string, unknown> : {}) }))
+      .filter((entry) => entry.event === 'Rental Listing' && finiteNumber(entry.price) !== null)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
     let listings = (Array.isArray(payload) ? payload : [])
       .filter((item) => propertyTypes.includes(item?.propertyType) && item?.status === 'Active' && listingTypes.includes(item?.listingType))
-      .map((item) => ({
+      .map((item) => {
+        const priorRental = latestRentalListing(item.history);
+        return ({
         id: item.id, formattedAddress: item.formattedAddress, addressLine1: item.addressLine1,
         city: item.city, state: item.state, zipCode: item.zipCode, county: item.county,
         latitude: item.latitude, longitude: item.longitude, propertyType: item.propertyType,
@@ -152,7 +204,9 @@ export default {
         listingType: item.listingType, listedDate: item.listedDate, lastSeenDate: item.lastSeenDate,
         daysOnMarket: item.daysOnMarket, mlsName: item.mlsName, mlsNumber: item.mlsNumber,
         hoa: item.hoa ?? null, listingAgent: item.listingAgent ?? null, listingOffice: item.listingOffice ?? null,
-      }));
+        recentRentalListing: priorRental ? { monthlyRent: finiteNumber(priorRental.price), date: clean(priorRental.date, 20) } : null,
+      });
+      });
     const totalCount = Number(response.headers.get('x-total-count'));
     console.log('[rentcast-sale-listings] success', { count: listings.length, totalCount: Number.isFinite(totalCount) ? totalCount : null });
     const postFiltered = listingTypes.length < allowedListingTypes.size;
