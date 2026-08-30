@@ -26,7 +26,7 @@
         <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
         <button id="submitButton" class="submit" type="submit">Sign In</button>
       </form>
-      <div id="turnstile" class="turnstile" aria-label="Security check"></div>
+      <div id="ptLoginTurnstile" class="turnstile" aria-label="Security check"></div>
       <div id="message" class="message" role="status">Complete the security check, then sign in.</div>
       <div class="links"><a href="/?create-account=1">Create a free account</a><a href="/?forgot-password=1">Forgot password?</a></div>
       <div class="links"><a href="/?signin-popup=1">Security check not loading? Use standard sign-in</a></div>
@@ -85,7 +85,7 @@
       try{
         const turnstile=await loadTurnstile();
         if(widgetId!==null)return;
-        widgetId=turnstile.render('#turnstile',{
+        widgetId=turnstile.render('#ptLoginTurnstile',{
           sitekey:'0x4AAAAAAEZOKm51JtNNvBzG',
           theme:'auto',
           callback:value=>{token=value||'';setMessage('Security check complete. You can sign in.');if(pending){pending=false;signIn()}},
