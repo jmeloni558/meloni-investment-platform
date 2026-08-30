@@ -4,6 +4,7 @@ import { corsHeaders, json } from '../_shared/cors.ts';
 const allowedTypes = new Set(['Multi-Family', 'Apartment']);
 const clean = (value: unknown, max = 120) => String(value ?? '').trim().slice(0, max);
 const numberInRange = (value: unknown, min: number, max: number) => {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : null;
 };
@@ -50,6 +51,7 @@ export default {
     if (squareFootageMin !== null || squareFootageMax !== null) params.set('squareFootage', `${squareFootageMin ?? 0}:${squareFootageMax ?? 10000000}`);
     if (yearBuiltMin !== null || yearBuiltMax !== null) params.set('yearBuilt', `${yearBuiltMin ?? 1600}:${yearBuiltMax ?? new Date().getFullYear() + 5}`);
 
+    console.log('[rentcast-sale-listings] request', { city, state, zipCode, propertyTypes, offset, limit, filtered: [...params.keys()].filter((key) => !['city', 'state', 'zipCode', 'propertyType', 'status', 'limit', 'offset', 'includeTotalCount'].includes(key)) });
     const response = await fetch(`https://api.rentcast.io/v1/listings/sale?${params}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
@@ -70,6 +72,7 @@ export default {
         hoa: item.hoa ?? null, listingAgent: item.listingAgent ?? null, listingOffice: item.listingOffice ?? null,
       }));
     const totalCount = Number(response.headers.get('x-total-count'));
+    console.log('[rentcast-sale-listings] success', { count: listings.length, totalCount: Number.isFinite(totalCount) ? totalCount : null });
     return json({ listings, offset, limit, totalCount: Number.isFinite(totalCount) ? totalCount : null, hasMore: listings.length === limit, filters: { propertyTypes, status: 'Active' }, source: 'RentCast' });
   }),
 };
