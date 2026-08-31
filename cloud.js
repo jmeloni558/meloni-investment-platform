@@ -1,6 +1,7 @@
 const SUPABASE_URL='https://lmaiqpkogmmsldkziggy.supabase.co';
 const SUPABASE_KEY='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
-const cloudClient=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY):null;
+const cloudClient=window.__ptSharedSupabaseClient||((window.supabase&&window.supabase.createClient)?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY):null);
+if(cloudClient)window.__ptSharedSupabaseClient=cloudClient;
 let cloudUser=null,cloudClients=[],cloudProperties=[],cloudAnalyses=[],cloudScenarios=[];
 let selectedClientId=null,selectedPropertyId=null,selectedAnalysisId=null,selectedScenarioId=null;
 const $=id=>document.getElementById(id);

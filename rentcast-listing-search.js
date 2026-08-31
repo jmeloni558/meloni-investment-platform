@@ -1,12 +1,12 @@
 'use strict';
 (()=>{
-  const VERSION=18,IMPORT_KEY='ptPendingListingImportV1';
+  const VERSION=19,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
   if((window.__ptRentCastListingSearchV||0)>=VERSION)return;
   window.__ptRentCastListingSearchV=VERSION;
   let panel=null,results=[],offset=0,activeListing=null;const featureCache=new Map(),rentCache=new Map();
   const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money=v=>Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'—';
-  const value=v=>v===null||v===undefined||v===''?'—':String(v);
+  const value=v=>v===null||v===undefined||v===''?'Not reported':String(v);
   const signedIn=()=>typeof cloudUser!=='undefined'&&!!cloudUser;
   function openAccount(mode='signup',message=''){
     if(window.PropertyThesisAuth?.open){window.PropertyThesisAuth.open(mode,message);return;}
@@ -79,8 +79,11 @@
     return{address:raw('address'),radius:raw('radius'),city:raw('city'),state:raw('state').toUpperCase(),zipCode:raw('zipCode'),...filters,propertyTypes,listingTypes,sort:raw('sort'),limit:18,offset};
   }
   async function search(){
-    offset=0;const q=query();if(!q.address&&!q.zipCode&&!(q.city&&q.state)){setStatus('Enter a starting address, a ZIP code, or both a city and two-letter state code.');return;}if(!q.propertyTypes.length){setStatus('Select at least one property type.');return;}if(!q.listingTypes.length){setStatus('Select at least one listing type.');return;}setStatus('Searching active listings…');panel.querySelector('.pt-listings-grid').innerHTML='';
-    try{refreshAccess();const {sort,...request}=q;const {data,error}=await cloudClient.functions.invoke('rentcast-sale-listings',{body:request});updateUsage(data?.usage,data?.cached);if(error)throw new Error(data?.error||error.message);results=Array.isArray(data?.listings)?data.listings:[];sortResults(sort);render();const total=Number.isFinite(Number(data?.totalCount))?` of ${Number(data.totalCount).toLocaleString()}`:'';setStatus(results.length?`${results.length}${total} matching active listing${Number(data?.totalCount||results.length)===1?'':'s'} loaded${data?.cached?' from the recent-search cache':''}.`:'No matching listings were found. Try a nearby ZIP code or broader filters.');offset=results.length;}catch(err){setStatus(err?.message||'Listing search failed. Please try again.');}
+    offset=0;const q=query(),pairs=[['minPrice','maxPrice','price'],['bedroomsMin','bedroomsMax','bedrooms'],['bathroomsMin','bathroomsMax','bathrooms'],['squareFootageMin','squareFootageMax','square footage'],['lotSizeMin','lotSizeMax','lot size'],['yearBuiltMin','yearBuiltMax','year built']];
+    if(!q.address&&!q.zipCode&&!(q.city&&q.state)){setStatus('Enter a starting address, a ZIP code, or both a city and two-letter state code.');return;}if(!q.propertyTypes.length){setStatus('Select at least one property type.');return;}if(!q.listingTypes.length){setStatus('Select at least one listing type.');return;}
+    const invalid=pairs.find(([min,max])=>q[min]!==null&&q[max]!==null&&Number(q[min])>Number(q[max]));if(invalid){setStatus(`Minimum ${invalid[2]} cannot be greater than maximum ${invalid[2]}.`);panel.querySelector(`[name="${invalid[0]}"]`)?.focus();return;}
+    const submit=panel.querySelector('.pt-listings-submit');submit.disabled=true;submit.textContent='Searching…';setStatus('Searching active listings…');panel.querySelector('.pt-listings-grid').innerHTML='';
+    try{refreshAccess();const {sort,...request}=q;const {data,error}=await cloudClient.functions.invoke('rentcast-sale-listings',{body:request});updateUsage(data?.usage,data?.cached);if(error)throw new Error(data?.error||error.message);results=Array.isArray(data?.listings)?data.listings:[];sortResults(sort);render();const total=Number.isFinite(Number(data?.totalCount))?` of ${Number(data.totalCount).toLocaleString()}`:'';const message=results.length?`${results.length}${total} matching active listing${Number(data?.totalCount||results.length)===1?'':'s'} loaded${data?.cached?' from the recent-search cache':''}.`:'No matching listings were found. Try a nearby ZIP code or broader filters.';setStatus(message);offset=results.length;try{localStorage.setItem(SEARCH_KEY,JSON.stringify({query:q,results,status:message,savedAt:Date.now()}));}catch(_e){}}catch(err){setStatus(err?.message||'Listing search failed. Please try again.');}finally{submit.disabled=false;submit.textContent='Search Listings';}
   }
   function sortResults(mode){const n=v=>Number.isFinite(Number(v))?Number(v):0;if(mode==='price-asc')results.sort((a,b)=>n(a.price)-n(b.price));else if(mode==='price-desc')results.sort((a,b)=>n(b.price)-n(a.price));else if(mode==='units-desc')results.sort((a,b)=>n(b.units)-n(a.units));else results.sort((a,b)=>new Date(b.listedDate||0)-new Date(a.listedDate||0));}
   function setStatus(text){const el=panel?.querySelector('.pt-listings-status');if(el)el.textContent=text;}
@@ -99,13 +102,13 @@
     const root=modal.querySelector('[data-value-view]');if(!root)return;
     if(error){root.innerHTML=`<div class="pt-value-empty"><b>Rent estimate unavailable</b><span>${esc(error)} Enter a monthly gross rent below to screen the opportunity.</span><label>Monthly gross rent<input type="number" min="0" step="25" data-value-rent></label></div>`;bindValueInput(root,listing,null);return;}
     if(!model){root.innerHTML='<div class="pt-value-loading"><b>Building the PropertyThesis value view…</b><span>Locating rental evidence and calculating income-supported values.</span></div>';return;}
-    const desiredCap=Number(model.desiredCap)||.065,price=Number(listing.price)||0,annualGross=model.grossMonthly*12,effectiveGrossIncome=annualGross*(1-vacancyRate),noi=effectiveGrossIncome*(1-operatingExpenseRate),currentCap=price>0?noi/price:null,desiredValue=noi/desiredCap;
+    const desiredCap=Number(model.desiredCap)||.065,price=Number(listing.price)||0,annualGross=model.grossMonthly*12,effectiveGrossIncome=annualGross*(1-vacancyRate),noi=effectiveGrossIncome*(1-operatingExpenseRate),currentCap=price>0?noi/price:null,desiredValue=noi/desiredCap;modal.dataset.screenRent=String(model.grossMonthly);modal.dataset.screenCap=String(desiredCap*100);
     const sourceNote=model.multi&&model.units>1?`${model.source} per unit × ${model.units} reported units`:model.source;
     const range=model.rangeLow&&model.rangeHigh?`RentCast range ${money(model.rangeLow)}–${money(model.rangeHigh)}${model.multi&&model.units>1?' per unit':''}. `:'';
     root.innerHTML=`<div class="pt-value-head"><div><span>PROPERTYTHESIS VALUE VIEW</span><h4>What does the income support?</h4></div><span class="pt-rent-source">${esc(sourceNote)}</span></div><div class="pt-value-summary"><div><span>Monthly gross rent</span><b>${money(model.grossMonthly)}</b></div><div><span>Estimated NOI</span><b>${money(noi)}</b></div><div class="is-primary"><span>Cap rate at list price</span><b>${pct(currentCap)}</b></div><div class="is-desired"><span>Value at your ${pct(desiredCap)} cap</span><b>${money(desiredValue)}</b></div></div><div class="pt-value-controls"><div class="pt-value-controls-head"><span>TEST YOUR ASSUMPTIONS</span><b>Adjust either input to recalculate the opportunity</b></div><label class="pt-value-control is-rent"><span>Monthly gross rent</span><input type="number" min="0" step="25" value="${Math.round(model.grossMonthly)}" data-value-rent><em>Use total property rent</em></label><label class="pt-value-control is-cap"><span>Desired cap rate</span><div><input type="number" min="1" max="20" step="0.1" value="${(desiredCap*100).toFixed(1)}" data-value-cap><i>%</i></div><em>Your investment benchmark</em></label><p>Press Enter or leave a field to update.</p></div><div class="pt-value-ladder"><div class="pt-value-ladder-head"><b>Cap-rate benchmark</b><b>Income-supported value</b></div>${capRates.map(rate=>`<div class="${rate===.065?'is-benchmark':''}"><span>${(rate*100).toFixed(1)}%${rate===.065?' · benchmark':''}</span><b>${money(noi/rate)}</b></div>`).join('')}</div><div class="pt-value-assumption"><b>Quick-screen assumptions:</b> 10% vacancy and credit loss is deducted from potential gross rent, then operating expenses equal 40% of Effective Gross Income. This matches the default PropertyThesis calculator methodology. ${esc(range)}This is a preliminary income screen, not a substitute for verified leases, expenses, vacancy, reserves, capital costs, or complete underwriting.</div>`;
     bindValueInput(root,listing,model);
   }
-  function bindValueInput(root,listing,model){const rentInput=root.querySelector('[data-value-rent]'),capInput=root.querySelector('[data-value-cap]');const apply=()=>{const gross=Number(rentInput?.value),capPct=Number(capInput?.value||6.5);if(!Number.isFinite(gross)||gross<0||!Number.isFinite(capPct)||capPct<=0)return;renderValueView(root.closest('.pt-listing-detail'),listing,{...(model||rentModel(listing,gross,'User-entered rent')),grossMonthly:gross,desiredCap:capPct/100,source:gross!==Number(model?.grossMonthly)?'User-entered rent':model?.source||'User-entered rent',multi:gross!==Number(model?.grossMonthly)?false:!!model?.multi});};[rentInput,capInput].forEach(input=>{input?.addEventListener('change',apply);input?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();apply();}});});}
+  function bindValueInput(root,listing,model){const rentInput=root.querySelector('[data-value-rent]'),capInput=root.querySelector('[data-value-cap]');const apply=()=>{const gross=Number(rentInput?.value),capPct=Number(capInput?.value),rentValid=rentInput?.value!==''&&Number.isFinite(gross)&&gross>0&&gross<=1000000,capValid=capInput?.value!==''&&Number.isFinite(capPct)&&capPct>=1&&capPct<=20;rentInput?.setCustomValidity(rentValid?'':'Enter monthly gross rent between $1 and $1,000,000.');capInput?.setCustomValidity(capValid?'':'Enter a desired cap rate from 1% to 20%.');if(!rentValid){rentInput?.reportValidity();return;}if(!capValid){capInput?.reportValidity();return;}renderValueView(root.closest('.pt-listing-detail'),listing,{...(model||rentModel(listing,gross,'User-entered rent')),grossMonthly:gross,desiredCap:capPct/100,source:gross!==Number(model?.grossMonthly)?'User-entered rent':model?.source||'User-entered rent',multi:gross!==Number(model?.grossMonthly)?false:!!model?.multi});};[rentInput,capInput].forEach(input=>{input?.addEventListener('change',apply);input?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();apply();}});});}
   async function loadValueView(listing,modal){
     if(listing.propertyType==='Land'){renderValueView(modal,listing,null,'Land listings require a user-provided income assumption.');return;}
     const prior=listing.recentRentalListing;if(prior?.monthlyRent){renderValueView(modal,listing,rentModel(listing,prior.monthlyRent,`Prior advertised rent${prior.date?` (${prior.date})`:''}`));return;}
@@ -131,14 +134,15 @@
   }
   function importListing(l){
     const minimumUnits=l.propertyType==='Apartment'?5:l.propertyType==='Multi-Family'?2:1;
-    const imported={name:l.formattedAddress||l.addressLine1||'Imported Listing',address:l.formattedAddress||l.addressLine1||'',price:Number(l.price)||0,units:Number(l.units)||minimumUnits,propertyType:l.propertyType||'',listing:{...l,source:'RentCast',importedAt:new Date().toISOString()}};
+    const screenRent=Number(document.getElementById('ptListingDetail')?.dataset.screenRent)||0;
+    const imported={name:l.formattedAddress||l.addressLine1||'Imported Listing',address:l.formattedAddress||l.addressLine1||'',price:Number(l.price)||0,rent:screenRent,units:Number(l.units)||minimumUnits,propertyType:l.propertyType||'',listing:{...l,source:'RentCast',importedAt:new Date().toISOString()}};
     localStorage.setItem(IMPORT_KEY,JSON.stringify(imported));
     if(!signedIn()){
-      const params=new URLSearchParams({'free-analysis':'1','starter-address':imported.address,'starter-price':String(imported.price||''),'starter-units':String(imported.units||1),cb:String(Date.now())});
+      const params=new URLSearchParams({'free-analysis':'1','starter-address':imported.address,'starter-price':String(imported.price||''),'starter-rent':String(imported.rent||''),'starter-units':String(imported.units||1),cb:String(Date.now())});
       location.href='index.html?'+params.toString();
       return;
     }
-    try{state={...defaults,name:imported.name,address:imported.address,price:imported.price,rent:0,units:imported.units,marketRentSupport:{inputs:{propertyType:imported.propertyType,bedrooms:l.bedrooms??'',bathrooms:l.bathrooms??'',squareFootage:l.squareFootage??''}},sourceListing:imported.listing};renderFields();render();}catch(_e){}
+    try{state={...defaults,name:imported.name,address:imported.address,price:imported.price,rent:imported.rent,units:imported.units,marketRentSupport:{inputs:{propertyType:imported.propertyType,bedrooms:l.bedrooms??'',bathrooms:l.bathrooms??'',squareFootage:l.squareFootage??''}},sourceListing:imported.listing};renderFields();render();}catch(_e){}
     document.getElementById('ptListingDetail')?.classList.remove('is-open');close();
     try{window.AppNavigationToolbar?.go?.('assumptions');window.GuidedAnalysisSetup?.go?.(1);}catch(_e){}
     try{if(typeof setStatus==='function')setStatus(`Listing imported. Enter the expected monthly rent and verify the ${Number(l.units)?'reported':'minimum assumed'} unit count before calculating.`);}catch(_e){}
@@ -148,6 +152,19 @@
     const params=new URLSearchParams(location.search);if(params.get('app-action')!=='search-listings'&&params.get('listing-search')!=='1')return;
     open();
   }
-  function start(){ensurePanel();let tries=0;const timer=setInterval(()=>{ensureButton();if(++tries>40)clearInterval(timer)},180);document.addEventListener('click',e=>{if(e.target.closest('#appNavShell .app-nav-action:not(#appNavListings)'))close()});document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('ptListingDetail')?.classList.remove('is-open')});try{cloudClient?.auth?.onAuthStateChange?.(()=>setTimeout(ensureButton,120));}catch(_e){}setTimeout(requested,900);}
+  function restoreSearch(){
+    if(!dedicatedGuestRoute())return;
+    try{
+      const saved=JSON.parse(localStorage.getItem(SEARCH_KEY)||'null');if(!saved?.query||!Array.isArray(saved.results)||Date.now()-Number(saved.savedAt)>3600000)return;
+      const form=panel.querySelector('form'),q=saved.query;
+      Object.entries(q).forEach(([name,val])=>{const control=form.elements[name];if(!control||Array.isArray(val)||val===null||name==='sort')return;control.value=val;});
+      const typeMap={'Single Family':'singleFamily','Condo':'condo','Townhouse':'townhouse','Manufactured':'manufactured','Multi-Family':'multiFamily','Apartment':'apartment','Land':'land'};
+      Object.values(typeMap).forEach(name=>form.elements[name].checked=false);(q.propertyTypes||[]).forEach(type=>{if(typeMap[type])form.elements[typeMap[type]].checked=true;});
+      const listingMap={'Standard':'listingStandard','New Construction':'listingNewConstruction','Foreclosure':'listingForeclosure','Short Sale':'listingShortSale'};
+      Object.values(listingMap).forEach(name=>form.elements[name].checked=false);(q.listingTypes||[]).forEach(type=>{if(listingMap[type])form.elements[listingMap[type]].checked=true;});
+      form.elements.sort.value=q.sort||'newest';results=saved.results;offset=results.length;render();setStatus(saved.status||`${results.length} matching listings restored.`);
+    }catch(_e){}
+  }
+  function start(){ensurePanel();restoreSearch();let tries=0;const timer=setInterval(()=>{ensureButton();if(++tries>40)clearInterval(timer)},180);document.addEventListener('click',e=>{if(e.target.closest('#appNavShell .app-nav-action:not(#appNavListings)'))close()});document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('ptListingDetail')?.classList.remove('is-open')});try{cloudClient?.auth?.onAuthStateChange?.(()=>setTimeout(ensureButton,120));}catch(_e){}setTimeout(requested,900);}
   window.PropertyThesisListingSearch={open,close,search,importListing};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

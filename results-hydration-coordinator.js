@@ -33,6 +33,8 @@
     const dashboard=document.getElementById('dashboard');
     if(!dashboard||(!force&&!dashboard.classList.contains('active')))return false;
     const now=Date.now();if(!force&&now-lastRun<150)return false;
+    const signedIn=typeof cloudUser!=='undefined'&&!!cloudUser;
+    if(!signedIn)return false;
     const bridge=window.PropertyThesisIncomeEngineBridge;
     if(!bridge?.requestServer)return false;
     busy=true;lastRun=now;

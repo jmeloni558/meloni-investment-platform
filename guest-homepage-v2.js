@@ -26,7 +26,11 @@
     cloudClient.auth.getSession().then(({data})=>{if(data?.session?.user)location.replace(target);}).catch(()=>{});
     cloudClient.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_IN'&&session?.user)location.replace(target);});
   }
-  function sample(){location.href='index.html?free-analysis=1&cb='+Date.now();}
+  function sample(){
+    const form=document.getElementById('ptHomeStarterForm');
+    if(form){form.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>form.querySelector('[name="price"]')?.focus({preventScroll:true}),350);return;}
+    location.href='index.html?start-analysis=1';
+  }
   function startFromHomepage(address='',price='',rent='',place={}){
     const params=new URLSearchParams({"free-analysis":'1',cb:String(Date.now())});
     if(address.trim())params.set('starter-address',address.trim());
@@ -91,10 +95,10 @@
     root.classList.add('pt-home-v2');
     const eyebrow=root.querySelector('.pt-guest-eyebrow'),title=root.querySelector('.pt-guest-copy h2'),lead=root.querySelector('.pt-guest-lead'),sub=root.querySelector('.pt-guest-sub'),actions=root.querySelector('.pt-guest-promo-actions'),features=root.querySelector('.pt-guest-feature-grid');
     if(eyebrow)eyebrow.textContent='EVERY PROPERTY BEGINS WITH A THESIS';
-    if(title)title.textContent='Form the thesis. Test the numbers. Build the case.';
+    if(title)title.textContent='Know the Numbers. Prove the Case.';
     if(lead)lead.textContent='A property thesis is the idea that a deal can produce the income, value and returns you expect. PropertyThesis tests that idea against the numbers—so you can see whether the evidence supports it.';
     if(sub)sub.textContent='Analyze income, expenses, financing, taxes, value, returns, sensitivity and market evidence in one guided workflow, then turn the conclusion into a client-ready investment report.';
-    let pathway=root.querySelector('.pt-home-thesis-path');if(!pathway){pathway=document.createElement('div');pathway.className='pt-home-thesis-path';sub?.insertAdjacentElement('afterend',pathway);}pathway.innerHTML='<span><b>01</b>Form the idea</span><i>→</i><span><b>02</b>Test the assumptions</span><i>→</i><span><b>03</b>Build the case</span>';
+    let pathway=root.querySelector('.pt-home-thesis-path');if(!pathway){pathway=document.createElement('div');pathway.className='pt-home-thesis-path';sub?.insertAdjacentElement('afterend',pathway);}pathway.innerHTML='<span><b>01</b>Form the idea</span><i>→</i><span><b>02</b>Test the assumptions</span><i>→</i><span><b>03</b>Prove the case</span>';
     let audience=root.querySelector('.pt-home-audience');if(!audience){audience=document.createElement('p');audience.className='pt-home-audience';}pathway.insertAdjacentElement('afterend',audience);audience.textContent='Built for real estate investors, agents, brokers and acquisition professionals who need more than a basic rental calculator.';
     if(actions){actions.innerHTML='<button type="button" class="pt-guest-primary" data-pt-home-sample>Start Free Analysis</button><button type="button" class="pt-guest-secondary" data-pt-home-report>View a Sample Report</button><button type="button" class="pt-home-tertiary" data-pt-home-create>Create Free Account</button>';actions.querySelector('[data-pt-home-sample]').onclick=sample;actions.querySelector('[data-pt-home-report]').onclick=()=>location.href='sample-report-viewer.html?v=2';actions.querySelector('[data-pt-home-create]').onclick=()=>auth('signup');}
     if(features){features.classList.add('pt-home-report-proof');features.innerHTML='<a class="pt-home-report-preview" href="sample-report-viewer.html?v=2" aria-label="Open the complete PropertyThesis sample report"><span class="pt-home-preview-label">SEE WHAT YOUR ANALYSIS BECOMES</span><div class="pt-home-report-page"><div class="pt-home-report-band"><div><small>PRESENTED BY</small><strong>PropertyThesis</strong><em>Demonstration Report</em></div><div><strong>PropertyThesis</strong><em>Know the Numbers. Prove the Case.</em></div></div><div class="pt-home-report-body"><h3>Investment Property Analysis</h3><h4>Sample Investment Property, Tampa, FL</h4><div class="pt-home-report-meta"><span>Acquisition Price: $425,000</span><span>Prepared by: PropertyThesis</span></div><div class="pt-home-report-rule"></div><section><strong>Property Thesis</strong><p>The modeled income, financing and return profile support a clear investment case, subject to verification of the underlying assumptions.</p></section><h5>Investment Analysis Summary</h5><div class="pt-home-report-lines"><i></i><i></i><i></i></div></div></div><b class="pt-home-preview-action">Open the full sample report →</b></a>';}
@@ -132,10 +136,16 @@
       setTimeout(()=>auth('signin',plan?'Sign in to continue with the selected PropertyThesis plan.':'Sign in to your PropertyThesis account.'),80);
     }
     const standard=shell.querySelector('.app-nav-actions'),guestNav=shell.querySelector('.pt-guest-nav');
-    if(guest&&free){if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;enterFreeAnalysis();return true;}
+    if(guest&&free){ensureNav(shell);enterFreeAnalysis();return true;}
     if(!guest){freeAnalysisActive=false;if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=true);accountNotice();return true;}
     ensureNav(shell);upgradeHero(hero);ensureExperience(sampleSection);document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=false);return true;
   }
-  function start(){installReturnRoute();apply();[100,250,500,800,1200,1800,2600,4000,6000].forEach(ms=>setTimeout(apply,ms));setInterval(apply,2000);try{cloudClient?.auth?.onAuthStateChange?.((event)=>{if(event==='SIGNED_OUT'){freeAnalysisActive=false;freeEntered=false;noticeUser='';document.getElementById('ptAccountUpgradeBanner')?.remove();setTimeout(()=>{apply();window.scrollTo({top:0,behavior:'auto'});},0);}else if(event==='SIGNED_IN'){freeAnalysisActive=false;[0,100,350].forEach(ms=>setTimeout(apply,ms));}});}catch(_e){}window.addEventListener('pt:billing-updated',()=>{[700,1800,4000].forEach(ms=>setTimeout(()=>{noticeUser='';accountNotice()},ms))});}
+  function start(){
+    if(entryParams.get('free-analysis')==='1'&&!entryParams.get('starter-price')&&!entryParams.get('starter-rent')){
+      freeAnalysisActive=false;entryParams.delete('free-analysis');entryParams.delete('cb');
+      history.replaceState(null,'',location.pathname+(entryParams.toString()?'?'+entryParams:'')+location.hash);
+      setTimeout(()=>document.getElementById('ptHomeStarterForm')?.scrollIntoView({behavior:'smooth',block:'center'}),650);
+    }
+    installReturnRoute();apply();[100,250,500,800,1200,1800,2600,4000,6000].forEach(ms=>setTimeout(apply,ms));setInterval(apply,2000);try{cloudClient?.auth?.onAuthStateChange?.((event)=>{if(event==='SIGNED_OUT'){freeAnalysisActive=false;freeEntered=false;noticeUser='';document.getElementById('ptAccountUpgradeBanner')?.remove();setTimeout(()=>{apply();window.scrollTo({top:0,behavior:'auto'});},0);}else if(event==='SIGNED_IN'){freeAnalysisActive=false;[0,100,350].forEach(ms=>setTimeout(apply,ms));}});}catch(_e){}window.addEventListener('pt:billing-updated',()=>{[700,1800,4000].forEach(ms=>setTimeout(()=>{noticeUser='';accountNotice()},ms))});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

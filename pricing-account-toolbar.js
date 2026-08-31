@@ -13,7 +13,7 @@
   async function start(){
     try{
       if(!window.supabase?.createClient)return;
-      const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+      const client=window.__ptSharedSupabaseClient||(window.__ptSharedSupabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}}));
       const {data}=await client.auth.getSession();render(data?.session?.user);
       client.auth.onAuthStateChange((_event,session)=>render(session?.user));
     }catch(_e){}
