@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=19,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
+  const VERSION=20,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
   if((window.__ptRentCastListingSearchV||0)>=VERSION)return;
   window.__ptRentCastListingSearchV=VERSION;
   let panel=null,results=[],offset=0,activeListing=null;const featureCache=new Map(),rentCache=new Map();
@@ -153,7 +153,7 @@
     open();
   }
   function restoreSearch(){
-    if(!dedicatedGuestRoute())return;
+    if(new URLSearchParams(location.search).get('listing-search')!=='1')return;
     try{
       const saved=JSON.parse(localStorage.getItem(SEARCH_KEY)||'null');if(!saved?.query||!Array.isArray(saved.results)||Date.now()-Number(saved.savedAt)>3600000)return;
       const form=panel.querySelector('form'),q=saved.query;
@@ -165,6 +165,6 @@
       form.elements.sort.value=q.sort||'newest';results=saved.results;offset=results.length;render();setStatus(saved.status||`${results.length} matching listings restored.`);
     }catch(_e){}
   }
-  function start(){ensurePanel();restoreSearch();let tries=0;const timer=setInterval(()=>{ensureButton();if(++tries>40)clearInterval(timer)},180);document.addEventListener('click',e=>{if(e.target.closest('#appNavShell .app-nav-action:not(#appNavListings)'))close()});document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('ptListingDetail')?.classList.remove('is-open')});try{cloudClient?.auth?.onAuthStateChange?.(()=>setTimeout(ensureButton,120));}catch(_e){}setTimeout(requested,900);}
+  function start(){ensurePanel();restoreSearch();let tries=0;const timer=setInterval(()=>{ensureButton();if(++tries>40)clearInterval(timer)},180);document.addEventListener('click',e=>{if(e.target.closest('#appNavShell .app-nav-action:not(#appNavListings)'))close()});document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('ptListingDetail')?.classList.remove('is-open')});try{cloudClient?.auth?.onAuthStateChange?.(()=>setTimeout(ensureButton,120));}catch(_e){}setTimeout(requested,900);setTimeout(restoreSearch,1100);setTimeout(restoreSearch,1700);}
   window.PropertyThesisListingSearch={open,close,search,importListing};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
