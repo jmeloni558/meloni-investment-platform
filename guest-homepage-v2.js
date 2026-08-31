@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=30;
+  const VERSION=31;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -89,7 +89,7 @@
     let nav=toolbar.querySelector('.pt-guest-nav');
     if(!nav){nav=document.createElement('nav');nav.className='pt-guest-nav';nav.setAttribute('aria-label','Explore PropertyThesis');nav.innerHTML='<button type="button" class="primary" data-pt-home-start>Start Free Analysis</button><a href="index.html?listing-search=1">Search Listings</a><a href="sample-report-viewer.html?v=2">Sample Report</a><a href="pricing.html">Pricing</a><a href="mortgage-tools.html">Mortgage Tools</a><button type="button" data-pt-home-signin>Sign In</button>';toolbar.appendChild(nav);nav.querySelector('[data-pt-home-start]').onclick=sample;nav.querySelector('[data-pt-home-signin]').onclick=()=>auth('signin');}
     if(!nav.querySelector('[data-pt-glossary]')){const signIn=nav.querySelector('[data-pt-home-signin]');signIn?.insertAdjacentHTML('beforebegin','<a data-pt-glossary href="glossary.html">Glossary</a>');}
-    standard.hidden=true;nav.hidden=false;
+    standard.hidden=true;standard.style.display='none';nav.hidden=false;nav.style.removeProperty('display');
   }
   function upgradeHero(root){
     root.classList.add('pt-home-v2');
@@ -137,7 +137,7 @@
     }
     const standard=shell.querySelector('.app-nav-actions'),guestNav=shell.querySelector('.pt-guest-nav');
     if(guest&&free){ensureNav(shell);enterFreeAnalysis();return true;}
-    if(!guest){freeAnalysisActive=false;if(standard)standard.hidden=false;if(guestNav)guestNav.hidden=true;document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=true);accountNotice();return true;}
+    if(!guest){freeAnalysisActive=false;if(standard){standard.hidden=false;standard.style.removeProperty('display');}if(guestNav){guestNav.hidden=true;guestNav.style.display='none';}document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=true);accountNotice();return true;}
     ensureNav(shell);upgradeHero(hero);ensureExperience(sampleSection);document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=false);return true;
   }
   function start(){
