@@ -11,7 +11,7 @@
 - Browser: Microsoft Edge InPrivate
 - Session state: Logged-out guest
 - Status: In progress
-- Next test: **5.1 — Begin the logged-out seven-step free analysis workflow**
+- Next test: **5.14 — Retest navigation after PT-017 is corrected, then continue into Section 6**
 
 ## Status legend
 
@@ -89,7 +89,33 @@
 | 4.7 Limitations/disclaimer | PASS | Page clearly stated preliminary screen, verified-data requirements, and not a replacement for complete underwriting. |
 | 4.8 Carry listing into guided analysis | PARTIAL | Address and list price transferred once, but the manually entered $4,000 rent did not populate `f_rent`; see PT-015. Navigating away and Back also cleared the listing search state; see PT-016. |
 
+## Section 5 — Free-analysis entry and seven-step workflow
+
+| Test | Result | Notes |
+|---|---|---|
+| 5.1 Begin logged out | PASS | Clean home-page entry was available with the public toolbar and Sign In action. |
+| 5.2 Optional address; required price/rent | PASS | Address was explicitly optional. Empty submission focused Acquisition Price; price and rent were explicitly required. |
+| 5.3 Continuous address typing | PASS | Typed `4220 E Powhatan Ave, Tampa, FL` continuously; focus remained in the field and the cursor finished at position 30. |
+| 5.4 Select address suggestion | PASS | Selecting the Tampa suggestion preserved and normalized the address to `4220 E Powhatan Ave, Tampa, FL 33610, USA`. |
+| 5.5 Begin without account | PASS | $500,000 price and $4,000 rent opened the guided analysis without an account. |
+| 5.6 Step 1 handoff/defaults | PASS | Step 1 opened with the selected address and $500,000 price. Step 2 retained $4,000 rent and visibly labeled 10% vacancy and 2% rent growth as suggested defaults. |
+| 5.7 Forward/back persistence | PASS | Traversed all seven steps forward and backward. Address, price, land, units, hold, rent, vacancy, rent growth, expenses, loan terms and investment targets persisted. |
+| 5.8 Input provenance | PASS | Workflow visibly distinguishes Required, Recommended, Suggested, Advanced / if applicable and Tax assumption inputs, with explanatory default copy. |
+| 5.9 Numeric formats and invalid values | PASS | Currency punctuation typed into number inputs was safely ignored, decimals were accepted, and blank/zero/negative required price and rent values were rejected. |
+| 5.10 Exact validation/preservation | PASS | Validation named Acquisition Price or Monthly Rent, focused the affected field and preserved all unrelated entries. |
+| 5.11 Single final action | PASS | Step 7 displayed one clear `Calculate, Save & Review Results` action. |
+| 5.12 Intermediate refresh | PASS | Refresh on Step 2 returned to Step 2 without page duplication or data loss; $4,000 rent, 8% vacancy and 3% growth persisted. |
+| 5.13 Real-change leave warning | FAIL | After changing rent on Step 2, clicking Pricing did nothing: navigation was blocked but no warning appeared. See PT-017. |
+| 5.14 No false warning after save/finish | BLOCKED | Requires correcting PT-017, then completing the account/save handoff tested in Section 6. |
+
 ## Recorded defects
+
+### PT-017 — P1 — Unsaved-change protection silently blocks toolbar navigation
+
+- Reproduction: Begin a logged-out analysis, change a value on an intermediate step, then click Pricing in the public toolbar.
+- Observed: The page remains on the analysis and no confirmation, warning, or explanation appears; the toolbar link looks nonfunctional.
+- Expected: A clear unsaved-changes confirmation appears, allowing the user to stay or knowingly discard the draft and continue.
+- Scope found in code: The custom confirmation selector covers selected analysis-management actions but does not cover normal public-toolbar links, leaving those links dependent on the browser's inconsistent native `beforeunload` presentation.
 
 ### PT-001 — P2 — Outdated “Build the Case” copy remains on homepage
 
