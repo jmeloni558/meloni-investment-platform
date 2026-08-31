@@ -11,7 +11,7 @@
 - Browser: Microsoft Edge InPrivate
 - Session state: Logged-out guest
 - Status: In progress
-- Next test: **5.14 — Retest navigation after PT-017 is corrected, then continue into Section 6**
+- Next test: **STOPPED — fix PT-018 before continuing Section 6**
 
 ## Status legend
 
@@ -105,12 +105,46 @@
 | 5.10 Exact validation/preservation | PASS | Validation named Acquisition Price or Monthly Rent, focused the affected field and preserved all unrelated entries. |
 | 5.11 Single final action | PASS | Step 7 displayed one clear `Calculate, Save & Review Results` action. |
 | 5.12 Intermediate refresh | PASS | Refresh on Step 2 returned to Step 2 without page duplication or data loss; $4,000 rent, 8% vacancy and 3% growth persisted. |
-| 5.13 Real-change leave warning | FAIL | After changing rent on Step 2, clicking Pricing did nothing: navigation was blocked but no warning appeared. See PT-017. |
-| 5.14 No false warning after save/finish | BLOCKED | Requires correcting PT-017, then completing the account/save handoff tested in Section 6. |
+| 5.13 Real-change leave warning | PASS | After the PT-017 correction, changing an analysis value and clicking Pricing displayed the unsaved-changes warning. Choosing Cancel kept the analysis open with all numbers intact. |
+| 5.14 No false warning after save/finish | DEFERRED | Will be verified immediately after the account/save handoff in Section 6. |
+
+## Section 6 — New-account creation and email verification
+
+| Test | Result | Notes |
+|---|---|---|
+| 6.1 Step 7 account/save handoff | PASS | Logged-out `Calculate, Save & Review Results` opened the account workflow without losing the completed analysis. |
+| 6.2 Focused account workflow | PASS | Create Free Account was the primary workflow; existing-user Sign In appeared as a separate secondary action. |
+| 6.3 Mismatched passwords | PASS | Inline message stated `The password confirmation does not match.` and the account workflow remained open. |
+| 6.4 Password below minimum | PASS | Matching short passwords produced `Enter an email and a password of at least 12 characters.` |
+| 6.5 Turnstile and duplicate-submit protection | PASS | One account request completed after manual Turnstile. The creation form was replaced by the verification screen, preventing another Create Account submission. |
+| 6.6 Account-creation timeout | PASS | Account creation completed and did not remain stuck on `Creating account`. |
+| 6.7 Verification instructions | PASS | Instructions identified `jrmeloni@hotmail.com`, told the user to keep the original tab open, supported same- or different-device confirmation, and explicitly said not to reset the password. |
+| 6.8 Single registration notification | PASS | One new-user registration notification arrived at `jamie@propertythesis.com`. |
+| 6.9 Resend verification | PASS | Resend was invoked exactly once and displayed `Verification email resent. Check your inbox and spam folder.` Supabase still contained exactly one unverified Auth user for the address. |
+| 6.10 Open confirmation on same computer | PASS | Confirmation opened in another browser page on the same computer and completed successfully. |
+| 6.11 Continue in prior tab | PARTIAL | The confirmation page closed, but focus returned to the email rather than the original PropertyThesis tab. The original PropertyThesis tab remained open. |
+| 6.12 Automatic detection/restoration | FAIL | The original tab did not automatically detect confirmation. The user had to use the other-device/browser fallback. See PT-018. |
+| 6.13 Calculate and automatic Base Case save | BLOCKED | The post-login restoration failed before calculation. |
+| 6.14 Single verified-user notification | NOT RUN | Check after the restoration defect is corrected and the verified workflow completes. |
+| 6.15 Second account/phone confirmation | NOT RUN | Not started because the run stopped on missing analysis restoration. |
+| 6.16 Other-device/browser confirmation button | PASS | `I Confirmed on Another Device` detected the verified email and presented the local sign-in workflow. |
+| 6.17 Sign-in and analysis restoration | FAIL | Sign-in succeeded, but the app opened an empty workspace showing `0 active • 0 archived • 0 analyses` instead of returning to Step 7. Supabase confirmed the user but contained no saved analysis/property rows. See PT-018. |
+| 6.18 No unsupported blank-tab path | PASS | The confirmation instructions offered return-to-original-tab and explicit other-device/browser recovery; no instruction to start in a new blank PropertyThesis tab was shown. |
 
 ## Recorded defects
 
+### PT-018 — P1 — Verified-account sign-in loses the pending guest analysis
+
+- Reproduction: Complete a logged-out seven-step analysis, create and verify a new account in another browser context, return to the original tab, choose `I Confirmed on Another Device`, then sign in locally.
+- Observed: Sign-in succeeded as `jrmeloni@hotmail.com`, but the app routed to an empty workspace showing zero properties and zero analyses. The preserved Step 7 draft disappeared from view and no Base Case was created.
+- Database verification: The Auth user is confirmed and has a successful sign-in timestamp, but has zero `public.analyses` and zero `public.properties` rows.
+- Expected: After local sign-in, restore the pending guest data, return to Step 7, calculate once and automatically save the first analysis as Base Case.
+- Stop condition: The checklist requires stopping when the analysis is missing after verification.
+
 ### PT-017 — P1 — Unsaved-change protection silently blocks toolbar navigation
+
+- Resolution: Fixed and deployed in commit `36ceb06`. Public toolbar and PropertyThesis home links now use the application confirmation when the analysis is dirty.
+- Retest: PASS — warning appeared; Cancel preserved the active analysis and its numbers.
 
 - Reproduction: Begin a logged-out analysis, change a value on an intermediate step, then click Pricing in the public toolbar.
 - Observed: The page remains on the analysis and no confirmation, warning, or explanation appears; the toolbar link looks nonfunctional.

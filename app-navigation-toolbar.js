@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=33;
+  const VERSION=34;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -58,10 +58,11 @@
     if(isSignedIn())return;
     const btn=e.target?.closest?.('#gwSave,#gwNext,#calculateBtn,#quickCalc,#supportCalc,#scenarioCalc,#buydownCalc');
     if(!btn)return;
-    const guidedFinal=freeMode()&&(btn.id==='gwSave'||btn.id==='gwNext')&&Number(document.querySelector('#gwSteps .gw-step.active[data-step]')?.dataset.step)===6;
+    const guidedAction=btn.id==='gwSave'||btn.id==='gwNext';
+    const guidedFinal=guidedAction&&Number(document.querySelector('#gwSteps .gw-step.active[data-step]')?.dataset.step)===6;
     if((btn.id==='gwSave'||btn.id==='gwNext')&&!guidedFinal&&!/calculat/i.test(btn.textContent||''))return;
     e.preventDefault();e.stopImmediatePropagation();
-    if(freeMode())captureFreeDraft();
+    if(freeMode()||guidedFinal)captureFreeDraft();
     promptSignIn('Create your free account to calculate, display, and save these results. Already have an account? Choose Sign In above. Your entered assumptions will be preserved.','signup');
   }
 
