@@ -189,13 +189,21 @@
 | 10.3 Branding and broker information | FAIL | The current tagline and PropertyThesis brand appeared, but the professional report displayed placeholder values `Your Company` and `Report Author` and omitted Jamie Meloni/Meloni Realty license information. See PT-029. |
 | 10.4 Saved-analysis values | PASS | Address, $500,000 acquisition price, $4,000 rent, $400,000 financing at 6.25%, $25,920 NOI, 5.18% cap, 0.88x DSCR, 8.68% IRR, ($7,982) NPV and $414,720 desired-cap value matched the saved analysis. |
 | 10.5 Readability and limitations | PASS | Assumptions, calculation explanations, investment risks, sensitivity language, tax caveats and the decision-support/not-an-appraisal disclaimer were present and readable. |
-| 10.6 PDF file inspection | PARTIAL | Download PDF completed and returned to its ready state without an application error. First/middle/last-page inspection remains pending because the in-app browser download is not exposed to the test filesystem. |
-| 10.7 Excel pro forma opens cleanly | PARTIAL | Download Pro Forma completed without an application error. Opening the downloaded workbook and checking for repair warnings remains pending outside the in-app browser. |
+| 10.6 PDF file inspection | FAIL | Download PDF completed its on-page generation state without an alert, but the in-app browser Downloads list recorded the generated attempts as unnamed `Stopped` items. No PDF file was available for first/middle/last-page inspection. See PT-030. |
+| 10.7 Excel pro forma opens cleanly | FAIL | Download Pro Forma completed its on-page action without an alert, but the in-app browser Downloads list recorded the generated attempts as unnamed `Stopped` items. No workbook was available to open. See PT-030. |
 | 10.8 Selected holding period in workbook | NOT RUN | Requires access to the downloaded workbook. |
 | 10.9 Workbook/report reconciliation | NOT RUN | Requires access to the downloaded workbook. |
 | 10.10 Logged-out samples | PASS | Sample Report and Sample Multiyear Pro Forma both remained inside the public PropertyThesis wrapper, used generic sample-property data, exposed no signed-in test address or account email, and retained the public licensing/footer disclosures. |
 
 ## Recorded defects
+
+### PT-030 — P1 — Generated PDF and pro forma downloads stop without an application error
+
+- Reproduction: From a logged-in Client Report, select Download PDF and Download Pro Forma, then inspect the browser Downloads list.
+- Observed: The page controls complete and return to their ready states without an alert, but each generated download appears as an unnamed `Stopped` item. Older static sample PDFs and the static Sample Pro Forma download successfully in the same browser.
+- Expected: Generated PDF and Excel exports complete with descriptive filenames, or the application reports a clear actionable error.
+- Impact: The client-facing files cannot be opened or inspected, and the page incorrectly implies that export succeeded.
+- Scope check pending: Repeat both exports in Microsoft Edge to determine whether the failure is specific to the in-app browser's generated-blob download handling.
 
 ### PT-029 — P1 — Professional report ships placeholder branding and omits broker identity
 
