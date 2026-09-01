@@ -11,7 +11,7 @@
 - Browser: Microsoft Edge InPrivate
 - Session state: Logged-out guest
 - Status: In progress
-- Next test: **6.15 Second account/phone confirmation**
+- Next test: **7.1 Sign out and verify immediate logged-out home page**
 
 ## Status legend
 
@@ -126,7 +126,7 @@
 | 6.12 Automatic detection/restoration | FAIL | The original tab did not automatically detect confirmation. The user had to use the other-device/browser fallback. See PT-018. |
 | 6.13 Calculate and automatic Base Case save | PASS | The restored analysis calculated successfully, opened Review Results, and created exactly one property plus one `Base Case` analysis. Supabase stored desired cap `0.0625`, price `500000`, and rent `4000`. |
 | 6.14 Single verified-user notification | PASS | Exactly one verified-user notification arrived at `jamie@propertythesis.com` for the completed v38 account-verification flow. |
-| 6.15 Second account/phone confirmation | NOT RUN | Not started because the run stopped on missing analysis restoration. |
+| 6.15 Second account/phone confirmation | PASS | Recreated `jrmeloni@hotmail.com`, opened the confirmation email on a phone, confirmed successfully, used the original desktop tab's other-device recovery, signed in, and restored every controlled Step 7 value including the non-default 6.25% desired cap. |
 | 6.16 Other-device/browser confirmation button | PASS | `I Confirmed on Another Device` detected the verified email and presented the local sign-in workflow. |
 | 6.17 Sign-in and analysis restoration | PASS | v38 restored Step 7 with all controlled values intact: Tampa address, $500,000 price, $100,000 land, 2 units, 7-year hold, $4,000 rent/unit, 8% vacancy, 3% rent growth, 42% OpEx, $400,000 mortgage at 6.25% for 30 years, and the non-default 6.25% desired cap. |
 | 6.18 No unsupported blank-tab path | PASS | The confirmation instructions offered return-to-original-tab and explicit other-device/browser recovery; no instruction to start in a new blank PropertyThesis tab was shown. |
