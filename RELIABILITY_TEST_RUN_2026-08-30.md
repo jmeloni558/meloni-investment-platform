@@ -11,7 +11,7 @@
 - Browser: Microsoft Edge InPrivate
 - Session state: Signed in as `jrmeloni@hotmail.com`
 - Status: In progress
-- Next test: **Section 9 PDF confirmation and disposable-property cleanup**
+- Next test: **Section 10**
 
 ## Status legend
 
@@ -176,8 +176,9 @@
 | 9.7 NPV/IRR sensitivity | PASS | At the seven-year baseline, 3% appreciation produced 7.85% IRR and ($12,897) NPV. Raising appreciation to 5% increased IRR to 13.41% and NPV to $23,822; restoring 3% returned both metrics to baseline. |
 | 9.8 Holding-period boundaries | PASS | One year produced a complete 1-Year Projection with Year 1 and no Year 2. Forty years produced a complete 40-Year Projection through Year 40 with no Year 41. Restoring seven years returned the 7.85% IRR and ($12,897) NPV baseline. |
 | 9.9 Income-supported value reconciliation | PASS | Desired-cap value was $414,720, exactly $25,920 NOI ÷ 6.25%. The same NOI appeared in the decision center, offer analysis and detailed Year 1 cash-flow table. |
-| 9.10 Cross-output consistency | PARTIAL (RETEST) | Review Results, detailed cash-flow tables, saved card and on-screen client report remained internally consistent. The saved-property report route now exposes both Download PDF and Download Pro Forma; the pro forma action completed without an application error. A human confirmation of the downloaded PDF remains outstanding because native/download UI is not observable by the automated browser. |
+| 9.10 Cross-output consistency | PASS (RETEST) | Review Results, detailed cash-flow tables, saved card and on-screen client report remained internally consistent. The saved-property report route exposed both Download PDF and Download Pro Forma. The pro forma action completed without an application error; PDF generation completed, returned the control to its ready state, and produced no alert or application error. |
 | 9.11 Automated calculation checks | PASS (RETEST) | Restored the Run QA Check control to the live Existing Properties dashboard. The recreated Base Case returned “Calculation QA PASS — 1 of 1 saved analyses match a fresh recalculation with no output drift.” A repository-wide syntax scan checked all 165 JavaScript files with zero failures. |
+| 9.12 Delete disposable property | PASS (RETEST CLEANUP) | Deleted `900 Regression Test Ave, Tampa, FL 33602` together with its Base Case analysis after export and QA verification. Existing Properties returned to 0 active / 0 archived / 0 analyses. |
 
 ## Recorded defects
 
