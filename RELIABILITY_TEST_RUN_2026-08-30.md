@@ -11,7 +11,7 @@
 - Browser: Microsoft Edge InPrivate
 - Session state: Signed in as `jrmeloni@hotmail.com`
 - Status: In progress
-- Next test: **Section 9 defect repair and targeted retest**
+- Next test: **Section 9 PDF confirmation and disposable-property cleanup**
 
 ## Status legend
 
@@ -167,7 +167,7 @@
 
 | Test | Result | Notes |
 |---|---|---|
-| 9.1 Known-answer full calculator | PARTIAL | The saved analysis and a clean reopen produced the correct known-answer outputs, but the immediate post-save results surface mixed those values with stale Section 8 figures. See PT-025. |
+| 9.1 Known-answer full calculator | PASS (RETEST) | After deploying the state-aware results refresh, recreated and saved the known-answer property directly after the clean Section 8 state. The immediate results showed only the current analysis values; the prior $48,135 NOI, 10.03% cap and 21.99% IRR did not reappear. |
 | 9.2 Income arithmetic reconciliation | PASS | $48,000 PGI − $4,800 vacancy = $43,200 EGI; 40% operating expenses = $17,280; NOI = $25,920; $25,920 ÷ $500,000 = 5.184%, displayed as 5.18%. |
 | 9.3 Financing reconciliation | PASS | $400,000 amortizing loan at 6.25% for 30 years displayed a $2,462.87 monthly payment and $29,554 rounded annual debt service; Year 1 interest $24,867 plus principal $4,687 reconciled to $29,554. |
 | 9.4 DSCR reconciliation | PASS | $25,920 NOI ÷ approximately $29,554 annual debt service = 0.877, displayed consistently as 0.88x. |
@@ -176,19 +176,27 @@
 | 9.7 NPV/IRR sensitivity | PASS | At the seven-year baseline, 3% appreciation produced 7.85% IRR and ($12,897) NPV. Raising appreciation to 5% increased IRR to 13.41% and NPV to $23,822; restoring 3% returned both metrics to baseline. |
 | 9.8 Holding-period boundaries | PASS | One year produced a complete 1-Year Projection with Year 1 and no Year 2. Forty years produced a complete 40-Year Projection through Year 40 with no Year 41. Restoring seven years returned the 7.85% IRR and ($12,897) NPV baseline. |
 | 9.9 Income-supported value reconciliation | PASS | Desired-cap value was $414,720, exactly $25,920 NOI ÷ 6.25%. The same NOI appeared in the decision center, offer analysis and detailed Year 1 cash-flow table. |
-| 9.10 Cross-output consistency | PARTIAL | Review Results, detailed cash-flow tables, saved card and on-screen client report agreed on $500,000 price, $4,000 rent, $25,920 NOI, 5.18% cap, 7.85% IRR, ($12,897) NPV and 0.88x DSCR. PDF export invoked a native print workflow but produced no capturable download, and no pro forma export was available in the current account state. |
-| 9.11 Automated calculation checks | FAIL | The live Existing Properties dashboard did not load the repository's `analysis-regression-checker.js`, so no Run QA Check control or QA result was available. A separate syntax scan checked 165 JavaScript files and found one failure: `user-profile-branding.js:123` (`Unexpected token ')'`). See PT-027. |
+| 9.10 Cross-output consistency | PARTIAL (RETEST) | Review Results, detailed cash-flow tables, saved card and on-screen client report remained internally consistent. The saved-property report route now exposes both Download PDF and Download Pro Forma; the pro forma action completed without an application error. A human confirmation of the downloaded PDF remains outstanding because native/download UI is not observable by the automated browser. |
+| 9.11 Automated calculation checks | PASS (RETEST) | Restored the Run QA Check control to the live Existing Properties dashboard. The recreated Base Case returned “Calculation QA PASS — 1 of 1 saved analyses match a fresh recalculation with no output drift.” A repository-wide syntax scan checked all 165 JavaScript files with zero failures. |
 
 ## Recorded defects
 
+### PT-028 — P1 — Saved-property report route omits pro forma export
+
+- Resolution: Extended the report-control initializer to run when a Client Report is opened directly from an Existing Properties card and deployed in `9f4c732`. The live retest displayed the complete Preview & Export area with Refresh Preview, Download PDF and Download Pro Forma; the pro forma action completed without an application error.
+- Observed: Opening Client Report from a saved-property card showed the older report controls and omitted Download Pro Forma, even though the exporter was present in the application.
+- Expected: Every route into Client Report exposes the same PDF and Excel pro forma exports.
+
 ### PT-027 — P1 — Live calculation QA checker is unavailable
 
+- Resolution: Added the checker to the live application bundle, converted it to use the protected calculation service asynchronously, repaired the syntax error in `user-profile-branding.js`, and deployed in `ccac849`. Live retest passed 1 of 1 saved analyses with no output drift; all 165 JavaScript files passed syntax validation.
 - Observed: `analysis-regression-checker.js` exists in the repository but is not included by the live application loader. Existing Properties therefore has no Run QA Check control and cannot compare saved outputs with a fresh recalculation. The repository-wide JavaScript syntax scan also found `user-profile-branding.js:123` fails with `Unexpected token ')'`.
 - Expected: Load the QA checker for authorized testing/admin use and keep every shipped JavaScript file syntactically valid so automated regression checks can complete.
 - Impact: Test 9.11 cannot provide the required saved-versus-recalculated regression result, and the repository contains a broken JavaScript asset.
 
 ### PT-025 — P1 — Immediate post-save results mix stale and current analyses
 
+- Resolution: Added state-signature and generation guards to every delayed results refresh, queued forced hydration behind any in-flight refresh, and guarded the secondary-engine callback against state changes. Deployed in `ccac849`; the live immediate-post-save retest contained no stale Section 8 metrics.
 - Reproduction: After deleting the Section 8 property, create and calculate the Section 9 known-answer property without reloading the app.
 - Observed: The immediate results content mixed correct current values (NOI $25,920, cap 5.18%, IRR 7.85%) with stale deleted-scenario values (NOI $48,135, cap 10.03%, IRR 21.99%) in other result modules. The cloud-saved card was correct, and reopening that saved analysis refreshed the results consistently.
 - Expected: Every results module must hydrate atomically from the just-calculated assumption set; no prior or deleted analysis values may remain visible.
