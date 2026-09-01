@@ -1,16 +1,20 @@
 'use strict';
 (()=>{
-  const VERSION=7;
+  const VERSION=8;
   if((window.__protectedAnalysisOpenRouterVersion||0)>=VERSION)return;
   window.__protectedAnalysisOpenRouterVersion=VERSION;
 
-  let busy=false;
+  const SESSION_KEY='pt-active-analysis-view-v1';
+  let busy=false,restoring=false;
   const analyses=()=>{try{return cloudAnalyses||[];}catch(_e){return [];}};
   const properties=()=>{try{return cloudProperties||[];}catch(_e){return [];}};
   const analysisById=id=>analyses().find(x=>x.id===id)||null;
   const propertyById=id=>properties().find(x=>x.id===id)||null;
   const latestForProperty=id=>analyses().filter(x=>x.property_id===id).sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at))[0]||null;
   const status=msg=>{try{if(typeof setStatus==='function')setStatus(msg);}catch(_e){}};
+  function rememberView(id,target){try{sessionStorage.setItem(SESSION_KEY,JSON.stringify({id,target,at:Date.now()}));}catch(_e){}}
+  function forgetView(){try{sessionStorage.removeItem(SESSION_KEY);}catch(_e){}}
+  function rememberedView(){try{const v=JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null');if(!v?.id||Date.now()-Number(v.at||0)>86400000)return null;return{id:v.id,target:['assumptions','dashboard','report'].includes(v.target)?v.target:'dashboard'};}catch(_e){return null;}}
 
   function hydrateAssumptions(a){
     if(!a)return false;
@@ -28,6 +32,7 @@
   }
 
   function startProperty(pid){
+    forgetView();
     const p=propertyById(pid);if(!p)return false;
     try{selectedPropertyId=p.id;selectedClientId=p.client_id||null;selectedAnalysisId=null;selectedScenarioId=null;}catch(_e){}
     try{state={...defaults,name:p.name||'',address:p.address||[p.city,p.state,p.postal_code].filter(Boolean).join(', '),price:0,land:0,units:1,rent:0,loanYears:30};}catch(_e){return false;}
@@ -109,7 +114,7 @@
   async function openSaved(id,target){
     if(busy)return;
     const a=analysisById(id);if(!a)return;
-    busy=true;status(target==='report'?'Preparing protected report…':'Loading protected analysis…');
+    busy=true;rememberView(id,target);status(target==='report'?'Preparing protected report…':'Loading protected analysis…');
     try{
       if(!hydrateAssumptions(a))throw new Error('Saved assumptions could not be loaded.');
       try{window.MarketRentPriorResearchFix?.restore?.();}catch(_e){}
@@ -131,7 +136,23 @@
 
   function routeProperty(pid,target){const a=latestForProperty(pid);if(!a){startProperty(pid);return;}openSaved(a.id,target);}
 
+  function restoreRememberedView(){
+    const saved=rememberedView();if(!saved||restoring)return;
+    let tries=0;
+    const timer=setInterval(async()=>{
+      if(++tries>80){clearInterval(timer);return;}
+      let signedIn=false,currentId=null,available=[];
+      try{signedIn=!!cloudUser;currentId=selectedAnalysisId;available=cloudAnalyses||[];}catch(_e){}
+      if(currentId){clearInterval(timer);return;}
+      if(!signedIn||!available.length||busy)return;
+      if(!available.some(a=>a.id===saved.id)){clearInterval(timer);forgetView();return;}
+      clearInterval(timer);restoring=true;
+      try{await openSaved(saved.id,saved.target);}finally{restoring=false;}
+    },250);
+  }
+
   window.addEventListener('click',e=>{
+    if(e.target?.closest?.('#appNavNew,#s10NewAnalysis'))forgetView();
     const ptReport=e.target?.closest?.('[data-pt-report]');
     const ptOpen=e.target?.closest?.('[data-pt-open]');
     const hubReport=e.target?.closest?.('[data-hub-report]');
@@ -147,4 +168,5 @@
   },true);
 
   window.ProtectedAnalysisOpenRouter={version:VERSION,openSaved,routeProperty,status:()=>({busy})};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',restoreRememberedView,{once:true});else restoreRememberedView();
 })();
