@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=36;
+  const VERSION=37;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -48,7 +48,9 @@
     resumingFree=true;
     try{
       restoreFreeDraft();try{if(typeof readFields==='function')readFields();}catch(_e){}
-      go('assumptions');window.GuidedAnalysisSetup.go(6);freeDraftReady=true;
+      go('assumptions');
+      restoreFreeDraft();try{if(typeof readFields==='function')readFields();}catch(_e){}
+      window.GuidedAnalysisSetup.go(6);freeDraftReady=true;
       const q=new URLSearchParams(location.search);if(q.has('resume-free')){q.delete('resume-free');history.replaceState(null,'',location.pathname+(q.toString()?'?'+q:'')+location.hash);}
       try{if(typeof setStatus==='function')setStatus('Your analysis has been restored. Review the assumptions, then calculate and save the results.');}catch(_e){}
       return true;
