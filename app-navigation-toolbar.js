@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=37;
+  const VERSION=38;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -33,7 +33,7 @@
     try{
       document.querySelectorAll('#guidedSetup [data-src]').forEach(input=>{const src=document.getElementById(input.dataset.src);if(src)src.value=input.value;});
       const values={};document.querySelectorAll('#assumptions input[id],#assumptions select[id],#assumptions textarea[id]').forEach(el=>{
-        if(el.id.startsWith('review_'))return;
+        if(el.id.startsWith('review_')||Object.prototype.hasOwnProperty.call(values,el.id))return;
         values[el.id]=el.type==='checkbox'?el.checked:el.value;
       });
       localStorage.setItem(PENDING_FREE,JSON.stringify({values,createdAt:Date.now()}));return true;
