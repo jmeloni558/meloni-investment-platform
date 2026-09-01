@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=24;
+  const VERSION=34;
   if((window.__userBrandedPdfVersion||0)>=VERSION)return;
   window.__userBrandedPdfVersion=VERSION;
   const PRODUCT='PropertyThesis',TAGLINE='Know the Numbers. Prove the Case.',REPORT_TYPE='Investment Property Analysis';
@@ -16,6 +16,8 @@
   function normalize(root){
     root.style.setProperty('width',CAPTURE_WIDTH+'px','important');root.style.setProperty('max-width',CAPTURE_WIDTH+'px','important');root.style.setProperty('height','auto','important');root.style.setProperty('max-height','none','important');root.style.setProperty('overflow','visible','important');root.style.setProperty('box-shadow','none','important');
     root.querySelector(':scope > .rb-footer')?.remove();
+    root.querySelectorAll('.rb-findings,.rb-findings-grid').forEach(x=>{x.style.setProperty('height','auto','important');x.style.setProperty('max-height','none','important');x.style.setProperty('overflow','visible','important');x.style.setProperty('contain','none','important');});
+    root.querySelectorAll('.rb-section').forEach(x=>{x.style.setProperty('box-shadow','none','important');x.style.setProperty('border-radius','0','important');});
     root.querySelectorAll('*').forEach(x=>{x.style.setProperty('box-sizing','border-box','important');x.style.setProperty('max-width','100%','important');x.style.setProperty('min-width','0','important');x.style.setProperty('max-height','none','important');x.style.setProperty('overflow','visible','important');});
     root.querySelectorAll('.rb-tablewrap').forEach(x=>{x.style.setProperty('width','100%','important');x.style.setProperty('max-width','100%','important');x.style.setProperty('min-width','0','important');x.style.setProperty('overflow','visible','important');});
     root.querySelectorAll('table').forEach(x=>{x.style.setProperty('width','100%','important');x.style.setProperty('max-width','100%','important');x.style.setProperty('min-width','0','important');x.style.setProperty('table-layout','fixed','important');});
@@ -65,7 +67,7 @@
       await ensureHtml2Canvas();clone=makeClone(source);await sleep(160);
       const rect=clone.getBoundingClientRect();if(rect.width<2||rect.height<2)throw new Error('Report preview could not be measured for PDF.');
       const breaks=safeBreaks(clone);status('Rendering report image…');
-      const canvas=await withTimeout(window.html2canvas(clone,{scale:1.15,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',logging:false,scrollX:0,scrollY:0,width:CAPTURE_WIDTH,height:Math.ceil(rect.height),windowWidth:CAPTURE_WIDTH}),40000,'PDF rendering timed out. Please refresh the report preview and try again.');
+      const canvas=await withTimeout(window.html2canvas(clone,{scale:1.2,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',logging:false,scrollX:0,scrollY:0,width:CAPTURE_WIDTH,height:Math.ceil(rect.height),windowWidth:CAPTURE_WIDTH}),40000,'PDF rendering timed out. Please refresh the report preview and try again.');
       const jsPDF=window.jspdf?.jsPDF;if(!jsPDF)throw new Error('PDF library unavailable.');
       const doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait',compress:true}),p=profile();doc.setProperties({title:`${PRODUCT} | ${REPORT_TYPE}`,author:[p.full_name,p.company_name].filter(Boolean).join(' - ')||PRODUCT,subject:state?.address||state?.name||REPORT_TYPE,creator:PRODUCT});
       status('Building PDF pages…');const total=buildPages(doc,canvas,rect.height,breaks);for(let i=1;i<=total;i++){doc.setPage(i);addFooter(doc,i,total,p);}doc.save(filename());status('PDF generated from current preview.');return true;
