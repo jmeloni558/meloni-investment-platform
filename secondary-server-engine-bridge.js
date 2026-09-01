@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__secondaryServerEngineBridgeVersion||0)>=VERSION)return;
   window.__secondaryServerEngineBridgeVersion=VERSION;
 
@@ -33,11 +33,12 @@
     try{window.ReportInvestmentOfferAnalysis?.apply?.();}catch(_e){}
     try{window.PropertyThesisSecondaryServerUI?.apply?.();}catch(_e){}
   }
-  async function request({refresh=true}={}){
+  async function request({refresh=true,force=false}={}){
     const x=snapshot(),sig=signature(x);
     if(cache.has(sig))return cache.get(sig);
     if(pending.has(sig))return pending.get(sig);
-    if(Date.now()-(failedAt.get(sig)||0)<10000)return null;
+    if(!force&&Date.now()-(failedAt.get(sig)||0)<10000)return null;
+    if(force)failedAt.delete(sig);
     const job=(async()=>{
       try{
         const r=await callServer(x);

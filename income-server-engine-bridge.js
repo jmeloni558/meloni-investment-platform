@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=6;
+  const VERSION=7;
   if((window.__incomeServerEngineBridgeVersion||0)>=VERSION)return;
   window.__incomeServerEngineBridgeVersion=VERSION;
 
@@ -29,13 +29,14 @@
   async function currentSession(){if(typeof cloudClient==='undefined'||!cloudClient?.auth)return null;try{const {data,error}=await cloudClient.auth.getSession();if(error)throw error;return data?.session||null;}catch(e){lastError=String(e?.message||e);return null;}}
   async function callServer(s){if(typeof cloudClient==='undefined'||!cloudClient)throw new Error('Supabase client unavailable');const session=await currentSession();if(!session?.access_token)throw new Error('Sign-in session is required for protected calculations');const invoke=cloudClient.functions.invoke('propertythesis-income-engine',{body:{action:'analyze',state:s},headers:{Authorization:`Bearer ${session.access_token}`}});const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Protected calculation engine timed out')),8000));const {data,error}=await Promise.race([invoke,timeout]);if(error)throw error;if(data?.error)throw new Error(data.error+(data?.details?' — '+data.details:''));if(!data?.result?.years?.length)throw new Error('Protected engine returned an incomplete result');return data.result;}
 
-  async function requestServer(s,{refresh=true}={}){
+  async function requestServer(s,{refresh=true,force=false}={}){
     const snapshot={...s};
     if(!calculationReady(snapshot)){markNotReady();return null;}
     const sig=signature(snapshot);
     if(cache.has(sig)){paintStatus('server');return cache.get(sig);}
     if(pending.has(sig))return pending.get(sig);
-    if(Date.now()-(failedAt.get(sig)||0)<3000)return null;
+    if(!force&&Date.now()-(failedAt.get(sig)||0)<3000)return null;
+    if(force)failedAt.delete(sig);
     const session=await currentSession();if(!session?.access_token){showUnavailable('Sign in to use PropertyThesis calculations.');return null;}
     paintStatus('checking');
     const job=(async()=>{try{const server=await callServer(snapshot);cache.set(sig,server);failedAt.delete(sig);lastServerAt=new Date();lastError='';paintStatus('server');if(refresh&&signature(typeof state==='object'?state:{})===sig)browserRender();return server;}catch(e){failedAt.set(sig,Date.now());showUnavailable(String(e?.message||e));return null;}finally{pending.delete(sig);}})();

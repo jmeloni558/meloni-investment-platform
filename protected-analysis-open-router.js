@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=8;
+  const VERSION=9;
   if((window.__protectedAnalysisOpenRouterVersion||0)>=VERSION)return;
   window.__protectedAnalysisOpenRouterVersion=VERSION;
 
@@ -54,16 +54,36 @@
     try{window.PropertyThesisMarketRentResultsOrder?.schedule?.();}catch(_e){}
   }
 
+  const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  async function renewSessionIfNeeded(message){
+    if(!/auth|jwt|session|sign-in|unauthor|401/i.test(String(message||'')))return false;
+    try{const {data,error}=await cloudClient?.auth?.refreshSession?.();if(error)throw error;return !!data?.session?.access_token;}catch(_e){return false;}
+  }
+
   async function protectedResults(){
     const base=window.PropertyThesisIncomeEngineBridge;
     const secondary=window.PropertyThesisSecondaryEngine;
     if(!base?.requestServer)throw new Error('Protected base engine is unavailable.');
     if(!secondary?.request)throw new Error('Protected secondary engine is unavailable.');
-    const baseResult=await base.requestServer({...state},{refresh:false});
-    if(!baseResult?.years?.length)throw new Error('Protected base engine did not return a complete result.');
+    let baseResult=null,baseMessage='';
+    for(let attempt=0;attempt<3&&!baseResult?.years?.length;attempt++){
+      baseResult=await base.requestServer({...state},{refresh:false,force:attempt>0});
+      if(baseResult?.years?.length)break;
+      baseMessage=base.status?.().lastError||'Protected base engine did not return a complete result.';
+      if(attempt===0)await renewSessionIfNeeded(baseMessage);
+      if(attempt<2)await wait(attempt?1200:500);
+    }
+    if(!baseResult?.years?.length)throw new Error(baseMessage||'Protected base engine did not return a complete result.');
     result=baseResult;refreshProtectedValuation();
-    const secondaryResult=await secondary.request({refresh:false});
-    if(!secondaryResult?.offer||!secondaryResult?.sensitivity||!Array.isArray(secondaryResult?.scenarios))throw new Error('Protected secondary engine did not return a complete result.');
+    let secondaryResult=null,secondaryMessage='';
+    for(let attempt=0;attempt<3;attempt++){
+      secondaryResult=await secondary.request({refresh:false,force:attempt>0});
+      if(secondaryResult?.offer&&secondaryResult?.sensitivity&&Array.isArray(secondaryResult?.scenarios))break;
+      secondaryMessage=secondary.status?.().lastError||'Protected secondary engine did not return a complete result.';
+      if(attempt===0)await renewSessionIfNeeded(secondaryMessage);
+      if(attempt<2)await wait(attempt?1200:500);
+    }
+    if(!secondaryResult?.offer||!secondaryResult?.sensitivity||!Array.isArray(secondaryResult?.scenarios))throw new Error(secondaryMessage||'Protected secondary engine did not return a complete result.');
     return {baseResult,secondaryResult};
   }
 
@@ -129,7 +149,7 @@
       try{window.AnalysisHistoryAutosave?.checkDraft?.();window.UnsavedChangeProtection?.markClean?.();}catch(_e){}
       status(target==='report'?'Protected report ready':target==='assumptions'?'Analysis ready to edit':'Saved analysis loaded');
     }catch(e){
-      const msg=String(e?.message||e);status('Unable to open saved analysis: '+msg);
+      const msg=String(e?.message||e);forgetView();status('Unable to open saved analysis: '+msg);
       alert('PropertyThesis could not open this saved analysis through the protected calculation engine. '+msg);
     }finally{busy=false;}
   }
