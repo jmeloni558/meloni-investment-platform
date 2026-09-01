@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   if((window.__propertyThesisProtectedCloudSaveBridgeV||0)>=VERSION)return;
   window.__propertyThesisProtectedCloudSaveBridgeV=VERSION;
 
@@ -59,9 +59,17 @@
   function syncInitialRepairs(){
     const source=document.getElementById('f_initialRepairs');
     const guided=document.querySelector('#guidedSetup [data-src="f_initialRepairs"]');
-    const raw=guided?.value!==undefined?guided.value:source?.value;
-    if(typeof state==='object'&&state)state.initialRepairs=Math.max(0,Number(raw)||0);
+    const raw=guided?.value!==undefined?guided.value:(source?.value!==''?source?.value:undefined);
+    if(raw!==undefined&&typeof state==='object'&&state)state.initialRepairs=Math.max(0,Number(raw)||0);
   }
+  function captureInitialRepairs(e){
+    const input=e.target?.closest?.('[data-src="f_initialRepairs"]');if(!input)return;
+    const value=Math.max(0,Number(input.value)||0),source=document.getElementById('f_initialRepairs');
+    if(source)source.value=input.value;
+    if(typeof state==='object'&&state)state.initialRepairs=value;
+  }
+  document.addEventListener('input',captureInitialRepairs,true);
+  document.addEventListener('change',captureInitialRepairs,true);
   function outputsFrom(r){
     const y=r?.years?.[0]||{};
     return {
