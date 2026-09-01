@@ -152,21 +152,22 @@
 |---|---|---|
 | 8.1 Unique property cards | PASS | The synthetic baseline produced exactly 1 active property, 0 archived properties and 1 analysis; one property card rendered with no duplicate. |
 | 8.2 Consistent card controls/layout | PASS | The sole active Base Case card displayed one coherent seven-action set with no duplicated controls: Open Property, Edit Guided Analysis, Start New Analysis, Client Report, Manage Analyses, Archive and Delete Property. |
-| 8.3 Card metrics agree with saved analysis | PARTIAL | Price, rent, cap rate, IRR, DSCR, NPV, Base Case, quality count and updated date matched the opened analysis. The card showed a $500,000 Value Conclusion even though the opened analysis said no reconciled value had been entered. See PT-022. |
-| 8.4 Property/latest-analysis hydration | FAIL | Address, price, land, units, rent, vacancy, OpEx, hold, mortgage, rate, term and desired cap hydrated correctly. The entered $25,000 Initial Repairs value returned blank. See PT-023. |
+| 8.3 Card metrics agree with saved analysis | PASS (RETEST) | After `3b445e9`, price, rent, cap rate, IRR, DSCR, NPV, scenario name, quality count and updated date matched the opened analysis. With no reconciled value saved, the card correctly displayed `Not entered`. PT-022 resolved. |
+| 8.4 Property/latest-analysis hydration | PASS (RETEST) | After `3b445e9`, the Conservative Case saved with $10,000 Initial Repairs. Leaving, reopening the analysis and returning to Property Step 1 restored $10,000 along with the other assumptions. PT-023 resolved. |
 | 8.5 Edit/save persistence | PASS | Changed vacancy from 8% to 9%, recalculated and saved, left for Existing Properties, reopened the property, and confirmed vacancy remained 9%. Dependent outputs updated to 10.13% cap rate and 19.22% IRR. |
-| 8.6 Second analysis distinct name | FAIL | A fully entered second scenario reached the final save step, but naming calls the browser-native `prompt()`. The in-app browser rejects that call, the save stops with no visible explanation, and the property remains at 1 analysis. See PT-024. |
-| 8.7 Duplicate scenario name | BLOCKED | Duplicate-name behavior cannot be reached because PT-024 prevents creation of the required second named analysis in this supported browser. |
-| 8.8 Manage Analyses/version switching | BLOCKED | Version switching requires at least two saved analyses; PT-024 prevents creation of the second analysis. |
+| 8.6 Second analysis distinct name | PASS (RETEST) | The final save opened an accessible in-page naming dialog, accepted `Conservative Case`, closed after saving and increased the property to 2 analyses. PT-024 resolved. |
+| 8.7 Duplicate scenario name | PASS (RETEST) | Submitting `Base Case` for the second analysis kept the naming dialog open and displayed `That scenario name already exists for this property. Choose a different name.` No overwrite occurred. |
+| 8.8 Manage Analyses/version switching | PASS (RETEST) | Manage Analyses displayed both saved scenarios. Base Case reopened with $500,000 price / $4,000 rent; Conservative Case reopened with $480,000 price / $3,800 rent. |
 | 8.9 Archive property | PASS | Archived the synthetic property. Counts changed from 1 active / 0 archived to 0 active / 1 archived, and the active dashboard showed no matching property cards. |
 | 8.10 Restore archived property | PASS | With Show archived enabled, the archived card retained its Base Case analysis and metrics. Restore returned the dashboard to 1 active / 0 archived / 1 analysis without duplication. |
-| 8.11 Delete disposable property | PASS | After fresh confirmation, deleted `100 Test Property Way, Tampa, FL 33602`. The property and its Base Case analysis were removed; counts changed to 0 active / 0 archived / 0 analyses. |
+| 8.11 Delete disposable property | PASS (RETEST CLEANUP) | After fresh confirmation, deleted the recreated `100 Test Property Way, Tampa, FL 33602` property together with Base Case and Conservative Case. Counts returned to 0 active / 0 archived / 0 analyses. |
 | 8.12 Refresh consistency | PASS | Reloaded the canonical live URL. The session remained signed in as `jrmeloni@hotmail.com`, Existing Properties reopened without a modal or warning, and the clean 0 / 0 / 0 saved-data state persisted. |
 
 ## Recorded defects
 
 ### PT-024 — P1 — Native scenario-name prompt blocks analysis saving
 
+- Resolution: Replaced the native prompt with an accessible in-page naming dialog, added case-insensitive duplicate-name validation, deployed in `a371a13` with loader corrections in `3b445e9`, and passed live retests 8.6–8.8.
 - Reproduction: Open a saved property, select Start New Analysis, complete all seven guided steps, and select Calculate, Save & Review Results.
 - Observed: `protected-cloud-save-bridge.js` calls the browser-native `prompt()` to request the scenario name. In the in-app browser this throws `Error: prompt() is not supported`; no naming UI or error is shown, the analysis is not saved, and the user remains on the final guided step.
 - Expected: Display an accessible in-page naming dialog that works consistently in supported browsers, validates a distinct scenario name, and gives durable success or error feedback.
@@ -174,11 +175,13 @@
 
 ### PT-022 — P2 — Property card invents a value conclusion fallback
 
+- Resolution: Removed the acquisition-price fallback and display `Not entered` unless an explicit reconciled value exists. Deployed and live-retested in `3b445e9`.
 - Observed: The saved property card displayed `Value Conclusion $500,000`, matching acquisition price, while the opened analysis explicitly prompted the user to enter a reconciled investment value and contained no conclusion.
 - Expected: The card should show the saved reconciled value when one exists, or an explicit `Not entered`/`Unavailable` state when it does not; acquisition price should not silently become the value conclusion.
 
 ### PT-023 — P1 — Initial Repairs does not survive saved-analysis hydration
 
+- Resolution: Added explicit input-time synchronization, protected-save persistence and saved-analysis hydration for Initial Repairs. Deployed and live-retested in `3b445e9`.
 - Observed: The synthetic Base Case was created with $25,000 Initial Repairs & Improvements. Opening the saved property restored all other controlled assumptions, but `f_initialRepairs` was blank.
 - Expected: Initial Repairs must persist and rehydrate with the saved analysis because it affects invested capital and return calculations.
 
