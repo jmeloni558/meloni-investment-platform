@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION = 6;
+  const VERSION = 7;
   if ((window.__propertyThesisProFormaDownloadControllerVersion || 0) >= VERSION) return;
   window.__propertyThesisProFormaDownloadControllerVersion = VERSION;
 
@@ -18,13 +18,15 @@
   }
 
   function reviewedDesiredCap(){
+    const saved=num(stateObj().desiredCap);
+    if(saved>0)return saved>1?saved/100:saved;
     for(const id of ['review_f_desiredCap','f_desiredCap']){
       const input=typeof document!=='undefined'&&typeof document.getElementById==='function'?document.getElementById(id):null;
       if(!input||String(input.value).trim()==='')continue;
       const entered=Number(input.value);
       if(Number.isFinite(entered)&&entered>0)return entered>1?entered/100:entered;
     }
-    return num(stateObj().desiredCap);
+    return 0;
   }
 
   function years(){
@@ -194,7 +196,8 @@
         for (let col = 1; col <= range.e.c; col++) {
           const cell = ws[XLSX.utils.encode_cell({r:row, c:col})];
           if (!cell || cell.t !== 'n') continue;
-          if(/Rate|Growth|Vacancy|Expenses as %|Appreciation|Selling Costs|Required Return|Desired Cap/i.test(label))cell.z='0.00%';
+          if(name==='After Tax Cash Flow'&&/Vacancy and Credit Losses/i.test(label))cell.z='$#,##0;[Red]-$#,##0';
+          else if(/Rate|Growth|Vacancy|Expenses as %|Appreciation|Selling Costs|Required Return|Desired Cap/i.test(label))cell.z='0.00%';
           else if(/Desired GRM/i.test(label))cell.z='0.00x';
           else if(/Units|Life \(Years\)|Holding Period|Loan Term|Interest Only/i.test(label))cell.z='0.00';
           else cell.z='$#,##0;[Red]-$#,##0';
