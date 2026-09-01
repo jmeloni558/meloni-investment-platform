@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=35;
+  const VERSION=36;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -58,7 +58,7 @@
     }finally{resumingFree=false;}
   }
   function guardCalculatorClick(e){
-    if(isSignedIn())return;
+    if(isSignedIn()&&!uiShowsSignedOut())return;
     const btn=e.target?.closest?.('#gwSave,#gwNext,#calculateBtn,#quickCalc,#supportCalc,#scenarioCalc,#buydownCalc');
     if(!btn)return;
     const guidedAction=btn.id==='gwSave'||btn.id==='gwNext';
