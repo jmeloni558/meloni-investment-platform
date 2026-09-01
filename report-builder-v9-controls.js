@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=8;
+  const VERSION=9;
   if((window.__reportBuilderV9ControlsVersion||0)>=VERSION)return;
   window.__reportBuilderV9ControlsVersion=VERSION;
 
@@ -209,7 +209,7 @@
       schedule(true);
       return;
     }
-    if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbDownloadPdf,#rbDownloadProForma'))schedule(false);
+    if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],[data-hub-report],#appNavReport,#rbRefresh,#rbDownloadPdf,#rbDownloadProForma'))schedule(false);
   },true);
   document.addEventListener('change',e=>{if(e.target?.matches?.('[data-rb-pref]'))schedule(true);},true);
 
