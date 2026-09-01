@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=38;
+  const VERSION=40;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -8,6 +8,7 @@
   const contextualOnly=new Set(['scenarios']);
   const primary=['assumptions','dashboard','report'];
   const PENDING_FREE='ptPendingFreeAnalysisV1';
+  const RESUME_FREE='ptResumeFreeAfterAuth';
   let mortgageMode=false;
   let resumingFree=false;
   let freeDraftReady=false;
@@ -28,6 +29,7 @@
     try{if(typeof showAuth==='function')showAuth();}catch(e){}
   }
   function pendingFree(){try{const draft=JSON.parse(localStorage.getItem(PENDING_FREE)||'null');if(!draft?.createdAt||Date.now()-draft.createdAt>86400000){localStorage.removeItem(PENDING_FREE);return null;}return draft;}catch(_e){localStorage.removeItem(PENDING_FREE);return null;}}
+  function resumeFreeRequested(){try{return sessionStorage.getItem(RESUME_FREE)==='1'||new URLSearchParams(location.search).get('resume-free')==='1';}catch(_e){return new URLSearchParams(location.search).get('resume-free')==='1';}}
   function freeMode(){return new URLSearchParams(location.search).get('free-analysis')==='1'||!!pendingFree();}
   function captureFreeDraft(){
     try{
@@ -43,7 +45,7 @@
     try{const draft=pendingFree();if(!draft?.values)return false;Object.entries(draft.values).forEach(([id,value])=>{const el=document.getElementById(id);if(!el)return;if(el.type==='checkbox')el.checked=!!value;else el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});return true;}catch(_e){return false;}
   }
   async function resumeFreeAnalysis(){
-    if(window.__ptConfirmationHandoff||resumingFree||freeDraftReady||!pendingFree()||!isSignedIn())return false;
+    if(window.__ptConfirmationHandoff||resumingFree||freeDraftReady||!resumeFreeRequested()||!pendingFree()||!isSignedIn())return false;
     if(!window.GuidedAnalysisSetup?.go)return false;
     resumingFree=true;
     try{
@@ -51,6 +53,7 @@
       go('assumptions');
       restoreFreeDraft();try{if(typeof readFields==='function')readFields();}catch(_e){}
       window.GuidedAnalysisSetup.go(6);freeDraftReady=true;
+      try{sessionStorage.removeItem(RESUME_FREE);}catch(_e){}
       const q=new URLSearchParams(location.search);if(q.has('resume-free')){q.delete('resume-free');history.replaceState(null,'',location.pathname+(q.toString()?'?'+q:'')+location.hash);}
       try{if(typeof setStatus==='function')setStatus('Your analysis has been restored. Review the assumptions, then calculate and save the results.');}catch(_e){}
       return true;
@@ -67,7 +70,7 @@
     const guidedFinal=guidedAction&&Number(document.querySelector('#gwSteps .gw-step.active[data-step]')?.dataset.step)===6;
     if((btn.id==='gwSave'||btn.id==='gwNext')&&!guidedFinal&&!/calculat/i.test(btn.textContent||''))return;
     e.preventDefault();e.stopImmediatePropagation();
-    if(freeMode()||guidedFinal)captureFreeDraft();
+    if(freeMode()||guidedFinal){captureFreeDraft();try{sessionStorage.setItem(RESUME_FREE,'1');}catch(_e){}}
     promptSignIn('Create your free account to calculate, display, and save these results. Already have an account? Choose Sign In above. Your entered assumptions will be preserved.','signup');
   }
 
@@ -162,7 +165,7 @@
   function scheduleResume(){[150,500,1000,1800,3000].forEach(ms=>setTimeout(resumeFreeAnalysis,ms));}
   function finishSignInNavigation(){
     [0,100,350].forEach(ms=>setTimeout(refresh,ms));
-    if(pendingFree()){scheduleResume();return;}
+    if(resumeFreeRequested()&&pendingFree()){scheduleResume();return;}
     setTimeout(()=>{if(handleRequestedAction())return;setMortgageMode(false);try{if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');window.Stage6Dashboard?.render?.();}catch(_e){}setTimeout(refresh,0);},180);
   }
   function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));window.addEventListener('click',guardCalculatorClick,true);try{cloudClient?.auth?.onAuthStateChange?.((event,session)=>{if(session?.user){if(event==='SIGNED_IN')finishSignInNavigation();else{scheduleResume();setTimeout(handleRequestedAction,500);}}});cloudClient?.auth?.getSession?.().then(({data})=>{if(data?.session?.user&&sessionStorage.getItem('ptPasswordRecoveryPending')!=='1')finishSignInNavigation();}).catch(()=>{});}catch(_e){}window.addEventListener('storage',e=>{if(e.key==='ptEmailConfirmedAt')scheduleResume();});try{const channel=new BroadcastChannel('propertythesis-auth');channel.onmessage=e=>{if(e.data?.type==='email-confirmed'){try{window.focus();}catch(_e){}scheduleResume();}};}catch(_e){}[700,1400,2400,4000,6500].forEach(ms=>{setTimeout(resumeFreeAnalysis,ms);setTimeout(handleRequestedAction,ms+100);});setTimeout(refresh,700);setTimeout(refresh,1800);}
