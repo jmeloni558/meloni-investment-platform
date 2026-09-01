@@ -6,6 +6,7 @@
   const PRODUCT='PropertyThesis';
   const TAGLINE='Know the Numbers. Prove the Case.';
   const TYPE='Investment Property Analysis';
+  const FALLBACK={company_name:'Meloni Realty',full_name:'Jamie Meloni',professional_title:'Real Estate Broker',license_number:'BK3167461 • CQ1067291',website:'PropertyThesis.com'};
   const esc=v=>String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
   const safeColor=v=>/^#[0-9a-f]{6}$/i.test(v||'')?v:'#14b8a6';
   const profile=()=>{try{return window.UserBranding?.getProfile?.()||{};}catch(_e){return {};}};
@@ -54,8 +55,8 @@
     if(!report)return false;
     const cover=report.querySelector('.rb-cover');
     if(!cover)return false;
-    const p=profile(),company=(p.company_name||'Your Company').trim();
-    const person=[p.full_name,p.professional_title].filter(Boolean).join(' • ');
+    const raw=profile(),p={...FALLBACK,...Object.fromEntries(Object.entries(raw).filter(([,v])=>String(v||'').trim()))},company=p.company_name.trim();
+    const person=[p.full_name,p.professional_title,p.license_number].filter(Boolean).join(' • ');
     const contact=[p.email,p.phone,p.website].filter(Boolean).join(' • ');
     const address=cover.querySelector('.address')?.textContent||state?.address||state?.name||'Income-Producing Property';
     const sourceMeta=cover.querySelector('.rb-meta');

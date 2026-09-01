@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=29;
+  const VERSION=30;
   if((window.__userBrandedPdfVersion||0)>=VERSION)return;
   window.__userBrandedPdfVersion=VERSION;
 
@@ -27,8 +27,10 @@
   `;}
 
   async function preparePreview(){
-    window.ReportBuilderV1?.renderReport?.();
-    await new Promise(r=>setTimeout(r,180));
+    // Capture the report the user reviewed. Rebuilding here can replace a
+    // hydrated saved assumption with a form/default value immediately before
+    // the PDF is created.
+    await new Promise(r=>setTimeout(r,60));
     window.ReportBuilderV8?.apply?.();
     window.ReportAssumptionsNarrative?.apply?.();
     window.ReportMarketRentSupport?.apply?.();
