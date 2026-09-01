@@ -11,7 +11,7 @@
 - Browser: Microsoft Edge InPrivate
 - Session state: Signed in as `jrmeloni@hotmail.com`
 - Status: In progress
-- Next test: **Section 10**
+- Next test: **Section 10 downloaded-file inspection**
 
 ## Status legend
 
@@ -180,7 +180,29 @@
 | 9.11 Automated calculation checks | PASS (RETEST) | Restored the Run QA Check control to the live Existing Properties dashboard. The recreated Base Case returned “Calculation QA PASS — 1 of 1 saved analyses match a fresh recalculation with no output drift.” A repository-wide syntax scan checked all 165 JavaScript files with zero failures. |
 | 9.12 Delete disposable property | PASS (RETEST CLEANUP) | Deleted `900 Regression Test Ave, Tampa, FL 33602` together with its Base Case analysis after export and QA verification. Existing Properties returned to 0 active / 0 archived / 0 analyses. |
 
+## Section 10 — Professional report and pro forma
+
+| Test | Result | Notes |
+|---|---|---|
+| 10.1 Professional report generation time | PASS | Recreated a logged-in known-answer analysis and opened Client Report. The complete report surface and export controls were ready in 609 ms, well under the 10-second target. |
+| 10.2 On-screen report visibility | PASS | The report rendered at 896 px content width with matching client/scroll widths, no horizontal overflow, and no descendant element extending outside the report boundary. Full report height was available through normal page scrolling. |
+| 10.3 Branding and broker information | FAIL | The current tagline and PropertyThesis brand appeared, but the professional report displayed placeholder values `Your Company` and `Report Author` and omitted Jamie Meloni/Meloni Realty license information. See PT-029. |
+| 10.4 Saved-analysis values | PASS | Address, $500,000 acquisition price, $4,000 rent, $400,000 financing at 6.25%, $25,920 NOI, 5.18% cap, 0.88x DSCR, 8.68% IRR, ($7,982) NPV and $414,720 desired-cap value matched the saved analysis. |
+| 10.5 Readability and limitations | PASS | Assumptions, calculation explanations, investment risks, sensitivity language, tax caveats and the decision-support/not-an-appraisal disclaimer were present and readable. |
+| 10.6 PDF file inspection | PARTIAL | Download PDF completed and returned to its ready state without an application error. First/middle/last-page inspection remains pending because the in-app browser download is not exposed to the test filesystem. |
+| 10.7 Excel pro forma opens cleanly | PARTIAL | Download Pro Forma completed without an application error. Opening the downloaded workbook and checking for repair warnings remains pending outside the in-app browser. |
+| 10.8 Selected holding period in workbook | NOT RUN | Requires access to the downloaded workbook. |
+| 10.9 Workbook/report reconciliation | NOT RUN | Requires access to the downloaded workbook. |
+| 10.10 Logged-out samples | PASS | Sample Report and Sample Multiyear Pro Forma both remained inside the public PropertyThesis wrapper, used generic sample-property data, exposed no signed-in test address or account email, and retained the public licensing/footer disclosures. |
+
 ## Recorded defects
+
+### PT-029 — P1 — Professional report ships placeholder branding and omits broker identity
+
+- Reproduction: Save a logged-in analysis and open Client Report.
+- Observed: The report cover displays `Your Company` and `Report Author`; the report text contains no Jamie Meloni, Meloni Realty, BK3167461 or CQ1067291 identification even though the public sample and site footer contain the correct disclosures.
+- Expected: Use the saved user profile when configured and a correct PropertyThesis/Meloni Realty broker fallback otherwise; never ship placeholder branding in a professional report.
+- Impact: A client-facing deliverable can look unfinished and omit expected brokerage/license attribution.
 
 ### PT-028 — P1 — Saved-property report route omits pro forma export
 
