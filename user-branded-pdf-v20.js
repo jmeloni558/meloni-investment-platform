@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=32;
+  const VERSION=33;
   if((window.__userBrandedPdfVersion||0)>=VERSION)return;
   window.__userBrandedPdfVersion=VERSION;
 
@@ -17,6 +17,7 @@
   function ensureCaptureStyles(){let s=document.getElementById('ptPdfCaptureStyles');if(!s){s=document.createElement('style');s.id='ptPdfCaptureStyles';document.head.appendChild(s);}s.textContent=`
     #clientReport .pt-pdf-capture{overflow:visible!important;background:#fff!important}
     #clientReport .pt-pdf-capture>.rb-footer{display:none!important}
+    #clientReport .pt-pdf-capture .rb-findings,#clientReport .pt-pdf-capture .rb-findings-grid{height:auto!important;max-height:none!important;overflow:visible!important;contain:none!important}
     #clientReport .pt-pdf-capture .rb-section{box-shadow:none!important;border-color:transparent!important;border-radius:0!important}
     #clientReport .pt-pdf-capture .rb-analysis-summary,#clientReport .pt-pdf-capture .rb-final-conclusion{border-left-color:inherit!important}
     #clientReport .pt-pdf-capture .rb-tablewrap{display:block!important;width:100%!important;max-width:100%!important;overflow:visible!important;position:static!important;transform:none!important}
