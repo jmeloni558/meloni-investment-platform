@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION = 5;
+  const VERSION = 6;
   if ((window.__propertyThesisProFormaDownloadControllerVersion || 0) >= VERSION) return;
   window.__propertyThesisProFormaDownloadControllerVersion = VERSION;
 
@@ -15,6 +15,16 @@
   function resultObj(){
     try { if (typeof result !== 'undefined' && result) return result; } catch (_e) {}
     return window.result || {};
+  }
+
+  function reviewedDesiredCap(){
+    for(const id of ['review_f_desiredCap','f_desiredCap']){
+      const input=typeof document!=='undefined'&&typeof document.getElementById==='function'?document.getElementById(id):null;
+      if(!input||String(input.value).trim()==='')continue;
+      const entered=Number(input.value);
+      if(Number.isFinite(entered)&&entered>0)return entered>1?entered/100:entered;
+    }
+    return num(stateObj().desiredCap);
   }
 
   function years(){
@@ -91,7 +101,8 @@
     const ys = years();
     if (!ys.length) throw new Error('No projected analysis years are available to export. Open Review Results and confirm the analysis has completed.');
 
-    const s = stateObj();
+    const originalState = stateObj();
+    const s = {...originalState, desiredCap:reviewedDesiredCap()};
     const r = resultObj();
     const hold = Math.max(1, Math.round(num(s.hold) || 1));
     const yearHeaders = ys.map(y => 'Year ' + y.year);
@@ -166,7 +177,7 @@
     const summary=[['PropertyThesis Investment Summary'],[branding().address],[],['Metric','Formula-Driven Result'],
       ['Acquisition Price',cell(`${A}5`,s.price)],['Year 1 NOI',cell(`'After Tax Cash Flow'!B${cfFirst+4}`,ys[0].noi)],
       ['Capitalization Rate',cell(`B6/B5`,r.cap,'0.00%')],['Desired Cap Rate',cell(`${A}26`,s.desiredCap,'0.00%')],
-      ['Cap-Supported Value',cell(`B6/B8`,r.capValue)],['Initial Equity',cell(`${A}5-${A}16+(${A}16*${A}20/100)+${A}21+${A}28`,initialEquity)],
+      ['Cap-Supported Value',cell(`B6/B8`,num(ys[0].noi)/num(s.desiredCap))],['Initial Equity',cell(`${A}5-${A}16+(${A}16*${A}20/100)+${A}21+${A}28`,initialEquity)],
       ['After-Tax Reversion',cell(`'Taxes Due on Sale'!${colName(hold)}${cfFirst}-'Taxes Due on Sale'!${colName(hold)}${cfFirst+8}-IF(${A}17=1,IF(${A}14>=${A}19,0,${A}16),MAX(0,-FV(${A}18/12,MIN(${A}14,${A}19)*12,PMT(${A}18/12,${A}19*12,${A}16),${A}16)))`,reversion)],
       [],['Investment Cash Flow',cell('-B10',-initialEquity),...ys.map((y,i)=>cell(`'After Tax Cash Flow'!${colName(i+1)}${cfFirst+8}${i===ys.length-1?'+B11':''}`,num(y.atcf)+(i===ys.length-1?reversion:0)))],
       ['Internal Rate of Return',cell(`IRR(B13:${colName(ys.length+1)}13)`,r.IRR,'0.00%')],['Net Present Value',cell(`NPV(${A}25,C13:${colName(ys.length+1)}13)+B13`,r.NPV)]
@@ -183,7 +194,10 @@
         for (let col = 1; col <= range.e.c; col++) {
           const cell = ws[XLSX.utils.encode_cell({r:row, c:col})];
           if (!cell || cell.t !== 'n') continue;
-          cell.z = /Tax Rate/.test(label) ? '0.00%' : '$#,##0;[Red]-$#,##0';
+          if(/Rate|Growth|Vacancy|Expenses as %|Appreciation|Selling Costs|Required Return|Desired Cap/i.test(label))cell.z='0.00%';
+          else if(/Desired GRM/i.test(label))cell.z='0.00x';
+          else if(/Units|Life \(Years\)|Holding Period|Loan Term|Interest Only/i.test(label))cell.z='0.00';
+          else cell.z='$#,##0;[Red]-$#,##0';
         }
       }
     }
@@ -216,5 +230,5 @@
     }
   }
 
-  window.PropertyThesisProFormaDownload = {version:VERSION, download, buildWorkbook, years, stateObj, resultObj};
+  window.PropertyThesisProFormaDownload = {version:VERSION, download, buildWorkbook, years, stateObj, resultObj, reviewedDesiredCap};
 })();

@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=30;
+  const VERSION=31;
   if((window.__userBrandedPdfVersion||0)>=VERSION)return;
   window.__userBrandedPdfVersion=VERSION;
 
@@ -27,26 +27,10 @@
   `;}
 
   async function preparePreview(){
-    // Capture the report the user reviewed. Rebuilding here can replace a
-    // hydrated saved assumption with a form/default value immediately before
-    // the PDF is created.
+    // Capture the exact report the user reviewed. Any report enhancer invoked
+    // here may read a stale form/default value and mutate the visible report
+    // immediately before capture.
     await new Promise(r=>setTimeout(r,60));
-    window.ReportBuilderV8?.apply?.();
-    window.ReportAssumptionsNarrative?.apply?.();
-    window.ReportMarketRentSupport?.apply?.();
-    window.ReportMarketRentUnderwriting?.apply?.();
-    window.ReportExecutiveConclusionCurrent?.apply?.();
-    window.PropertyThesisMarketRentConclusion?.enhanceReport?.();
-    window.ReportSalesComparables?.apply?.();
-    window.UserBranding?.applyReportBranding?.();
-    window.PropertyThesisReportBranding?.apply?.();
-    await new Promise(r=>setTimeout(r,160));
-    window.ReportMarketRentSupport?.apply?.();
-    window.ReportMarketRentUnderwriting?.apply?.();
-    window.ReportExecutiveConclusionCurrent?.apply?.();
-    window.PropertyThesisMarketRentConclusion?.enhanceReport?.();
-    window.ReportSalesComparables?.apply?.();
-    await new Promise(r=>setTimeout(r,220));
   }
   function makeClone(source){ensureCaptureStyles();const host=document.getElementById('clientReport');if(!host)throw new Error('Client report container is unavailable.');const clone=source.cloneNode(true);clone.classList.add('pt-pdf-capture');clone.setAttribute('aria-hidden','true');Object.assign(clone.style,{position:'fixed',left:'-12000px',top:'0',width:CAPTURE_WIDTH+'px',maxWidth:CAPTURE_WIDTH+'px',height:'auto',zIndex:'-1',transform:'none',overflow:'visible'});host.appendChild(clone);return clone;}
 
