@@ -114,7 +114,7 @@
     return true;
   }
 
-  function wrapAuth(){try{const original=setCloudUser;if(typeof original==='function'&&!original.__profileWrapped){const wrapped=async function(user){const out=await original(user);ensureButton();await loadProfile();return out;};wrapped.__profileWrapped=true;setCloudUser=wrapped;}}catch(e){}
+  function wrapAuth(){try{const original=setCloudUser;if(typeof original==='function'&&!original.__profileWrapped){const wrapped=async function(user){const out=await original(user);ensureButton();await loadProfile();return out;};wrapped.__profileWrapped=true;setCloudUser=wrapped;}}catch(e){}}
   function schedule(){neutralizeApp();ensureButton();applyReportBranding();}
   function start(){injectStyles();ensureModal();neutralizeApp();wrapAuth();ensureButton();loadProfile();setInterval(schedule,800);document.addEventListener('click',e=>{if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh,#rbSelectCore,#rbSelectAll'))setTimeout(applyReportBranding,120);},true);}
 

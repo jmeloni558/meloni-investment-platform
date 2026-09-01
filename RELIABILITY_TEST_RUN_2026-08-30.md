@@ -11,7 +11,7 @@
 - Browser: Microsoft Edge InPrivate
 - Session state: Signed in as `jrmeloni@hotmail.com`
 - Status: In progress
-- Next test: **9.1 Run the known-answer property through the full calculator**
+- Next test: **Section 9 defect repair and targeted retest**
 
 ## Status legend
 
@@ -163,7 +163,36 @@
 | 8.11 Delete disposable property | PASS (RETEST CLEANUP) | After fresh confirmation, deleted the recreated `100 Test Property Way, Tampa, FL 33602` property together with Base Case and Conservative Case. Counts returned to 0 active / 0 archived / 0 analyses. |
 | 8.12 Refresh consistency | PASS | Reloaded the canonical live URL. The session remained signed in as `jrmeloni@hotmail.com`, Existing Properties reopened without a modal or warning, and the clean 0 / 0 / 0 saved-data state persisted. |
 
+## Section 9 — Calculation and results regression
+
+| Test | Result | Notes |
+|---|---|---|
+| 9.1 Known-answer full calculator | PARTIAL | The saved analysis and a clean reopen produced the correct known-answer outputs, but the immediate post-save results surface mixed those values with stale Section 8 figures. See PT-025. |
+| 9.2 Income arithmetic reconciliation | PASS | $48,000 PGI − $4,800 vacancy = $43,200 EGI; 40% operating expenses = $17,280; NOI = $25,920; $25,920 ÷ $500,000 = 5.184%, displayed as 5.18%. |
+| 9.3 Financing reconciliation | PASS | $400,000 amortizing loan at 6.25% for 30 years displayed a $2,462.87 monthly payment and $29,554 rounded annual debt service; Year 1 interest $24,867 plus principal $4,687 reconciled to $29,554. |
+| 9.4 DSCR reconciliation | PASS | $25,920 NOI ÷ approximately $29,554 annual debt service = 0.877, displayed consistently as 0.88x. |
+| 9.5 Cash-flow reconciliation | PASS | $25,920 NOI − $29,554 debt service = ($3,634) Year 1 before-tax cash flow. The separately identified ($3,778) tax benefit reconciled to $144 after-tax cash flow. |
+| 9.6 Cash-on-cash reconciliation | PASS | The client report displayed $144 Year 1 after-tax cash flow, $100,000 initial cash investment and 0.14% after-tax cash-on-cash return; $144 ÷ $100,000 = 0.144%, displayed as 0.14%. |
+| 9.7 NPV/IRR sensitivity | PASS | At the seven-year baseline, 3% appreciation produced 7.85% IRR and ($12,897) NPV. Raising appreciation to 5% increased IRR to 13.41% and NPV to $23,822; restoring 3% returned both metrics to baseline. |
+| 9.8 Holding-period boundaries | PASS | One year produced a complete 1-Year Projection with Year 1 and no Year 2. Forty years produced a complete 40-Year Projection through Year 40 with no Year 41. Restoring seven years returned the 7.85% IRR and ($12,897) NPV baseline. |
+| 9.9 Income-supported value reconciliation | PASS | Desired-cap value was $414,720, exactly $25,920 NOI ÷ 6.25%. The same NOI appeared in the decision center, offer analysis and detailed Year 1 cash-flow table. |
+| 9.10 Cross-output consistency | PARTIAL | Review Results, detailed cash-flow tables, saved card and on-screen client report agreed on $500,000 price, $4,000 rent, $25,920 NOI, 5.18% cap, 7.85% IRR, ($12,897) NPV and 0.88x DSCR. PDF export invoked a native print workflow but produced no capturable download, and no pro forma export was available in the current account state. |
+| 9.11 Automated calculation checks | FAIL | The live Existing Properties dashboard did not load the repository's `analysis-regression-checker.js`, so no Run QA Check control or QA result was available. A separate syntax scan checked 165 JavaScript files and found one failure: `user-profile-branding.js:123` (`Unexpected token ')'`). See PT-027. |
+
 ## Recorded defects
+
+### PT-027 — P1 — Live calculation QA checker is unavailable
+
+- Observed: `analysis-regression-checker.js` exists in the repository but is not included by the live application loader. Existing Properties therefore has no Run QA Check control and cannot compare saved outputs with a fresh recalculation. The repository-wide JavaScript syntax scan also found `user-profile-branding.js:123` fails with `Unexpected token ')'`.
+- Expected: Load the QA checker for authorized testing/admin use and keep every shipped JavaScript file syntactically valid so automated regression checks can complete.
+- Impact: Test 9.11 cannot provide the required saved-versus-recalculated regression result, and the repository contains a broken JavaScript asset.
+
+### PT-025 — P1 — Immediate post-save results mix stale and current analyses
+
+- Reproduction: After deleting the Section 8 property, create and calculate the Section 9 known-answer property without reloading the app.
+- Observed: The immediate results content mixed correct current values (NOI $25,920, cap 5.18%, IRR 7.85%) with stale deleted-scenario values (NOI $48,135, cap 10.03%, IRR 21.99%) in other result modules. The cloud-saved card was correct, and reopening that saved analysis refreshed the results consistently.
+- Expected: Every results module must hydrate atomically from the just-calculated assumption set; no prior or deleted analysis values may remain visible.
+- Impact: A user can see contradictory investment conclusions and metrics immediately after calculating a new property.
 
 ### PT-024 — P1 — Native scenario-name prompt blocks analysis saving
 

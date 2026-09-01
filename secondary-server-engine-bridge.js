@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__secondaryServerEngineBridgeVersion||0)>=VERSION)return;
   window.__secondaryServerEngineBridgeVersion=VERSION;
 
@@ -42,7 +42,7 @@
       try{
         const r=await callServer(x);
         cache.set(sig,r);failedAt.delete(sig);lastError='';lastServerAt=new Date();
-        if(refresh&&signature()===sig)setTimeout(refreshConsumers,0);
+        if(refresh&&signature()===sig)setTimeout(()=>{if(signature()===sig)refreshConsumers();},0);
         return r;
       }catch(e){
         failedAt.set(sig,Date.now());lastError=String(e?.message||e);

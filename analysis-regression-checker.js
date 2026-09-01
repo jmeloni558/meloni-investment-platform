@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__analysisRegressionCheckerVersion||0)>=VERSION)return;
   window.__analysisRegressionCheckerVersion=VERSION;
 
@@ -30,17 +30,24 @@
     const p=(typeof cloudProperties!=='undefined'?cloudProperties:[]).find(x=>x.id===a.property_id);
     return p?.name||p?.address||a.name||'Saved analysis';
   }
-  function freshResult(a){
+  async function freshResult(a){
     const assumptions={...(a.assumptions||{})};
     delete assumptions.buyState;
     const base=typeof defaults!=='undefined'?defaults:{};
-    return analyze({...base,...assumptions});
+    const input={...base,...assumptions};
+    const bridge=window.PropertyThesisIncomeEngineBridge;
+    if(bridge?.requestServer){
+      const result=await bridge.requestServer(input,{refresh:false});
+      if(!result?.years?.length)throw new Error(bridge.status?.().lastError||'Protected calculation result is unavailable.');
+      return result;
+    }
+    if(typeof analyze!=='function')throw new Error('Calculation engine is unavailable.');
+    return analyze(input);
   }
-  function checkOne(a){
+  async function checkOne(a){
     const out={analysis:a,property:propertyName(a),mismatches:[],missing:[],checked:0,pass:false,error:null};
     try{
-      if(typeof analyze!=='function')throw new Error('Calculation engine is unavailable.');
-      const fresh=freshResult(a);
+      const fresh=await freshResult(a);
       for(const m of METRICS){
         const saved=num(m.saved(a)),current=num(m.fresh(fresh));
         if(!Number.isFinite(saved)||!Number.isFinite(current)){
@@ -54,9 +61,9 @@
     }catch(e){out.error=e?.message||String(e);}
     return out;
   }
-  function run(){
+  async function run(){
     const analyses=(typeof cloudAnalyses!=='undefined'?cloudAnalyses:[])||[];
-    const results=analyses.map(checkOne);
+    const results=await Promise.all(analyses.map(checkOne));
     return {
       results,
       total:results.length,
@@ -84,7 +91,7 @@
     if(!hub||!toolbar||!cards)return false;
     ensureStyles();
     if(!document.getElementById('qaRunRegression')){
-      const b=document.createElement('button');b.id='qaRunRegression';b.type='button';b.className='btn ghost';b.textContent='Run QA Check';b.onclick=()=>render(run());
+      const b=document.createElement('button');b.id='qaRunRegression';b.type='button';b.className='btn ghost';b.textContent='Run QA Check';b.onclick=()=>runAndRender(b);
       toolbar.appendChild(b);
     }
     if(!document.getElementById('qaRegressionPanel')){
@@ -108,12 +115,18 @@
       detail=`<details open><summary>Show ${report.mismatches+report.missing+(report.results.filter(x=>x.error).length)} issue(s)</summary><table><thead><tr><th>Property</th><th>Metric</th><th>Saved</th><th>Recalculated</th></tr></thead><tbody>${rows.join('')}</tbody></table></details>`;
     }
     host.innerHTML=`<div class="qa-box ${ok?'pass':'fail'}"><div class="qa-head"><div><div class="qa-title">${ok?'✓ Calculation QA PASS':'⚠ Calculation QA FAILED'}</div><div class="qa-sub">${report.passed} of ${report.total} saved analyses match a fresh recalculation${ok?' with no output drift':`; ${report.mismatches} mismatch(es), ${report.missing} missing value(s)`}. Checked ${report.timestamp.toLocaleTimeString()}.</div></div><button class="btn ghost" type="button" id="qaRunAgain">Run Again</button></div>${detail}</div>`;
-    document.getElementById('qaRunAgain')?.addEventListener('click',()=>render(run()));
+    document.getElementById('qaRunAgain')?.addEventListener('click',e=>runAndRender(e.currentTarget));
     return report;
   }
-  function autoRun(){
+  async function runAndRender(button){
+    const original=button?.textContent;
+    if(button){button.disabled=true;button.textContent='Checking…';}
+    try{return render(await run());}
+    finally{if(button){button.disabled=false;button.textContent=original||'Run QA Check';}}
+  }
+  async function autoRun(){
     if(!ensureUi())return false;
-    try{render(run());}catch(e){console.error('Calculation QA failed',e);}
+    try{await runAndRender(document.getElementById('qaRunRegression'));}catch(e){console.error('Calculation QA failed',e);}
     return true;
   }
   function start(){
