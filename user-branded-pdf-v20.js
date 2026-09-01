@@ -1,12 +1,12 @@
 'use strict';
 (() => {
-  const VERSION=33;
+  const VERSION=35;
   if((window.__userBrandedPdfVersion||0)>=VERSION)return;
   window.__userBrandedPdfVersion=VERSION;
 
   const HTML2CANVAS_SRC='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
   const PRODUCT='PropertyThesis',TAGLINE='Know the Numbers. Prove the Case.',REPORT_TYPE='Investment Property Analysis';
-  const CAPTURE_WIDTH=816,CAPTURE_SCALE=1.25,JPEG_QUALITY=.94,FOOTER_H=48,TOP_PAD=24,BOTTOM_PAD=10,PAGE_GAP=10,SIDE_PAD=22,ROW_PAD=30,ROW_BLEED=5;
+  const CAPTURE_WIDTH=816,CAPTURE_SCALE=1.15,JPEG_QUALITY=.92,FOOTER_H=48,TOP_PAD=24,BOTTOM_PAD=10,PAGE_GAP=10,SIDE_PAD=22,ROW_PAD=30,ROW_BLEED=5;
 
   function prof(){return window.UserBranding?.getProfile?.()||{};}
   function filename(){const raw=(state?.address||state?.name||REPORT_TYPE).trim();return (raw.replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,70)||'PropertyThesis')+'-Investment-Analysis.pdf';}
@@ -17,7 +17,8 @@
   function ensureCaptureStyles(){let s=document.getElementById('ptPdfCaptureStyles');if(!s){s=document.createElement('style');s.id='ptPdfCaptureStyles';document.head.appendChild(s);}s.textContent=`
     #clientReport .pt-pdf-capture{overflow:visible!important;background:#fff!important}
     #clientReport .pt-pdf-capture>.rb-footer{display:none!important}
-    #clientReport .pt-pdf-capture .rb-findings,#clientReport .pt-pdf-capture .rb-findings-grid{height:auto!important;max-height:none!important;overflow:visible!important;contain:none!important}
+    #clientReport .pt-pdf-capture .rb-findings{height:auto!important;min-height:260px!important;max-height:none!important;overflow:visible!important;contain:none!important}
+    #clientReport .pt-pdf-capture .rb-findings-grid{height:auto!important;min-height:190px!important;max-height:none!important;overflow:visible!important;contain:none!important;grid-auto-rows:minmax(82px,auto)!important}
     #clientReport .pt-pdf-capture .rb-section{box-shadow:none!important;border-color:transparent!important;border-radius:0!important}
     #clientReport .pt-pdf-capture .rb-analysis-summary,#clientReport .pt-pdf-capture .rb-final-conclusion{border-left-color:inherit!important}
     #clientReport .pt-pdf-capture .rb-tablewrap{display:block!important;width:100%!important;max-width:100%!important;overflow:visible!important;position:static!important;transform:none!important}
