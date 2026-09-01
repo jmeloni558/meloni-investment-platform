@@ -24,11 +24,10 @@
   }
   function clientForProperty(p){return (cloudClients||[]).find(c=>c.id===p.client_id)||null}
   function valueText(a){
-    const s=a?.report_meta?.stage5||{};
-    const lo=Number(s.valueLow),hi=Number(s.valueHigh);
-    if(Number.isFinite(lo)&&Number.isFinite(hi)&&hi>=lo&&lo>0)return `${money(lo)} – ${money(hi)}`;
-    const price=Number(a?.assumptions?.price);
-    return Number.isFinite(price)&&price>0?money(price):'Not concluded';
+    const meta=a?.report_meta||{},stage5=meta.stage5||{};
+    const candidates=[meta.reconciled,meta.reconciled_value,meta.reconciliation?.reconciled,stage5.reconciled,stage5.reconciledValue];
+    const value=candidates.map(Number).find(v=>Number.isFinite(v)&&v>0);
+    return Number.isFinite(value)?money(value):'Not entered';
   }
   function statusText(a){
     if(!a)return 'No analysis';
@@ -50,12 +49,15 @@
     const assumptions={...(a.assumptions||{})};
     const embeddedBuy=assumptions.buyState;delete assumptions.buyState;
     state={...defaults,...assumptions};
+    const repairs=Math.max(0,Number(state.initialRepairs)||0);state.initialRepairs=repairs;
     if(embeddedBuy&&typeof buydownDefaults!=='undefined')buyState={...buydownDefaults,...embeddedBuy};
     try{if(typeof renderFields==='function')renderFields();}catch(_e){}
+    try{const source=document.getElementById('f_initialRepairs');if(source)source.value=repairs||'';}catch(_e){}
     try{result=analyze(state);}catch(e){try{if(typeof setStatus==='function')setStatus('Could not load saved analysis: '+e.message);}catch(_e){}return false;}
     try{window.GuidedAnalysisSetup?.refresh?.();}catch(_e){}
     try{window.GuidedAssumptionGuidance?.apply?.();}catch(_e){}
     try{window.GuidedInitialRepairs?.apply?.();}catch(_e){}
+    try{const guided=document.querySelector('#guidedSetup [data-src="f_initialRepairs"]');if(guided)guided.value=repairs||'';}catch(_e){}
     return true;
   }
   function startAnalysisForProperty(pid){

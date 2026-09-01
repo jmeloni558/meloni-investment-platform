@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=6;
+  const VERSION=7;
   if((window.__protectedAnalysisOpenRouterVersion||0)>=VERSION)return;
   window.__protectedAnalysisOpenRouterVersion=VERSION;
 
@@ -20,8 +20,10 @@
     const assumptions={...(a.assumptions||{})};
     const embeddedBuy=assumptions.buyState;delete assumptions.buyState;
     try{state={...defaults,...assumptions};}catch(_e){return false;}
+    const repairs=Math.max(0,Number(state.initialRepairs)||0);state.initialRepairs=repairs;
     try{if(embeddedBuy&&typeof buydownDefaults!=='undefined')buyState={...buydownDefaults,...embeddedBuy};}catch(_e){}
     try{if(typeof renderFields==='function')renderFields();}catch(_e){}
+    try{const source=document.getElementById('f_initialRepairs');if(source)source.value=repairs||'';}catch(_e){}
     return true;
   }
 
@@ -118,7 +120,7 @@
       else if(typeof switchTab==='function')switchTab(target);
       if(target==='report')refreshReport();
       else if(target==='dashboard'){refreshDashboard();await hydrateCurrentResults();refreshMarketRentResults();}
-      else {try{window.GuidedAnalysisSetup?.refresh?.();window.GuidedAssumptionGuidance?.apply?.();window.GuidedInitialRepairs?.apply?.();}catch(_e){}}
+      else {try{window.GuidedAnalysisSetup?.refresh?.();window.GuidedAssumptionGuidance?.apply?.();window.GuidedInitialRepairs?.apply?.();const guided=document.querySelector('#guidedSetup [data-src="f_initialRepairs"]');if(guided)guided.value=Math.max(0,Number(state.initialRepairs)||0)||'';}catch(_e){}}
       try{window.AnalysisHistoryAutosave?.checkDraft?.();window.UnsavedChangeProtection?.markClean?.();}catch(_e){}
       status(target==='report'?'Protected report ready':target==='assumptions'?'Analysis ready to edit':'Saved analysis loaded');
     }catch(e){

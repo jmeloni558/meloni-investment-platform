@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__propertyThesisProtectedCloudSaveBridgeV||0)>=VERSION)return;
   window.__propertyThesisProtectedCloudSaveBridgeV=VERSION;
 
@@ -22,15 +22,45 @@
       return count===0?'Base Case':`Analysis ${count+1}`;
     }catch(_e){return 'Base Case';}
   }
-  function chooseName(cloneMode){
+  function ensureNamingDialog(){
+    let modal=document.getElementById('ptAnalysisNameModal');
+    if(modal)return modal;
+    const style=document.createElement('style');
+    style.id='ptAnalysisNameModalStyles';
+    style.textContent=`#ptAnalysisNameModal{position:fixed;inset:0;z-index:10120;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(15,35,55,.62)}#ptAnalysisNameModal.hidden{display:none}#ptAnalysisNameModal .pt-name-shell{width:min(460px,100%);background:#fff;border:1px solid #cbd9e5;border-radius:15px;box-shadow:0 24px 70px rgba(15,35,55,.32);padding:22px}#ptAnalysisNameModal h3{margin:0 0 6px;color:#17395d;font-size:20px}#ptAnalysisNameModal p{margin:0 0 16px;color:#5d6f82;font-size:12px;line-height:1.5}#ptAnalysisNameModal label{display:block;margin-bottom:6px;color:#263b52;font-size:11px;font-weight:800}#ptAnalysisNameModal input{width:100%;box-sizing:border-box;min-height:44px;border:1px solid #b8cad9;border-radius:9px;padding:10px 12px;font:inherit}#ptAnalysisNameModal input:focus{outline:3px solid rgba(22,137,142,.18);border-color:#16898e}#ptAnalysisNameModal .pt-name-error{min-height:18px;margin:7px 0 4px;color:#b42318;font-size:11px;font-weight:700}#ptAnalysisNameModal .pt-name-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:10px}`;
+    document.head.appendChild(style);
+    modal=document.createElement('div');
+    modal.id='ptAnalysisNameModal';modal.className='hidden';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','ptAnalysisNameTitle');
+    modal.innerHTML=`<div class="pt-name-shell"><h3 id="ptAnalysisNameTitle">Name this analysis</h3><p id="ptAnalysisNameProperty"></p><label for="ptAnalysisNameInput">Scenario name</label><input id="ptAnalysisNameInput" maxlength="80" autocomplete="off"><div id="ptAnalysisNameError" class="pt-name-error" role="alert"></div><div class="pt-name-actions"><button type="button" class="btn ghost" data-pt-name-cancel>Cancel</button><button type="button" class="btn primary" data-pt-name-save>Save Analysis</button></div></div>`;
+    document.body.appendChild(modal);
+    return modal;
+  }
+  function requestAnalysisName(){
+    const modal=ensureNamingDialog(),input=modal.querySelector('#ptAnalysisNameInput'),error=modal.querySelector('#ptAnalysisNameError');
+    modal.querySelector('#ptAnalysisNameProperty').textContent=`Create a distinct scenario for ${propertyLabel()}.`;
+    input.value=suggestedName();error.textContent='';modal.classList.remove('hidden');
+    return new Promise(resolve=>{
+      const finish=value=>{modal.classList.add('hidden');document.removeEventListener('keydown',onKey,true);resolve(value);};
+      const validate=()=>{const value=input.value.trim();if(!value){error.textContent='Enter an analysis name.';input.focus();return;}const duplicate=(cloudAnalyses||[]).some(a=>a.property_id===selectedPropertyId&&String(a.name||'').trim().toLowerCase()===value.toLowerCase());if(duplicate){error.textContent='That scenario name already exists for this property. Choose a different name.';input.focus();input.select();return;}finish(value);};
+      const onKey=e=>{if(e.key==='Escape'){e.preventDefault();finish(null);}else if(e.key==='Enter'){e.preventDefault();validate();}};
+      modal.querySelector('[data-pt-name-cancel]').onclick=()=>finish(null);
+      modal.querySelector('[data-pt-name-save]').onclick=validate;
+      document.addEventListener('keydown',onKey,true);setTimeout(()=>{input.focus();input.select();},0);
+    });
+  }
+  async function chooseName(cloneMode){
     const current=existingAnalysis();
     if(cloneMode)return (current?.name||state?.name||'Base Analysis')+' — Copy';
     if(current)return current.name||state?.name||'Base Analysis';
     try{if((cloudAnalyses||[]).filter(a=>a.property_id===selectedPropertyId).length===0)return 'Base Case';}catch(_e){}
     if(localStorage.getItem('ptBillingResumeV1')==='1')return suggestedName();
-    const name=window.prompt(`Name this new analysis for ${propertyLabel()}:`,suggestedName());
-    if(name===null)return null;
-    return name.trim()||'';
+    return requestAnalysisName();
+  }
+  function syncInitialRepairs(){
+    const source=document.getElementById('f_initialRepairs');
+    const guided=document.querySelector('#guidedSetup [data-src="f_initialRepairs"]');
+    const raw=guided?.value!==undefined?guided.value:source?.value;
+    if(typeof state==='object'&&state)state.initialRepairs=Math.max(0,Number(raw)||0);
   }
   function outputsFrom(r){
     const y=r?.years?.[0]||{};
@@ -91,9 +121,10 @@
       window.SaveStateFeedback?.saving?.();
       status('Saving analysis…');
 
+      syncInitialRepairs();
       const r=await protectedResult();
       const pid=await ensureProperty();
-      const name=chooseName(!!cloneMode);
+      const name=await chooseName(!!cloneMode);
       if(name===null){status('Save canceled — the analysis remains unsaved.');window.SaveStateFeedback?.unsaved?.();return;}
       if(!name){status('Enter an analysis name before saving.');window.SaveStateFeedback?.unsaved?.();return;}
 

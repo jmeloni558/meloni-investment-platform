@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__propertyAnalysisOpenHydrationFixVersion||0)>=VERSION)return;
   window.__propertyAnalysisOpenHydrationFixVersion=VERSION;
 
@@ -21,8 +21,10 @@
     const embeddedBuy=assumptions.buyState;
     delete assumptions.buyState;
     state={...defaults,...assumptions};
+    const repairs=Math.max(0,Number(state.initialRepairs)||0);state.initialRepairs=repairs;
     if(embeddedBuy&&typeof buydownDefaults!=='undefined')buyState={...buydownDefaults,...embeddedBuy};
     try{if(typeof renderFields==='function')renderFields();}catch(_e){}
+    try{const source=document.getElementById('f_initialRepairs');if(source)source.value=repairs||'';}catch(_e){}
     try{result=analyze(state);}catch(e){try{setStatus('Could not load saved analysis: '+e.message);}catch(_e){}return false;}
     return true;
   }
