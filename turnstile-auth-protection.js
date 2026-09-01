@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=13;
+  const VERSION=14;
   const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
   const APP_URL=location.origin+'/index.html';
   const FREE_RESUME_URL=APP_URL+'?resume-free=1';
@@ -14,6 +14,7 @@
   let busy=false;
   let pendingAction='';
   let signupRetries=0;
+  let stickySignInError='';
 
   const el=id=>document.getElementById(id);
   const message=(text,kind='')=>{if(window.PropertyThesisAuth?.message)return window.PropertyThesisAuth.message(text,kind);const m=el('authMessage');if(m)m.textContent=text;};
@@ -82,7 +83,7 @@
   function injectRecoveryFlow(){
     if(document.querySelector('script[data-pt-recovery-flow]')||document.getElementById('ptRecoveryOverlay'))return;
     const s=document.createElement('script');
-    s.src='password-recovery-flow.js?v=5';
+    s.src='password-recovery-flow.js?v=6';
     s.async=false;
     s.dataset.ptRecoveryFlow='1';
     document.body.appendChild(s);
@@ -90,10 +91,10 @@
 
   function loadRecoveryFlow(){
     const params=new URLSearchParams(location.hash.replace(/^#/,''));
-    if(params.get('type')==='recovery')return injectRecoveryFlow();
+    if(params.get('type')==='recovery'||sessionStorage.getItem('ptPasswordRecoveryPending')==='1')return injectRecoveryFlow();
     try{
       if(typeof cloudClient==='undefined'||!cloudClient)return;
-      cloudClient.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY')injectRecoveryFlow();});
+      cloudClient.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){sessionStorage.setItem('ptPasswordRecoveryPending','1');injectRecoveryFlow();}});
     }catch(_e){}
   }
 
@@ -110,7 +111,7 @@
       widgetId=ts.render(host,{
         sitekey:SITE_KEY,
         theme:'auto',
-        callback:v=>{token=v||'';const action=pendingAction;pendingAction='';message(action?'Security check complete. Continuing automatically…':'Security check complete.');if(action)setTimeout(()=>runProtectedAction(action),0);},
+        callback:v=>{token=v||'';const action=pendingAction;pendingAction='';if(action)message('Security check complete. Continuing automatically…');else if(!stickySignInError)message('Security check complete.');if(action)setTimeout(()=>runProtectedAction(action),0);},
         'expired-callback':()=>{token='';message('Security check expired. Please complete it again.');},
         'error-callback':()=>{token='';pendingAction='';message('Security check could not load. Please retry.');}
       });
@@ -136,11 +137,11 @@
     const email=el('authEmail')?.value.trim()||'',password=el('authPassword')?.value||'';
     if(!email||!password)return message('Enter an email and password.');
     if(!requireToken('signin'))return;
-    busy=true;message('Signing in…');
+    busy=true;stickySignInError='';message('Signing in…');
     try{
       const {error}=await cloudClient.auth.signInWithPassword({email,password,options:{captchaToken:token}});
-      if(error){const raw=String(error.message||'');if(/invalid login credentials|email not confirmed/i.test(raw))message('Unable to sign in. Check that the email is verified and the password is correct. If you just created this account, open the verification email before signing in.','error');else message(raw,'error');}else message('Signed in.','success');
-    }catch(e){message(e?.message||'Sign in failed. Please try again.');}
+      if(error){const raw=String(error.message||'');stickySignInError=/invalid login credentials|email not confirmed/i.test(raw)?'Unable to sign in. Check that the email is verified and the password is correct. If you just created this account, open the verification email before signing in.':raw;message(stickySignInError,'error');if(el('authEmail'))el('authEmail').value=email;if(el('authPassword'))el('authPassword').value='';}else message('Signed in.','success');
+    }catch(e){stickySignInError=e?.message||'Sign in failed. Please try again.';message(stickySignInError,'error');if(el('authEmail'))el('authEmail').value=email;if(el('authPassword'))el('authPassword').value='';}
     finally{busy=false;resetChallenge();}
   }
 

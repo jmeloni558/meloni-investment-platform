@@ -11,7 +11,7 @@
 - Browser: Microsoft Edge InPrivate
 - Session state: Logged-out guest
 - Status: In progress
-- Next test: **7.1 Sign out and verify immediate logged-out home page**
+- Next test: **Section 8 — Billing and subscription access**
 
 ## Status legend
 
@@ -131,7 +131,37 @@
 | 6.17 Sign-in and analysis restoration | PASS | v38 restored Step 7 with all controlled values intact: Tampa address, $500,000 price, $100,000 land, 2 units, 7-year hold, $4,000 rent/unit, 8% vacancy, 3% rent growth, 42% OpEx, $400,000 mortgage at 6.25% for 30 years, and the non-default 6.25% desired cap. |
 | 6.18 No unsupported blank-tab path | PASS | The confirmation instructions offered return-to-original-tab and explicit other-device/browser recovery; no instruction to start in a new blank PropertyThesis tab was shown. |
 
+## Section 7 — Existing-user authentication
+
+| Test | Result | Notes |
+|---|---|---|
+| 7.1 Sign out | PASS | Sign-out immediately rendered the logged-out homepage at the canonical URL without requiring refresh; no modal remained open. |
+| 7.2 Refresh while logged out | PASS | Refresh remained logged out and did not open an unsolicited sign-in modal. |
+| 7.3 Public-toolbar Sign In | PASS | The standard site-wide `Sign in to PropertyThesis` modal opened inside the wrapper. |
+| 7.4 Autocomplete/password-manager compatibility | PASS | Email is `type=email` with `autocomplete=username`; password is `type=password` with `autocomplete=current-password`. |
+| 7.5 Incorrect password | FAIL | A rejection message appeared only briefly, then disappeared; the email was cleared and the security check restarted. The modal did not preserve enough context for an easy retry. See PT-019. |
+| 7.6 Successful sign-in | FAIL | Authentication completed for `jrmeloni@hotmail.com`; the modal closed, guest guidance disappeared, and only the signed-in toolbar was visible. The app remained on the analysis/home section instead of opening Existing Properties as required. See PT-020. |
+| 7.7 Refresh while signed in | PASS | The authenticated session persisted for `jrmeloni@hotmail.com`; the modal and guest guidance stayed hidden, the account dashboard loaded once, and its empty saved-data state matched the reset test account. |
+| 7.8 Second-tab authentication consistency | PASS | A second live-site tab recognized `jrmeloni@hotmail.com`, suppressed guest UI, and exposed the same eight signed-in navigation choices as the first tab. |
+| 7.9 Forgot Password | FAIL | The reset request displayed a brief sending notice and delivered the email, but the email's Reset Password link opened `https://propertythesis.com/index.html#` already authenticated without presenting new-password and confirmation fields. See PT-021. |
+| 7.10 Cross-tab sign-out | PASS | Signing out in the second authenticated chat-browser tab removed its signed-in controls. Refreshing the first tab changed the account label to `Not signed in`, removed Sign Out and all private navigation (`Existing Properties`, `Search Saved`, and `Search Clients`), and left no saved-account access visible. |
+
 ## Recorded defects
+
+### PT-021 — P1 — Password-reset link skips password update
+
+- Resolution: Implemented locally. The app now captures the recovery URL before Supabase consumes it, preserves the recovery state through application startup, and opens the existing two-field password-update overlay. Pending live retest.
+- Reproduction: From the public Sign In modal, enter the account email, select Forgot Password, and follow the Reset Password link in the delivered email.
+- Observed: The reset request and delivery succeed, but the link opens `https://propertythesis.com/index.html#` in an authenticated state without displaying fields to choose and confirm a new password.
+- Expected: A recovery link should open a dedicated password-update state, require and validate a new password plus confirmation, report success, and then allow sign-in with the new password.
+- Impact: A user can receive and follow the recovery email but cannot actually replace a forgotten password.
+
+### PT-019 — P2 — Incorrect-password feedback disappears and clears the email
+
+- Resolution: Implemented locally. Invalid-sign-in feedback is now sticky across the security-check reset; the email is explicitly preserved and only the password is cleared. Pending live retest.
+- Reproduction: Open the public Sign In modal, enter a valid account email with an incorrect password, complete the security check, and submit.
+- Observed: A sign-in failure message appeared briefly and disappeared. The email and password fields were cleared and the security check restarted, leaving no durable explanation visible.
+- Expected: Keep a helpful invalid-credentials message visible, preserve the email address, clear only the password, and let the user retry without losing context.
 
 ### PT-018 — P1 — Verified-account sign-in loses the pending guest analysis
 
@@ -306,3 +336,10 @@ Implemented locally; not yet committed or deployed:
 - PT-016: the latest guest search criteria and results restore for one hour when returning through browser Back.
 
 Local browser verification passed for homepage content, CTA-to-starter-form behavior, known-answer sample-card calculations, invalid property-card inputs, invalid listing-range blocking, listing starter-field hydration, public guided-analysis toolbar, and Pricing/Sample Report toolbar composition.
+
+### PT-020 — P2 — Successful sign-in does not open Existing Properties
+
+- **Resolution:** Implemented locally. The navigation controller now checks the current Supabase session on startup in addition to listening for future sign-in events, preventing an early `SIGNED_IN` event from being missed. Pending live retest.
+- **Observed:** A successful existing-user sign-in produces a clean authenticated shell, but the active section remains the analysis/home section.
+- **Expected:** Successful sign-in should immediately open Existing Properties so the returning user lands on their saved account workspace.
+- **Impact:** Returning users receive no visible authentication error, but land in an unexpected workflow and must navigate manually to their saved properties.
