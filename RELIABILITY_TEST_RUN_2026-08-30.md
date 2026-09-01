@@ -5,13 +5,13 @@
 - Tester: Jamie Meloni, guided by Codex
 - Live URL: `https://propertythesis.com/`
 - Branch: `main`
-- Deployed commit: `c708dbe`
-- Full local commit observed: `c708dbea9d9cfefaa06369835fe610aa3cb1a017`
+- Deployed commit: `627f555`
+- Full local commit observed: `627f5552c3c156805a461638d1a58ec527847867`
 - Deployment status: Success
 - Browser: Microsoft Edge InPrivate
 - Session state: Logged-out guest
 - Status: In progress
-- Next test: **STOPPED — fix PT-018 before continuing Section 6**
+- Next test: **6.14 Single verified-user notification**
 
 ## Status legend
 
@@ -106,7 +106,7 @@
 | 5.11 Single final action | PASS | Step 7 displayed one clear `Calculate, Save & Review Results` action. |
 | 5.12 Intermediate refresh | PASS | Refresh on Step 2 returned to Step 2 without page duplication or data loss; $4,000 rent, 8% vacancy and 3% growth persisted. |
 | 5.13 Real-change leave warning | PASS | After the PT-017 correction, changing an analysis value and clicking Pricing displayed the unsaved-changes warning. Choosing Cancel kept the analysis open with all numbers intact. |
-| 5.14 No false warning after save/finish | DEFERRED | Will be verified immediately after the account/save handoff in Section 6. |
+| 5.14 No false warning after save/finish | PASS | After the restored analysis calculated and saved, Glossary opened normally with no leave-page dialog or false unsaved-changes warning. |
 
 ## Section 6 — New-account creation and email verification
 
@@ -124,16 +124,19 @@
 | 6.10 Open confirmation on same computer | PASS | Confirmation opened in another browser page on the same computer and completed successfully. |
 | 6.11 Continue in prior tab | PARTIAL | The confirmation page closed, but focus returned to the email rather than the original PropertyThesis tab. The original PropertyThesis tab remained open. |
 | 6.12 Automatic detection/restoration | FAIL | The original tab did not automatically detect confirmation. The user had to use the other-device/browser fallback. See PT-018. |
-| 6.13 Calculate and automatic Base Case save | BLOCKED | The post-login restoration failed before calculation. |
+| 6.13 Calculate and automatic Base Case save | PASS | The restored analysis calculated successfully, opened Review Results, and created exactly one property plus one `Base Case` analysis. Supabase stored desired cap `0.0625`, price `500000`, and rent `4000`. |
 | 6.14 Single verified-user notification | NOT RUN | Check after the restoration defect is corrected and the verified workflow completes. |
 | 6.15 Second account/phone confirmation | NOT RUN | Not started because the run stopped on missing analysis restoration. |
 | 6.16 Other-device/browser confirmation button | PASS | `I Confirmed on Another Device` detected the verified email and presented the local sign-in workflow. |
-| 6.17 Sign-in and analysis restoration | FAIL | Sign-in succeeded, but the app opened an empty workspace showing `0 active • 0 archived • 0 analyses` instead of returning to Step 7. Supabase confirmed the user but contained no saved analysis/property rows. See PT-018. |
+| 6.17 Sign-in and analysis restoration | PASS | v38 restored Step 7 with all controlled values intact: Tampa address, $500,000 price, $100,000 land, 2 units, 7-year hold, $4,000 rent/unit, 8% vacancy, 3% rent growth, 42% OpEx, $400,000 mortgage at 6.25% for 30 years, and the non-default 6.25% desired cap. |
 | 6.18 No unsupported blank-tab path | PASS | The confirmation instructions offered return-to-original-tab and explicit other-device/browser recovery; no instruction to start in a new blank PropertyThesis tab was shown. |
 
 ## Recorded defects
 
 ### PT-018 — P1 — Verified-account sign-in loses the pending guest analysis
+
+- Resolution: Fixed and deployed through commits `e38c548`, `7a99216`, `ca209c2`, `2a0a437`, and `627f555`. The final cause of the desired-cap regression was duplicate `f_desiredCap` elements: the authoritative field contained 6.25% while a hidden duplicate retained 6.5% and overwrote the captured draft. v38 ignores duplicate IDs after the first authoritative value and reapplies the draft after signed-in navigation.
+- Retest: PASS — cross-browser email confirmation followed by local sign-in restored every controlled input, including desired cap 6.25%. Calculation opened Review Results and Supabase contained exactly one property and one `Base Case` analysis with desired cap `0.0625`.
 
 - Reproduction: Complete a logged-out seven-step analysis, create and verify a new account in another browser context, return to the original tab, choose `I Confirmed on Another Device`, then sign in locally.
 - Observed: Sign-in succeeded as `jrmeloni@hotmail.com`, but the app routed to an empty workspace showing zero properties and zero analyses. The preserved Step 7 draft disappeared from view and no Base Case was created.
