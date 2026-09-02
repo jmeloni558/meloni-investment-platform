@@ -1,12 +1,15 @@
 'use strict';
 (()=>{
-  const VERSION=6;
+  const VERSION=7;
   if((window.__propertyThesisReportBrandingV||0)>=VERSION)return;
   window.__propertyThesisReportBrandingV=VERSION;
   const PRODUCT='PropertyThesis';
   const TAGLINE='Know the Numbers. Prove the Case.';
   const TYPE='Investment Property Analysis';
-  const FALLBACK={company_name:'Meloni Realty',full_name:'Jamie Meloni',professional_title:'Real Estate Broker',license_number:'BK3167461 • CQ1067291',website:'PropertyThesis.com'};
+  // Keep an empty customer profile neutral. The owner account receives its
+  // Meloni Realty identity from its saved profile; those details must never be
+  // used as defaults for a newly registered customer.
+  const FALLBACK={company_name:'Your Company',full_name:'Report Author',professional_title:'',license_number:'',website:'PropertyThesis.com'};
   const esc=v=>String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
   const safeColor=v=>/^#[0-9a-f]{6}$/i.test(v||'')?v:'#14b8a6';
   const profile=()=>{try{return window.UserBranding?.getProfile?.()||{};}catch(_e){return {};}};
