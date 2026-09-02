@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=31;
+  const VERSION=32;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -44,7 +44,17 @@
   function applyStarterValues(){
     const values={f_address:entryParams.get('starter-address'),f_price:entryParams.get('starter-price'),f_units:entryParams.get('starter-units'),f_rent:entryParams.get('starter-rent')};
     let changed=false;
-    Object.entries(values).forEach(([id,value])=>{if(!value)return;const input=document.getElementById(id);if(!input)return;input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));changed=true;});
+    Object.entries(values).forEach(([id,value])=>{
+      if(!value)return;
+      try{
+        if(typeof state==='object'&&state){
+          const key=id.replace(/^f_/,'');
+          state[key]=key==='address'?String(value):Number(value);
+        }
+      }catch(_e){}
+      const input=document.getElementById(id);if(!input)return;
+      input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));changed=true;
+    });
     if(changed)try{window.GuidedAnalysisSetup?.refresh?.();}catch(_e){}
   }
   let freeEntered=false;
