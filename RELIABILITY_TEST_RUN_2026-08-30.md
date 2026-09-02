@@ -534,3 +534,4 @@ Local browser verification passed for homepage content, CTA-to-starter-form beha
 
 - Supabase's security advisor reports leaked-password protection is disabled. Enable it in Auth security settings before public launch.
 - Supabase reports `claim_property_access` as an authenticated-callable security-definer function. Review confirmed that this is intentional and that the function validates `auth.uid()` plus property ownership before granting an entitlement.
+- The live logged-out homepage initially logged a protected-calculation exception when the hidden report renderer initialized before server results existed. The renderer now waits for a protected result; the local logged-out retest produced no console errors.
