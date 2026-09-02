@@ -1,6 +1,6 @@
-import Stripe from 'npm:stripe@^22';
-import { withSupabase } from 'npm:@supabase/server@^1';
-import { corsHeaders, json } from '../_shared/cors.ts';
+import Stripe from 'npm:stripe@22.0.0';
+import { withSupabase } from 'npm:@supabase/server@1.4.1';
+import { corsHeaders, json, rejectDisallowedOrigin } from '../_shared/cors.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!);
 const siteUrl = 'https://propertythesis.com';
@@ -14,6 +14,8 @@ const prices = {
 
 export default {
   fetch: withSupabase({ auth: 'user' }, async (req, ctx) => {
+    const rejectedOrigin = rejectDisallowedOrigin(req);
+    if (rejectedOrigin) return rejectedOrigin;
     if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
     if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
@@ -24,6 +26,23 @@ export default {
     const email = ctx.userClaims!.email as string | undefined;
     if (!selected) return json({ error: 'Invalid plan' }, 400);
     if (selected.mode === 'payment' && !propertyId) return json({ error: 'A property is required' }, 400);
+
+    for (const [limit, windowSeconds, scope] of [[10, 60, 'minute'], [100, 86400, 'day']] as const) {
+      const { data: rate, error: rateError } = await ctx.supabaseAdmin.rpc('consume_edge_rate_limit', {
+        p_user_id: userId,
+        p_function_name: 'create-checkout',
+        p_limit: limit,
+        p_window_seconds: windowSeconds,
+      });
+      if (rateError) {
+        console.error('[create-checkout] rate limiter unavailable', { code: rateError.code });
+        return json({ error: 'Request protection unavailable' }, 503);
+      }
+      if (!rate?.allowed) {
+        const retryAfter = Math.max(1, Math.ceil((new Date(rate.reset_at).getTime() - Date.now()) / 1000));
+        return json({ error: 'Too many checkout requests', scope, retryAfter }, 429);
+      }
+    }
 
     if (propertyId) {
       const { data: property } = await ctx.supabase.from('properties').select('id').eq('id', propertyId).maybeSingle();

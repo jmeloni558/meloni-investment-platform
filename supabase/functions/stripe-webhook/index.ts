@@ -1,5 +1,5 @@
-import Stripe from 'npm:stripe@^22';
-import { withSupabase } from 'npm:@supabase/server@^1';
+import Stripe from 'npm:stripe@22.0.0';
+import { withSupabase } from 'npm:@supabase/server@1.4.1';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!);
 const cryptoProvider = Stripe.createSubtleCryptoProvider();

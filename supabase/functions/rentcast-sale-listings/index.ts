@@ -1,5 +1,5 @@
-import { withSupabase } from 'npm:@supabase/server@^1';
-import { corsHeaders, json } from '../_shared/cors.ts';
+import { withSupabase } from 'npm:@supabase/server@1.4.1';
+import { corsHeaders, json, rejectDisallowedOrigin } from '../_shared/cors.ts';
 
 const allowedTypes = new Set(['Single Family', 'Condo', 'Townhouse', 'Manufactured', 'Multi-Family', 'Apartment', 'Land']);
 const allowedListingTypes = new Set(['Standard', 'New Construction', 'Foreclosure', 'Short Sale']);
@@ -13,6 +13,8 @@ const numberInRange = (value: unknown, min: number, max: number) => {
 
 export default {
   fetch: withSupabase({ auth: 'none' }, async (req, ctx) => {
+    const rejectedOrigin = rejectDisallowedOrigin(req);
+    if (rejectedOrigin) return rejectedOrigin;
     if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
     if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
@@ -24,7 +26,6 @@ export default {
     const { data: authData } = accessToken ? await ctx.supabaseAdmin.auth.getUser(accessToken) : { data: { user: null } };
     const user = authData?.user ?? null;
     const userId = user?.id ?? null;
-    const userEmail = clean(user?.email, 320).toLowerCase();
     const forwardedFor = clean(req.headers.get('x-forwarded-for'), 500).split(',')[0].trim();
     const guestAddress = clean(req.headers.get('cf-connecting-ip') || forwardedFor || req.headers.get('x-real-ip'), 100);
     const guestSalt = Deno.env.get('RENTCAST_GUEST_HASH_SALT') || '';
@@ -32,19 +33,12 @@ export default {
       ? Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${guestSalt}:${guestAddress}`)))).map((byte) => byte.toString(16).padStart(2, '0')).join('')
       : '';
     if (!userId && !guestKeyHash) return json({ error: 'Guest listing search is temporarily unavailable' }, 503);
-    const unrestrictedTestEmails = new Set(
-      String(Deno.env.get('RENTCAST_UNRESTRICTED_TEST_EMAILS') || '')
-        .split(',')
-        .map((email) => email.trim().toLowerCase())
-        .filter(Boolean),
-    );
-    const unrestrictedTester = unrestrictedTestEmails.has(userEmail);
     const monthlyLimit = Math.max(1, Number(Deno.env.get('RENTCAST_MONTHLY_CALL_LIMIT') || 900));
     const { data: subscription } = userId
       ? await ctx.supabaseAdmin.from('billing_subscriptions').select('plan,status,current_period_end').eq('user_id', userId).in('status', ['active', 'trialing']).gt('current_period_end', new Date().toISOString()).maybeSingle()
       : { data: null };
-    const plan = userId ? (unrestrictedTester ? 'tester' : String(subscription?.plan || 'free')) : 'guest';
-    const dailyUserLimit = unrestrictedTester ? 1_000_000 : plan.startsWith('unlimited_') ? 100 : plan.startsWith('professional_50_') ? 50 : 5;
+    const plan = userId ? String(subscription?.plan || 'free') : 'guest';
+    const dailyUserLimit = plan.startsWith('unlimited_') ? 100 : plan.startsWith('professional_50_') ? 50 : 5;
     const getCached = async (cacheKey: string) => {
       const { data } = await ctx.supabaseAdmin.from('external_api_cache').select('payload,expires_at').eq('cache_key', cacheKey).gt('expires_at', new Date().toISOString()).maybeSingle();
       return data?.payload ?? null;
@@ -66,15 +60,19 @@ export default {
       const monthlyUsed = (memberMonthlyCount ?? 0) + (guestMonthlyCount ?? 0);
       return { plan, dailyUsed: dailyCount ?? 0, dailyLimit: dailyUserLimit, dailyRemaining: Math.max(0, dailyUserLimit - (dailyCount ?? 0)), monthlyUsed, monthlyLimit };
     };
-    const enforceUsageLimit = async () => {
-      const usage = await usageState();
-      if (usage.monthlyUsed >= monthlyLimit) throw Object.assign(new Error('MONTHLY_LIMIT'), { usage });
-      if (!unrestrictedTester && usage.dailyUsed >= dailyUserLimit) throw Object.assign(new Error('DAILY_LIMIT'), { usage });
+    const consumeUsage = async (endpoint: string) => {
+      const { data, error } = await ctx.supabaseAdmin.rpc('consume_external_api_quota', {
+        p_provider: 'rentcast',
+        p_endpoint: endpoint,
+        p_user_id: userId,
+        p_guest_key_hash: userId ? null : guestKeyHash,
+        p_daily_limit: dailyUserLimit,
+        p_monthly_limit: monthlyLimit,
+      });
+      if (error) throw Object.assign(new Error('USAGE_SERVICE'), { usage: await usageState() });
+      const usage = { ...(data || {}), plan };
+      if (!data?.allowed) throw Object.assign(new Error(String(data?.reason || 'USAGE_SERVICE')), { usage });
       return usage;
-    };
-    const recordUsage = async (endpoint: string) => {
-      if (userId) await ctx.supabaseAdmin.from('external_api_usage').insert({ user_id: userId, provider: 'rentcast', endpoint });
-      else await ctx.supabaseAdmin.from('guest_external_api_usage').insert({ guest_key_hash: guestKeyHash, provider: 'rentcast', endpoint });
     };
     if (body.action === 'property-features') {
       if (!userId) return json({ error: 'Create or sign in to a free account to load additional property-record features.', authRequired: true }, 401);
@@ -84,14 +82,15 @@ export default {
       const cached = await getCached(cacheKey);
       if (cached) return json({ ...cached, cached: true, usage: await usageState() });
       let usage;
-      try { usage = await enforceUsageLimit(); } catch (error) {
+      try { usage = await consumeUsage('property-features'); } catch (error) {
+        if (error instanceof Error && error.message === 'USAGE_SERVICE') return json({ error: 'Usage protection unavailable' }, 503);
         const daily = error instanceof Error && error.message === 'DAILY_LIMIT';
         return json({ error: daily ? (plan === 'free' ? 'You have used today’s free listing allowance. It resets tomorrow. Upgrade for additional daily searches.' : 'Your plan’s daily listing allowance has been reached. It resets tomorrow.') : 'The site-wide monthly listing-data allowance has been reached.', usage: (error as { usage?: unknown }).usage, upgradeRequired: daily && plan === 'free' }, 429);
       }
       const featureResponse = await fetch(`https://api.rentcast.io/v1/properties/${encodeURIComponent(propertyId)}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
       const property = await featureResponse.json().catch(() => null);
       if (!featureResponse.ok) {
-        console.error('[rentcast-sale-listings] property feature lookup failed', featureResponse.status, { propertyId });
+        console.error('[rentcast-sale-listings] property feature lookup failed', { status: featureResponse.status });
         return json({ error: featureResponse.status === 404 ? 'Property features are not available' : 'Unable to retrieve property features' }, featureResponse.status === 404 ? 404 : 502);
       }
       const features = property?.features ?? {};
@@ -106,8 +105,8 @@ export default {
         },
         source: 'RentCast public property records',
       };
-      await Promise.all([recordUsage('property-features'), saveCached(cacheKey, 'property-features', featurePayload, 30 * 24 * 60 * 60 * 1000)]);
-      return json({ ...featurePayload, usage: { ...usage, dailyUsed: usage.dailyUsed + 1, dailyRemaining: Math.max(0, usage.dailyRemaining - 1) } });
+      await saveCached(cacheKey, 'property-features', featurePayload, 30 * 24 * 60 * 60 * 1000);
+      return json({ ...featurePayload, usage });
     }
     if (body.action === 'rent-estimate') {
       if (!userId) return json({ error: 'Enter the disclosed or expected rent to screen this listing, or sign in for an automated rent estimate.', authRequired: true }, 401);
@@ -131,14 +130,15 @@ export default {
       const cached = await getCached(cacheKey);
       if (cached) return json({ ...cached, cached: true, usage: await usageState() });
       let usage;
-      try { usage = await enforceUsageLimit(); } catch (error) {
+      try { usage = await consumeUsage('rent-estimate'); } catch (error) {
+        if (error instanceof Error && error.message === 'USAGE_SERVICE') return json({ error: 'Usage protection unavailable' }, 503);
         const daily = error instanceof Error && error.message === 'DAILY_LIMIT';
         return json({ error: daily ? (plan === 'guest' ? 'You have used today’s guest listing allowance. It resets tomorrow. Create a free account for more access.' : plan === 'free' ? 'You have used today’s free listing allowance. It resets tomorrow. Upgrade for additional daily searches.' : 'Your plan’s daily listing allowance has been reached. It resets tomorrow.') : 'The site-wide monthly listing-data allowance has been reached.', usage: (error as { usage?: unknown }).usage, authRequired: daily && plan === 'guest', upgradeRequired: daily && plan === 'free' }, 429);
       }
       const estimateResponse = await fetch(`https://api.rentcast.io/v1/avm/rent/long-term?${params}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
       const estimate = await estimateResponse.json().catch(() => null);
       if (!estimateResponse.ok) {
-        console.error('[rentcast-sale-listings] rent estimate failed', estimateResponse.status, { address, propertyType });
+        console.error('[rentcast-sale-listings] rent estimate failed', { status: estimateResponse.status });
         return json({ error: estimateResponse.status === 404 ? 'A market rent estimate is not available for this property' : 'Unable to retrieve a market rent estimate' }, estimateResponse.status === 404 ? 404 : 502);
       }
       const rentPayload = {
@@ -152,8 +152,8 @@ export default {
         source: 'RentCast market rent estimate',
       };
       if (rentPayload.estimate.monthlyRent === null) return json({ error: 'A market rent estimate is not available for this property' }, 404);
-      await Promise.all([recordUsage('rent-estimate'), saveCached(cacheKey, 'rent-estimate', rentPayload, 30 * 24 * 60 * 60 * 1000)]);
-      return json({ ...rentPayload, usage: { ...usage, dailyUsed: usage.dailyUsed + 1, dailyRemaining: Math.max(0, usage.dailyRemaining - 1) } });
+      await saveCached(cacheKey, 'rent-estimate', rentPayload, 30 * 24 * 60 * 60 * 1000);
+      return json({ ...rentPayload, usage });
     }
     const city = clean(body.city, 80);
     const state = clean(body.state, 2).toUpperCase();
@@ -203,15 +203,16 @@ export default {
     const cached = await getCached(cacheKey);
     if (cached) return json({ ...cached, cached: true, usage: await usageState() });
     let usage;
-    try { usage = await enforceUsageLimit(); } catch (error) {
+    try { usage = await consumeUsage('sale-listings'); } catch (error) {
+      if (error instanceof Error && error.message === 'USAGE_SERVICE') return json({ error: 'Usage protection unavailable' }, 503);
       const daily = error instanceof Error && error.message === 'DAILY_LIMIT';
       return json({ error: daily ? (plan === 'guest' ? 'You have used today’s guest listing allowance. It resets tomorrow. Create a free account for more access.' : plan === 'free' ? 'You have used today’s free listing allowance. It resets tomorrow. Upgrade for additional daily searches.' : 'Your plan’s daily listing allowance has been reached. It resets tomorrow.') : 'The site-wide monthly listing-data allowance has been reached.', usage: (error as { usage?: unknown }).usage, authRequired: daily && plan === 'guest', upgradeRequired: daily && plan === 'free' }, 429);
     }
-    console.log('[rentcast-sale-listings] request', { city, state, zipCode, propertyTypes, offset, limit, filtered: [...params.keys()].filter((key) => !['city', 'state', 'zipCode', 'propertyType', 'status', 'limit', 'offset', 'includeTotalCount'].includes(key)) });
+    console.log('[rentcast-sale-listings] request', { propertyTypes, offset, limit });
     const response = await fetch(`https://api.rentcast.io/v1/listings/sale?${params}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
-      console.error('RentCast listing search failed', response.status, payload);
+      console.error('[rentcast-sale-listings] upstream request failed', { status: response.status });
       return json({ error: response.status === 429 ? 'Listing search limit reached. Try again shortly.' : 'Unable to retrieve listings' }, response.status === 429 ? 429 : 502);
     }
 
@@ -239,7 +240,7 @@ export default {
     console.log('[rentcast-sale-listings] success', { count: listings.length, totalCount: Number.isFinite(totalCount) ? totalCount : null });
     const postFiltered = listingTypes.length < allowedListingTypes.size;
     const result = { listings, offset, limit, totalCount: postFiltered ? listings.length : (Number.isFinite(totalCount) ? totalCount : null), hasMore: !postFiltered && listings.length === limit, filters: { propertyTypes, listingTypes, status: 'Active' }, source: 'RentCast' };
-    await Promise.all([recordUsage('sale-listings'), saveCached(cacheKey, 'sale-listings', result, 10 * 60 * 1000)]);
-    return json({ ...result, usage: { ...usage, dailyUsed: usage.dailyUsed + 1, dailyRemaining: Math.max(0, usage.dailyRemaining - 1) } });
+    await saveCached(cacheKey, 'sale-listings', result, 10 * 60 * 1000);
+    return json({ ...result, usage });
   }),
 };
