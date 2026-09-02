@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=40;
+  const VERSION=41;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -70,7 +70,7 @@
     const guidedFinal=guidedAction&&Number(document.querySelector('#gwSteps .gw-step.active[data-step]')?.dataset.step)===6;
     if((btn.id==='gwSave'||btn.id==='gwNext')&&!guidedFinal&&!/calculat/i.test(btn.textContent||''))return;
     e.preventDefault();e.stopImmediatePropagation();
-    if(freeMode()||guidedFinal){captureFreeDraft();try{sessionStorage.setItem(RESUME_FREE,'1');}catch(_e){}}
+    if(freeMode()||guidedFinal){captureFreeDraft();try{sessionStorage.setItem(RESUME_FREE,'1');}catch(_e){}try{window.UnsavedChangeProtection?.markDirty?.();}catch(_e){}}
     promptSignIn('Create your free account to calculate, display, and save these results. Already have an account? Choose Sign In above. Your entered assumptions will be preserved.','signup');
   }
 

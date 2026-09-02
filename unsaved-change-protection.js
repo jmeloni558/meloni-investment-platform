@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__unsavedChangeProtectionVersion||0)>=VERSION)return;
   window.__unsavedChangeProtectionVersion=VERSION;
 
@@ -11,7 +11,7 @@
     '#appNavNew','#s10NewAnalysis','[data-pt-new]',
     '[data-hub-open]','[data-hub-edit]','[data-hub-report]',
     '[data-pt-open]','[data-pt-report]','#loadCloudAnalysis',
-    '.app-nav-toolbar a[href]','[data-pt-home-link]'
+    '.app-nav-toolbar a[href]','.pt-guest-nav a[href]','[data-pt-home-link]'
   ].join(',');
 
   function label(){
