@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=22,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
+  const VERSION=23,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
   if((window.__ptRentCastListingSearchV||0)>=VERSION)return;
   window.__ptRentCastListingSearchV=VERSION;
   let panel=null,results=[],offset=0,activeListing=null;const featureCache=new Map(),rentCache=new Map();
@@ -67,7 +67,7 @@
   function hideApplication(on){document.querySelectorAll('.section').forEach(s=>s.style.display=on?'none':'');const workflow=document.getElementById('stage8Workflow');if(workflow)workflow.style.display=on?'none':'';document.getElementById('appMortgageToolsPanel')?.style.setProperty('display','none');}
   function refreshAccess(){if(!panel)return;const guest=!signedIn(),path=panel.querySelector('.pt-listings-guest-path'),note=panel.querySelector('.pt-listings-note');if(path)path.hidden=!guest;if(note)note.innerHTML=guest?'<strong>Temporary testing access:</strong> Guest listing searches are currently unrestricted while PropertyThesis is being tested. Open, screen and carry any returned listing into your free analysis without an account.':'<strong>Cost-conscious search:</strong> Listing results and property features are cached. Price-per-unit uses reported listing data and avoids unnecessary data calls.';}
   function dedicatedGuestRoute(){return !signedIn()&&new URLSearchParams(location.search).get('listing-search')==='1';}
-  function open(){ensurePanel();refreshAccess();hideApplication(true);panel.classList.add('is-open');document.getElementById('appNavListings')?.classList.add('active');window.scrollTo({top:dedicatedGuestRoute()?0:document.getElementById('appNavShell')?.offsetTop||0,behavior:'auto'});}
+  function open(){ensurePanel();refreshAccess();restoreSearch();hideApplication(true);panel.classList.add('is-open');document.getElementById('appNavListings')?.classList.add('active');window.scrollTo({top:dedicatedGuestRoute()?0:document.getElementById('appNavShell')?.offsetTop||0,behavior:'auto'});}
   function close(){if(dedicatedGuestRoute()){location.href='index.html';return;}panel?.classList.remove('is-open');hideApplication(false);document.getElementById('appNavListings')?.classList.remove('active');}
   function query(){
     const form=panel.querySelector('form');
@@ -166,6 +166,6 @@
       form.elements.sort.value=q.sort||'newest';results=saved.results;offset=results.length;render();setStatus(saved.status||`${results.length} matching listings restored.`);
     }catch(_e){}
   }
-  function start(){ensurePanel();restoreSearch();let tries=0;const timer=setInterval(()=>{ensureButton();if(++tries>40)clearInterval(timer)},180);document.addEventListener('click',e=>{if(e.target.closest('#appNavShell .app-nav-action:not(#appNavListings)'))close()});document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('ptListingDetail')?.classList.remove('is-open')});try{cloudClient?.auth?.onAuthStateChange?.(()=>setTimeout(ensureButton,120));}catch(_e){}setTimeout(requested,900);setTimeout(restoreSearch,1100);setTimeout(restoreSearch,1700);}
+  function start(){ensurePanel();restoreSearch();let tries=0;const timer=setInterval(()=>{ensureButton();if(++tries>40)clearInterval(timer)},180);document.addEventListener('click',e=>{if(e.target.closest('#appNavShell .app-nav-action:not(#appNavListings)'))close()});document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('ptListingDetail')?.classList.remove('is-open')});try{cloudClient?.auth?.onAuthStateChange?.(()=>{setTimeout(ensureButton,120);setTimeout(restoreSearch,180);});}catch(_e){}setTimeout(requested,900);setTimeout(restoreSearch,1100);setTimeout(restoreSearch,1700);}
   window.PropertyThesisListingSearch={open,close,search,importListing};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
