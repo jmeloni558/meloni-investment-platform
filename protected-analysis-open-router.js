@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=9;
+  const VERSION=10;
   if((window.__protectedAnalysisOpenRouterVersion||0)>=VERSION)return;
   window.__protectedAnalysisOpenRouterVersion=VERSION;
 
@@ -131,8 +131,8 @@
     },80);
   }
 
-  async function openSaved(id,target){
-    if(busy)return;
+  async function openSaved(id,target,options={}){
+    if(busy)return false;
     const a=analysisById(id);if(!a)return;
     busy=true;rememberView(id,target);status(target==='report'?'Preparing protected report…':'Loading protected analysis…');
     try{
@@ -148,9 +148,11 @@
       else {try{window.GuidedAnalysisSetup?.refresh?.();window.GuidedAssumptionGuidance?.apply?.();window.GuidedInitialRepairs?.apply?.();const guided=document.querySelector('#guidedSetup [data-src="f_initialRepairs"]');if(guided)guided.value=Math.max(0,Number(state.initialRepairs)||0)||'';}catch(_e){}}
       try{window.AnalysisHistoryAutosave?.checkDraft?.();window.UnsavedChangeProtection?.markClean?.();}catch(_e){}
       status(target==='report'?'Protected report ready':target==='assumptions'?'Analysis ready to edit':'Saved analysis loaded');
+      return true;
     }catch(e){
-      const msg=String(e?.message||e);forgetView();status('Unable to open saved analysis: '+msg);
-      alert('PropertyThesis could not open this saved analysis through the protected calculation engine. '+msg);
+      const msg=String(e?.message||e);if(!options.preserveView)forgetView();status('Unable to open saved analysis: '+msg);
+      if(!options.silent)alert('PropertyThesis could not open this saved analysis through the protected calculation engine. '+msg);
+      return false;
     }finally{busy=false;}
   }
 
@@ -167,7 +169,20 @@
       if(!signedIn||!available.length||busy)return;
       if(!available.some(a=>a.id===saved.id)){clearInterval(timer);forgetView();return;}
       clearInterval(timer);restoring=true;
-      try{await openSaved(saved.id,saved.target);}finally{restoring=false;}
+      try{
+        await wait(900);
+        let restored=false;
+        for(let attempt=0;attempt<3&&!restored;attempt++){
+          restored=await openSaved(saved.id,saved.target,{silent:true,preserveView:true});
+          if(restored)break;
+          await renewSessionIfNeeded('auth session 401');
+          if(attempt<2)await wait(1200*(attempt+1));
+        }
+        if(!restored){
+          forgetView();
+          status('The saved analysis could not be restored automatically. Open it again from Existing Properties.');
+        }
+      }finally{restoring=false;}
     },250);
   }
 
