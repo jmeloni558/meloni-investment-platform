@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=6;
+  const VERSION=7;
   if((window.__workflowNavigationControllerVersion||0)>=VERSION)return;
   window.__workflowNavigationControllerVersion=VERSION;
 
@@ -43,11 +43,18 @@
     return true;
   }
 
-  function reviewResults(){
+  async function reviewResults(){
+    if(window.PropertyThesisBilling?.guardDestination&&!await window.PropertyThesisBilling.guardDestination('dashboard'))return false;
     try{if(typeof readFields==='function')readFields();}catch(e){try{if(typeof setStatus==='function')setStatus('Please review the analysis inputs: '+e.message);}catch(_e){}return;}
     try{if(typeof render==='function')render();}catch(e){}
     try{if(typeof setStatus==='function')setStatus('Analysis updated — review the results');}catch(e){}
     directActivate('dashboard');
+    return true;
+  }
+
+  async function guardedActivate(id){
+    if(window.PropertyThesisBilling?.guardDestination&&!await window.PropertyThesisBilling.guardDestination(id))return false;
+    return directActivate(id);
   }
 
   function clearPropertySpecificDraftUI(){
@@ -104,6 +111,7 @@
     if(step&&PRIMARY.has(step.dataset.s8Tab)){
       e.preventDefault();e.stopPropagation();e.stopImmediatePropagation?.();
       if(step.dataset.s8Tab==='dashboard')reviewResults();
+      else if(step.dataset.s8Tab==='report')guardedActivate('report');
       else directActivate(step.dataset.s8Tab);
     }
   }
