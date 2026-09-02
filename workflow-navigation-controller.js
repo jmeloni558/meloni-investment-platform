@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=7;
+  const VERSION=8;
   if((window.__workflowNavigationControllerVersion||0)>=VERSION)return;
   window.__workflowNavigationControllerVersion=VERSION;
 
@@ -82,11 +82,13 @@
 
     directActivate('assumptions');
     try{window.GuidedAnalysisSetup?.reset?.();}catch(e){}
+    try{window.PropertyThesisGuidedWorkflowRefinement?.apply?.();}catch(e){}
     try{window.NewAnalysisSaveGuidance?.refresh?.();}catch(e){}
     setTimeout(()=>{
       clearBlanks();
       clearPropertySpecificDraftUI();
       try{window.GuidedAnalysisSetup?.reset?.();}catch(e){}
+      try{window.PropertyThesisGuidedWorkflowRefinement?.apply?.();}catch(e){}
       try{window.GuidedAssumptionGuidance?.apply?.();}catch(e){}
       try{window.GuidedInitialRepairs?.apply?.();}catch(e){}
       try{window.NewAnalysisSaveGuidance?.refresh?.();}catch(e){}
