@@ -5,13 +5,13 @@
 - Tester: Jamie Meloni, guided by Codex
 - Live URL: `https://propertythesis.com/`
 - Branch: `main`
-- Deployed commit: `627f555`
-- Full local commit observed: `627f5552c3c156805a461638d1a58ec527847867`
+- Deployed commit: `abf4e42`
+- Full local commit observed: `abf4e424d44346daf8c915d81c2ef69f3c946714`
 - Deployment status: Success
 - Browser: Microsoft Edge InPrivate
 - Session state: Signed in as `jrmeloni@hotmail.com`
 - Status: In progress
-- Next test: **Section 10 downloaded-file inspection**
+- Next test: **Section 12 plan limits and listing allowances**
 
 ## Status legend
 
@@ -187,15 +187,52 @@
 | 10.1 Professional report generation time | PASS | Recreated a logged-in known-answer analysis and opened Client Report. The complete report surface and export controls were ready in 609 ms, well under the 10-second target. |
 | 10.2 On-screen report visibility | PASS | The report rendered at 896 px content width with matching client/scroll widths, no horizontal overflow, and no descendant element extending outside the report boundary. Full report height was available through normal page scrolling. |
 | 10.3 Branding and broker information | FAIL | The current tagline and PropertyThesis brand appeared, but the professional report displayed placeholder values `Your Company` and `Report Author` and omitted Jamie Meloni/Meloni Realty license information. See PT-029. |
-| 10.4 Saved-analysis values | PASS | Address, $500,000 acquisition price, $4,000 rent, $400,000 financing at 6.25%, $25,920 NOI, 5.18% cap, 0.88x DSCR, 8.68% IRR, ($7,982) NPV and $414,720 desired-cap value matched the saved analysis. |
+| 10.4 Saved-analysis values | FAIL | The on-screen report matched the saved analysis for address, acquisition, rent, financing, NOI, cap, DSCR, IRR, NPV and the 6.25% / $414,720 desired-cap conclusion. The downloaded PDF reverted the desired cap to 6.50% and the supported value to approximately $398,769. See PT-031. |
 | 10.5 Readability and limitations | PASS | Assumptions, calculation explanations, investment risks, sensitivity language, tax caveats and the decision-support/not-an-appraisal disclaimer were present and readable. |
-| 10.6 PDF file inspection | FAIL | Download PDF completed its on-page generation state without an alert, but the in-app browser Downloads list recorded the generated attempts as unnamed `Stopped` items. No PDF file was available for first/middle/last-page inspection. See PT-030. |
-| 10.7 Excel pro forma opens cleanly | FAIL | Download Pro Forma completed its on-page action without an alert, but the in-app browser Downloads list recorded the generated attempts as unnamed `Stopped` items. No workbook was available to open. See PT-030. |
-| 10.8 Selected holding period in workbook | NOT RUN | Requires access to the downloaded workbook. |
-| 10.9 Workbook/report reconciliation | NOT RUN | Requires access to the downloaded workbook. |
+| 10.6 PDF file inspection | PARTIAL | Generated downloads stopped in the in-app browser, but the same PDF downloaded successfully in Microsoft Edge in approximately 15 seconds. The resulting eight-page PDF was rendered and pages 1, 4 and 8 had no clipping, blank content, overlaps or broken page transitions. Data and branding defects remain under PT-029 and PT-031. |
+| 10.7 Excel pro forma opens cleanly | PASS | Microsoft Edge generated the workbook in approximately one second. Artifact-tool imported all three worksheets without a repair warning; the workbook contains no spreadsheet error values, and all three rendered sheets were readable without clipping. The in-app browser-specific stopped-download behavior remains under PT-030. |
+| 10.8 Selected holding period in workbook | PASS | `After Tax Cash Flow`, `Taxes From Operations`, and `Taxes Due on Sale` each run exactly from Year 1 through Year 7, matching the saved seven-year holding period. |
+| 10.9 Workbook/report reconciliation | PARTIAL | Representative figures reconcile with the report: Year 1 NOI $25,920, debt service $29,554, after-tax cash flow $144, Year 7 after-tax cash flow $1,903, and sale taxes $53,356. The workbook omits the headline cap-rate/value, IRR and NPV conclusions, and every exported value is static rather than formula-driven. See PT-032. |
 | 10.10 Logged-out samples | PASS | Sample Report and Sample Multiyear Pro Forma both remained inside the public PropertyThesis wrapper, used generic sample-property data, exposed no signed-in test address or account email, and retained the public licensing/footer disclosures. |
 
+## Section 11 — Pricing, paywall and Stripe sandbox
+
+| Test | Result | Notes |
+|---|---|---|
+| 11.1 Public pricing | PASS | Pricing showed First Analysis $0, Single Property $15, Professional 50 at $29/month or $290/year, and Unlimited at $59/month or $590/year. |
+| 11.2 Free-property revisions | PASS | Revised the previously unlocked Section 10 property, recalculated and saved without another paywall, then restored its original rent. |
+| 11.3 All paid-analysis calculation routes | PASS (RETEST) | Direct calculation, Review Results and Client Report are now guarded by the same entitlement check after deploying `b5d2147`. |
+| 11.4 No secondary bypass | PASS (RETEST) | Workflow destination buttons could no longer reveal locked results or reports after the billing-route guard fix. |
+| 11.5 Promotional plan routes | PASS | Public pricing and logged-in promotional controls reached the intended plan/checkout flows with the correct product and amount. |
+| 11.6 Preserve state before Stripe | PASS | Stripe navigation occurred without an inappropriate leave warning. Draft preservation was exercised through both cancel and successful-return paths. |
+| 11.7 Stripe Sandbox label | PASS | Stripe checkout visibly displayed Sandbox for Single Property, Professional 50 and the declined Unlimited attempt. |
+| 11.8 Successful $15 checkout | PASS | Completed the Single Property $15 sandbox payment. |
+| 11.9 Correct property unlocks once | PASS (RETEST) | The checkout initially created one blank property because the return flow cleared its draft after a failed save. Deployed `abf4e42`, restored the intended $505,000 / $4,050 inputs to the existing paid property without repaying, and calculated/saved successfully. |
+| 11.10 Entitlement persistence | PASS | The paid property remained saved and accessible after a cache-busted load; Professional 50 subsequently persisted through a full sign-out/sign-in cycle. |
+| 11.11 Professional 50 subscription | PASS | Completed the $29/month sandbox subscription. Database verification showed exactly one active `professional_50_monthly` subscription row. |
+| 11.12 Subscriber upgrade banner | PASS | The free-user upgrade promotion disappeared after plan activation and remained absent after reload/sign-in. |
+| 11.13 Subscriber toolbar | PASS | Subscriber navigation omitted the guest/free Sample Property Card promotion and retained New Analysis, Existing Properties, searches, Mortgage Tools and Glossary without duplication. |
+| 11.14 Canceled checkout | PASS (RETEST) | Cancel originally lost the draft. After `9943f4f` and `f426c69`, the complete draft returned to Review, remained editable, and the next calculation still required payment. |
+| 11.15 Declined card | PASS | Stripe test card `4000 0000 0000 0002` produced a clear decline message and remained on checkout. The active Professional 50 record was unchanged. |
+| 11.16 Webhook idempotency | PASS | Post-payment database checks showed one active subscription row, not duplicates. Entitlement sources remained distinct (`free`, `single_purchase`, `subscription`). |
+
+Temporary subscriber property `1500 Section 11 Subscriber Test Ave, Tampa, FL 33602` was deleted after testing. The active Professional 50 subscription remains intact.
+
 ## Recorded defects
+
+### PT-032 — P2 — Excel pro forma exports static values instead of formulas
+
+- Reproduction: Download the seven-year pro forma and inspect the formulas across all three worksheets.
+- Observed: The workbook opens cleanly and its displayed totals reconcile, but a full scan finds zero formulas; every assumption, annual cash flow and tax result is stored as a hardcoded value.
+- Expected: A professional Excel pro forma should preserve formulas so users can audit the calculations and test changed assumptions, or it should be clearly labeled as a non-editable static snapshot.
+- Impact: Users can view the exported schedule, but changing an input or annual value does not recalculate dependent figures.
+
+### PT-031 — P1 — Downloaded PDF reverts the desired-cap assumption
+
+- Reproduction: Save the Section 10 known-answer analysis with a 6.25% desired cap and $414,720 cap-supported value, open Client Report, and download the professional PDF.
+- Observed: The on-screen report retains 6.25% and $414,720, but the downloaded PDF displays a 6.50% benchmark and approximately $398,769 of cap-supported value.
+- Expected: The generated PDF must use the exact saved assumptions and conclusions displayed in the on-screen report.
+- Impact: A client receives a materially different valuation conclusion than the analyst reviewed and saved.
 
 ### PT-030 — P1 — Generated PDF and pro forma downloads stop without an application error
 
@@ -203,7 +240,7 @@
 - Observed: The page controls complete and return to their ready states without an alert, but each generated download appears as an unnamed `Stopped` item. Older static sample PDFs and the static Sample Pro Forma download successfully in the same browser.
 - Expected: Generated PDF and Excel exports complete with descriptive filenames, or the application reports a clear actionable error.
 - Impact: The client-facing files cannot be opened or inspected, and the page incorrectly implies that export succeeded.
-- Scope check pending: Repeat both exports in Microsoft Edge to determine whether the failure is specific to the in-app browser's generated-blob download handling.
+- Scope: Confirmed browser-specific for generated exports. Microsoft Edge produced the eight-page PDF successfully in approximately 15 seconds and the Excel workbook in approximately one second; the in-app browser recorded the same generated actions as unnamed `Stopped` downloads.
 
 ### PT-029 — P1 — Professional report ships placeholder branding and omits broker identity
 
@@ -442,9 +479,58 @@ Implemented locally; not yet committed or deployed:
 
 Local browser verification passed for homepage content, CTA-to-starter-form behavior, known-answer sample-card calculations, invalid property-card inputs, invalid listing-range blocking, listing starter-field hydration, public guided-analysis toolbar, and Pricing/Sample Report toolbar composition.
 
+## Section 12 — Plan limits and listing allowances — 2026-09-02
+
+- **12.1 PASS (live + policy verification):** Temporary anonymous QA access returned the intended `guest_testing` allowance. The designated tester account `jamiemeloni2012@gmail.com` completed more than five fresh searches. A newly created ordinary free account stopped at exactly five recorded listing calls. The Professional 50 account completed fresh listing and detail requests without free-plan warnings. Unlimited (100/day) and Professional 50 (50/day) limits were verified in the server-owned plan mapping; no Unlimited subscription was available for a live exhaustion test.
+- **12.2 PASS:** Repeating a search returned “loaded from the recent-search cache,” and its API-usage count did not increase. A cached result remained available even after the free account reached its daily allowance.
+- **12.3 PASS after fix:** The sixth fresh free-account search was blocked. The live message now reads: “You have used today’s free listing allowance. It resets tomorrow. Upgrade for additional daily searches.” No raw Edge Function error remains. Fixed in `3becc34` and Edge Function version 21 / `d41367b`.
+- **12.4 PASS:** The active Professional 50 account received normal listing access and did not display guest/free warning copy.
+- **12.5 PASS:** Opening one result generated exactly one `property-features` call and one `rent-estimate` call. No calls were generated for unopened results; repeating the same search and reopening the same result reused caches.
+- **12.6 PASS:** Guest result cards did not request protected property features or rent estimates. Authenticated cards requested one rent estimate only when opening an individual result, as intentionally designed.
+- **12.7 PASS (live + code verification):** The tester account received its bypass. The browser sends search criteria/actions only and cannot submit a plan or tester designation. The Edge Function derives the user from the validated authorization token, derives paid plans from `billing_subscriptions`, and compares tester access with the server-only `RENTCAST_UNRESTRICTED_TEST_EMAILS` setting.
+
+### Section 12 corrective changes
+
+- Added parsing of structured non-2xx Edge Function responses so the listing page shows the server’s actionable allowance message instead of the SDK’s generic error.
+- Added explicit next-day reset timing to guest, free and paid daily-limit responses.
+- Deployed the browser fix through GitHub Pages and deployed `rentcast-sale-listings` Edge Function version 21.
+
+## Section 13 — Logged-in supporting pages — 2026-09-02
+
+- **13.1 PASS:** Mortgage Tools opened once inside the authenticated application wrapper. No duplicate site header or public toolbar appeared in the embedded view.
+- **13.2 PASS:** All six mortgage calculators produced updated known-answer results: Rate Buydown, Price vs. Rate, Seller Concession Optimizer, Loan Comparison, Extra Payment and Refinance.
+- **13.3 PASS:** The free test account showed its exhausted five-search allowance, while Professional 50 completed a fresh listing search without free/guest warnings. Each account loaded only its own saved cloud records. Listing-browser state is now stored under an account-specific key and restoration is retried after authentication hydration (`1f39184`, `8543afa`).
+- **13.4 PASS:** Created “Section 13 Test Client,” assigned it to the Section 11 test property, refreshed, and confirmed the property still displayed that client. The property was then unassigned and the temporary client deleted; database verification shows zero remaining temporary clients and zero assigned test properties.
+- **13.5 PASS after fix:** A harmless report-footer value saved and survived refresh. New accounts no longer inherit Meloni Realty identity defaults; the owner defaults remain limited to the owner account. The temporary footer was removed during cleanup and database verification returned `null` (`46cead7`, `c7dae86`).
+- **13.6 PASS:** Pricing detected both logged-in sessions and displayed the authenticated toolbar without a Sign In action.
+- **13.7 PASS:** Glossary remained accessible and navigation back to the application retained the authenticated session.
+- **13.8 PASS after fix:** Sample Property Card remained available to the free account and disappeared from the main and Pricing toolbars for the active Professional 50 subscription. The navigation helper now reevaluates entitlement after authentication changes (`9b03503`).
+
+### Section 13 corrective changes
+
+- Isolated recent listing-search state by authenticated account and retried restoration after session hydration.
+- Removed brokerage-specific profile defaults from newly created customer accounts while preserving them for the owner account.
+- Removed all temporary Section 13 profile/client test data after verifying persistence.
+- Refreshed subscription entitlement after auth changes so paid toolbars reliably hide Sample Property Card.
+
 ### PT-020 — P2 — Successful sign-in does not open Existing Properties
 
 - **Resolution:** Fixed through `84dbb3c` and `5bb65ed`. The first change detected early sessions; the second limited draft restoration to browser sessions that explicitly requested post-auth continuation. Live second retest passed with Existing Properties as the landing section.
 - **Observed:** A successful existing-user sign-in produces a clean authenticated shell, but the active section remains the analysis/home section.
 - **Expected:** Successful sign-in should immediately open Existing Properties so the returning user lands on their saved account workspace.
 - **Impact:** Returning users receive no visible authentication error, but land in an unexpected workflow and must navigate manually to their saved properties.
+
+## Section 14 — Security and privacy checks — 2026-09-02
+
+- **14.1 PASS:** An anonymous REST request for a known saved property was rejected with HTTP 401. The application does not expose property or analysis IDs in shareable page URLs.
+- **14.2 PASS:** The separate free alias account displayed zero saved properties, analyses, clients, subscriptions, and entitlements. The paid account retained two properties, three analyses, one subscription, and two entitlements. Owner-only RLS policies protect properties, analyses, clients, profiles, scenarios, analysis versions, subscription rows, and property entitlements.
+- **14.3 PASS:** A tracked-source scan found no embedded Stripe secret, webhook secret, Supabase service-role key, Resend secret, private key, or comparable server credential. The Supabase publishable key and Google browser key are intentionally public client credentials.
+- **14.4 PARTIAL:** The Supabase publishable key is protected by RLS. Google browser-key application/API restrictions still require confirmation in Google Cloud Console; server-side HTTP probes cannot conclusively validate browser-referrer restrictions.
+- **14.5 PASS:** Invalid login displayed a generic corrective message without stack traces, SQL, tokens, or secrets. The callable `claim_property_access` security-definer function rejects anonymous callers, verifies property ownership, and scopes entitlement/subscription work to `auth.uid()`.
+- **14.6 PENDING:** Archive/restore and deletion-policy behavior remains to be exercised with a disposable saved property.
+- **14.7 PASS after local fix:** Brokerage identity, license information, analytical disclaimers, and contact information were already present. Added site-wide Privacy Policy and Terms of Use links plus baseline policy pages. The policy language is marked for qualified legal review before public launch.
+
+### Section 14 follow-up
+
+- Supabase's security advisor reports leaked-password protection is disabled. Enable it in Auth security settings before public launch.
+- Supabase reports `claim_property_access` as an authenticated-callable security-definer function. Review confirmed that this is intentional and that the function validates `auth.uid()` plus property ownership before granting an entitlement.
