@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=21,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
+  const VERSION=22,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
   if((window.__ptRentCastListingSearchV||0)>=VERSION)return;
   window.__ptRentCastListingSearchV=VERSION;
   let panel=null,results=[],offset=0,activeListing=null;const featureCache=new Map(),rentCache=new Map();
@@ -8,6 +8,7 @@
   const money=v=>Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'—';
   const value=v=>v===null||v===undefined||v===''?'Not reported':String(v);
   const signedIn=()=>typeof cloudUser!=='undefined'&&!!cloudUser;
+  const searchStorageKey=()=>`${SEARCH_KEY}:${signedIn()?cloudUser.id:'guest'}`;
   function openAccount(mode='signup',message=''){
     if(window.PropertyThesisAuth?.open){window.PropertyThesisAuth.open(mode,message);return;}
     if(typeof showAuth==='function'){showAuth();return;}
@@ -83,7 +84,7 @@
     if(!q.address&&!q.zipCode&&!(q.city&&q.state)){setStatus('Enter a starting address, a ZIP code, or both a city and two-letter state code.');return;}if(!q.propertyTypes.length){setStatus('Select at least one property type.');return;}if(!q.listingTypes.length){setStatus('Select at least one listing type.');return;}
     const invalid=pairs.find(([min,max])=>q[min]!==null&&q[max]!==null&&Number(q[min])>Number(q[max]));if(invalid){setStatus(`Minimum ${invalid[2]} cannot be greater than maximum ${invalid[2]}.`);panel.querySelector(`[name="${invalid[0]}"]`)?.focus();return;}
     const submit=panel.querySelector('.pt-listings-submit');submit.disabled=true;submit.textContent='Searching…';setStatus('Searching active listings…');panel.querySelector('.pt-listings-grid').innerHTML='';
-    try{refreshAccess();const {sort,...request}=q;const {data,error}=await cloudClient.functions.invoke('rentcast-sale-listings',{body:request});if(error){const failure=await functionFailure(error,data);updateUsage(failure?.usage,failure?.cached);throw new Error(failure?.error||'Listing search failed. Please try again.');}updateUsage(data?.usage,data?.cached);results=Array.isArray(data?.listings)?data.listings:[];sortResults(sort);render();const total=Number.isFinite(Number(data?.totalCount))?` of ${Number(data.totalCount).toLocaleString()}`:'';const message=results.length?`${results.length}${total} matching active listing${Number(data?.totalCount||results.length)===1?'':'s'} loaded${data?.cached?' from the recent-search cache':''}.`:'No matching listings were found. Try a nearby ZIP code or broader filters.';setStatus(message);offset=results.length;try{localStorage.setItem(SEARCH_KEY,JSON.stringify({query:q,results,status:message,savedAt:Date.now()}));}catch(_e){}}catch(err){setStatus(err?.message||'Listing search failed. Please try again.');}finally{submit.disabled=false;submit.textContent='Search Listings';}
+    try{refreshAccess();const {sort,...request}=q;const {data,error}=await cloudClient.functions.invoke('rentcast-sale-listings',{body:request});if(error){const failure=await functionFailure(error,data);updateUsage(failure?.usage,failure?.cached);throw new Error(failure?.error||'Listing search failed. Please try again.');}updateUsage(data?.usage,data?.cached);results=Array.isArray(data?.listings)?data.listings:[];sortResults(sort);render();const total=Number.isFinite(Number(data?.totalCount))?` of ${Number(data.totalCount).toLocaleString()}`:'';const message=results.length?`${results.length}${total} matching active listing${Number(data?.totalCount||results.length)===1?'':'s'} loaded${data?.cached?' from the recent-search cache':''}.`:'No matching listings were found. Try a nearby ZIP code or broader filters.';setStatus(message);offset=results.length;try{localStorage.setItem(searchStorageKey(),JSON.stringify({query:q,results,status:message,savedAt:Date.now()}));}catch(_e){}}catch(err){setStatus(err?.message||'Listing search failed. Please try again.');}finally{submit.disabled=false;submit.textContent='Search Listings';}
   }
   function sortResults(mode){const n=v=>Number.isFinite(Number(v))?Number(v):0;if(mode==='price-asc')results.sort((a,b)=>n(a.price)-n(b.price));else if(mode==='price-desc')results.sort((a,b)=>n(b.price)-n(a.price));else if(mode==='units-desc')results.sort((a,b)=>n(b.units)-n(a.units));else results.sort((a,b)=>new Date(b.listedDate||0)-new Date(a.listedDate||0));}
   function setStatus(text){const el=panel?.querySelector('.pt-listings-status');if(el)el.textContent=text;}
@@ -154,9 +155,8 @@
     open();
   }
   function restoreSearch(){
-    if(new URLSearchParams(location.search).get('listing-search')!=='1')return;
     try{
-      const saved=JSON.parse(localStorage.getItem(SEARCH_KEY)||'null');if(!saved?.query||!Array.isArray(saved.results)||Date.now()-Number(saved.savedAt)>3600000)return;
+      const saved=JSON.parse(localStorage.getItem(searchStorageKey())||'null');if(!saved?.query||!Array.isArray(saved.results)||Date.now()-Number(saved.savedAt)>3600000)return;
       const form=panel.querySelector('form'),q=saved.query;
       Object.entries(q).forEach(([name,val])=>{const control=form.elements[name];if(!control||Array.isArray(val)||val===null||name==='sort')return;control.value=val;});
       const typeMap={'Single Family':'singleFamily','Condo':'condo','Townhouse':'townhouse','Manufactured':'manufactured','Multi-Family':'multiFamily','Apartment':'apartment','Land':'land'};
