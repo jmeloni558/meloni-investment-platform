@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__propertyThesisKeyboardInputTabV||0)>=VERSION)return;
   window.__propertyThesisKeyboardInputTabV=VERSION;
 
@@ -25,25 +25,18 @@
       .filter(el=>visible(el)&&inActiveContext(el)&&!el.readOnly&&el.tabIndex!==-1);
   }
 
-  function move(e){
+  function keepFocusedControlVisible(e){
     if(e.key!=='Tab'||e.altKey||e.ctrlKey||e.metaKey)return;
-    const list=inputs();
-    if(!list.length){e.preventDefault();return;}
-    const current=document.activeElement;
-    let idx=list.indexOf(current);
-    if(idx<0)idx=e.shiftKey?0:-1;
-    let next=e.shiftKey?idx-1:idx+1;
-    if(next<0)next=list.length-1;
-    if(next>=list.length)next=0;
-    e.preventDefault();
-    const target=list[next];
-    try{target.focus({preventScroll:true});}catch(_e){target.focus();}
-    try{target.scrollIntoView({block:'nearest',inline:'nearest'});}catch(_e){}
-    if(target instanceof HTMLInputElement&&/^(text|number|email|tel|url|search|password)$/i.test(target.type)){
-      try{target.select();}catch(_e){}
-    }
+    // Let the browser preserve the complete, document-order focus sequence,
+    // including links and buttons. Once native Tab navigation has completed,
+    // keep the newly focused form control visible for small screens/keyboards.
+    setTimeout(()=>{
+      const target=document.activeElement;
+      if(!target||!target.matches('input,select,textarea')||!visible(target)||!inActiveContext(target))return;
+      try{target.scrollIntoView({block:'nearest',inline:'nearest'});}catch(_e){}
+    },0);
   }
 
-  document.addEventListener('keydown',move,true);
+  document.addEventListener('keydown',keepFocusedControlVisible,true);
   window.PropertyThesisKeyboardInputTab={version:VERSION,inputs};
 })();
