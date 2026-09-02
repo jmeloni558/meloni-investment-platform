@@ -4,7 +4,7 @@
     if(!document.querySelector('link[href*="compliance-footer.css"]')){
       const stylesheet=document.createElement('link');
       stylesheet.rel='stylesheet';
-      stylesheet.href='compliance-footer.css?v=1';
+      stylesheet.href='compliance-footer.css?v=2';
       document.head.appendChild(stylesheet);
     }
     document.querySelectorAll('.pricing-footer').forEach(node=>node.remove());

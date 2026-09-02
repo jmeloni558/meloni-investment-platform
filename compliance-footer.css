@@ -19,3 +19,4 @@
 .pt-footer-legal{display:flex;gap:14px}.pt-footer-legal a{color:#d8e5ea;text-decoration:underline;text-underline-offset:2px}.pt-footer-legal a:hover,.pt-footer-legal a:focus{color:#fff}
 @media(max-width:850px){.pt-footer-grid{grid-template-columns:1fr 1fr}.pt-footer-grid>section:last-child{grid-column:1/-1}}
 @media(max-width:560px){.pt-footer-inner{padding:28px 20px 20px}.pt-footer-grid{grid-template-columns:1fr;gap:23px}.pt-footer-grid>section:last-child{grid-column:auto}.pt-footer-bottom{display:block}.pt-footer-legal{margin:7px 0}.pt-footer-bottom span{display:block;margin-top:5px}}
+@media(max-width:320px){.pt-footer-inner{padding:20px 8px 16px}.pt-footer-grid>*{min-width:0}.pt-compliance-footer{overflow-wrap:anywhere}.pt-footer-brand{font-size:18px}}
