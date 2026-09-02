@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=14;
+  const VERSION=15;
   const SITE_KEY='0x4AAAAAAEZOKm51JtNNvBzG';
   const APP_URL=location.origin+'/index.html';
   const FREE_RESUME_URL=APP_URL+'?resume-free=1';
@@ -139,7 +139,9 @@
     if(!requireToken('signin'))return;
     busy=true;stickySignInError='';message('Signing in…');
     try{
-      const {error}=await cloudClient.auth.signInWithPassword({email,password,options:{captchaToken:token}});
+      const signInRequest=cloudClient.auth.signInWithPassword({email,password,options:{captchaToken:token}});
+      const signInTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Sign-in request took too long. Please check your connection and try again.')),20000));
+      const {error}=await Promise.race([signInRequest,signInTimeout]);
       if(error){const raw=String(error.message||'');stickySignInError=/invalid login credentials|email not confirmed/i.test(raw)?'Unable to sign in. Check that the email is verified and the password is correct. If you just created this account, open the verification email before signing in.':raw;message(stickySignInError,'error');if(el('authEmail'))el('authEmail').value=email;if(el('authPassword'))el('authPassword').value='';}else message('Signed in.','success');
     }catch(e){stickySignInError=e?.message||'Sign in failed. Please try again.';message(stickySignInError,'error');if(el('authEmail'))el('authEmail').value=email;if(el('authPassword'))el('authPassword').value='';}
     finally{busy=false;resetChallenge();}
