@@ -90,7 +90,7 @@ export default {
       let usage;
       try { usage = await enforceUsageLimit(); } catch (error) {
         const daily = error instanceof Error && error.message === 'DAILY_LIMIT';
-        return json({ error: daily ? (plan === 'free' ? 'You have used today’s free listing allowance. Upgrade for additional daily searches.' : 'Your plan’s daily listing allowance has been reached. Try again tomorrow.') : 'The site-wide monthly listing-data allowance has been reached.', usage: (error as { usage?: unknown }).usage, upgradeRequired: daily && plan === 'free' }, 429);
+        return json({ error: daily ? (plan === 'free' ? 'You have used today’s free listing allowance. It resets tomorrow. Upgrade for additional daily searches.' : 'Your plan’s daily listing allowance has been reached. It resets tomorrow.') : 'The site-wide monthly listing-data allowance has been reached.', usage: (error as { usage?: unknown }).usage, upgradeRequired: daily && plan === 'free' }, 429);
       }
       const featureResponse = await fetch(`https://api.rentcast.io/v1/properties/${encodeURIComponent(propertyId)}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
       const property = await featureResponse.json().catch(() => null);
@@ -137,7 +137,7 @@ export default {
       let usage;
       try { usage = await enforceUsageLimit(); } catch (error) {
         const daily = error instanceof Error && error.message === 'DAILY_LIMIT';
-        return json({ error: daily ? (plan === 'guest' ? 'You have used today’s guest listing allowance. Create a free account to continue searching.' : plan === 'free' ? 'You have used today’s free listing allowance. Upgrade for additional daily searches.' : 'Your plan’s daily listing allowance has been reached. Try again tomorrow.') : 'The site-wide monthly listing-data allowance has been reached.', usage: (error as { usage?: unknown }).usage, authRequired: daily && plan === 'guest', upgradeRequired: daily && plan === 'free' }, 429);
+        return json({ error: daily ? (plan === 'guest' ? 'You have used today’s guest listing allowance. It resets tomorrow. Create a free account for more access.' : plan === 'free' ? 'You have used today’s free listing allowance. It resets tomorrow. Upgrade for additional daily searches.' : 'Your plan’s daily listing allowance has been reached. It resets tomorrow.') : 'The site-wide monthly listing-data allowance has been reached.', usage: (error as { usage?: unknown }).usage, authRequired: daily && plan === 'guest', upgradeRequired: daily && plan === 'free' }, 429);
       }
       const estimateResponse = await fetch(`https://api.rentcast.io/v1/avm/rent/long-term?${params}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
       const estimate = await estimateResponse.json().catch(() => null);
@@ -209,7 +209,7 @@ export default {
     let usage;
     try { usage = await enforceUsageLimit(); } catch (error) {
       const daily = error instanceof Error && error.message === 'DAILY_LIMIT';
-      return json({ error: daily ? (plan === 'guest' ? 'You have used today’s guest listing allowance. Create a free account to continue searching.' : plan === 'free' ? 'You have used today’s free listing allowance. Upgrade for additional daily searches.' : 'Your plan’s daily listing allowance has been reached. Try again tomorrow.') : 'The site-wide monthly listing-data allowance has been reached.', usage: (error as { usage?: unknown }).usage, authRequired: daily && plan === 'guest', upgradeRequired: daily && plan === 'free' }, 429);
+      return json({ error: daily ? (plan === 'guest' ? 'You have used today’s guest listing allowance. It resets tomorrow. Create a free account for more access.' : plan === 'free' ? 'You have used today’s free listing allowance. It resets tomorrow. Upgrade for additional daily searches.' : 'Your plan’s daily listing allowance has been reached. It resets tomorrow.') : 'The site-wide monthly listing-data allowance has been reached.', usage: (error as { usage?: unknown }).usage, authRequired: daily && plan === 'guest', upgradeRequired: daily && plan === 'free' }, 429);
     }
     console.log('[rentcast-sale-listings] request', { city, state, zipCode, propertyTypes, offset, limit, filtered: [...params.keys()].filter((key) => !['city', 'state', 'zipCode', 'propertyType', 'status', 'limit', 'offset', 'includeTotalCount'].includes(key)) });
     const response = await fetch(`https://api.rentcast.io/v1/listings/sale?${params}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
