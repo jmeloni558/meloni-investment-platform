@@ -56,11 +56,11 @@
   }
 
   async function calculateSaveReview(){
-    if(saving)return;
+    if(saving)return false;
     if(!isSignedIn()){
       status('Sign in to calculate, save, and review results.');
       promptSignIn('Sign in to run PropertyThesis calculations and review results.');
-      return;
+      return false;
     }
     const btn=document.getElementById('gwSave');
     saving=true;
@@ -82,9 +82,11 @@
       try{window.GuidedContinueController?.refreshReview?.();}catch(_e){}
       try{window.Stage15Layout?.apply?.();}catch(_e){}
       window.scrollTo({top:0,behavior:'smooth'});
+      return true;
     }catch(e){
       status('Unable to calculate and save: '+String(e?.message||e));
       const box=document.getElementById('gwValidation');if(box){box.innerHTML=`<b>Unable to calculate and save the analysis.</b><div>${String(e?.message||e)}</div>`;box.classList.add('show');}
+      return false;
     }finally{
       saving=false;
       refreshGuidedSaveAction();
