@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=32;
+  const VERSION=33;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -43,6 +43,7 @@
   }
   function applyStarterValues(){
     const values={f_address:entryParams.get('starter-address'),f_price:entryParams.get('starter-price'),f_units:entryParams.get('starter-units'),f_rent:entryParams.get('starter-rent')};
+    window.__ptPendingStarterValues={...(window.__ptPendingStarterValues||{}),...Object.fromEntries(Object.entries(values).filter(([,value])=>value))};
     let changed=false;
     Object.entries(values).forEach(([id,value])=>{
       if(!value)return;
