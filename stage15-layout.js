@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=12;
+  const VERSION=13;
   if((window.__stage15LayoutVersion||0)>=VERSION)return;
   window.__stage15LayoutVersion=VERSION;
 
@@ -99,10 +99,20 @@
   function applyValuationSetup(){
     const address=document.getElementById('f_address');
     const name=document.getElementById('f_name');
-    const required=document.getElementById('f_requiredReturn');
-    const cap=document.getElementById('f_desiredCap');
-    const grm=document.getElementById('f_desiredGrm');
     const valuationFields=document.getElementById('valuationFields');
+    function currentInput(id){
+      const matches=[...document.querySelectorAll('#'+id)];
+      const fresh=matches.find(input=>valuationFields?.contains(input))||matches[matches.length-1]||null;
+      for(const stale of matches){
+        if(stale===fresh)continue;
+        const field=stale.closest('.field');
+        if(field&&!field.closest('#reviewAnalysisSetup'))field.remove();
+      }
+      return fresh;
+    }
+    const required=currentInput('f_requiredReturn');
+    const cap=currentInput('f_desiredCap');
+    const grm=currentInput('f_desiredGrm');
     if(!address||!required||!cap||!grm||!valuationFields)return false;
 
     const setupCard=address.closest('.card');if(!setupCard)return false;
