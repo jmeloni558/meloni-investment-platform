@@ -63,11 +63,14 @@
     if(window.google?.maps?.places)return Promise.resolve(window.google.maps.places);if(googlePromise)return googlePromise;
     googlePromise=new Promise((resolve,reject)=>{const cb='__ptAddressRecognitionReady';window[cb]=()=>resolve(window.google?.maps?.places);const s=document.createElement('script');s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(k)+'&libraries=places&callback='+cb+'&v=weekly&auth_referrer_policy=origin';s.async=true;s.defer=true;s.dataset.ptAddressRecognitionGoogle='1';s.onerror=()=>reject(new Error('Unable to load Google address suggestions'));document.head.appendChild(s);});return googlePromise;
   }
-  async function attachInput(input){
+  function attachInput(input){
     if(!input||input.dataset.ptAddressRecognition==='1')return;input.dataset.ptAddressRecognition='1';input.setAttribute('autocomplete','off');
     if(!key()){setStatus('Manual address entry is available. Address suggestions are not configured on this browser.');return;}
-    try{
-      await loadGoogle();if(!window.google?.maps?.places?.Autocomplete)throw new Error('Google Places unavailable');
+    let activating=false;
+    const activate=async()=>{
+      if(activating||input.dataset.ptAddressAutocomplete==='1')return;activating=true;
+      try{
+      await loadGoogle();if(!window.google?.maps?.places?.Autocomplete)throw new Error('Google Places unavailable');input.dataset.ptAddressAutocomplete='1';
       const ac=new google.maps.places.Autocomplete(input,{componentRestrictions:{country:'us'},types:['address'],fields:['formatted_address','place_id','geometry']});
       if(input.matches('[data-pt-home-address]'))[0,50,250,1000].forEach(ms=>setTimeout(()=>input.removeAttribute('placeholder'),ms));
       ac.addListener('place_changed',()=>{const place=ac.getPlace(),address=place?.formatted_address||input.value.trim();if(!address)return;const lat=place?.geometry?.location?.lat?.(),lng=place?.geometry?.location?.lng?.();input.dataset.placeId=place?.place_id||'';input.dataset.lat=Number.isFinite(lat)?String(lat):'';input.dataset.lng=Number.isFinite(lng)?String(lng):'';hideSuggestions(input);syncAddress(address);setTimeout(()=>hideSuggestions(input),0);if(input.matches('[data-pt-home-address]')){setStatus('Address recognized. Property details will be researched after you create or sign in to your account.','ok');return;}lookup(address);});
@@ -76,7 +79,12 @@
       input.addEventListener('blur',()=>{if(mobileAdjustedInput===input)mobileAdjustedInput=null;clearTimeout(mobileScrollTimer);},{passive:true});
       input.addEventListener('change',e=>{if(syncingAddress||!e.isTrusted)return;const v=input.value.trim();if(v&&v!==lastLookup)syncAddress(v);});
       setStatus('Address suggestions ready. Start typing and select the matching property.');
-    }catch(e){setStatus('Manual address entry is available. Google suggestions could not load.','err');}
+      }catch(e){setStatus('Manual address entry is available. Google suggestions could not load.','err');}finally{activating=false;}
+    };
+    input.addEventListener('focus',activate,{once:true,passive:true});
+    input.addEventListener('pointerdown',activate,{once:true,passive:true});
+    input.addEventListener('input',activate,{once:true,passive:true});
+    setStatus('Address suggestions load when you select the address field.');
   }
   function attachAll(){addressInputs().forEach(attachInput);enforceStepVisibility();}
   function start(){
