@@ -5,11 +5,11 @@ import { corsHeaders, json, rejectDisallowedOrigin } from '../_shared/cors.ts';
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!);
 const siteUrl = 'https://propertythesis.com';
 const prices = {
-  single: { id: Deno.env.get('STRIPE_PRICE_SINGLE'), mode: 'payment', plan: 'single' },
-  professional_50_monthly: { id: Deno.env.get('STRIPE_PRICE_PROFESSIONAL_50_MONTHLY'), mode: 'subscription', plan: 'professional_50_monthly' },
-  professional_50_yearly: { id: Deno.env.get('STRIPE_PRICE_PROFESSIONAL_50_YEARLY'), mode: 'subscription', plan: 'professional_50_yearly' },
-  unlimited_monthly: { id: Deno.env.get('STRIPE_PRICE_UNLIMITED_MONTHLY'), mode: 'subscription', plan: 'unlimited_monthly' },
-  unlimited_yearly: { id: Deno.env.get('STRIPE_PRICE_UNLIMITED_YEARLY'), mode: 'subscription', plan: 'unlimited_yearly' },
+  single: { id: 'price_1UBOlCQP9TDs8kEAXSXFZaLP', mode: 'payment', plan: 'single' },
+  professional_50_monthly: { id: 'price_1UBOlCQP9TDs8kEAbJn8K3A1', mode: 'subscription', plan: 'professional_50_monthly' },
+  professional_50_yearly: { id: 'price_1UBOlBQP9TDs8kEATyaA8bUY', mode: 'subscription', plan: 'professional_50_yearly' },
+  unlimited_monthly: { id: 'price_1UBOl6QP9TDs8kEAqd4gRTUR', mode: 'subscription', plan: 'unlimited_monthly' },
+  unlimited_yearly: { id: 'price_1UBOl6QP9TDs8kEAihxPdt2q', mode: 'subscription', plan: 'unlimited_yearly' },
 } as const;
 
 export default {
@@ -25,10 +25,6 @@ export default {
     const userId = ctx.userClaims!.id;
     const email = ctx.userClaims!.email as string | undefined;
     if (!selected) return json({ error: 'Invalid plan' }, 400);
-    if (!selected.id) {
-      console.error('[create-checkout] Stripe price is not configured', { plan: selected.plan });
-      return json({ error: 'Checkout is temporarily unavailable' }, 503);
-    }
     if (selected.mode === 'payment' && !propertyId) return json({ error: 'A property is required' }, 400);
 
     for (const [limit, windowSeconds, scope] of [[10, 60, 'minute'], [100, 86400, 'day']] as const) {
@@ -56,6 +52,18 @@ export default {
     let { data: customerRow } = await ctx.supabaseAdmin
       .from('billing_customers').select('stripe_customer_id').eq('user_id', userId).maybeSingle();
     let customerId = customerRow?.stripe_customer_id;
+    if (customerId) {
+      try {
+        const existingCustomer = await stripe.customers.retrieve(customerId);
+        if (existingCustomer.deleted) customerId = undefined;
+      } catch (error) {
+        if ((error as { code?: string }).code === 'resource_missing') {
+          customerId = undefined;
+        } else {
+          throw error;
+        }
+      }
+    }
     if (!customerId) {
       const customer = await stripe.customers.create({ email, metadata: { supabase_user_id: userId } });
       customerId = customer.id;
