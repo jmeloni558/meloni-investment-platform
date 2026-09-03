@@ -68,6 +68,23 @@ export default {
             p_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
           })
           : await applyEvent('none');
+      } else if (event.type === 'charge.refunded') {
+        const charge = event.data.object as Stripe.Charge;
+        const paymentIntentId = typeof charge.payment_intent === 'string'
+          ? charge.payment_intent
+          : charge.payment_intent?.id;
+        if (charge.refunded && charge.amount_refunded >= charge.amount && paymentIntentId) {
+          const { data, error } = await ctx.supabaseAdmin.rpc('process_stripe_refund_event', {
+            p_event_id: event.id,
+            p_event_type: event.type,
+            p_event_created_at: eventCreatedAt,
+            p_payment_intent_id: paymentIntentId,
+          });
+          if (error) throw error;
+          result = data as { duplicate?: boolean } | null;
+        } else {
+          result = await applyEvent('none');
+        }
       } else if (event.type.startsWith('customer.subscription.')) {
         const eventSubscription = event.data.object as Stripe.Subscription;
         const subscription = await stripe.subscriptions.retrieve(eventSubscription.id);
