@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=7;
+  const VERSION=8;
   if((window.__propertyThesisBrandingV||0)>=VERSION)return;
   window.__propertyThesisBrandingV=VERSION;
 
@@ -51,7 +51,7 @@
       }
       if(!brand.dataset.ptHomeLink){
         brand.dataset.ptHomeLink='1';brand.setAttribute('role','link');brand.setAttribute('tabindex','0');brand.setAttribute('aria-label','PropertyThesis home');brand.style.cursor='pointer';
-        const home=()=>location.assign('https://propertythesis.com/');
+        const home=()=>location.assign(location.origin+'/index.html?home=1&cb='+Date.now());
         brand.addEventListener('click',home);brand.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();home();}});
       }
     }

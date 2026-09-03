@@ -24,9 +24,9 @@
     try{const target=new URL(link.href,location.href);if(target.origin===location.origin&&target.pathname!==location.pathname)sessionStorage.setItem(RETURN_KEY,JSON.stringify({path:location.pathname,y:scrollY,at:Date.now()}));}catch(_e){}
   },true);
   document.addEventListener('click',event=>{
-    const home=event.target?.closest?.('a.pt-site-brand');
+    const home=event.target?.closest?.('.pt-site-brand');
     if(!home||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
-    event.preventDefault();location.href=location.origin+'/index.html?home=1&cb='+Date.now();
+    event.preventDefault();event.stopImmediatePropagation();location.href=location.origin+'/index.html?home=1&cb='+Date.now();
   },true);
   if(params.get('home')==='1'){
     history.replaceState({ptScrollY:0},'','/');
