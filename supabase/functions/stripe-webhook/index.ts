@@ -113,7 +113,9 @@ export default {
             p_status: subscription.status,
             p_period_start: unix(item.current_period_start),
             p_period_end: unix(item.current_period_end),
-            p_cancel_at_period_end: subscription.cancel_at_period_end,
+            // Stripe's customer portal can schedule an end-of-period cancellation
+            // with `cancel_at` while leaving `cancel_at_period_end` false.
+            p_cancel_at_period_end: Boolean(subscription.cancel_at_period_end || subscription.cancel_at),
           });
         }
       } else {
