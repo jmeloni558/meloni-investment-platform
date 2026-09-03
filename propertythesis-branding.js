@@ -1,12 +1,12 @@
 'use strict';
 (()=>{
-  const VERSION=8;
+  const VERSION=9;
   if((window.__propertyThesisBrandingV||0)>=VERSION)return;
   window.__propertyThesisBrandingV=VERSION;
 
   const BRAND='PropertyThesis';
   const TAGLINE='Know the Numbers. Prove the Case.';
-  const TITLE='PropertyThesis | Know the Numbers. Prove the Case.';
+  const TITLE='Real Estate Investment Analysis Software | PropertyThesis';
 
   function setText(el,text){
     if(el && el.textContent!==text) el.textContent=text;
@@ -39,7 +39,7 @@
     if(document.title!==TITLE) document.title=TITLE;
 
     const meta=document.querySelector('meta[name="description"]');
-    const description='PropertyThesis helps real estate investors model property income, financing, valuation, taxes, cash flow, IRR, NPV and investment returns.';
+    const description='Analyze rental property income, expenses, financing, cash flow, value, returns and risk with PropertyThesis real estate investment analysis software.';
     if(meta && meta.getAttribute('content')!==description) meta.setAttribute('content',description);
 
     const brand=document.querySelector('.brand');

@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /app-core.html
+Disallow: /login.html
+Disallow: /latest.html
+Disallow: /latest-v2.html
+Disallow: /latest-base-1615.html
+Disallow: /baseline-20260818-2108.html
+Disallow: /build-check.html
+Disallow: /build-20260823-1615.html
+Disallow: /step1-address-session-test.html
+
+Sitemap: https://propertythesis.com/sitemap.xml
