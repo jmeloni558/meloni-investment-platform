@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=7;
+  const VERSION=8;
   if((window.__incomeServerEngineBridgeVersion||0)>=VERSION)return;
   window.__incomeServerEngineBridgeVersion=VERSION;
 
@@ -26,8 +26,10 @@
   function markNotReady(){lastError='';paintStatus('not-ready');}
   function showUnavailable(message){if(!signedIn()){markNotReady();return;}lastError=message||lastError||'Calculation service unavailable';paintStatus('unavailable',lastError);try{if(typeof setStatus==='function')setStatus(lastError);}catch(_e){}}
 
-  async function currentSession(){if(typeof cloudClient==='undefined'||!cloudClient?.auth)return null;try{const {data,error}=await cloudClient.auth.getSession();if(error)throw error;return data?.session||null;}catch(e){lastError=String(e?.message||e);return null;}}
-  async function callServer(s){if(typeof cloudClient==='undefined'||!cloudClient)throw new Error('Supabase client unavailable');const session=await currentSession();if(!session?.access_token)throw new Error('Sign-in session is required for protected calculations');const invoke=cloudClient.functions.invoke('propertythesis-income-engine',{body:{action:'analyze',state:s},headers:{Authorization:`Bearer ${session.access_token}`}});const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Protected calculation engine timed out')),8000));const {data,error}=await Promise.race([invoke,timeout]);if(error)throw error;if(data?.error)throw new Error(data.error+(data?.details?' — '+data.details:''));if(!data?.result?.years?.length)throw new Error('Protected engine returned an incomplete result');return data.result;}
+  async function currentSession(refresh=false){if(typeof cloudClient==='undefined'||!cloudClient?.auth)return null;try{const result=refresh&&cloudClient.auth.refreshSession?await cloudClient.auth.refreshSession():await cloudClient.auth.getSession();if(result.error)throw result.error;return result.data?.session||null;}catch(e){lastError=String(e?.message||e);return null;}}
+  function authError(e){const status=Number(e?.status||e?.context?.status||0),message=String(e?.message||e||'');return status===401||/auth|jwt|session|sign-in|unauthor|401/i.test(message);}
+  async function invokeServer(s,session){const invoke=cloudClient.functions.invoke('propertythesis-income-engine',{body:{action:'analyze',state:s},headers:{Authorization:`Bearer ${session.access_token}`}});const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Protected calculation engine timed out')),8000));const {data,error}=await Promise.race([invoke,timeout]);if(error)throw error;if(data?.error)throw new Error(data.error+(data?.details?' — '+data.details:''));if(!data?.result?.years?.length)throw new Error('Protected engine returned an incomplete result');return data.result;}
+  async function callServer(s){if(typeof cloudClient==='undefined'||!cloudClient)throw new Error('Supabase client unavailable');let session=await currentSession();if(!session?.access_token)throw new Error('Sign-in session is required for protected calculations');try{return await invokeServer(s,session);}catch(e){if(!authError(e))throw e;session=await currentSession(true);if(!session?.access_token)throw e;return invokeServer(s,session);}}
 
   async function requestServer(s,{refresh=true,force=false}={}){
     const snapshot={...s};
@@ -39,7 +41,7 @@
     if(force)failedAt.delete(sig);
     const session=await currentSession();if(!session?.access_token){showUnavailable('Sign in to use PropertyThesis calculations.');return null;}
     paintStatus('checking');
-    const job=(async()=>{try{const server=await callServer(snapshot);cache.set(sig,server);failedAt.delete(sig);lastServerAt=new Date();lastError='';paintStatus('server');if(refresh&&signature(typeof state==='object'?state:{})===sig)browserRender();return server;}catch(e){failedAt.set(sig,Date.now());showUnavailable(String(e?.message||e));return null;}finally{pending.delete(sig);}})();
+    const job=(async()=>{try{const server=await callServer(snapshot);cache.set(sig,server);failedAt.delete(sig);lastServerAt=new Date();if(signature(typeof state==='object'?state:{})===sig){lastError='';paintStatus('server');if(refresh)browserRender();}return server;}catch(e){failedAt.set(sig,Date.now());if(signature(typeof state==='object'?state:{})===sig)showUnavailable(String(e?.message||e));return null;}finally{pending.delete(sig);}})();
     pending.set(sig,job);return job;
   }
 

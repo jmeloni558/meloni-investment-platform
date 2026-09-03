@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   if((window.__secondaryServerEngineBridgeVersion||0)>=VERSION)return;
   window.__secondaryServerEngineBridgeVersion=VERSION;
 
@@ -16,15 +16,20 @@
     return {state:calculationState(s),scenarioState:{B:calculationScenario(sc.B||{}),C:calculationScenario(sc.C||{})}};
   }
   function signature(x=snapshot()){return JSON.stringify(x);}
-  async function callServer(x){
-    if(typeof cloudClient==='undefined'||!cloudClient)throw new Error('Supabase client unavailable');
-    const invoke=cloudClient.functions.invoke('propertythesis-income-engine',{body:{action:'secondary',state:x.state,scenarioState:x.scenarioState}});
+  function authError(e){const status=Number(e?.status||e?.context?.status||0),message=String(e?.message||e||'');return status===401||/auth|jwt|session|sign-in|unauthor|401/i.test(message);}
+  async function invokeServer(x,session){
+    const headers=session?.access_token?{Authorization:`Bearer ${session.access_token}`}:{},invoke=cloudClient.functions.invoke('propertythesis-income-engine',{body:{action:'secondary',state:x.state,scenarioState:x.scenarioState},headers});
     const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Protected secondary engine timed out')),8000));
     const {data,error}=await Promise.race([invoke,timeout]);
     if(error)throw error;
     if(data?.error)throw new Error(data.error+(data?.details?' — '+data.details:''));
     if(!data?.result?.offer||!data?.result?.sensitivity||!Array.isArray(data?.result?.scenarios))throw new Error('Protected secondary engine returned an incomplete result');
     return data.result;
+  }
+  async function callServer(x){
+    if(typeof cloudClient==='undefined'||!cloudClient)throw new Error('Supabase client unavailable');
+    let session=(await cloudClient.auth.getSession()).data?.session||null;
+    try{return await invokeServer(x,session);}catch(e){if(!authError(e)||!cloudClient.auth.refreshSession)throw e;session=(await cloudClient.auth.refreshSession()).data?.session||null;return invokeServer(x,session);}
   }
   function refreshConsumers(){
     try{window.renderScenarios?.();}catch(_e){}
@@ -46,8 +51,7 @@
         if(refresh&&signature()===sig)setTimeout(()=>{if(signature()===sig)refreshConsumers();},0);
         return r;
       }catch(e){
-        failedAt.set(sig,Date.now());lastError=String(e?.message||e);
-        try{window.PropertyThesisSecondaryServerUI?.apply?.();}catch(_e){}
+        failedAt.set(sig,Date.now());if(signature()===sig){lastError=String(e?.message||e);try{window.PropertyThesisSecondaryServerUI?.apply?.();}catch(_e){}}
         return null;
       }finally{pending.delete(sig);}
     })();
