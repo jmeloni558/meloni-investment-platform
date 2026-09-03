@@ -1,16 +1,18 @@
 'use strict';
 (()=>{
-  try{if('scrollRestoration' in history)history.scrollRestoration='auto'}catch(_e){}
+  const navigationType=performance.getEntriesByType?.('navigation')?.[0]?.type||'navigate';
+  const isReload=navigationType==='reload'||performance.navigation?.type===1;
+  try{if('scrollRestoration' in history)history.scrollRestoration=isReload?'manual':'auto'}catch(_e){}
   const top=()=>window.scrollTo(0,0);
   const params=new URLSearchParams(location.search);
   const RETURN_KEY='pt-scroll-return-v1';
   let returnPosition=null;
   try{
     const candidate=JSON.parse(sessionStorage.getItem(RETURN_KEY)||'null');
-    if(candidate?.path===location.pathname&&Date.now()-Number(candidate.at)<30*60*1000)returnPosition=Number(candidate.y);
+    if(!isReload&&candidate?.path===location.pathname&&Date.now()-Number(candidate.at)<30*60*1000)returnPosition=Number(candidate.y);
     if(candidate?.path===location.pathname)sessionStorage.removeItem(RETURN_KEY);
   }catch(_e){}
-  const savedY=Number.isFinite(returnPosition)?returnPosition:Number(history.state?.ptScrollY);
+  const savedY=Number.isFinite(returnPosition)?returnPosition:navigationType==='back_forward'?Number(history.state?.ptScrollY):null;
   let scrollFrame=0;
   const remember=()=>{
     scrollFrame=0;
@@ -32,6 +34,13 @@
     history.replaceState({ptScrollY:0},'','/');
     top();
     requestAnimationFrame(top);
+    return;
+  }
+  if(isReload){
+    const holdTop=()=>window.scrollTo({top:0,behavior:'instant'});
+    holdTop();
+    addEventListener('DOMContentLoaded',holdTop,{once:true});
+    addEventListener('load',()=>[0,50,150,350,700].forEach(ms=>setTimeout(holdTop,ms)),{once:true});
     return;
   }
   if(Number.isFinite(savedY)&&savedY>0){

@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=35;
+  const VERSION=36;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -101,6 +101,8 @@
     standard.hidden=true;standard.style.display='none';nav.hidden=false;nav.style.removeProperty('display');
   }
   function upgradeHero(root){
+    if(root.dataset.ptHomeUpgraded==='1')return;
+    root.dataset.ptHomeUpgraded='1';
     root.classList.add('pt-home-v2');
     const eyebrow=root.querySelector('.pt-guest-eyebrow'),title=root.querySelector('.pt-guest-copy h2'),lead=root.querySelector('.pt-guest-lead'),sub=root.querySelector('.pt-guest-sub'),actions=root.querySelector('.pt-guest-promo-actions'),features=root.querySelector('.pt-guest-feature-grid');
     if(eyebrow)eyebrow.textContent='EVERY PROPERTY BEGINS WITH A THESIS';
