@@ -3,7 +3,7 @@
   const navigationType=performance.getEntriesByType?.('navigation')?.[0]?.type||'navigate';
   const isReload=navigationType==='reload'||performance.navigation?.type===1;
   try{if('scrollRestoration' in history)history.scrollRestoration=isReload?'manual':'auto'}catch(_e){}
-  const top=()=>window.scrollTo(0,0);
+  const top=()=>window.scrollTo({top:0,left:0,behavior:'instant'});
   const params=new URLSearchParams(location.search);
   const RETURN_KEY='pt-scroll-return-v1';
   let returnPosition=null;
@@ -32,8 +32,16 @@
   },true);
   if(params.get('home')==='1'){
     history.replaceState({ptScrollY:0},'','/');
+    // The guest homepage is assembled immediately after this script runs. Keep
+    // browser scroll anchoring from following the content that moves during that
+    // one-time layout change when the header logo is used as a Home control.
+    const root=document.documentElement;
+    const previousAnchor=root.style.overflowAnchor;
+    root.style.overflowAnchor='none';
     top();
-    requestAnimationFrame(top);
+    addEventListener('DOMContentLoaded',top,{once:true});
+    addEventListener('load',()=>[0,50,150,350,700,1200].forEach(ms=>setTimeout(top,ms)),{once:true});
+    setTimeout(()=>{root.style.overflowAnchor=previousAnchor;top()},1400);
     return;
   }
   if(isReload){
