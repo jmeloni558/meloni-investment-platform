@@ -5,11 +5,11 @@ import { corsHeaders, json, rejectDisallowedOrigin } from '../_shared/cors.ts';
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!);
 const siteUrl = 'https://propertythesis.com';
 const prices = {
-  single: { id: 'price_1U9kPW3zJE48OBe4veojZghJ', mode: 'payment', plan: 'single' },
-  professional_50_monthly: { id: 'price_1U9kQo3zJE48OBe4i4riKh76', mode: 'subscription', plan: 'professional_50_monthly' },
-  professional_50_yearly: { id: 'price_1U9kQo3zJE48OBe45qTU7arP', mode: 'subscription', plan: 'professional_50_yearly' },
-  unlimited_monthly: { id: 'price_1U9kRc3zJE48OBe4kJpppyO0', mode: 'subscription', plan: 'unlimited_monthly' },
-  unlimited_yearly: { id: 'price_1U9kRc3zJE48OBe4QKRgViUw', mode: 'subscription', plan: 'unlimited_yearly' },
+  single: { id: Deno.env.get('STRIPE_PRICE_SINGLE'), mode: 'payment', plan: 'single' },
+  professional_50_monthly: { id: Deno.env.get('STRIPE_PRICE_PROFESSIONAL_50_MONTHLY'), mode: 'subscription', plan: 'professional_50_monthly' },
+  professional_50_yearly: { id: Deno.env.get('STRIPE_PRICE_PROFESSIONAL_50_YEARLY'), mode: 'subscription', plan: 'professional_50_yearly' },
+  unlimited_monthly: { id: Deno.env.get('STRIPE_PRICE_UNLIMITED_MONTHLY'), mode: 'subscription', plan: 'unlimited_monthly' },
+  unlimited_yearly: { id: Deno.env.get('STRIPE_PRICE_UNLIMITED_YEARLY'), mode: 'subscription', plan: 'unlimited_yearly' },
 } as const;
 
 export default {
@@ -25,6 +25,10 @@ export default {
     const userId = ctx.userClaims!.id;
     const email = ctx.userClaims!.email as string | undefined;
     if (!selected) return json({ error: 'Invalid plan' }, 400);
+    if (!selected.id) {
+      console.error('[create-checkout] Stripe price is not configured', { plan: selected.plan });
+      return json({ error: 'Checkout is temporarily unavailable' }, 503);
+    }
     if (selected.mode === 'payment' && !propertyId) return json({ error: 'A property is required' }, 400);
 
     for (const [limit, windowSeconds, scope] of [[10, 60, 'minute'], [100, 86400, 'day']] as const) {
