@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=8;
+  const VERSION=9;
   if((window.__workflowNavigationControllerVersion||0)>=VERSION)return;
   window.__workflowNavigationControllerVersion=VERSION;
 
@@ -20,7 +20,7 @@
     try{window.PropertyThesisReportBranding?.apply?.();}catch(e){}
   }
 
-  function directActivate(id){
+  function directActivate(id,options={}){
     const target=document.getElementById(id);
     if(!target)return false;
     document.querySelectorAll('.section').forEach(sec=>sec.classList.toggle('active',sec===target));
@@ -39,7 +39,7 @@
       setTimeout(finalizeReport,100);
       setTimeout(finalizeReport,240);
     }
-    window.scrollTo({top:0,behavior:'smooth'});
+    if(options.scroll!==false)window.scrollTo({top:0,behavior:'smooth'});
     return true;
   }
 
@@ -64,7 +64,8 @@
     try{window.SaveStateFeedback?.clear?.();}catch(e){}
   }
 
-  function newAnalysis(){
+  function newAnalysis(options={}){
+    const shouldScroll=options.scroll!==false,shouldFocus=options.focus!==false;
     try{selectedClientId=null;selectedPropertyId=null;selectedAnalysisId=null;selectedScenarioId=null;}catch(e){}
     try{if(typeof cloudScenarios!=='undefined')cloudScenarios=[];}catch(e){}
     clearPropertySpecificDraftUI();
@@ -80,20 +81,20 @@
     try{if(typeof render==='function')render();}catch(e){}
     clearBlanks();
 
-    directActivate('assumptions');
-    try{window.GuidedAnalysisSetup?.reset?.();}catch(e){}
+    directActivate('assumptions',{scroll:shouldScroll});
+    try{window.GuidedAnalysisSetup?.reset?.({scroll:shouldScroll});}catch(e){}
     try{window.PropertyThesisGuidedWorkflowRefinement?.apply?.();}catch(e){}
     try{window.NewAnalysisSaveGuidance?.refresh?.();}catch(e){}
     setTimeout(()=>{
       clearBlanks();
       clearPropertySpecificDraftUI();
-      try{window.GuidedAnalysisSetup?.reset?.();}catch(e){}
+      try{window.GuidedAnalysisSetup?.reset?.({scroll:false});}catch(e){}
       try{window.PropertyThesisGuidedWorkflowRefinement?.apply?.();}catch(e){}
       try{window.GuidedAssumptionGuidance?.apply?.();}catch(e){}
       try{window.GuidedInitialRepairs?.apply?.();}catch(e){}
       try{window.NewAnalysisSaveGuidance?.refresh?.();}catch(e){}
       try{if(typeof setStatus==='function')setStatus('New analysis started — enter the property and investment assumptions');}catch(e){}
-      document.querySelector('#gwBody [data-src="f_address"]')?.focus();
+      if(shouldFocus){const address=document.querySelector('#gwBody [data-src="f_address"]');try{address?.focus({preventScroll:true});}catch(_e){address?.focus();}}
     },80);
     setTimeout(()=>{clearPropertySpecificDraftUI();try{window.NewAnalysisSaveGuidance?.refresh?.();}catch(e){}},180);
   }

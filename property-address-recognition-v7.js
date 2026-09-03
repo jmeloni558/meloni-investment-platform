@@ -1,11 +1,11 @@
 'use strict';
 (()=>{
-  const VERSION=14;
+  const VERSION=15;
   if((window.__propertyAddressRecognitionV||0)>=VERSION)return;
   window.__propertyAddressRecognitionV=VERSION;
 
   const GOOGLE_KEY_STORAGE='pt_step1_google_places_key';
-  let googlePromise=null,lastLookup='',lookupBusy=false,syncingAddress=false,mobileScrollTimer=0;
+  let googlePromise=null,lastLookup='',lookupBusy=false,syncingAddress=false,mobileScrollTimer=0,mobileAdjustedInput=null;
   const addressInputs=()=>[...document.querySelectorAll('#f_address,[data-src="f_address"],[data-pt-home-address]')];
   const isVisible=el=>{if(!el)return false;const style=getComputedStyle(el),rect=el.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0;};
   const visibleAddressInputs=()=>addressInputs().filter(isVisible);
@@ -31,11 +31,11 @@
   function makeMobileSuggestionRoom(input){
     clearTimeout(mobileScrollTimer);
     mobileScrollTimer=setTimeout(()=>{
-      if(!isVisible(input)||document.activeElement!==input||innerWidth>700)return;
+      if(!isVisible(input)||document.activeElement!==input||innerWidth>700||mobileAdjustedInput===input)return;
       const viewport=window.visualViewport;
       if(!viewport||viewport.height>=innerHeight*.82)return;
       const rect=input.getBoundingClientRect(),targetTop=viewport.offsetTop+18,delta=rect.top-targetTop;
-      if(delta>8)window.scrollBy({top:delta,behavior:'smooth'});
+      if(delta>8){mobileAdjustedInput=input;window.scrollBy({top:Math.min(delta,Math.max(120,viewport.height*.4)),behavior:'instant'});}
     },120);
   }
   function focusNextField(){const next=[...document.querySelectorAll('[data-src="f_price"],#f_price')].find(el=>el.offsetParent!==null&&!el.disabled);if(next){try{next.focus({preventScroll:true});}catch(_e){try{next.focus();}catch(__e){}}}}
@@ -73,6 +73,7 @@
       ac.addListener('place_changed',()=>{const place=ac.getPlace(),address=place?.formatted_address||input.value.trim();if(!address)return;const lat=place?.geometry?.location?.lat?.(),lng=place?.geometry?.location?.lng?.();input.dataset.placeId=place?.place_id||'';input.dataset.lat=Number.isFinite(lat)?String(lat):'';input.dataset.lng=Number.isFinite(lng)?String(lng):'';hideSuggestions(input);syncAddress(address);setTimeout(()=>hideSuggestions(input),0);if(input.matches('[data-pt-home-address]')){setStatus('Address recognized. Property details will be researched after you create or sign in to your account.','ok');return;}lookup(address);});
       input.addEventListener('input',()=>{if(!syncingAddress&&isVisible(input))showSuggestions();makeMobileSuggestionRoom(input);},{passive:true});
       input.addEventListener('focus',()=>{if(!syncingAddress&&isVisible(input)&&input.value.trim()!==lastLookup)showSuggestions();[120,320].forEach(ms=>setTimeout(()=>makeMobileSuggestionRoom(input),ms));},{passive:true});
+      input.addEventListener('blur',()=>{if(mobileAdjustedInput===input)mobileAdjustedInput=null;clearTimeout(mobileScrollTimer);},{passive:true});
       input.addEventListener('change',e=>{if(syncingAddress||!e.isTrusted)return;const v=input.value.trim();if(v&&v!==lastLookup)syncAddress(v);});
       setStatus('Address suggestions ready. Start typing and select the matching property.');
     }catch(e){setStatus('Manual address entry is available. Google suggestions could not load.','err');}

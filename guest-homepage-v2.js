@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=34;
+  const VERSION=35;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -88,11 +88,9 @@
     if(freeEntered)return;const assumptions=document.getElementById('assumptions'),workflow=document.getElementById('stage8Workflow');if(!assumptions||!workflow)return;
     freeEntered=true;
     try{history.replaceState(null,'','/');}catch(_e){}
-    try{window.WorkflowNavigationController?.newAnalysis?.();}catch(_e){}
-    try{if(window.WorkflowNavigationController?.go)window.WorkflowNavigationController.go('assumptions');else if(typeof switchTab==='function')switchTab('assumptions');}catch(_e){}
+    try{if(window.WorkflowNavigationController?.newAnalysis)window.WorkflowNavigationController.newAnalysis({scroll:false,focus:false});else if(typeof switchTab==='function')switchTab('assumptions');}catch(_e){}
     let note=document.getElementById('ptFreeAnalysisNotice');if(!note){note=document.createElement('div');note.id='ptFreeAnalysisNotice';workflow.insertAdjacentElement('afterend',note);}guestNotice(note);
-    setTimeout(()=>{try{window.GuidedAnalysisSetup?.reset?.();applyStarterValues();}catch(_e){}},100);
-    setTimeout(()=>{applyStarterValues();document.getElementById('guidedSetup')?.scrollIntoView({behavior:'smooth',block:'start'});},350);
+    setTimeout(()=>{try{window.GuidedAnalysisSetup?.reset?.({scroll:false});applyStarterValues();}catch(_e){}const target=document.getElementById('guidedSetup');if(target)window.scrollTo({top:Math.max(0,target.offsetTop-10),behavior:'instant'});},120);
     [250,500,900].forEach(ms=>setTimeout(applyStarterValues,ms));
   }
   function ensureNav(shell){
@@ -157,7 +155,7 @@
     if(entryParams.get('free-analysis')==='1'&&!entryParams.get('starter-price')&&!entryParams.get('starter-rent')){
       freeAnalysisActive=false;entryParams.delete('free-analysis');entryParams.delete('cb');
       history.replaceState(null,'',location.pathname+(entryParams.toString()?'?'+entryParams:'')+location.hash);
-      setTimeout(()=>document.getElementById('ptHomeStarterForm')?.scrollIntoView({behavior:'smooth',block:'center'}),650);
+      requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById('ptHomeStarterForm')?.scrollIntoView({behavior:'instant',block:'center'})));
     }
     installReturnRoute();apply();[100,250,500,800,1200,1800,2600,4000,6000].forEach(ms=>setTimeout(apply,ms));setInterval(apply,2000);try{cloudClient?.auth?.onAuthStateChange?.((event)=>{if(event==='SIGNED_OUT'){freeAnalysisActive=false;freeEntered=false;noticeUser='';document.getElementById('ptAccountUpgradeBanner')?.remove();setTimeout(()=>{apply();window.scrollTo({top:0,behavior:'auto'});},0);}else if(event==='SIGNED_IN'){freeAnalysisActive=false;[0,100,350].forEach(ms=>setTimeout(apply,ms));}});}catch(_e){}window.addEventListener('pt:billing-updated',()=>{[700,1800,4000].forEach(ms=>setTimeout(()=>{noticeUser='';accountNotice()},ms))});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
