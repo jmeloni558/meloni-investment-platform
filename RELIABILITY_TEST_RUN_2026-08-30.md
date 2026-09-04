@@ -329,7 +329,7 @@ Temporary subscriber property `1500 Section 11 Subscriber Test Ave, Tampa, FL 33
 ### PT-001 — P2 — Outdated “Build the Case” copy remains on homepage
 
 - Observed: The dark homepage hero says “Form the thesis. Test the numbers. Build the case.”
-- Expected: Current brand language should use “Know the Numbers. Prove the Case.” or otherwise avoid the retired “Build the Case” wording.
+- Expected: Current brand language should use “Know the Numbers. Make the Offer.” or otherwise avoid the retired “Build the Case” wording.
 - Reproducibility: Consistent on clean page load.
 
 ### PT-002 — P2 — Logged-out homepage attempts protected calculations
@@ -464,7 +464,7 @@ Do not change the deployed version while Sections 1–4 are being tested unless 
 
 Implemented locally; not yet committed or deployed:
 
-- PT-001: replaced the retired homepage wording with “Know the Numbers. Prove the Case.” and “Prove the case.”
+- PT-001: replaced the retired homepage wording with “Know the Numbers. Make the Offer.” and “Make the offer.”
 - PT-002: stopped results hydration from requesting protected calculations for signed-out visitors.
 - PT-003: reused one shared Supabase browser client where the surrounding page already provides one. The legacy loader and Google Places migration warning remain separate follow-up work.
 - PT-004: tightened the rendered wordmark text treatment for clearer edges while preserving the blended header treatment.

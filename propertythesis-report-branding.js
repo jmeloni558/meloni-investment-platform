@@ -4,7 +4,7 @@
   if((window.__propertyThesisReportBrandingV||0)>=VERSION)return;
   window.__propertyThesisReportBrandingV=VERSION;
   const PRODUCT='PropertyThesis';
-  const TAGLINE='Know the Numbers. Prove the Case.';
+  const TAGLINE='Know the Numbers. Make the Offer.';
   const TYPE='Investment Property Analysis';
   // Keep an empty customer profile neutral. The owner account receives its
   // Meloni Realty identity from its saved profile; those details must never be

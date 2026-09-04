@@ -43,7 +43,7 @@
       ['Sample Investment Property • Tampa, FL'],
       ['Prepared by: PropertyThesis Sample Analysis'],
       ['Illustrative figures only • sample holding period'],
-      ['PropertyThesis • Know the Numbers. Prove the Case.'],
+      ['PropertyThesis • Know the Numbers. Make the Offer.'],
       []
     ];
   }

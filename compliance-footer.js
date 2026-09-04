@@ -7,7 +7,7 @@
     if(!document.querySelector('.pt-site-header')){
       const header=document.createElement('header');
       header.className='top pt-site-header';
-      header.innerHTML='<div class="topin"><a class="brand pt-site-brand" href="index.html?home=1" aria-label="PropertyThesis home"><img class="pt-site-logo" src="assets/propertythesis-logo-768.webp" width="768" height="768" alt="PropertyThesis — Know the Numbers. Prove the Case."></a></div>';
+      header.innerHTML='<div class="topin"><a class="brand pt-site-brand" href="index.html?home=1" aria-label="PropertyThesis home"><img class="pt-site-logo" src="assets/propertythesis-logo-make-the-offer-768.webp" width="768" height="768" alt="PropertyThesis — Know the Numbers. Make the Offer."></a></div>';
       document.body.insertBefore(header,guide);
     }
     document.querySelectorAll('a[href*="free-analysis=1"]').forEach(link=>link.href='index.html?from=guides');
@@ -33,7 +33,7 @@
         <section id="ptFooterContact"><p class="pt-footer-heading">Contact</p><address class="pt-footer-contact">18012 Loretta Lane<br>Lutz, FL 33548<br><a href="tel:+18137608516">813-760-8516</a><br><a href="mailto:jamie@propertythesis.com">jamie@propertythesis.com</a></address></section>
       </div>
       <div class="pt-footer-disclaimer">PropertyThesis provides real estate investment analysis software and educational information. Analyses are estimates based on user-provided information and assumptions and are not appraisals, guarantees, lending decisions, or legal, tax, or accounting advice. Use of this website does not create a brokerage or agency relationship. Any brokerage services are provided separately by MELONI REALTY INC under an applicable written agreement.</div>
-      <div class="pt-footer-bottom"><span>&copy; ${new Date().getFullYear()} MELONI REALTY INC. All rights reserved.</span><nav class="pt-footer-legal" aria-label="Legal"><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms of Use</a></nav><span>PropertyThesis &bull; Know the Numbers. Prove the Case.</span></div>
+      <div class="pt-footer-bottom"><span>&copy; ${new Date().getFullYear()} MELONI REALTY INC. All rights reserved.</span><nav class="pt-footer-legal" aria-label="Legal"><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms of Use</a></nav><span>PropertyThesis &bull; Know the Numbers. Make the Offer.</span></div>
     </div>`;
     (document.querySelector('.app')||document.body).appendChild(footer);
   };
