@@ -28,7 +28,7 @@
       const token=await accessToken();const response=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','apikey':API_KEY,'Authorization':`Bearer ${token||API_KEY}`},body:JSON.stringify({message:text,history:history.slice(0,-1).slice(-8),page:pageContext()})});
       const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'The assistant is temporarily unavailable.');
       const answer=String(data.answer||'I could not prepare an answer. Please try another question.');history.push({role:'assistant',content:answer});status.remove();add(answer,'assistant');
-    }catch(error){status.remove();add(`${error.message||'The assistant is temporarily unavailable.'}\n\nYou can email jamie@propertythesis.com for help.`,'assistant')}
+    }catch(error){status.remove();const message=error.message||'The assistant is temporarily unavailable.';add(message.includes('jamie@propertythesis.com')?message:`${message}\n\nUse the Contact us link below for help.`,'assistant')}
     finally{send.disabled=false;input.focus()}
   };
   panel.querySelector('.pt-ai-form').addEventListener('submit',e=>{e.preventDefault();ask(input.value)});input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask(input.value)}});panel.querySelectorAll('.pt-ai-suggestions button').forEach(button=>button.addEventListener('click',()=>ask(button.textContent)));
