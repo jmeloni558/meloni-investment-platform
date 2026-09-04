@@ -1,4 +1,8 @@
 (()=>{
+  const loadAssistant=()=>{
+    if(!document.querySelector('link[href*="propertythesis-assistant.css"]')){const css=document.createElement('link');css.rel='stylesheet';css.href='propertythesis-assistant.css?v=1';document.head.appendChild(css)}
+    if(!document.querySelector('script[src*="propertythesis-assistant.js"]')){const script=document.createElement('script');script.src='propertythesis-assistant.js?v=1';script.defer=true;document.body.appendChild(script)}
+  };
   const addGuides=()=>document.querySelectorAll('.pricing-nav,.glossary-nav,.guide-nav,.pt-guest-nav').forEach(nav=>{if(nav.querySelector('[data-pt-guides],a[href="guides.html"],a[href$="/guides.html"]'))return;const link=document.createElement('a');link.href='guides.html';link.dataset.ptGuides='1';link.textContent='Guides';const signIn=[...nav.querySelectorAll('a,button')].find(node=>/sign in/i.test(node.textContent));signIn?nav.insertBefore(link,signIn):nav.appendChild(link);});
   const prepareGuidePage=()=>{
     const guide=document.querySelector('.guide-shell');
@@ -13,6 +17,7 @@
     document.querySelectorAll('a[href*="free-analysis=1"]').forEach(link=>link.href='index.html?from=guides');
   };
   const render=()=>{
+    loadAssistant();
     prepareGuidePage();
     addGuides();[100,500,1500,3000].forEach(ms=>setTimeout(addGuides,ms));
     if(document.querySelector('.pt-compliance-footer'))return;
