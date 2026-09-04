@@ -11,10 +11,6 @@
       document.body.insertBefore(header,guide);
     }
     document.querySelectorAll('a[href*="free-analysis=1"]').forEach(link=>link.href='index.html?from=guides');
-    const nav=guide.querySelector('.guide-nav');
-    if(nav&&!nav.querySelector('a[href="index.html?home=1"]')){
-      const home=document.createElement('a');home.href='index.html?home=1';home.textContent='PropertyThesis';nav.insertBefore(home,nav.firstChild);
-    }
   };
   const render=()=>{
     prepareGuidePage();
