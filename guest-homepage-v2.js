@@ -158,7 +158,7 @@
     if(entryParams.get('free-analysis')==='1'&&!entryParams.get('starter-price')&&!entryParams.get('starter-rent')){
       freeAnalysisActive=false;entryParams.delete('free-analysis');entryParams.delete('cb');
       history.replaceState(null,'',location.pathname+(entryParams.toString()?'?'+entryParams:'')+location.hash);
-      requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById('ptHomeStarterForm')?.scrollIntoView({behavior:'instant',block:'center'})));
+      requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'instant'})));
     }
     installReturnRoute();apply();[100,250,500,800,1200,1800,2600,4000,6000].forEach(ms=>setTimeout(apply,ms));setInterval(apply,2000);try{cloudClient?.auth?.onAuthStateChange?.((event)=>{if(event==='SIGNED_OUT'){freeAnalysisActive=false;freeEntered=false;noticeUser='';document.getElementById('ptAccountUpgradeBanner')?.remove();setTimeout(()=>{apply();window.scrollTo({top:0,behavior:'auto'});},0);}else if(event==='SIGNED_IN'){freeAnalysisActive=false;[0,100,350].forEach(ms=>setTimeout(apply,ms));}});}catch(_e){}window.addEventListener('pt:billing-updated',()=>{[700,1800,4000].forEach(ms=>setTimeout(()=>{noticeUser='';accountNotice()},ms))});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
