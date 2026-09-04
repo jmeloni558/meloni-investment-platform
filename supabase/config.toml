@@ -17,3 +17,8 @@ entrypoint = "./functions/notify-new-registration/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/rentcast-sale-listings/index.ts"
+
+[functions.propertythesis-assistant]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/propertythesis-assistant/index.ts"
