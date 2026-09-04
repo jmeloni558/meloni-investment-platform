@@ -3,8 +3,9 @@
 ## Scope
 
 `letter-of-intent.html` creates preliminary discussion-only LOIs from saved,
-completed analyses. Entry point: Review Results > Make the Offer > Prepare Letter
-of Intent. The page also lets the owner select another completed saved analysis.
+completed analyses. Entry point: Page 3, Client Report > Section 3, Preview &
+Export > Prepare Letter of Intent, alongside Download PDF and Download Pro Forma.
+The page also lets the owner select another completed saved analysis.
 The sender explicitly enters the proposed price; a saved acquisition price is
 only a starting value. No private underwriting or report is sent.
 
@@ -78,8 +79,8 @@ customer-facing privacy updates are public-rollout prerequisites.
 - Live unauthenticated endpoint call returned 401.
 - Owner Edge session: context/analysis selection, immutable preview, exact
   terms/envelope, edit invalidation and duplicate preview reuse passed.
-- Live email delivery is pending explicit user approval of one self-addressed
-  test. No email was sent during the initial implementation.
+- After explicit user approval, one self-addressed test was submitted and the
+  user confirmed receipt. No agents or sellers were contacted.
 - Security advisor reported no new LOI issue. Existing project findings remain:
   intentional claim_property_access definer RPC and plan-limited password leak
   protection. No unrelated settings changed.
