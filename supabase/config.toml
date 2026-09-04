@@ -22,3 +22,8 @@ entrypoint = "./functions/rentcast-sale-listings/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/propertythesis-assistant/index.ts"
+
+[functions.letter-of-intent]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/letter-of-intent/index.ts"

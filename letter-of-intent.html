@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="same-origin">
+<title>Letters of Intent | PropertyThesis</title>
+<link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="site-shell-v2.css?v=6"><link rel="stylesheet" href="letter-of-intent.css?v=1">
+</head><body><div class="app">
+<header class="top pt-site-header"><div class="topin"><a class="brand pt-site-brand" href="https://propertythesis.com/" aria-label="PropertyThesis home"><img class="pt-site-logo" src="assets/propertythesis-logo-make-the-offer.png?v=1" alt="PropertyThesis — Know the Numbers. Make the Offer."></a></div></header>
+<main class="pt-content-shell loi-shell">
+<nav class="pt-site-nav" data-account-nav aria-label="PropertyThesis navigation"><a href="index.html">Back to PropertyThesis</a><a href="index.html?signin=1">Sign In</a></nav>
+<header class="loi-intro"><span class="loi-eyebrow">OWNER PILOT · MAKE THE OFFER</span><h1>Start the conversation with a Letter of Intent.</h1><p>Turn a completed analysis into a clear, preliminary proposal. Review every term before sending. Your private underwriting stays private.</p></header>
+<p id="loiStatus" role="status" aria-live="polite">Checking account access…</p>
+<div id="loiWorkspace" hidden>
+<aside class="loi-notice"><strong>Discussion only—not a purchase contract.</strong><p>This pilot template has not received legal approval. LOIs can have legal consequences depending on their wording and circumstances. Obtain legal review before using one in a real transaction. No signatures, acceptance mechanism, binding exclusivity or confidentiality terms are included.</p><p id="loiPilot"></p></aside>
+<div class="loi-columns">
+<section class="loi-panel"><h2>1. Prepare your terms</h2>
+<form id="loiForm">
+<label for="loiAnalysis">Saved, completed analysis</label><select id="loiAnalysis" required><option value="">Choose an analysis</option></select>
+<p id="loiSource" class="loi-help"></p><p class="loi-help">Uses the last saved analysis. Save any changes on the analysis page before continuing. Proposed price is your choice; no maximum price or return target is disclosed.</p>
+<div class="loi-fields">
+<label>Buyer / purchasing entity<input name="buyer" maxlength="180" required autocomplete="organization"></label>
+<label>Your name<input name="sender" maxlength="180" required autocomplete="name"></label>
+<label>Your capacity<select name="role"><option>Buyer / investor</option><option>Authorized buyer representative</option></select></label>
+<label>Brokerage, if representing a buyer<input name="brokerage" maxlength="180" autocomplete="organization"></label>
+<label>Recipient name<input name="recipientName" maxlength="180" required></label>
+<label>Recipient email<input name="recipientEmail" type="email" maxlength="254" required autocomplete="off"></label>
+<label>Proposed purchase price ($)<input name="price" type="number" min="1" max="1000000000" step="0.01" required></label>
+<label>Proposed deposit ($)<input name="deposit" type="number" min="0" max="1000000000" step="0.01" value="0" required></label>
+<label>Proposed financing<select name="financing"><option>Cash</option><option>Financing contingency</option><option>Seller financing to be negotiated</option></select></label>
+<label>Due diligence (calendar days)<input name="diligenceDays" type="number" min="1" max="365" value="15" required></label>
+<label>Closing target (calendar days)<input name="closingDays" type="number" min="1" max="365" value="30" required></label>
+</div>
+<p class="loi-help">Timeframes run from the effective date of a future definitive agreement—not this letter. No deposit is due under the LOI.</p>
+<label class="loi-check"><input name="test" type="checkbox" checked>Mark as a software test—not a real proposal</label>
+<button class="loi-primary" type="submit" id="loiPrepare">Save &amp; Preview LOI</button>
+</form></section>
+<section class="loi-panel"><h2>2. Review before sending</h2><p id="loiEnvelope" class="loi-help">Your exact email will appear here after you save a preview.</p>
+<pre id="loiPreview" tabindex="0">No preview prepared.</pre>
+<div id="loiApproval" hidden><label class="loi-check"><input id="loiConfirm" type="checkbox">I have reviewed this exact letter and recipient, am authorized to contact them in the capacity stated, and understand this is a preliminary discussion—not a purchase contract.</label>
+<button class="loi-primary" id="loiSend" disabled>Send Reviewed LOI</button></div>
+<p class="loi-help">Only this letter is sent. No reports, underwriting, signature, or other attachments are included. Replies go to your verified account email.</p></section>
+</div>
+<section class="loi-panel loi-history"><div class="loi-history-head"><h2>3. Saved letters &amp; sending history</h2><button id="loiRefresh" type="button">Refresh History</button></div><p class="loi-help">“Submitted” means the email provider accepted the request—not that it reached the inbox or that any terms were accepted. Uncertain attempts remain locked to prevent duplicate emails.</p><div id="loiHistory"></div></section>
+</div><footer class="loi-help"><p>PropertyThesis · Know the Numbers. Make the Offer.</p><p>A division of MELONI REALTY INC. This software does not establish a brokerage relationship or provide legal advice.</p><a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Use</a> · <a href="mailto:jamie@propertythesis.com">Contact Support</a></footer></main></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="pricing-account-toolbar.js?v=5"></script><script src="letter-of-intent.js?v=1"></script>
+</body></html>
