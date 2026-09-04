@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  let owner = false, checkedUser = null, checking = false;
+  let owner = false, checkedUser = null, checking = false, watching = false;
   function apply() {
     const dashboard = document.querySelector('#dashboard .grid');
     if (!dashboard) return;
@@ -20,6 +20,7 @@
   async function refresh() {
     const client = typeof cloudClient !== 'undefined' ? cloudClient : window.__ptSharedSupabaseClient;
     if (!client || checking) return;
+    if (!watching) { watching = true; client.auth.onAuthStateChange(() => { owner = false; checkedUser = null; apply(); setTimeout(refresh, 0); }); }
     checking = true;
     try {
       const {data} = await client.auth.getSession(), id = data.session?.user?.id || null;

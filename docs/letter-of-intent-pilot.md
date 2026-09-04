@@ -68,3 +68,18 @@ customer-facing privacy updates are public-rollout prerequisites.
   and provider record. No invoice/Stripe functions or plan pricing changed.
 - Obtain template approval, test provider failures/delivery reporting and review
   retention/abuse controls before considering paid-user rollout.
+
+### Initial verification — September 4, 2026
+
+- 15 automated template/handler tests passed, including cross-user access,
+  confirmation/hash matching, stale analysis, duplicate/concurrent requests,
+  provider rejection, timeout and missing configuration.
+- Live transaction-only RLS test passed and rolled back; revoked owner denied.
+- Live unauthenticated endpoint call returned 401.
+- Owner Edge session: context/analysis selection, immutable preview, exact
+  terms/envelope, edit invalidation and duplicate preview reuse passed.
+- Live email delivery is pending explicit user approval of one self-addressed
+  test. No email was sent during the initial implementation.
+- Security advisor reported no new LOI issue. Existing project findings remain:
+  intentional claim_property_access definer RPC and plan-limited password leak
+  protection. No unrelated settings changed.
