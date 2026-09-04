@@ -1,6 +1,23 @@
 (()=>{
-  const addGuides=()=>document.querySelectorAll('.pricing-nav,.glossary-nav,.guide-nav,.pt-guest-nav').forEach(nav=>{if(nav.querySelector('[data-pt-guides]'))return;const link=document.createElement('a');link.href='guides.html';link.dataset.ptGuides='1';link.textContent='Guides';const signIn=[...nav.querySelectorAll('a,button')].find(node=>/sign in/i.test(node.textContent));signIn?nav.insertBefore(link,signIn):nav.appendChild(link);});
+  const addGuides=()=>document.querySelectorAll('.pricing-nav,.glossary-nav,.guide-nav,.pt-guest-nav').forEach(nav=>{if(nav.querySelector('[data-pt-guides],a[href="guides.html"],a[href$="/guides.html"]'))return;const link=document.createElement('a');link.href='guides.html';link.dataset.ptGuides='1';link.textContent='Guides';const signIn=[...nav.querySelectorAll('a,button')].find(node=>/sign in/i.test(node.textContent));signIn?nav.insertBefore(link,signIn):nav.appendChild(link);});
+  const prepareGuidePage=()=>{
+    const guide=document.querySelector('.guide-shell');
+    if(!guide)return;
+    ['styles.css','site-shell-v2.css?v=7'].forEach(href=>{if(document.querySelector(`link[href^="${href.split('?')[0]}"]`))return;const link=document.createElement('link');link.rel='stylesheet';link.href=href;document.head.appendChild(link);});
+    if(!document.querySelector('.pt-site-header')){
+      const header=document.createElement('header');
+      header.className='top pt-site-header';
+      header.innerHTML='<div class="topin"><a class="brand pt-site-brand" href="index.html?home=1" aria-label="PropertyThesis home"><img class="pt-site-logo" src="assets/propertythesis-logo-768.webp" width="768" height="768" alt="PropertyThesis — Know the Numbers. Prove the Case."></a></div>';
+      document.body.insertBefore(header,guide);
+    }
+    document.querySelectorAll('a[href*="free-analysis=1"]').forEach(link=>link.href='index.html?from=guides');
+    const nav=guide.querySelector('.guide-nav');
+    if(nav&&!nav.querySelector('a[href="index.html?home=1"]')){
+      const home=document.createElement('a');home.href='index.html?home=1';home.textContent='PropertyThesis';nav.insertBefore(home,nav.firstChild);
+    }
+  };
   const render=()=>{
+    prepareGuidePage();
     addGuides();[100,500,1500,3000].forEach(ms=>setTimeout(addGuides,ms));
     if(document.querySelector('.pt-compliance-footer'))return;
     if(!document.querySelector('link[href*="compliance-footer.css"]')){
