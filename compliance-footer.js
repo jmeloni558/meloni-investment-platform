@@ -1,5 +1,7 @@
 (()=>{
+  const addGuides=()=>document.querySelectorAll('.pricing-nav,.glossary-nav,.guide-nav,.pt-guest-nav').forEach(nav=>{if(nav.querySelector('[data-pt-guides]'))return;const link=document.createElement('a');link.href='guides.html';link.dataset.ptGuides='1';link.textContent='Guides';const signIn=[...nav.querySelectorAll('a,button')].find(node=>/sign in/i.test(node.textContent));signIn?nav.insertBefore(link,signIn):nav.appendChild(link);});
   const render=()=>{
+    addGuides();[100,500,1500,3000].forEach(ms=>setTimeout(addGuides,ms));
     if(document.querySelector('.pt-compliance-footer'))return;
     if(!document.querySelector('link[href*="compliance-footer.css"]')){
       const stylesheet=document.createElement('link');
