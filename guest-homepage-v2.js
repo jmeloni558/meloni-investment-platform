@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=37;
+  const VERSION=38;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -14,6 +14,7 @@
   let freeAnalysisActive=entryParams.get('free-analysis')==='1';
   const freeMode=()=>freeAnalysisActive;
   let signInRequestHandled=false;
+  let starterEntryPositioned=false;
   let returnRouteInstalled=false;
   function installReturnRoute(){
     if(returnRouteInstalled)return;
@@ -30,6 +31,15 @@
     const form=document.getElementById('ptHomeStarterForm');
     if(form){form.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>form.querySelector('[name="price"]')?.focus({preventScroll:true}),350);return;}
     location.href='index.html?start-analysis=1';
+  }
+  function positionStarterEntry(){
+    if(starterEntryPositioned||entryParams.get('start-analysis')!=='1')return;
+    const form=document.getElementById('ptHomeStarterForm');
+    if(!form)return;
+    starterEntryPositioned=true;
+    const position=()=>form.scrollIntoView({behavior:'instant',block:'center'});
+    requestAnimationFrame(()=>requestAnimationFrame(position));
+    [100,250].forEach(ms=>setTimeout(position,ms));
   }
   function startFromHomepage(address='',price='',rent='',place={}){
     const params=new URLSearchParams({"free-analysis":'1',cb:String(Date.now())});
@@ -152,7 +162,7 @@
     const standard=shell.querySelector('.app-nav-actions'),guestNav=shell.querySelector('.pt-guest-nav');
     if(guest&&free){ensureNav(shell);enterFreeAnalysis();revealPreparedHome();return true;}
     if(!guest){freeAnalysisActive=false;if(standard){standard.hidden=false;standard.style.removeProperty('display');}if(guestNav){guestNav.hidden=true;guestNav.style.display='none';}document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=true);accountNotice();revealPreparedHome();return true;}
-    ensureNav(shell);upgradeHero(hero);ensureExperience(sampleSection);document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=false);revealPreparedHome();return true;
+    ensureNav(shell);upgradeHero(hero);ensureExperience(sampleSection);document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=false);positionStarterEntry();revealPreparedHome();return true;
   }
   function start(){
     if(entryParams.get('free-analysis')==='1'&&!entryParams.get('starter-price')&&!entryParams.get('starter-rent')){
