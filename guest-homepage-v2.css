@@ -57,8 +57,10 @@ body.pt-guest-listings .app-nav-toolbar>:not(.pt-guest-nav){display:none!importa
 .pt-home-starter-hero{grid-template-columns:minmax(0,.88fr) minmax(420px,1.12fr);gap:42px;margin-top:0!important;padding:46px 50px;background:linear-gradient(125deg,#f7fbfa 0%,#fff 58%,#edf6f5 100%);border-color:#c8dcde;box-shadow:0 16px 44px rgba(16,45,70,.09)}
 .pt-home-starter-hero .pt-home-starter-copy h1{max-width:640px;margin:0 0 14px;color:#102d46;font-size:38px;line-height:1.08;letter-spacing:-.035em}
 .pt-home-starter-hero .pt-home-starter-copy>p{max-width:650px;color:#526a72;font-size:14px;line-height:1.68}
-.pt-home-outcome-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
-.pt-home-outcome-list span{padding:8px 10px;border:1px solid #c9dcdd;border-radius:999px;background:#fff;color:#285160;font-size:9.5px;font-weight:850}
+.pt-home-audience-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.pt-home-audience-list article{padding:14px;border:1px solid #c9dcdd;border-radius:11px;background:#f7fbfa}
+.pt-home-audience-list strong{display:block;margin-bottom:5px;color:#176b9d;font-size:11px}
+.pt-home-audience-list span{display:block;color:#526a72;font-size:10px;line-height:1.5}
 .pt-home-starter-hero .pt-home-starter-form{padding:26px;border-color:#aacdca;background:#fff;box-shadow:0 18px 42px rgba(16,45,70,.13)}
 .pt-home-starter-hero .pt-home-form-intro strong{font-size:18px}
 .pt-home-starter-hero .pt-home-form-intro span{font-size:10px}
@@ -68,5 +70,5 @@ body.pt-guest-listings .app-nav-toolbar>:not(.pt-guest-nav){display:none!importa
 .pt-home-form-note{margin:10px 0 0;color:#6b7d87;font-size:9.5px;line-height:1.5;text-align:center}
 .pt-home-starter-hero+#ptGuestGuidance{margin-top:0}
 @media(max-width:900px){.pt-home-starter-hero{grid-template-columns:1fr;padding:34px}.pt-home-starter-hero .pt-home-starter-copy h1{font-size:32px}}
-@media(max-width:620px){.pt-home-starter-hero{padding:24px 18px}.pt-home-starter-hero .pt-home-starter-copy h1{font-size:27px}.pt-home-starter-hero .pt-home-starter-copy>p{font-size:12px}.pt-home-starter-hero .pt-home-starter-form{padding:18px}.pt-home-starter-hero .pt-home-address-field input{min-height:54px;font-size:13px}}
-@media(max-width:320px){.pt-home-starter-hero{padding:14px 10px!important}.pt-home-starter-hero .pt-home-starter-copy h1{font-size:22px!important}.pt-home-outcome-list span{font-size:8px}.pt-home-form-note{font-size:8.5px}}
+@media(max-width:620px){.pt-home-starter-hero{padding:24px 18px}.pt-home-starter-hero .pt-home-starter-copy h1{font-size:27px}.pt-home-starter-hero .pt-home-starter-copy>p{font-size:12px}.pt-home-audience-list{grid-template-columns:1fr}.pt-home-starter-hero .pt-home-starter-form{padding:18px}.pt-home-starter-hero .pt-home-address-field input{min-height:54px;font-size:13px}}
+@media(max-width:320px){.pt-home-starter-hero{padding:14px 10px!important}.pt-home-starter-hero .pt-home-starter-copy h1{font-size:22px!important}.pt-home-audience-list article{padding:11px}.pt-home-audience-list span{font-size:9px}.pt-home-form-note{font-size:8.5px}}
