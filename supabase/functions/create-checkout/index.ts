@@ -25,6 +25,9 @@ export default {
     const userId = ctx.userClaims!.id;
     const email = ctx.userClaims!.email as string | undefined;
     if (!selected) return json({ error: 'Invalid plan' }, 400);
+    const { data: accountAccess, error: accountError } = await ctx.supabase.rpc('get_account_access');
+    if (accountError) return json({ error: 'Unable to check account access' }, 503);
+    if (accountAccess?.owner) return json({ error: 'Your owner account already has full access. No purchase is needed.', ownerAccess: true }, 409);
     if (selected.mode === 'payment' && !propertyId) return json({ error: 'A property is required' }, 400);
 
     for (const [limit, windowSeconds, scope] of [[10, 60, 'minute'], [100, 86400, 'day']] as const) {

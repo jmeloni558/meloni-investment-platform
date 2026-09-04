@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  if((window.__propertyThesisBillingV||0)>=10)return;window.__propertyThesisBillingV=10;
+  if((window.__propertyThesisBillingV||0)>=11)return;window.__propertyThesisBillingV=11;
   let bypass=false,busy=false,propertyId=null,pendingPlan='',planPromptOpened=false;
   const signedIn=()=>{try{return typeof cloudUser!=='undefined'&&!!cloudUser&&!!cloudClient}catch(_e){return false}};
   const status=t=>{const e=document.getElementById('ptBillingStatus');if(e)e.textContent=t||'';try{if(t&&typeof setStatus==='function')setStatus(t)}catch(_e){}};
@@ -16,9 +16,11 @@
     try{if(typeof refreshCloud==='function')await refreshCloud()}catch(_e){}
     return true;
   }
+  async function ownerAccess(){const {data,error}=await cloudClient.rpc('get_account_access');if(error)throw error;return data?.owner===true;}
   async function checkout(plan){
     if(busy)return;busy=true;status('Opening secure Stripe checkout…');let createdForCheckout=false;
     try{
+      if(await ownerAccess()){busy=false;modal().hidden=true;banner('Your owner account already has full access. No purchase is needed.');return;}
       if(plan==='single'&&!propertyId){
         try{if(typeof readFields==='function')readFields()}catch(_e){}
         propertyId=await ensurePropertyForCurrent();createdForCheckout=true;
@@ -39,6 +41,7 @@
     busy=true;status('Opening secure Stripe checkout…');
     localStorage.removeItem('ptBillingResumeV1');localStorage.removeItem('ptBillingDraftV1');localStorage.setItem('ptBillingUpgradeV1',plan);
     try{
+      if(await ownerAccess()){localStorage.removeItem('ptBillingUpgradeV1');busy=false;banner('Your owner account already has full access. No purchase is needed.');return;}
       const {data,error}=await cloudClient.functions.invoke('create-checkout',{body:{plan,propertyId:null}});
       if(error)throw error;if(!data?.url)throw new Error(data?.error||'Checkout could not be created.');
       try{window.UnsavedChangeProtection?.markClean?.()}catch(_e){}

@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=39;
+  const VERSION=40;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -71,11 +71,15 @@
     let uid='';try{uid=cloudUser?.id||'';}catch(_e){}if(!uid||noticeLoading||noticeUser===uid)return;
     noticeLoading=true;
     try{
-      const [subscriptionResult,propertyResult]=await Promise.all([
+      const [subscriptionResult,propertyResult,ownerResult]=await Promise.all([
         cloudClient.from('billing_subscriptions').select('plan,status,current_period_end').eq('user_id',uid).in('status',['active','trialing']).maybeSingle(),
-        cloudClient.from('properties').select('id').eq('user_id',uid).limit(1)
+        cloudClient.from('properties').select('id').eq('user_id',uid).limit(1),
+        cloudClient.rpc('get_account_access')
       ]);
-      if(subscriptionResult.error)throw subscriptionResult.error;if(propertyResult.error)throw propertyResult.error;
+      if(subscriptionResult.error)throw subscriptionResult.error;if(propertyResult.error)throw propertyResult.error;if(ownerResult.error)throw ownerResult.error;
+      if(cloudUser?.id!==uid)return;
+      if(ownerResult.data?.owner){noticeUser=uid;note.hidden=false;note.setAttribute('aria-label','PropertyThesis owner access');note.innerHTML='<div class="pt-account-upgrade-copy"><span class="pt-account-upgrade-kicker">OWNER ACCESS</span><strong>Full property analysis access</strong><span>Unlimited properties, PDF reports and Excel pro formas. No subscription required.</span></div>';return;}
+      note.setAttribute('aria-label','PropertyThesis professional plans');
       const data=subscriptionResult.data,active=!!data&&(!data.current_period_end||new Date(data.current_period_end).getTime()>Date.now());
       if(active){noticeUser=uid;note.hidden=true;return;}
       if(!propertyResult.data?.length){noticeUser='';note.hidden=true;return;}
