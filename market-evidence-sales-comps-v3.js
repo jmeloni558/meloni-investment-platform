@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__marketEvidenceSalesCompsV||0)>=VERSION)return;
   window.__marketEvidenceSalesCompsV=VERSION;
   const esc=v=>String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
@@ -8,7 +8,14 @@
   const num=v=>Number.isFinite(Number(v))?Number(v):null;
   const med=a=>{const x=a.filter(Number.isFinite).sort((a,b)=>a-b);if(!x.length)return null;const m=Math.floor(x.length/2);return x.length%2?x[m]:(x[m-1]+x[m])/2;};
   let candidates=[],selected=new Set(),fetching=false;
-  function subject(){try{return window.PropertyThesisSubjectProperty||state?.subjectProperty||null;}catch(_e){return window.PropertyThesisSubjectProperty||null;}}
+  function addressFallback(){
+    let address='';
+    try{address=String(state?.address||'').trim();}catch(_e){}
+    if(!address)address=String(document.getElementById('f_address')?.value||document.querySelector('[data-src="f_address"]')?.value||'').trim();
+    if(!address)return null;
+    return {formattedAddress:address,source:'Saved analysis address'};
+  }
+  function subject(){try{return window.PropertyThesisSubjectProperty||state?.subjectProperty||addressFallback();}catch(_e){return window.PropertyThesisSubjectProperty||addressFallback();}}
   function host(){const facts=document.querySelector('.pt-subject-facts');if(facts)return facts;return document.getElementById('guidedSetup')?.querySelector('.gw-body')||null;}
   function store(){try{if(typeof state==='undefined'||!state)return null;state.marketEvidence=state.marketEvidence||{};state.marketEvidence.salesComps=state.marketEvidence.salesComps||{};return state.marketEvidence.salesComps;}catch(_e){return null;}}
   function persist(criteria){const s=store();if(!s)return;s.candidates=candidates;s.selectedIds=[...selected];s.selectedComps=candidates.filter(x=>selected.has(x.id));if(criteria)s.criteria=criteria;s.updatedAt=new Date().toISOString();}
