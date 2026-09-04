@@ -5,7 +5,7 @@
   window.__userBrandedPdfVersion=VERSION;
 
   const HTML2CANVAS_SRC='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
-  const PRODUCT='PropertyThesis',TAGLINE='Know the Numbers. Prove the Case.',REPORT_TYPE='Investment Property Analysis';
+  const PRODUCT='PropertyThesis',TAGLINE='Know the Numbers. Make the Offer.',REPORT_TYPE='Investment Property Analysis';
   const CAPTURE_WIDTH=816,CAPTURE_SCALE=1.15,JPEG_QUALITY=.92,FOOTER_H=48,TOP_PAD=24,BOTTOM_PAD=10,PAGE_GAP=10,SIDE_PAD=22,ROW_PAD=30,ROW_BLEED=5;
   let preparedPdf=null,preparingPdf=null,warmTimer=0;
 

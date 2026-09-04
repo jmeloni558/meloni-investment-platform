@@ -61,7 +61,7 @@
   function brandRows(title) {
     const b = branding();
     const logo = b.logo ? `<tr><td colspan="80"><img src="${esc(b.logo)}" style="max-height:52px;max-width:190px"></td></tr>` : '';
-    return `<tr class="brand"><td colspan="80"><b>${esc(b.company)}</b></td></tr>${logo}<tr class="title"><td colspan="80"><b>${esc(title)}</b></td></tr><tr><td colspan="80">${esc(b.address)}</td></tr><tr><td colspan="80">Prepared by: ${esc(b.person)}</td></tr>${b.contact ? `<tr><td colspan="80">Contact: ${esc(b.contact)}</td></tr>` : ''}<tr><td colspan="80">PropertyThesis • Know the Numbers. Prove the Case.</td></tr><tr><td colspan="80"></td></tr>`;
+    return `<tr class="brand"><td colspan="80"><b>${esc(b.company)}</b></td></tr>${logo}<tr class="title"><td colspan="80"><b>${esc(title)}</b></td></tr><tr><td colspan="80">${esc(b.address)}</td></tr><tr><td colspan="80">Prepared by: ${esc(b.person)}</td></tr>${b.contact ? `<tr><td colspan="80">Contact: ${esc(b.contact)}</td></tr>` : ''}<tr><td colspan="80">PropertyThesis • Know the Numbers. Make the Offer.</td></tr><tr><td colspan="80"></td></tr>`;
   }
   function sheet(name, body) {
     const sheetName = esc(name.replace(/[\[\]:*?\/\\]/g, '').slice(0, 31));

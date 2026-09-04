@@ -7,7 +7,7 @@
 <style>body{font-family:Arial,sans-serif;margin:0;display:grid;place-items:center;min-height:100vh;background:#f5faff;color:#344054}.loading{padding:24px;text-align:center}.loading b{display:block;margin-bottom:8px;color:#2563eb}</style>
 </head>
 <body>
-<div class="loading"><b>PropertyThesis</b>Know the Numbers. Prove the Case.</div>
+<div class="loading"><b>PropertyThesis</b>Know the Numbers. Make the Offer.</div>
 <script>
 (async()=>{
   const BUILD='20260823-1615-mortgage-tools-suite';
@@ -15,12 +15,12 @@
     const r=await fetch('./index.html?build='+encodeURIComponent(BUILD),{cache:'no-store'});
     if(!r.ok)throw new Error('Unable to load application');
     let html=await r.text();
-    html=html.replace('<title>Investment Property Analyzer | Meloni Realty</title>','<title>PropertyThesis | Know the Numbers. Prove the Case.</title>');
+    html=html.replace('<title>Investment Property Analyzer | Meloni Realty</title>','<title>PropertyThesis | Know the Numbers. Make the Offer.</title>');
     html=html.replace('content="Investment property cash flow, valuation, debt service, tax, IRR, NPV and amortization analysis."','content="PropertyThesis helps real estate investors model property income, financing, valuation, taxes, cash flow, IRR, NPV and investment returns."');
-    html=html.replace('<h1>Investment Property Analyzer</h1><p>Meloni Realty • income, valuation, financing, taxes and investment returns</p>','<h1>PropertyThesis</h1><p>Know the Numbers. Prove the Case.</p>');
-    html=html.replace('Prepared using the Meloni Realty Investment Property Analyzer','Prepared with PropertyThesis • Know the Numbers. Prove the Case.');
+    html=html.replace('<h1>Investment Property Analyzer</h1><p>Meloni Realty • income, valuation, financing, taxes and investment returns</p>','<h1>PropertyThesis</h1><p>Know the Numbers. Make the Offer.</p>');
+    html=html.replace('Prepared using the Meloni Realty Investment Property Analyzer','Prepared with PropertyThesis • Know the Numbers. Make the Offer.');
     html=html.replace('<h2 id="authTitle">Meloni Investment Platform</h2><p>Sign in or create an account to access cloud-saved analyses across devices.</p>','<h2 id="authTitle">PropertyThesis</h2><p>Sign in or create an account to access your PropertyThesis analyses across devices.</p>');
-    html=html.replace('Browser-based investment model derived from the supplied Investment Property Analysis workbook. All calculations run locally in the browser.','PropertyThesis • Know the Numbers. Prove the Case.');
+    html=html.replace('Browser-based investment model derived from the supplied Investment Property Analysis workbook. All calculations run locally in the browser.','PropertyThesis • Know the Numbers. Make the Offer.');
     const assets=['styles.css','app.js','cloud.js','stage5.js','stage5-cloud.js','stage6.js'];
     for(const asset of assets){html=html.split('"'+asset+'"').join('"'+asset+'?build='+BUILD+'"');}
     html=html.replace('</head>','<link rel="stylesheet" href="header-hero.css?build='+BUILD+'"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"></head>');

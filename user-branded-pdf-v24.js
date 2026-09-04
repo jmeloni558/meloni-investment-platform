@@ -3,7 +3,7 @@
   const VERSION=34;
   if((window.__userBrandedPdfVersion||0)>=VERSION)return;
   window.__userBrandedPdfVersion=VERSION;
-  const PRODUCT='PropertyThesis',TAGLINE='Know the Numbers. Prove the Case.',REPORT_TYPE='Investment Property Analysis';
+  const PRODUCT='PropertyThesis',TAGLINE='Know the Numbers. Make the Offer.',REPORT_TYPE='Investment Property Analysis';
   const HTML2CANVAS_SRC='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
   const CAPTURE_WIDTH=816,PAGE_W=612,PAGE_H=792,MARGIN_X=24,TOP=24,FOOTER=44,BOTTOM=10;
   let running=false;

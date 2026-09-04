@@ -5,7 +5,7 @@
   window.__propertyThesisBrandingV=VERSION;
 
   const BRAND='PropertyThesis';
-  const TAGLINE='Know the Numbers. Prove the Case.';
+  const TAGLINE='Know the Numbers. Make the Offer.';
   const TITLE='Real Estate Investment Analysis Software | PropertyThesis';
 
   function setText(el,text){
@@ -56,7 +56,7 @@
       }
     }
 
-    setText(document.querySelector('.print-only .mini'),'Prepared with PropertyThesis • Know the Numbers. Prove the Case.');
+    setText(document.querySelector('.print-only .mini'),'Prepared with PropertyThesis • Know the Numbers. Make the Offer.');
 
     if(!document.getElementById('ptAuthModes')){
       const authTitle=document.querySelector('#authModal .modal h2');
@@ -65,7 +65,7 @@
       setText(authIntro,'Sign in or create an account to access your PropertyThesis analyses across devices.');
     }
 
-    setText(document.querySelector('.footer'),'PropertyThesis • Know the Numbers. Prove the Case.');
+    setText(document.querySelector('.footer'),'PropertyThesis • Know the Numbers. Make the Offer.');
     ensureMarketRentPersistence();
     ensureGuestSampleScripts();
   }

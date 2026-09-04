@@ -48,7 +48,7 @@ For every failure, record the page URL, browser, account state, exact action, ex
 - [ ] **1.4** Refresh with F5. The page remains at the top and does not jump down and back up.
 - [ ] **1.5** Hard-refresh once. The same current design loads.
 - [ ] **1.6** Confirm there is no unexpected sign-in modal, “Leave site?” warning, loading overlay, or browser console error.
-- [ ] **1.7** Confirm the logo is sharp, blends into the header, and reads “Know the Numbers. Prove the Case.”
+- [ ] **1.7** Confirm the logo is sharp, blends into the header, and reads “Know the Numbers. Make the Offer.”
 - [ ] **1.8** Click the header logo from the home page. It reloads/returns to the top without visible scrolling.
 - [ ] **1.9** Resize the window from desktop width to narrow/mobile width. No controls disappear, overlap, or become unreachable.
 

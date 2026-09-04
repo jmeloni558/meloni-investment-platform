@@ -6,7 +6,7 @@
 <title>Mortgage Tools | PropertyThesis</title>
 <meta name="description" content="Standalone mortgage analysis tools from PropertyThesis: rate buydown, price vs rate, seller concessions, loan comparison, extra payments, and refinance analysis.">
 <meta name="robots" content="index,follow"><link rel="canonical" href="https://propertythesis.com/mortgage-tools.html">
-<meta property="og:type" content="website"><meta property="og:site_name" content="PropertyThesis"><meta property="og:title" content="Mortgage Tools | PropertyThesis"><meta property="og:description" content="Compare mortgage rates, buydowns, seller concessions, loans, extra payments and refinance scenarios."><meta property="og:url" content="https://propertythesis.com/mortgage-tools.html"><meta property="og:image" content="https://propertythesis.com/assets/propertythesis-logo.png"><meta name="twitter:card" content="summary_large_image">
+<meta property="og:type" content="website"><meta property="og:site_name" content="PropertyThesis"><meta property="og:title" content="Mortgage Tools | PropertyThesis"><meta property="og:description" content="Compare mortgage rates, buydowns, seller concessions, loans, extra payments and refinance scenarios."><meta property="og:url" content="https://propertythesis.com/mortgage-tools.html"><meta property="og:image" content="https://propertythesis.com/assets/propertythesis-logo-make-the-offer.png"><meta name="twitter:card" content="summary_large_image">
 <script>const ptEmbedded=new URLSearchParams(location.search).get('embedded')==='1'&&window.parent!==window;document.documentElement.classList.add('pt-auth-checking');if(ptEmbedded)document.documentElement.classList.add('pt-embedded')</script>
 <script>if(!ptEmbedded)document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/script>')</script>
 <script src="mortgage-tools-page-auth.js?v=3" defer></script>
@@ -23,7 +23,7 @@ main{max-width:1180px;margin:0 auto;padding:26px 18px 60px}.intro h1{margin:0 0 
 <link rel="stylesheet" href="site-shell-v2.css?v=6">
 </head>
 <body>
-<header class="top pt-site-header"><div class="topin"><a class="brand-home pt-site-brand" href="https://propertythesis.com/" aria-label="PropertyThesis home"><img class="pt-site-logo" src="assets/propertythesis-logo.png?v=1" alt="PropertyThesis — Know the Numbers. Prove the Case."></a></div></header>
+<header class="top pt-site-header"><div class="topin"><a class="brand-home pt-site-brand" href="https://propertythesis.com/" aria-label="PropertyThesis home"><img class="pt-site-logo" src="assets/propertythesis-logo-make-the-offer.png?v=1" alt="PropertyThesis — Know the Numbers. Make the Offer."></a></div></header>
 <main class="pt-content-shell">
 <nav class="pt-site-nav" aria-label="PropertyThesis navigation"><a class="primary" href="index.html?free-analysis=1">Start Free Analysis</a><a href="index.html?app-action=search-listings">Search Listings</a><a href="sample-report-viewer.html?v=2">Sample Report</a><a href="pricing.html">Pricing</a><a href="glossary.html">Glossary</a><span class="pt-nav-spacer"></span><a href="index.html?signin=1">Sign In</a></nav>
 <section class="intro"><h1>Mortgage Tools</h1><p>Standalone mortgage decision tools for buyers, homeowners, investors, and real estate professionals. These calculators are intentionally separate from PropertyThesis property analyses and use only the information entered here.</p></section>
@@ -130,4 +130,4 @@ function calcRefi(){const P=n('rfBalance'),ro=n('rfOldRate'),to=n('rfOldTerm'),r
 function activate(id){document.querySelectorAll('.tool-card').forEach(x=>x.classList.toggle('active',x.dataset.tool===id));document.querySelectorAll('.tool').forEach(x=>x.classList.toggle('active',x.id===id));history.replaceState(null,'','#'+id);window.scrollTo({top:document.getElementById('toolGrid').offsetTop-12,behavior:'smooth'})}
 document.querySelectorAll('.tool-card').forEach(c=>c.addEventListener('click',()=>activate(c.dataset.tool)));const initial=location.hash.slice(1);if(document.getElementById(initial)&&document.getElementById(initial).classList.contains('tool'))activate(initial);calcBuydown();calcPriceRate();calcConcession();calcLoanCompare();calcExtra();calcRefi();
 </script>
-<script src="sample-property-card-nav.js?v=3"></script><script src="page-refresh-top.js?v=8"></script><script src="compliance-footer.js?v=4"></script></body></html>
+<script src="sample-property-card-nav.js?v=3"></script><script src="page-refresh-top.js?v=8"></script><script src="compliance-footer.js?v=10"></script></body></html>
