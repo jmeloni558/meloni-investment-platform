@@ -60,6 +60,7 @@
   }
   let freeEntered=false;
   let noticeUser='',noticeLoading=false;
+  function revealPreparedHome(){document.documentElement.classList.remove('pt-preparing-home');}
   function guestNotice(note){note.hidden=false;note.className='';note.innerHTML='<strong>Build your analysis free—no account required yet.</strong><span>Enter and review every assumption. When you calculate the results, create or sign in to a free account so PropertyThesis can display and save your analysis.</span>';}
   async function accountNotice(){
     const shell=document.getElementById('appNavShell');if(!shell||signedOut())return;
@@ -149,9 +150,9 @@
       setTimeout(()=>auth('signin',plan?'Sign in to continue with the selected PropertyThesis plan.':'Sign in to your PropertyThesis account.'),80);
     }
     const standard=shell.querySelector('.app-nav-actions'),guestNav=shell.querySelector('.pt-guest-nav');
-    if(guest&&free){ensureNav(shell);enterFreeAnalysis();return true;}
-    if(!guest){freeAnalysisActive=false;if(standard){standard.hidden=false;standard.style.removeProperty('display');}if(guestNav){guestNav.hidden=true;guestNav.style.display='none';}document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=true);accountNotice();return true;}
-    ensureNav(shell);upgradeHero(hero);ensureExperience(sampleSection);document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=false);return true;
+    if(guest&&free){ensureNav(shell);enterFreeAnalysis();revealPreparedHome();return true;}
+    if(!guest){freeAnalysisActive=false;if(standard){standard.hidden=false;standard.style.removeProperty('display');}if(guestNav){guestNav.hidden=true;guestNav.style.display='none';}document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=true);accountNotice();revealPreparedHome();return true;}
+    ensureNav(shell);upgradeHero(hero);ensureExperience(sampleSection);document.querySelectorAll('#ptHomeExperience').forEach(x=>x.hidden=false);revealPreparedHome();return true;
   }
   function start(){
     if(entryParams.get('free-analysis')==='1'&&!entryParams.get('starter-price')&&!entryParams.get('starter-rent')){
