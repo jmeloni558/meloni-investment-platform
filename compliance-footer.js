@@ -1,6 +1,6 @@
 (()=>{
   const loadAssistant=()=>{
-    if(!document.querySelector('link[href*="propertythesis-assistant.css"]')){const css=document.createElement('link');css.rel='stylesheet';css.href='propertythesis-assistant.css?v=2';document.head.appendChild(css)}
+    if(!document.querySelector('link[href*="propertythesis-assistant.css"]')){const css=document.createElement('link');css.rel='stylesheet';css.href='propertythesis-assistant.css?v=3';document.head.appendChild(css)}
     if(!document.querySelector('script[src*="propertythesis-assistant.js"]')){const script=document.createElement('script');script.src='propertythesis-assistant.js?v=2';script.defer=true;document.body.appendChild(script)}
   };
   const addGuides=()=>document.querySelectorAll('.pricing-nav,.glossary-nav,.guide-nav,.pt-guest-nav').forEach(nav=>{if(nav.querySelector('[data-pt-guides],a[href="guides.html"],a[href$="/guides.html"]'))return;const link=document.createElement('a');link.href='guides.html';link.dataset.ptGuides='1';link.textContent='Guides';const signIn=[...nav.querySelectorAll('a,button')].find(node=>/sign in/i.test(node.textContent));signIn?nav.insertBefore(link,signIn):nav.appendChild(link);});
