@@ -68,6 +68,7 @@
     </div>`;
     (document.querySelector('.app')||document.body).appendChild(footer);
     bindSharing(footer);
+    if(window.top===window.self&&!document.getElementById('ptAnalyticsLoader')){const script=document.createElement('script');script.id='ptAnalyticsLoader';script.src='site-analytics.js?v=1';script.defer=true;document.body.appendChild(script);}
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render,{once:true});else render();
 })();
