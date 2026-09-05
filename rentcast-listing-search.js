@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=27,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
+  const VERSION=28,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
   if((window.__ptRentCastListingSearchV||0)>=VERSION)return;
   window.__ptRentCastListingSearchV=VERSION;
   let panel=null,results=[],offset=0,activeListing=null;const featureCache=new Map(),rentCache=new Map();
@@ -59,6 +59,12 @@
     specific.innerHTML='<h3>Find a Specific Listing</h3><p>Already have a property in mind? Enter its full address to find the active listing, without the area-search filters below.</p><form class="pt-specific-form"><label for="ptSpecificAddress">Property address</label><div class="pt-specific-row"><input id="ptSpecificAddress" name="specificAddress" autocomplete="street-address" maxlength="160" required placeholder="Street address, unit, city, state, ZIP" aria-describedby="ptSpecificHelp"><button type="submit">Find Listing</button></div><small id="ptSpecificHelp">Include the unit number when applicable. Listing availability depends on our data provider.</small></form><div class="pt-specific-status" role="status" aria-live="polite"></div><div class="pt-specific-results"></div>';
     panel.querySelector('.pt-listings-search').insertAdjacentElement('beforebegin',specific);
     specific.querySelector('form').addEventListener('submit',e=>{e.preventDefault();findSpecificListing();});
+    const areaForm=panel.querySelector('.pt-listings-search');
+    areaForm.setAttribute('aria-labelledby','ptAreaSearchTitle');
+    areaForm.insertAdjacentHTML('afterbegin','<header class="pt-area-search-heading"><span>EXPLORE MULTIPLE PROPERTIES</span><h3 id="ptAreaSearchTitle">Browse Listings in an Area</h3><p>Still looking for the right property? Search a city, ZIP code, or a radius around an address. Then narrow the results by property type, price and other features.</p><small>The starting address below is the center of a neighborhood search—not an exact-property lookup.</small></header>');
+    const radiusAddress=areaForm.querySelector('[name="address"]');
+    radiusAddress.placeholder='Address to search around—not an exact lookup';
+    radiusAddress.closest('.pt-listings-field').querySelector('label').textContent='Search around this address';
     panel.querySelector('.pt-listings-close').onclick=close;
     return panel;
   }

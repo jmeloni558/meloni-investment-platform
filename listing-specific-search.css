@@ -13,6 +13,12 @@
   #ptListingsPanel .pt-specific-status { margin-top: 14px; font-size: 15px; line-height: 1.5; }
   #ptListingsPanel .pt-specific-results article { margin-top: 16px; padding: 18px; background: #fff; border: 1px solid #b5ced4; border-radius: 10px; overflow-wrap: anywhere; }
   #ptListingsPanel .pt-specific-results h4 { font-size: 18px; margin: 0; }
+  #ptListingsPanel .pt-listings-search { margin-top: 32px; border-top: 4px solid #8aa7bb; padding-top: 0; }
+  #ptListingsPanel .pt-area-search-heading { grid-column: 1 / -1; margin: 0 0 24px; padding: 26px; border: 1px solid #b4c8d6; border-radius: 0 0 12px 12px; background: #eaf1f8; color: #173f56; }
+  #ptListingsPanel .pt-area-search-heading span { display: block; font-size: 12px; font-weight: 800; letter-spacing: .09em; margin-bottom: 8px; }
+  #ptListingsPanel .pt-area-search-heading h3 { margin: 0 0 10px; font-size: 25px; line-height: 1.25; }
+  #ptListingsPanel .pt-area-search-heading p { margin: 0 0 12px; font-size: 16px; line-height: 1.55; max-width: 900px; }
+  #ptListingsPanel .pt-area-search-heading small { display: block; font-size: 14px; line-height: 1.5; font-weight: 600; }
   @media (max-width: 650px) {
     #ptListingsPanel .pt-specific-listing { margin: 16px 0; padding: 18px; }
     #ptListingsPanel .pt-specific-row { flex-direction: column; }
