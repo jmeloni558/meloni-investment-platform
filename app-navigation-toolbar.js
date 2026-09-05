@@ -115,7 +115,7 @@
     catch(e){try{if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');}catch(_e){}try{window.Stage6Dashboard?.render?.();}catch(_e){}}
     setTimeout(refresh,0);
   }
-  function openMortgageTools(){if(!isSignedIn()){promptSignIn('Sign in to use PropertyThesis Mortgage Tools and calculators.');return;}const panel=ensureMortgagePanel(),frame=panel?.querySelector('iframe');setMortgageMode(true);window.scrollTo({top:document.getElementById('appNavShell')?.offsetTop||0,behavior:'auto'});if(frame&&!frame.getAttribute('src'))requestAnimationFrame(()=>frame.setAttribute('src',frame.dataset.src));}
+function openMortgageTools(){if(!isSignedIn()){promptSignIn('Sign in to use PropertyThesis Mortgage Tools and calculators.');return;}const panel=ensureMortgagePanel(),frame=panel?.querySelector('iframe');setMortgageMode(true);window.scrollTo({top:document.getElementById('appNavShell')?.offsetTop||0,behavior:'auto'});if(frame&&!frame.getAttribute('src'))frame.setAttribute('src',frame.dataset.src);}
 
   function handleRequestedAction(){
     if(requestedActionHandled||!isSignedIn())return false;
