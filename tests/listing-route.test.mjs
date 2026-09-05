@@ -22,3 +22,11 @@ test('public page links use the dedicated listing route',()=>{
   assert.doesNotMatch(read(f),/href="index.html\?app-action=search-listings"/);
  }
 });
+test('requested listings retry until ready and stop after opening once',()=>{
+ const fn=read('rentcast-listing-search.js').match(/  let requestedOpened=false;[\s\S]*?\n  function restoreSearch/)[0].replace(/\n  function restoreSearch$/,'');
+ let ready=false,calls=0;const ctx={URLSearchParams,location:{search:'?listing-search=1'},panel:null,open:()=>{calls++;return ready;}};
+ vm.createContext(ctx);vm.runInContext(fn,ctx);ctx.requested();assert.equal(calls,1);
+ ready=true;ctx.requested();assert.equal(calls,2);ctx.requested();assert.equal(calls,2);
+ assert.match(read('rentcast-listing-search.js'),/ensureButton\(\);requested\(\);if\(\+\+tries>40\)/);
+ assert.match(read('rentcast-listing-search.js'),/if\(!ensurePanel\(\)\)return false/);
+});

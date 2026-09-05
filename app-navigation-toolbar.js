@@ -122,12 +122,12 @@
     const params=new URLSearchParams(location.search),action=params.get('app-action');if(!action)return false;
     if(action==='profile'&&!window.ProfileSystem?.open)return false;
     if(action==='search-listings'&&!window.PropertyThesisListingSearch?.open)return false;
+    if(action==='search-listings'&&window.PropertyThesisListingSearch.open()===false)return false;
     requestedActionHandled=true;params.delete('app-action');history.replaceState(null,'',location.pathname+(params.toString()?'?'+params:'')+location.hash);
     if(action==='new')newAnalysis();
     else if(action==='profile')window.ProfileSystem.open();
     else if(action==='existing')openExisting();
     else if(action==='mortgage')openMortgageTools();
-    else if(action==='search-listings')window.PropertyThesisListingSearch?.open?.();
     else if(action==='search-properties')window.ToolbarLibrarySearch?.open?.('property');
     else if(action==='search-clients')window.ToolbarLibrarySearch?.open?.('client');
     return true;
