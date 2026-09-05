@@ -15,5 +15,6 @@ test('report workspace appearance stays screen-only and limits blue export styli
   assert.match(css,/@media screen/);
   assert.match(css,/button:active/);assert.match(css,/button\[aria-busy=true\]/);
   assert.doesNotMatch(css,/#rbDownloadPdf/);
-  assert.match(read('app-core.html'),/report-builder-workspace.css\?v=1/);
+  assert.match(css,/#report #rbControls\[id\]/);
+  assert.match(read('app-core.html'),/report-builder-workspace.css\?v=2/);
 });
