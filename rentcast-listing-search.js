@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=29,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
+  const VERSION=30,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
   if((window.__ptRentCastListingSearchV||0)>=VERSION)return;
   window.__ptRentCastListingSearchV=VERSION;
   let panel=null,results=[],offset=0,activeListing=null;const featureCache=new Map(),rentCache=new Map();
@@ -64,6 +64,11 @@
     areaForm.insertAdjacentHTML('afterbegin','<header class="pt-area-search-heading"><span>EXPLORE MULTIPLE PROPERTIES</span><h3 id="ptAreaSearchTitle">Browse Listings in an Area</h3><p>Still looking for the right property? Search a city, ZIP code, or a radius around an address. Then narrow the results by property type, price and other features.</p><small>The starting address below is the center of a neighborhood search—not an exact-property lookup.</small></header>');
     const radiusAddress=areaForm.querySelector('[name="address"]');
     radiusAddress.placeholder='Address to search around—not an exact lookup';
+    radiusAddress.id='ptAreaAddress';
+    radiusAddress.setAttribute('data-pt-listing-address','area');
+    specific.querySelector('input').setAttribute('data-pt-listing-address','specific');
+    radiusAddress.closest('.pt-listings-field').querySelector('label').htmlFor=radiusAddress.id;
+    window.PropertyThesisListingAddresses?.attachAll();
     radiusAddress.closest('.pt-listings-field').querySelector('label').textContent='Search around this address';
     panel.querySelector('.pt-listings-close').onclick=close;
     return panel;

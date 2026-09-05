@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=15;
+  const VERSION=16;
   if((window.__propertyAddressRecognitionV||0)>=VERSION)return;
   window.__propertyAddressRecognitionV=VERSION;
 
@@ -8,7 +8,7 @@
   let googlePromise=null,lastLookup='',lookupBusy=false,syncingAddress=false,mobileScrollTimer=0,mobileAdjustedInput=null;
   const addressInputs=()=>[...document.querySelectorAll('#f_address,[data-src="f_address"],[data-pt-home-address]')];
   const isVisible=el=>{if(!el)return false;const style=getComputedStyle(el),rect=el.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0;};
-  const visibleAddressInputs=()=>addressInputs().filter(isVisible);
+  const visibleAddressInputs=()=>[...addressInputs(),...document.querySelectorAll('[data-pt-listing-address]')].filter(isVisible);
   const key=()=>window.PROPERTYTHESIS_CONFIG?.googlePlacesKey||window.PROPERTYTHESIS_GOOGLE_PLACES_KEY||localStorage.getItem(GOOGLE_KEY_STORAGE)||'';
 
   function ensureDismissStyle(){
@@ -94,6 +94,6 @@
     document.addEventListener('propertythesis:analysis-loaded',()=>setTimeout(attachAll,50));
     document.addEventListener('click',e=>{if(e.target?.closest?.('#gwNext,#gwBack,#gwSteps .gw-step,[data-s8-tab],.nav [data-tab]')){hideSuggestions();setTimeout(enforceStepVisibility,0);setTimeout(enforceStepVisibility,80);}},true);
   }
-  window.PropertyThesisAddressRecognition={lookup,attachAll,hideSuggestions,getProperty:()=>window.PropertyThesisSubjectProperty||null};
+  window.PropertyThesisAddressRecognition={lookup,attachAll,hideSuggestions,showSuggestions,loadGoogle,makeMobileSuggestionRoom,resetMobileSuggestionRoom:()=>{mobileAdjustedInput=null;clearTimeout(mobileScrollTimer);},getProperty:()=>window.PropertyThesisSubjectProperty||null};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
