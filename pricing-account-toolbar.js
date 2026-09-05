@@ -1,11 +1,12 @@
 'use strict';
 (()=>{
-  const VERSION=5;
+  const VERSION=6;
   if((window.__pricingAccountToolbarV||0)>=VERSION)return;
   window.__pricingAccountToolbarV=VERSION;
   const SUPABASE_URL='https://lmaiqpkogmmsldkziggy.supabase.co';
   const SUPABASE_KEY='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
   let request=0;
+  const reveal=()=>document.documentElement.classList.remove('pt-account-nav-pending');
   const guests=new Map();
   function render(user,client,owner){
     const nav=document.querySelector('.pricing-nav,[data-account-nav]');if(!nav)return;
@@ -14,7 +15,7 @@
       if(nav.dataset.accountToolbar){nav.innerHTML=guests.get(nav);delete nav.dataset.accountToolbar;}
       document.querySelector('[data-account-identity]')?.remove();
       document.body.classList.remove('pt-user-signed-in');
-      return;
+      reveal();return;
     }
     nav.dataset.accountToolbar='true';
     document.body.classList.add('pt-user-signed-in');
@@ -36,6 +37,7 @@
         location.href=data.url;
       }catch(_error){button.disabled=false;button.textContent='Manage Subscription';alert('Billing management could not open. Please try again.');}
     });
+    reveal();
   }
   async function refresh(user,client){
     const current=++request;
@@ -46,11 +48,11 @@
   }
   async function start(){
     try{
-      if(!window.supabase?.createClient)return;
+      if(!window.supabase?.createClient){reveal();return;}
       const client=window.__ptSharedSupabaseClient||(window.__ptSharedSupabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}}));
       client.auth.onAuthStateChange((_event,session)=>setTimeout(()=>refresh(session?.user,client),0));
       const {data}=await client.auth.getSession();await refresh(data?.session?.user,client);
-    }catch(_e){}
+    }catch(_e){reveal();}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

@@ -1,0 +1,3 @@
+.pt-account-nav-pending .pricing-nav,
+.pt-account-nav-pending [data-account-nav],
+.pt-account-nav-pending [data-account-identity]{visibility:hidden!important}

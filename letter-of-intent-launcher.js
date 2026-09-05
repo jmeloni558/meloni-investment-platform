@@ -43,6 +43,10 @@
   }
   document.addEventListener('click', () => setTimeout(refresh, 200));
   addEventListener('pt:billing-updated', () => {checkedUser=null;refresh();});
-  new MutationObserver(apply).observe(document.body,{childList:true,subtree:true});
-  refresh(); setTimeout(refresh,1500);
+  function start(){
+    if(!document.body)return;
+    new MutationObserver(apply).observe(document.body,{childList:true,subtree:true});
+    refresh(); setTimeout(refresh,1500);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
