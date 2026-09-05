@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
   const RETURN_URL=location.pathname+location.search+location.hash;
-  const LOGIN_URL='login.html?return='+encodeURIComponent(RETURN_URL);
+  const LOGIN_URL='index.html?signin=1&return='+encodeURIComponent(RETURN_URL);
   const reveal=()=>document.documentElement.classList.remove('pt-auth-checking');
   const redirect=()=>location.replace(LOGIN_URL);
 

@@ -1,7 +1,9 @@
 'use strict';
 (()=>{
-  function loginUrl(){return 'login.html?return='+encodeURIComponent(location.pathname+location.search+location.hash)}
-  function route(){location.assign(loginUrl())}
+  function route(){
+    if(window.PropertyThesisAuth?.open)window.PropertyThesisAuth.open('signin');
+    else location.assign('index.html?signin=1&return='+encodeURIComponent(location.pathname+location.search+location.hash));
+  }
   function bind(){
     const header=document.getElementById('authBtn');
     if(header)header.onclick=route;

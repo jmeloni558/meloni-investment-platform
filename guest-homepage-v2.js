@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=41;
+  const VERSION=42;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -17,7 +17,7 @@
   let returnRouteInstalled=false;
   function installReturnRoute(){
     if(returnRouteInstalled)return;
-    const params=new URLSearchParams(location.search),raw=params.get('return');
+    const params=entryParams,raw=params.get('return');
     if(params.get('signin')!=='1'||!raw)return;
     let target;
     try{const url=new URL(raw,location.origin);if(url.origin!==location.origin)return;target=url.href;}catch(_e){return;}
@@ -144,14 +144,16 @@
   function apply(){
     const shell=document.getElementById('appNavShell'),hero=document.getElementById('ptGuestGuidance'),sampleSection=document.getElementById('ptSampleShowcase');if(!shell||!hero||!sampleSection)return false;
     const guest=signedOut(),free=freeMode(),params=new URLSearchParams(location.search),listings=guest&&!free&&(params.get('listing-search')==='1'||params.get('app-action')==='search-listings');document.body.classList.toggle('pt-guest-landing',guest&&!free&&!listings);document.body.classList.toggle('pt-guest-analysis',guest&&free);document.body.classList.toggle('pt-guest-listings',listings);
-    if(guest&&!free&&!signInRequestHandled&&params.get('signin')==='1'){
+    installReturnRoute();
+    if(guest&&!free&&!signInRequestHandled&&entryParams.get('signin')==='1'&&window.PropertyThesisAuth?.open&&document.getElementById('ptAuthModes')){
       signInRequestHandled=true;
       const plan=params.get('plan'),cleanParams=new URLSearchParams(params);
       cleanParams.delete('signin');
       cleanParams.delete('return');
       const cleanQuery=cleanParams.toString();
       history.replaceState(null,'',location.pathname+(cleanQuery?'?'+cleanQuery:'')+location.hash);
-      setTimeout(()=>auth('signin',plan?'Sign in to continue with the selected PropertyThesis plan.':'Sign in to your PropertyThesis account.'),80);
+      const destination=entryParams.get('return')||'';
+      window.PropertyThesisAuth.open('signin',destination.includes('mortgage-tools.html')?'Sign in to use Mortgage Tools. You will return to the tools after signing in.':plan?'Sign in to continue with the selected PropertyThesis plan.':'Sign in to your PropertyThesis account.');
     }
     const standard=shell.querySelector('.app-nav-actions'),guestNav=shell.querySelector('.pt-guest-nav');
     if(guest&&free){ensureNav(shell);enterFreeAnalysis();revealPreparedHome();return true;}
