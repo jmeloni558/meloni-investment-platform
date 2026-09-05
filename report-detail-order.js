@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__reportDetailOrderVersion||0)>=VERSION)return;
   window.__reportDetailOrderVersion=VERSION;
 
@@ -15,6 +15,7 @@
     'includeTaxOperations',
     'includeReturns',
     'includeInvestmentCashflow',
+    'offerAnalysis',
     'includeSensitivity'
   ];
 
@@ -40,13 +41,18 @@
       const label=input.closest('.rb-toggle');
       if(label)byKey[input.dataset.rbPref]=label;
     });
-    ORDER.forEach(key=>{
+    byKey.offerAnalysis=grid.querySelector('.pt-offer-report-toggle');
+    ORDER.forEach((key,index)=>{
       const label=byKey[key];
       if(!label)return;
       const text=label.querySelector('span');
       if(text&&LABELS[key])text.textContent=LABELS[key];
+      label.dataset.reportOrder=String(index+1).padStart(2,'0');
       grid.appendChild(label);
     });
+    let note=grid.parentElement.querySelector('.rb-report-order-note');
+    if(!note){note=document.createElement('p');note.className='rb-report-order-note';grid.insertAdjacentElement('afterend',note);}
+    note.textContent='Listed in PDF reading order, left to right. Detail tables appear within their parent sections. The opening summary, snapshot and final conclusion are included automatically.';
     return true;
   }
 
@@ -55,7 +61,7 @@
     if(!btn)return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    const inputs=[...document.querySelectorAll('#rbControls [data-rb-pref]')];
+    const inputs=[...document.querySelectorAll('#rbControls [data-rb-pref],#rbControls [data-pt-offer-report]')];
     inputs.forEach(input=>{
       if(!input.checked){
         input.checked=true;

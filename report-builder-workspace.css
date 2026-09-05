@@ -1,0 +1,30 @@
+/* Builder controls only: never alter the exported report canvas. */
+@media screen {
+  #clientReport #rbControls[id]{border-radius:20px!important;box-shadow:0 12px 34px rgba(23,55,78,.09)!important}
+  #clientReport #rbControls[id]>.sectionhead{padding:22px 24px!important;background:#eaf3f8!important}
+  #clientReport #rbControls[id]>.sectionhead h2{font-size:23px!important}
+  #clientReport #rbControls[id]>.sectionhead p{font-size:13px!important;line-height:1.6!important}
+  #clientReport #rbControls[id] .rb-control-grid{gap:18px!important;padding:20px 20px 0!important}
+  #clientReport #rbControls[id] .rb-work-zone{padding:18px;border-radius:14px;background:#fbfdff}
+  #clientReport #rbControls[id] .rb-zone-title{font-size:13px;letter-spacing:.06em}
+  #clientReport #rbControls[id] .rb-zone-help{font-size:12px;line-height:1.5;margin-top:6px}
+  #clientReport #rbControls[id] .rb-zone-head{padding-bottom:14px;margin-bottom:16px}
+  #clientReport #rbControls[id] .rb-recipient-panel label{font-size:12px!important}
+  #clientReport #rbControls[id] .rb-recipient-panel input{min-height:46px!important;font-size:14px}
+  #clientReport #rbControls[id] .rb-toggle-grid{gap:9px!important}
+  #clientReport #rbControls[id] :is(.rb-toggle,.pt-offer-report-toggle){display:flex;align-items:center!important;gap:8px;min-width:0;min-height:62px!important;padding:11px!important;border:1px solid #d4e0e9!important;border-radius:10px!important;background:#fff!important;font-size:12px!important;line-height:1.45!important;color:#354f62!important}
+  #clientReport #rbControls[id] :is(.rb-toggle,.pt-offer-report-toggle)::before{content:attr(data-report-order);color:#5c778a;font-size:10px;font-weight:800}
+  #clientReport #rbControls[id] :is(.rb-toggle,.pt-offer-report-toggle):has(input:checked){background:#edf6fa!important;border-color:#8fb6cc!important}
+  #clientReport #rbControls[id] input[type=checkbox]{flex-shrink:0;width:16px;height:16px;accent-color:#175c92}
+  #clientReport #rbControls[id] .rb-report-order-note{font-size:12px;line-height:1.6;color:#526779;margin:14px 0 0}
+  #clientReport #rbControls[id] .rb-export-panel{margin:18px 20px 20px!important;padding:20px!important;background:#f0f6fa!important;border-radius:14px!important;border-top:3px solid #759eb6!important}
+  #clientReport #rbControls[id] .rb-actions button,
+  #clientReport #rbControls[id] .rb-section-preset-actions button{background:#fff!important;color:#254e69!important;border:1px solid #a9c0d1!important;box-shadow:none!important;border-radius:9px!important;min-height:44px!important;font-size:12px!important;padding:11px 16px!important}
+  #clientReport #rbControls[id] .rb-actions button:hover,
+  #clientReport #rbControls[id] .rb-section-preset-actions button:hover{background:#e2eef6!important}
+  #clientReport #rbControls[id] .rb-actions button:active,
+  #clientReport #rbControls[id] .rb-actions button[aria-busy=true],
+  #clientReport #rbControls[id] .rb-section-preset-actions button:active{background:#175c92!important;color:#fff!important;border-color:#175c92!important}
+  #clientReport #rbControls[id] button:focus-visible{outline:3px solid #388bb7!important;outline-offset:3px}
+  @media(max-width:650px){#clientReport #rbControls[id] .rb-control-grid{padding:12px 12px 0!important}#clientReport #rbControls[id] .rb-export-panel{margin:12px!important}#clientReport #rbControls[id]>.sectionhead{padding:18px!important;flex-wrap:wrap}}
+}
