@@ -30,7 +30,7 @@
   function makeBanner(){
     const label=propertyLabel();
     const d=document.createElement('div');d.className='pt-unsaved-new screen-only';
-    d.innerHTML=`<div><strong>Unsaved new analysis for ${label}</strong><span>Calculate only updates the results. To keep this as a separate analysis under the existing property, click <b>Save New Analysis to This Property</b> before leaving.</span></div><button type="button" class="btn primary" data-pt-save-new>Save New Analysis to This Property</button>`;
+    d.innerHTML=`<div><strong>Unsaved new analysis for ${label}</strong><span>Calculate only updates the results. To keep this as a separate analysis under the saved property, click <b>Save New Analysis to This Property</b> before leaving.</span></div><button type="button" class="btn primary" data-pt-save-new>Save New Analysis to This Property</button>`;
     d.querySelector('[data-pt-save-new]').onclick=async()=>{
       const b=d.querySelector('[data-pt-save-new]');
       b.disabled=true;b.textContent='Saving…';

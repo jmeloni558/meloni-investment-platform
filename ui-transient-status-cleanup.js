@@ -60,7 +60,7 @@
     shell.innerHTML=`
       <nav class="pt-fallback-nav" aria-label="Application tools">
         <button id="appNavNew" type="button">New Analysis</button>
-        <button id="appNavExisting" type="button">Existing Properties</button>
+        <button id="appNavExisting" type="button">Saved Properties</button>
         <button id="appNavMortgage" type="button">Mortgage Tools</button>
       </nav>
       <section id="ptGuestGuidance" class="pt-fallback-hero">

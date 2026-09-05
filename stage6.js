@@ -77,7 +77,7 @@
     let sec=document.getElementById('propertyhub');
     if(!btn){
       const cloudTab=[...document.querySelectorAll('.tab')].find(b=>b.dataset.tab==='cloud');
-      btn=document.createElement('button');btn.className='tab';btn.dataset.tab='propertyhub';btn.textContent='Existing Properties';nav?.insertBefore(btn,cloudTab||null);
+      btn=document.createElement('button');btn.className='tab';btn.dataset.tab='propertyhub';btn.textContent='Saved Properties';nav?.insertBefore(btn,cloudTab||null);
     }
     btn.onclick=async()=>{if(cloudUser&&typeof refreshCloud==='function')await refreshCloud();switchTab('propertyhub');renderHub()};
     if(sec)return;

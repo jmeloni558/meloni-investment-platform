@@ -33,12 +33,12 @@
   function statusFor(a){if(!a)return 'No Analysis';const o=a.outputs||{},req=Number(a.assumptions?.requiredReturn),irr=Number(o.irr),npv=Number(o.npv);if(npv>=0&&Number.isFinite(irr)&&Number.isFinite(req)&&irr>=req)return 'Supportable';if(npv>=0)return 'Mixed / Review';return 'Review Needed'}
   function renderPropertyFile(){
     injectSection();const body=document.getElementById('propertyFileBody');const p=propertyById(currentPropertyId);
-    if(!p){body.innerHTML='<div class="card span-12 pf-empty">Select a property from Existing Properties.</div>';return}
+    if(!p){body.innerHTML='<div class="card span-12 pf-empty">Select a property from Saved Properties.</div>';return}
     const c=clientById(p.client_id),hist=analysesFor(p.id),a=hist[0]||null,o=a?.outputs||{},s=a?.assumptions||{},r=reportPrefs(a),z=fullResult(a),coc=z&&(-z.initial)?z.years[0].atcf/(-z.initial):NaN;
     const reportUpdated=a?.report_meta?.report_updated_at||a?.updated_at;
     body.innerHTML=`
       <div class="card span-12">
-        <div class="pf-breadcrumb"><button id="pfBack">Existing Properties</button><span>›</span><span>${esc4(p.name||'Property File')}</span></div>
+        <div class="pf-breadcrumb"><button id="pfBack">Saved Properties</button><span>›</span><span>${esc4(p.name||'Property File')}</span></div>
         <div class="pf-hero"><div><h2>${esc4(p.name||'Untitled Property')}</h2><p>${esc4(p.address||[p.city,p.state,p.postal_code].filter(Boolean).join(', ')||'No address entered')}</p></div><div class="actions"><span class="pf-status">${p.archived?'Archived':statusFor(a)}</span><button class="btn secondary" id="pfReport">Generate Report</button><button class="btn primary" id="pfNewAnalysis">New Analysis</button></div></div>
       </div>
       <div class="card span-12"><div class="sectionhead"><div><h2>Current Investment Snapshot</h2><p>${a?'Latest saved analysis: '+esc4(a.name):'No analysis has been saved for this property yet.'}</p></div><span class="badge">${a?safeDate(a.updated_at):'No analysis'}</span></div>

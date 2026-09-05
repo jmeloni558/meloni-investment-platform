@@ -16,7 +16,7 @@
       return;
     }
     nav.dataset.accountToolbar='true';
-    nav.innerHTML='<a href="index.html?app-action=new">New Analysis</a><a href="index.html?app-action=existing">Existing Properties</a><a href="index.html?app-action=search-listings">Search Listings</a><a href="index.html?app-action=search-properties">Search Saved</a><a href="index.html?app-action=search-clients">Search Clients</a><a href="index.html?app-action=mortgage">Mortgage Tools</a><a href="glossary.html">Glossary</a>'+(owner?'':'<button type="button" data-manage-billing>Manage Subscription</button>');
+    nav.innerHTML='<a href="index.html?app-action=new">New Analysis</a><a href="index.html?app-action=existing">Saved Properties</a><a href="index.html?app-action=search-listings">Search Listings</a><a href="index.html?app-action=search-properties">Search Saved</a><a href="index.html?app-action=search-clients">Search Clients</a><a href="index.html?app-action=mortgage">Mortgage Tools</a><a href="glossary.html">Glossary</a>'+(owner?'':'<button type="button" data-manage-billing>Manage Subscription</button>');
     if(nav.hasAttribute('data-account-nav')){
       let identity=document.querySelector('[data-account-identity]');
       if(!identity){identity=document.createElement('a');identity.dataset.accountIdentity='';identity.href='index.html';identity.style.cssText='color:#fff;font-size:14px;line-height:1.6;overflow-wrap:anywhere;text-align:right;max-width:100%';document.querySelector('.topin')?.appendChild(identity);}

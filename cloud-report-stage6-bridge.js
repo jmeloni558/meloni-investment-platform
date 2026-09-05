@@ -11,12 +11,12 @@
         return;
       }
       if(!window.Stage6Dashboard?.openProperty){
-        if(typeof setStatus==='function')setStatus('Existing Properties report engine is still loading. Try again in a moment.');
+        if(typeof setStatus==='function')setStatus('Saved Properties report engine is still loading. Try again in a moment.');
         return;
       }
 
       // Load the saved analysis through the same proven path used by
-      // Existing Properties -> Generate Report.
+      // Saved Properties -> Generate Report.
       await window.Stage6Dashboard.openProperty(selectedPropertyId,'report');
 
       // Give the current report presentation/branding pass time to finish,

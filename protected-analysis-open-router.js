@@ -180,7 +180,7 @@
         }
         if(!restored){
           forgetView();
-          status('The saved analysis could not be restored automatically. Open it again from Existing Properties.');
+          status('The saved analysis could not be restored automatically. Open it again from Saved Properties.');
         }
       }finally{restoring=false;}
     },250);
