@@ -130,4 +130,4 @@ function calcRefi(){const P=n('rfBalance'),ro=n('rfOldRate'),to=n('rfOldTerm'),r
 function activate(id){document.querySelectorAll('.tool-card').forEach(x=>x.classList.toggle('active',x.dataset.tool===id));document.querySelectorAll('.tool').forEach(x=>x.classList.toggle('active',x.id===id));history.replaceState(null,'','#'+id);window.scrollTo({top:document.getElementById('toolGrid').offsetTop-12,behavior:'smooth'})}
 document.querySelectorAll('.tool-card').forEach(c=>c.addEventListener('click',()=>activate(c.dataset.tool)));const initial=location.hash.slice(1);if(document.getElementById(initial)&&document.getElementById(initial).classList.contains('tool'))activate(initial);calcBuydown();calcPriceRate();calcConcession();calcLoanCompare();calcExtra();calcRefi();
 </script>
-<script src="sample-property-card-nav.js?v=4"></script><script src="page-refresh-top.js?v=8"></script><script src="compliance-footer.js?v=13"></script></body></html>
+<script src="sample-property-card-nav.js?v=4"></script><script src="page-refresh-top.js?v=8"></script><script src="compliance-footer.js?v=14"></script></body></html>

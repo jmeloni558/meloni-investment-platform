@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><title>Section 10 Export Harness</title>
+<button id="download">Download repaired pro forma</button>
+<script>
+window.state={address:'1000 Section 10 Report Test Ave, Tampa, FL 33602',price:500000,land:100000,units:1,rent:4000,rentGrowth:.02,vacancy:.10,opEx:.40,depLife:27.5,appreciation:.03,hold:7,sellCost:.05,mortgage:400000,interestOnly:false,mortRate:.0625,loanYears:30,points:0,origFee:0,ordinaryTax:.28,depTax:.25,capGainsTax:.15,requiredReturn:.10,desiredCap:.0625,desiredGrm:8.35,initialRepairs:0};
+window.result={years:Array.from({length:7},(_,i)=>{const pgi=48000*Math.pow(1.02,i),vac=pgi*.1,egi=pgi-vac,opex=egi*.4,noi=egi-opex,debt=29554.42562046694,interest=24867.242894097602-i*300,taxable=noi-interest-14545.454545454546,opTax=taxable*.28;return{year:i+1,pgi,vac,egi,opex,noi,debt,interest,taxable,opTax,atcf:noi-debt-opTax};}),depreciation:14545.454545454546,pointCost:0,netSale:584190.0860768134,book:398181.8181818182,gain:186008.26789499522,accDep:101818.18181818182,saleTax:53355.78563879474,ater:168000,cap:.05184,capValue:414720,IRR:.0868,NPV:-7982};
+window.UserBranding={getProfile:()=>({company_name:'Meloni Realty',full_name:'Jamie Meloni',professional_title:'Real Estate Broker',license_number:'BK3167461 • CQ1067291',email:'jrmeloni@hotmail.com',website:'PropertyThesis.com'})};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="../report-proforma-download-controller-v1.js"></script>
+<script>download.onclick=()=>PropertyThesisProFormaDownload.download();</script>

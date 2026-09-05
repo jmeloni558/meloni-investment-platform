@@ -38,6 +38,10 @@
     });
   };
   const render=()=>{
+    if(!document.querySelector('script[src*="public-navigation.js"]')){
+      const css=document.createElement('link');css.rel='stylesheet';css.href='public-navigation.css?v=1';document.head.appendChild(css);
+      const script=document.createElement('script');script.src='public-navigation.js?v=1';document.body.appendChild(script);
+    }
     loadAssistant();
     prepareGuidePage();
     addGuides();[100,500,1500,3000].forEach(ms=>setTimeout(addGuides,ms));
