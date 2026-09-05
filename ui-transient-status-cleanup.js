@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__ptTransientStatusCleanupV||0)>=VERSION)return;
   window.__ptTransientStatusCleanupV=VERSION;
 

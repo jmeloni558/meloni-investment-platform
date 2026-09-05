@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=43;
+  const VERSION=44;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
