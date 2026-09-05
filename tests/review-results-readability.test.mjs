@@ -10,7 +10,7 @@ const luminance = hex => {
   return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
 };
 test('review stylesheet is loaded by the application', () => {
-  assert.match(core, /href="review-results-readability\.css\?v=1"/);
+  assert.match(core, /href="review-results-readability\.css\?v=2"/);
 });
 test('highlighted metrics override the global primary button background, without targeting buttons', () => {
   assert.match(css, /#dashboard #ptDecisionCenter \.ptdc-metric\.primary,\s*#dashboard #investmentOfferAnalysis \.ioa-box\.primary\s*\{\s*background: #edf7f2 !important;/);

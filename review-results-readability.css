@@ -38,13 +38,19 @@
     line-height: 1.5 !important;
     color: var(--review-muted) !important;
   }
-  #dashboard #reviewAnalysisSetup :is(.field label, .valuation-field-note) {
+  #dashboard.section #reviewAnalysisSetup :is(.field label, .valuation-field-note,
+    .review-implied-value span, .review-implied-value small, .pt-address-recognition-status) {
     font-size: 14px !important;
     line-height: 1.5 !important;
     color: var(--review-muted) !important;
     min-height: 0 !important;
   }
-  #dashboard #reviewAnalysisSetup .sectionhead p {
+  #dashboard.section #reviewAnalysisSetup .sectionhead h2 { font-size: 20px !important; }
+  #dashboard.section #reviewAnalysisSetup .review-implied-value b {
+    font-size: 24px !important;
+    line-height: 1.3 !important;
+  }
+  #dashboard.section #reviewAnalysisSetup .sectionhead p {
     font-size: 15px !important;
     line-height: 1.6 !important;
     color: var(--review-copy) !important;
