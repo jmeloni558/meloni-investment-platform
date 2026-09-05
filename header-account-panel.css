@@ -1,0 +1,77 @@
+/* Presentation only: preserve the existing controls and authentication handlers. */
+@media screen {
+  body.pt-user-signed-in .top.pt-site-header .topactions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px 10px;
+    width: 360px;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 20px !important;
+    background: #f8fbfd !important;
+    border: 1px solid #d4e2e9 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 12px 32px rgba(4,25,41,.2) !important;
+    backdrop-filter: none;
+  }
+  body.pt-user-signed-in .top.pt-site-header .authbar { display: contents; }
+  body.pt-user-signed-in .top.pt-site-header #authUser {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: block;
+    min-width: 0;
+    padding: 0 0 16px;
+    border-bottom: 1px solid #dbe5ec;
+    color: #173f56 !important;
+    font-size: 15px !important;
+    font-weight: 650;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
+  body.pt-user-signed-in .top.pt-site-header #authUser::before {
+    content: 'YOUR ACCOUNT';
+    display: block;
+    margin-bottom: 5px;
+    color: #526779;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .12em;
+  }
+  body.pt-user-signed-in .top.pt-site-header :is(#profileBrandBtn, #signOutBtn) {
+    grid-row: 2;
+    min-height: 44px;
+    margin: 0 !important;
+    padding: 10px 13px !important;
+    border-radius: 9px !important;
+    font-size: 14px !important;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: normal;
+    box-shadow: none !important;
+    cursor: pointer;
+  }
+  body.pt-user-signed-in .top.pt-site-header #profileBrandBtn {
+    grid-column: 1;
+    color: #fff !important;
+    background: #175575 !important;
+    border: 1px solid #175575 !important;
+  }
+  body.pt-user-signed-in .top.pt-site-header #signOutBtn {
+    grid-column: 2;
+    color: #294d63 !important;
+    background: #fff !important;
+    border: 1px solid #bfced9 !important;
+  }
+  body.pt-user-signed-in .top.pt-site-header #profileBrandBtn:hover { background: #10445f !important; }
+  body.pt-user-signed-in .top.pt-site-header #signOutBtn:hover { background: #eaf1f6 !important; }
+  body.pt-user-signed-in .top.pt-site-header :is(#profileBrandBtn, #signOutBtn):focus-visible { outline: 3px solid #2b7995; outline-offset: 3px; }
+  @media (max-width: 650px) {
+    body.pt-user-signed-in .top.pt-site-header .topactions { width: 100%; padding: 18px !important; }
+  }
+  @media (max-width: 360px) {
+    body.pt-user-signed-in .top.pt-site-header .topactions { grid-template-columns: minmax(0, 1fr); }
+    body.pt-user-signed-in .top.pt-site-header #signOutBtn { grid-column: 1; grid-row: 3; }
+  }
+}
