@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   if((window.__pricingAccountToolbarV||0)>=VERSION)return;
   window.__pricingAccountToolbarV=VERSION;
   const SUPABASE_URL='https://lmaiqpkogmmsldkziggy.supabase.co';
@@ -13,14 +13,17 @@
     if(!user){
       if(nav.dataset.accountToolbar){nav.innerHTML=guests.get(nav);delete nav.dataset.accountToolbar;}
       document.querySelector('[data-account-identity]')?.remove();
+      document.body.classList.remove('pt-user-signed-in');
       return;
     }
     nav.dataset.accountToolbar='true';
+    document.body.classList.add('pt-user-signed-in');
     nav.innerHTML='<a href="index.html?app-action=new">New Analysis</a><a href="index.html?app-action=existing">Saved Properties</a><a href="index.html?app-action=search-listings">Search Listings</a><a href="index.html?app-action=search-properties">Search Saved</a><a href="index.html?app-action=search-clients">Search Clients</a><a href="index.html?app-action=mortgage">Mortgage Tools</a><a href="glossary.html">Glossary</a>'+(owner?'':'<button type="button" data-manage-billing>Manage Subscription</button>');
-    if(nav.hasAttribute('data-account-nav')){
+    nav.querySelectorAll('a').forEach(link=>{if(new URL(link.href).pathname===location.pathname){link.classList.add('active');link.setAttribute('aria-current','page');}});
+    if(document.querySelector('.topin')){
       let identity=document.querySelector('[data-account-identity]');
-      if(!identity){identity=document.createElement('a');identity.dataset.accountIdentity='';identity.href='index.html';identity.style.cssText='color:#fff;font-size:14px;line-height:1.6;overflow-wrap:anywhere;text-align:right;max-width:100%';document.querySelector('.topin')?.appendChild(identity);}
-      identity.textContent=user.email+(owner?' · Owner access':' · My account');
+      if(!identity){identity=document.createElement('div');identity.dataset.accountIdentity='';identity.className='topactions';identity.innerHTML='<span id="authUser"></span><button id="profileBrandBtn" type="button">Profile &amp; Branding</button><button id="signOutBtn" type="button">Sign Out</button>';document.querySelector('.topin').appendChild(identity);identity.querySelector('#profileBrandBtn').onclick=()=>{location.href='index.html?app-action=profile';};identity.querySelector('#signOutBtn').onclick=async()=>{const button=identity.querySelector('#signOutBtn');button.disabled=true;try{const {error}=await client.auth.signOut({scope:'local'});if(error)throw error;await refresh(null,client);}catch(_e){button.disabled=false;alert('Sign out could not complete. Please try again.');}};}
+      identity.querySelector('#authUser').textContent=user.email;
       identity.setAttribute('aria-label','Signed in as '+user.email+(owner?', owner access':''));
       document.querySelectorAll('.sample-next-step>a').forEach(link=>{link.textContent='Start My Analysis →';link.href='index.html?app-action=new';});
     }

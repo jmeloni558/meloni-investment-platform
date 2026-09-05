@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=44;
+  const VERSION=45;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -120,8 +120,10 @@
   function handleRequestedAction(){
     if(requestedActionHandled||!isSignedIn())return false;
     const params=new URLSearchParams(location.search),action=params.get('app-action');if(!action)return false;
+    if(action==='profile'&&!window.ProfileSystem?.open)return false;
     requestedActionHandled=true;params.delete('app-action');history.replaceState(null,'',location.pathname+(params.toString()?'?'+params:'')+location.hash);
     if(action==='new')newAnalysis();
+    else if(action==='profile')window.ProfileSystem.open();
     else if(action==='existing')openExisting();
     else if(action==='mortgage')openMortgageTools();
     else if(action==='search-listings')window.PropertyThesisListingSearch?.open?.();
@@ -163,7 +165,7 @@
   }
   function cleanWorkflow(){const workflow=document.getElementById('stage8Workflow');if(!workflow)return false;workflow.classList.add('app-toolbar-clean');return true;}
   function retireLegacyNavigation(){document.querySelectorAll('.tab[data-tab],[data-app-advanced],[data-s8-advanced]').forEach(el=>{const id=el.dataset.tab||el.dataset.appAdvanced||el.dataset.s8Advanced;if(retired.has(id)||contextualOnly.has(id))el.hidden=true;});const active=activeSection();if(retired.has(active))go('dashboard');}
-  function refresh(){if(!ensureToolbar())return false;cleanWorkflow();retireLegacyNavigation();const guest=document.getElementById('ptGuestGuidance');if(guest)guest.hidden=!uiShowsSignedOut();const sample=document.getElementById('ptSampleShowcase');if(sample)sample.hidden=!uiShowsSignedOut();if(mortgageMode){setMortgageMode(true);return true;}const active=activeSection();const newBtn=document.getElementById('appNavNew');if(newBtn)newBtn.classList.toggle('active',primary.includes(active));const existing=document.getElementById('appNavExisting');if(existing)existing.classList.toggle('active',active==='propertyhub');const mortgage=document.getElementById('appNavMortgage');if(mortgage)mortgage.classList.remove('active');return true;}
+  function refresh(){if(!ensureToolbar())return false;cleanWorkflow();retireLegacyNavigation();const guest=document.getElementById('ptGuestGuidance');if(guest)guest.hidden=!uiShowsSignedOut();const sample=document.getElementById('ptSampleShowcase');if(sample)sample.hidden=!uiShowsSignedOut();const listings=document.getElementById('ptListingsPanel')?.classList.contains('is-open');if(mortgageMode&&!listings)setMortgageMode(true);const active=activeSection();const selected=listings?'appNavListings':mortgageMode?'appNavMortgage':active==='propertyhub'?'appNavExisting':primary.includes(active)?'appNavNew':'';document.querySelectorAll('#appNavShell .app-nav-action').forEach(button=>{const current=button.id===selected;button.classList.toggle('active',current);if(current)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});return true;}
   function scheduleResume(){[150,500,1000,1800,3000].forEach(ms=>setTimeout(resumeFreeAnalysis,ms));}
   function finishSignInNavigation(userId,preserveSavedRestore){
     const revision=++authNavigationRevision,navigation=userNavigationRevision;
