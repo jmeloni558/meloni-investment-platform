@@ -121,6 +121,7 @@
     if(requestedActionHandled||!isSignedIn())return false;
     const params=new URLSearchParams(location.search),action=params.get('app-action');if(!action)return false;
     if(action==='profile'&&!window.ProfileSystem?.open)return false;
+    if(action==='search-listings'&&!window.PropertyThesisListingSearch?.open)return false;
     requestedActionHandled=true;params.delete('app-action');history.replaceState(null,'',location.pathname+(params.toString()?'?'+params:'')+location.hash);
     if(action==='new')newAnalysis();
     else if(action==='profile')window.ProfileSystem.open();

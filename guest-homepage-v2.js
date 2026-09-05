@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=40;
+  const VERSION=41;
   if((window.__ptGuestHomepageV||0)>=VERSION)return;
   window.__ptGuestHomepageV=VERSION;
 
@@ -143,7 +143,7 @@
   }
   function apply(){
     const shell=document.getElementById('appNavShell'),hero=document.getElementById('ptGuestGuidance'),sampleSection=document.getElementById('ptSampleShowcase');if(!shell||!hero||!sampleSection)return false;
-    const guest=signedOut(),free=freeMode(),params=new URLSearchParams(location.search),listings=guest&&!free&&params.get('listing-search')==='1';document.body.classList.toggle('pt-guest-landing',guest&&!free&&!listings);document.body.classList.toggle('pt-guest-analysis',guest&&free);document.body.classList.toggle('pt-guest-listings',listings);
+    const guest=signedOut(),free=freeMode(),params=new URLSearchParams(location.search),listings=guest&&!free&&(params.get('listing-search')==='1'||params.get('app-action')==='search-listings');document.body.classList.toggle('pt-guest-landing',guest&&!free&&!listings);document.body.classList.toggle('pt-guest-analysis',guest&&free);document.body.classList.toggle('pt-guest-listings',listings);
     if(guest&&!free&&!signInRequestHandled&&params.get('signin')==='1'){
       signInRequestHandled=true;
       const plan=params.get('plan'),cleanParams=new URLSearchParams(params);

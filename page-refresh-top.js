@@ -5,6 +5,12 @@
   try{if('scrollRestoration' in history)history.scrollRestoration=isReload?'manual':'auto'}catch(_e){}
   const top=()=>window.scrollTo({top:0,left:0,behavior:'instant'});
   const params=new URLSearchParams(location.search);
+  // Explicit destinations must not inherit an old home-page scroll position.
+  if(params.get('listing-search')==='1'||params.get('app-action')==='search-listings'){
+    try{history.scrollRestoration='manual';sessionStorage.removeItem('pt-scroll-return-v1');}catch(_e){}
+    top();
+    return;
+  }
   const RETURN_KEY='pt-scroll-return-v1';
   let returnPosition=null;
   try{

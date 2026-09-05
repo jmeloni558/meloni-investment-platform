@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=31,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
+  const VERSION=32,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
   if((window.__ptRentCastListingSearchV||0)>=VERSION)return;
   window.__ptRentCastListingSearchV=VERSION;
   let panel=null,results=[],offset=0,activeListing=null;const featureCache=new Map(),rentCache=new Map();
@@ -96,7 +96,7 @@
   }
   function hideApplication(on){document.querySelectorAll('.section').forEach(s=>s.style.display=on?'none':'');const workflow=document.getElementById('stage8Workflow');if(workflow)workflow.style.display=on?'none':'';document.getElementById('appMortgageToolsPanel')?.style.setProperty('display','none');}
   function refreshAccess(){if(!panel)return;const guest=!signedIn(),path=panel.querySelector('.pt-listings-guest-path'),note=panel.querySelector('.pt-listings-note');if(path)path.hidden=!guest;if(note)note.innerHTML=guest?'<strong>Guest access:</strong> Explore up to five fresh listing searches per day. Cached results do not use another search, and you can create a free account when you are ready for more access.':'<strong>Cost-conscious search:</strong> Listing results and property features are cached. Price-per-unit uses reported listing data and avoids unnecessary data calls.';}
-  function dedicatedGuestRoute(){return !signedIn()&&new URLSearchParams(location.search).get('listing-search')==='1';}
+  function dedicatedGuestRoute(){const params=new URLSearchParams(location.search);return !signedIn()&&(params.get('listing-search')==='1'||params.get('app-action')==='search-listings');}
   function open(){ensurePanel();refreshAccess();restoreSearch();hideApplication(true);panel.classList.add('is-open');document.getElementById('appNavListings')?.classList.add('active');window.scrollTo({top:dedicatedGuestRoute()?0:document.getElementById('appNavShell')?.offsetTop||0,behavior:'auto'});}
   function close(){if(dedicatedGuestRoute()){location.href='index.html';return;}panel?.classList.remove('is-open');hideApplication(false);document.getElementById('appNavListings')?.classList.remove('active');}
   function query(){
