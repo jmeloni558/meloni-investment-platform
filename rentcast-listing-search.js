@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=30,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
+  const VERSION=31,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
   if((window.__ptRentCastListingSearchV||0)>=VERSION)return;
   window.__ptRentCastListingSearchV=VERSION;
   let panel=null,results=[],offset=0,activeListing=null;const featureCache=new Map(),rentCache=new Map();
@@ -63,6 +63,21 @@
     areaForm.setAttribute('aria-labelledby','ptAreaSearchTitle');
     areaForm.insertAdjacentHTML('afterbegin','<header class="pt-area-search-heading"><span>EXPLORE MULTIPLE PROPERTIES</span><h3 id="ptAreaSearchTitle">Browse Listings in an Area</h3><p>Still looking for the right property? Search a city, ZIP code, or a radius around an address. Then narrow the results by property type, price and other features.</p><small>The starting address below is the center of a neighborhood search—not an exact-property lookup.</small></header>');
     const radiusAddress=areaForm.querySelector('[name="address"]');
+    const locationFields=areaForm.querySelector('.pt-listings-location');
+    locationFields.querySelector('legend').textContent='Location — choose one search method';
+    locationFields.insertAdjacentHTML('afterbegin','<div class="pt-radius-method-heading"><strong>Search Around an Address</strong><p>Select a full address and radius. The separate city, state and ZIP fields below can stay blank.</p></div>');
+    const areaAlternative=locationFields.querySelector('.pt-listings-location-or');
+    areaAlternative.className='pt-location-alternative';
+    areaAlternative.removeAttribute('aria-hidden');
+    areaAlternative.setAttribute('role','group');
+    areaAlternative.setAttribute('aria-labelledby','ptAreaAlternativeTitle');
+    areaAlternative.innerHTML='<div class="pt-location-alternative-heading"><span>OR</span><h4 id="ptAreaAlternativeTitle">Search in an Area</h4></div><p>Use a city and state, or a ZIP code, instead of an address and radius. These are alternative search fields—not missing parts of the address above.</p><div class="pt-location-alternative-fields"></div>';
+    for(const name of ['city','state','zipCode']){
+      const field=areaForm.querySelector(`[name="${name}"]`);
+      field.id='ptListingArea-'+name;
+      field.closest('.pt-listings-field').querySelector('label').htmlFor=field.id;
+      areaAlternative.querySelector('.pt-location-alternative-fields').appendChild(field.closest('.pt-listings-field'));
+    }
     radiusAddress.placeholder='Address to search around—not an exact lookup';
     radiusAddress.id='ptAreaAddress';
     radiusAddress.setAttribute('data-pt-listing-address','area');
