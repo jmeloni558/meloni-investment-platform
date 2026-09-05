@@ -1,10 +1,11 @@
 'use strict';
 (()=>{
-  const VERSION=16;
+  const VERSION=17;
   if((window.__propertyAddressRecognitionV||0)>=VERSION)return;
   window.__propertyAddressRecognitionV=VERSION;
 
   const GOOGLE_KEY_STORAGE='pt_step1_google_places_key';
+  const dismissedDisplays=new WeakMap();
   let googlePromise=null,lastLookup='',lookupBusy=false,syncingAddress=false,mobileScrollTimer=0,mobileAdjustedInput=null;
   const addressInputs=()=>[...document.querySelectorAll('#f_address,[data-src="f_address"],[data-pt-home-address]')];
   const isVisible=el=>{if(!el)return false;const style=getComputedStyle(el),rect=el.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0;};
@@ -20,12 +21,12 @@
   function hideSuggestions(input){
     ensureDismissStyle();
     document.body.classList.add('pt-hide-address-suggestions');
-    document.querySelectorAll('.pac-container').forEach(el=>{el.style.setProperty('display','none','important');el.setAttribute('aria-hidden','true');});
+    document.querySelectorAll('.pac-container').forEach(el=>{if(!dismissedDisplays.has(el))dismissedDisplays.set(el,{value:el.style.getPropertyValue('display'),priority:el.style.getPropertyPriority('display')});el.style.setProperty('display','none','important');el.setAttribute('aria-hidden','true');});
   }
   function showSuggestions(){
     if(syncingAddress||!visibleAddressInputs().length)return;
     document.body.classList.remove('pt-hide-address-suggestions');
-    document.querySelectorAll('.pac-container').forEach(el=>{el.style.removeProperty('display');el.removeAttribute('aria-hidden');});
+    document.querySelectorAll('.pac-container').forEach(el=>{const previous=dismissedDisplays.get(el);if(previous){if(el.style.getPropertyPriority('display')==='important'){if(previous.value)el.style.setProperty('display',previous.value,previous.priority);else el.style.removeProperty('display');}dismissedDisplays.delete(el);}el.removeAttribute('aria-hidden');});
   }
   function enforceStepVisibility(){if(!visibleAddressInputs().length)hideSuggestions();}
   function makeMobileSuggestionRoom(input){
