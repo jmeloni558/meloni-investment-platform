@@ -28,7 +28,6 @@ export default {
     const { data: authData } = accessToken ? await ctx.supabaseAdmin.auth.getUser(accessToken) : { data: { user: null } };
     const user = authData?.user ?? null;
     const userId = user?.id ?? null;
-    if (exactAddress && !userId) return json({ error: 'Sign in to find a specific listing.', authRequired: true }, 401);
     if (exactAddress) {
       const address = clean(body.address, 160);
       if (address.length < 8) return json({ error: 'Enter a full property address including city, state and ZIP code.' }, 400);

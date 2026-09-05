@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=28,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
+  const VERSION=29,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
   if((window.__ptRentCastListingSearchV||0)>=VERSION)return;
   window.__ptRentCastListingSearchV=VERSION;
   let panel=null,results=[],offset=0,activeListing=null;const featureCache=new Map(),rentCache=new Map();
@@ -55,7 +55,7 @@
     panel.querySelector('.pt-listings-note').insertAdjacentHTML('afterend','<div class="pt-listings-usage" hidden><div><strong data-usage-title></strong><span data-usage-copy></span></div><a href="pricing.html">Compare plans</a></div>');
     workflow.insertAdjacentElement('beforebegin',panel);
     panel.querySelector('form').addEventListener('submit',e=>{e.preventDefault();search()});
-    const specific=document.createElement('section');specific.className='pt-specific-listing';specific.hidden=!signedIn();
+    const specific=document.createElement('section');specific.className='pt-specific-listing';
     specific.innerHTML='<h3>Find a Specific Listing</h3><p>Already have a property in mind? Enter its full address to find the active listing, without the area-search filters below.</p><form class="pt-specific-form"><label for="ptSpecificAddress">Property address</label><div class="pt-specific-row"><input id="ptSpecificAddress" name="specificAddress" autocomplete="street-address" maxlength="160" required placeholder="Street address, unit, city, state, ZIP" aria-describedby="ptSpecificHelp"><button type="submit">Find Listing</button></div><small id="ptSpecificHelp">Include the unit number when applicable. Listing availability depends on our data provider.</small></form><div class="pt-specific-status" role="status" aria-live="polite"></div><div class="pt-specific-results"></div>';
     panel.querySelector('.pt-listings-search').insertAdjacentElement('beforebegin',specific);
     specific.querySelector('form').addEventListener('submit',e=>{e.preventDefault();findSpecificListing();});
@@ -92,13 +92,12 @@
   async function findSpecificListing(){
     const host=panel.querySelector('.pt-specific-listing'),input=host.querySelector('input'),button=host.querySelector('button'),status=host.querySelector('.pt-specific-status'),output=host.querySelector('.pt-specific-results');
     if(button.disabled)return;
-    if(!signedIn()){openAccount('signin','Sign in to find a specific listing.');return;}
     const address=input.value.trim();
     if(address.length<8){status.textContent='Enter the full street address, city, state and ZIP code.';input.focus();return;}
-    const userId=cloudUser.id;button.disabled=true;button.textContent='Finding…';status.textContent='Looking up this address…';output.replaceChildren();
+    const userId=signedIn()?cloudUser.id:'guest';button.disabled=true;button.textContent='Finding…';status.textContent='Looking up this address…';output.replaceChildren();
     try{
       const {data,error}=await cloudClient.functions.invoke('rentcast-sale-listings',{body:{action:'find-address',address}});
-      if(!signedIn()||cloudUser.id!==userId)return;
+      if((signedIn()?cloudUser.id:'guest')!==userId)return;
       if(error){const failure=await functionFailure(error,data);updateUsage(failure?.usage,failure?.cached);throw new Error(failure?.error||'Unable to find this listing. Please try again.');}
       updateUsage(data?.usage,data?.cached);
       const matches=Array.isArray(data?.listings)?data.listings:[];
@@ -185,7 +184,7 @@
   }
   function restoreSearch(){
     const specific=panel?.querySelector('.pt-specific-listing');
-    if(specific){specific.hidden=!signedIn();const id=signedIn()?cloudUser.id:'';if(specific.dataset.user!==id){specific.dataset.user=id;specific.querySelector('.pt-specific-results').replaceChildren();specific.querySelector('.pt-specific-status').textContent='';specific.querySelector('input').value='';}}
+    if(specific){const id=signedIn()?cloudUser.id:'guest';if(specific.dataset.user!==id){specific.dataset.user=id;specific.querySelector('.pt-specific-results').replaceChildren();specific.querySelector('.pt-specific-status').textContent='';specific.querySelector('input').value='';}}
     try{
       const saved=JSON.parse(localStorage.getItem(searchStorageKey())||'null');if(!saved?.query||!Array.isArray(saved.results)||Date.now()-Number(saved.savedAt)>3600000)return;
       const form=panel.querySelector('.pt-listings-search'),q=saved.query;
