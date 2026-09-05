@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const navSelector='.pt-guest-nav,.pricing-nav,.glossary-nav,.guide-nav,.pt-site-nav';
+  const navSelector='.pt-guest-nav,.pricing-nav,.glossary-nav,.guide-nav,.pt-site-nav,.sample-toolbar';
   const isStart=node=>/^start\s+(?:(?:my|your)\s+)?free\s+analysis\b/i.test(node.textContent.trim());
   const route=href=>{try{return new URL(href,location.href).pathname.split('/').pop()||'index.html';}catch{return '';}};
   function refresh(){
@@ -9,6 +9,11 @@
     });
     document.querySelectorAll(navSelector).forEach(nav=>{
       if(nav.dataset.accountToolbar)return;
+      if(!nav.querySelector('a[href="guides.html"]')){
+        const link=document.createElement('a');link.href='guides.html';link.textContent='Guides';
+        const signIn=[...nav.querySelectorAll('a,button')].find(node=>/sign in/i.test(node.textContent));
+        signIn?nav.insertBefore(link,signIn):nav.appendChild(link);
+      }
       if(!nav.classList.contains('pt-public-navigation'))nav.classList.add('pt-public-navigation');
       const page=route(location.href),guide=!!document.querySelector('.guide-shell');
       const listings=document.body.classList.contains('pt-guest-listings')||document.querySelector('#ptListingsPanel.is-open');
