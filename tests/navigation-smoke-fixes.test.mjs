@@ -8,7 +8,7 @@ test('signed-in standalone mortgage route opens workspace; embedded route stays 
   let target,revealed=false;
   const win={parent:{},supabase:{createClient:()=>({auth:{getSession:async()=>({data:{session:{user:{id:'owner'}}}})}})}};
   const ctx={URLSearchParams,encodeURIComponent,window:win,location:{search:embedded?'?embedded=1':'',replace:v=>target=v},document:{documentElement:{classList:{remove:()=>revealed=true}}}};
-  vm.runInNewContext(read('mortgage-tools-page-auth.js'),ctx);await Promise.resolve();
+  vm.runInNewContext(read('mortgage-tools-page-auth.js'),ctx);await new Promise(resolve=>setImmediate(resolve));
   if(embedded){assert.equal(target,undefined);assert.equal(revealed,true);}else assert.equal(target,'/index.html?app-action=mortgage');
  }
 });
