@@ -1,0 +1,21 @@
+@media screen {
+  #ptListingsPanel .pt-specific-listing { margin: 24px; padding: 24px; border: 2px solid #2c7882; border-radius: 14px; background: #f0f8f8; color: #173f56; }
+  #ptListingsPanel .pt-specific-listing[hidden] { display: none !important; }
+  #ptListingsPanel .pt-specific-listing h3 { margin: 0 0 8px; font-size: 23px; }
+  #ptListingsPanel .pt-specific-listing p { font-size: 15px; line-height: 1.55; margin: 8px 0 16px; }
+  #ptListingsPanel .pt-specific-form label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  #ptListingsPanel .pt-specific-row { display: flex; gap: 12px; }
+  #ptListingsPanel .pt-specific-row input { flex: 1; min-width: 0; width: 100%; padding: 14px; font-size: 16px; border: 1px solid #7896a7; border-radius: 8px; background: #fff; color: #173f56; }
+  #ptListingsPanel .pt-specific-listing button { min-height: 46px; padding: 12px 22px; background: #175575; color: #fff; border: 1px solid #175575; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
+  #ptListingsPanel .pt-specific-listing button:disabled { opacity: .65; cursor: wait; }
+  #ptListingsPanel .pt-specific-listing :focus-visible { outline: 3px solid #175575; outline-offset: 3px; }
+  #ptListingsPanel .pt-specific-form small { display: block; margin-top: 9px; font-size: 13px; line-height: 1.5; }
+  #ptListingsPanel .pt-specific-status { margin-top: 14px; font-size: 15px; line-height: 1.5; }
+  #ptListingsPanel .pt-specific-results article { margin-top: 16px; padding: 18px; background: #fff; border: 1px solid #b5ced4; border-radius: 10px; overflow-wrap: anywhere; }
+  #ptListingsPanel .pt-specific-results h4 { font-size: 18px; margin: 0; }
+  @media (max-width: 650px) {
+    #ptListingsPanel .pt-specific-listing { margin: 16px 0; padding: 18px; }
+    #ptListingsPanel .pt-specific-row { flex-direction: column; }
+    #ptListingsPanel .pt-specific-row input { box-sizing: border-box; }
+  }
+}

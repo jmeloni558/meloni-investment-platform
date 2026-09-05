@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=23,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
+  const VERSION=27,IMPORT_KEY='ptPendingListingImportV1',SEARCH_KEY='ptListingSearchStateV1';
   if((window.__ptRentCastListingSearchV||0)>=VERSION)return;
   window.__ptRentCastListingSearchV=VERSION;
   let panel=null,results=[],offset=0,activeListing=null;const featureCache=new Map(),rentCache=new Map();
@@ -55,6 +55,10 @@
     panel.querySelector('.pt-listings-note').insertAdjacentHTML('afterend','<div class="pt-listings-usage" hidden><div><strong data-usage-title></strong><span data-usage-copy></span></div><a href="pricing.html">Compare plans</a></div>');
     workflow.insertAdjacentElement('beforebegin',panel);
     panel.querySelector('form').addEventListener('submit',e=>{e.preventDefault();search()});
+    const specific=document.createElement('section');specific.className='pt-specific-listing';specific.hidden=!signedIn();
+    specific.innerHTML='<h3>Find a Specific Listing</h3><p>Already have a property in mind? Enter its full address to find the active listing, without the area-search filters below.</p><form class="pt-specific-form"><label for="ptSpecificAddress">Property address</label><div class="pt-specific-row"><input id="ptSpecificAddress" name="specificAddress" autocomplete="street-address" maxlength="160" required placeholder="Street address, unit, city, state, ZIP" aria-describedby="ptSpecificHelp"><button type="submit">Find Listing</button></div><small id="ptSpecificHelp">Include the unit number when applicable. Listing availability depends on our data provider.</small></form><div class="pt-specific-status" role="status" aria-live="polite"></div><div class="pt-specific-results"></div>';
+    panel.querySelector('.pt-listings-search').insertAdjacentElement('beforebegin',specific);
+    specific.querySelector('form').addEventListener('submit',e=>{e.preventDefault();findSpecificListing();});
     panel.querySelector('.pt-listings-close').onclick=close;
     return panel;
   }
@@ -70,7 +74,7 @@
   function open(){ensurePanel();refreshAccess();restoreSearch();hideApplication(true);panel.classList.add('is-open');document.getElementById('appNavListings')?.classList.add('active');window.scrollTo({top:dedicatedGuestRoute()?0:document.getElementById('appNavShell')?.offsetTop||0,behavior:'auto'});}
   function close(){if(dedicatedGuestRoute()){location.href='index.html';return;}panel?.classList.remove('is-open');hideApplication(false);document.getElementById('appNavListings')?.classList.remove('active');}
   function query(){
-    const form=panel.querySelector('form');
+    const form=panel.querySelector('.pt-listings-search');
     const raw=name=>form.elements[name].value.trim().replace(/[$,]/g,'');
     const types=[['singleFamily','Single Family'],['condo','Condo'],['townhouse','Townhouse'],['manufactured','Manufactured'],['multiFamily','Multi-Family'],['apartment','Apartment'],['land','Land']];
     const propertyTypes=types.filter(([name])=>form.elements[name].checked).map(([,type])=>type);
@@ -78,6 +82,25 @@
     const optional=['minPrice','maxPrice','bedroomsMin','bedroomsMax','bathroomsMin','bathroomsMax','squareFootageMin','squareFootageMax','lotSizeMin','lotSizeMax','yearBuiltMin','yearBuiltMax','daysOld'];
     const filters=Object.fromEntries(optional.map(name=>[name,raw(name)||null]));
     return{address:raw('address'),radius:raw('radius'),city:raw('city'),state:raw('state').toUpperCase(),zipCode:raw('zipCode'),...filters,propertyTypes,listingTypes,sort:raw('sort'),limit:18,offset};
+  }
+  async function findSpecificListing(){
+    const host=panel.querySelector('.pt-specific-listing'),input=host.querySelector('input'),button=host.querySelector('button'),status=host.querySelector('.pt-specific-status'),output=host.querySelector('.pt-specific-results');
+    if(button.disabled)return;
+    if(!signedIn()){openAccount('signin','Sign in to find a specific listing.');return;}
+    const address=input.value.trim();
+    if(address.length<8){status.textContent='Enter the full street address, city, state and ZIP code.';input.focus();return;}
+    const userId=cloudUser.id;button.disabled=true;button.textContent='Finding…';status.textContent='Looking up this address…';output.replaceChildren();
+    try{
+      const {data,error}=await cloudClient.functions.invoke('rentcast-sale-listings',{body:{action:'find-address',address}});
+      if(!signedIn()||cloudUser.id!==userId)return;
+      if(error){const failure=await functionFailure(error,data);updateUsage(failure?.usage,failure?.cached);throw new Error(failure?.error||'Unable to find this listing. Please try again.');}
+      updateUsage(data?.usage,data?.cached);
+      const matches=Array.isArray(data?.listings)?data.listings:[];
+      status.textContent=matches.length?`${matches.length===1?'Active listing found':'Matching active listings found'}${data?.cached?' in the recent-search cache':''}. Open the listing to review it or start an analysis.`:'No active listing was found for this address in our provider’s data. Check the street address and unit number, or use the area search below. This does not necessarily mean the property is not for sale.';
+      output.innerHTML=matches.map((listing,i)=>`<article><h4>${esc(listing.formattedAddress||listing.addressLine1)}</h4><p>${money(listing.price)} · ${esc(listing.propertyType||'Property type not reported')}</p><button type="button" data-specific-open="${i}">Open Listing</button></article>`).join('');
+      output.querySelectorAll('[data-specific-open]').forEach(btn=>btn.onclick=()=>detail(matches[Number(btn.dataset.specificOpen)]));
+    }catch(error){status.textContent=error?.message||'Unable to find this listing. Please try again.';}
+    finally{button.disabled=false;button.textContent='Find Listing';}
   }
   async function search(){
     offset=0;const q=query(),pairs=[['minPrice','maxPrice','price'],['bedroomsMin','bedroomsMax','bedrooms'],['bathroomsMin','bathroomsMax','bathrooms'],['squareFootageMin','squareFootageMax','square footage'],['lotSizeMin','lotSizeMax','lot size'],['yearBuiltMin','yearBuiltMax','year built']];
@@ -155,9 +178,11 @@
     open();
   }
   function restoreSearch(){
+    const specific=panel?.querySelector('.pt-specific-listing');
+    if(specific){specific.hidden=!signedIn();const id=signedIn()?cloudUser.id:'';if(specific.dataset.user!==id){specific.dataset.user=id;specific.querySelector('.pt-specific-results').replaceChildren();specific.querySelector('.pt-specific-status').textContent='';specific.querySelector('input').value='';}}
     try{
       const saved=JSON.parse(localStorage.getItem(searchStorageKey())||'null');if(!saved?.query||!Array.isArray(saved.results)||Date.now()-Number(saved.savedAt)>3600000)return;
-      const form=panel.querySelector('form'),q=saved.query;
+      const form=panel.querySelector('.pt-listings-search'),q=saved.query;
       Object.entries(q).forEach(([name,val])=>{const control=form.elements[name];if(!control||Array.isArray(val)||val===null||name==='sort')return;control.value=val;});
       const typeMap={'Single Family':'singleFamily','Condo':'condo','Townhouse':'townhouse','Manufactured':'manufactured','Multi-Family':'multiFamily','Apartment':'apartment','Land':'land'};
       Object.values(typeMap).forEach(name=>form.elements[name].checked=false);(q.propertyTypes||[]).forEach(type=>{if(typeMap[type])form.elements[typeMap[type]].checked=true;});

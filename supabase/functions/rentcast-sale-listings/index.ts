@@ -20,12 +20,21 @@ export default {
 
     const apiKey = Deno.env.get('RENTCAST_API_KEY');
     if (!apiKey) return json({ error: 'Listing search is not configured' }, 503);
-    const body = await req.json().catch(() => ({}));
+    let body = await req.json().catch(() => ({}));
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ error: 'Invalid search request' }, 400);
+    const exactAddress = body.action === 'find-address';
     const authorization = req.headers.get('authorization') || '';
     const accessToken = authorization.startsWith('Bearer eyJ') ? authorization.slice(7) : '';
     const { data: authData } = accessToken ? await ctx.supabaseAdmin.auth.getUser(accessToken) : { data: { user: null } };
     const user = authData?.user ?? null;
     const userId = user?.id ?? null;
+    if (exactAddress && !userId) return json({ error: 'Sign in to find a specific listing.', authRequired: true }, 401);
+    if (exactAddress) {
+      const address = clean(body.address, 160);
+      if (address.length < 8) return json({ error: 'Enter a full property address including city, state and ZIP code.' }, 400);
+      // Exact lookup must never inherit radius, price, type or other area filters.
+      body = { address };
+    }
     const forwardedFor = clean(req.headers.get('x-forwarded-for'), 500).split(',')[0].trim();
     const guestAddress = clean(req.headers.get('cf-connecting-ip') || forwardedFor || req.headers.get('x-real-ip'), 100);
     const guestSalt = Deno.env.get('RENTCAST_GUEST_HASH_SALT') || '';
@@ -203,6 +212,10 @@ export default {
     if (squareFootageMin !== null || squareFootageMax !== null) params.set('squareFootage', `${squareFootageMin ?? 0}:${squareFootageMax ?? 10000000}`);
     if (lotSizeMin !== null || lotSizeMax !== null) params.set('lotSize', `${lotSizeMin ?? 0}:${lotSizeMax ?? 1000000000}`);
     if (yearBuiltMin !== null || yearBuiltMax !== null) params.set('yearBuilt', `${yearBuiltMin ?? 1600}:${yearBuiltMax ?? new Date().getFullYear() + 5}`);
+    if (exactAddress) {
+      for (const key of [...params.keys()]) params.delete(key);
+      params.set('address', address);
+    }
 
     const cacheKey = `rentcast:sale-listings:${params.toString()}:listingTypes=${listingTypes.sort().join('|')}`;
     const cached = await getCached(cacheKey);
@@ -215,8 +228,9 @@ export default {
     }
     console.log('[rentcast-sale-listings] request', { propertyTypes, offset, limit });
     const response = await fetch(`https://api.rentcast.io/v1/listings/sale?${params}`, { headers: { Accept: 'application/json', 'X-Api-Key': apiKey } });
-    const payload = await response.json().catch(() => null);
-    if (!response.ok) {
+    let payload = await response.json().catch(() => null);
+    if (exactAddress && response.status === 404) payload = [];
+    if (!response.ok && !(exactAddress && response.status === 404)) {
       console.error('[rentcast-sale-listings] upstream request failed', { status: response.status });
       return json({ error: response.status === 429 ? 'Listing search limit reached. Try again shortly.' : 'Unable to retrieve listings' }, response.status === 429 ? 429 : 502);
     }
@@ -226,7 +240,7 @@ export default {
       .filter((entry) => entry.event === 'Rental Listing' && finiteNumber(entry.price) !== null)
       .sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
     let listings = (Array.isArray(payload) ? payload : [])
-      .filter((item) => propertyTypes.includes(item?.propertyType) && item?.status === 'Active' && listingTypes.includes(item?.listingType))
+      .filter((item) => item?.status === 'Active' && (exactAddress || (propertyTypes.includes(item?.propertyType) && listingTypes.includes(item?.listingType))))
       .map((item) => {
         const priorRental = latestRentalListing(item.history);
         return ({
@@ -244,7 +258,7 @@ export default {
     const totalCount = Number(response.headers.get('x-total-count'));
     console.log('[rentcast-sale-listings] success', { count: listings.length, totalCount: Number.isFinite(totalCount) ? totalCount : null });
     const postFiltered = listingTypes.length < allowedListingTypes.size;
-    const result = { listings, offset, limit, totalCount: postFiltered ? listings.length : (Number.isFinite(totalCount) ? totalCount : null), hasMore: !postFiltered && listings.length === limit, filters: { propertyTypes, listingTypes, status: 'Active' }, source: 'RentCast' };
+    const result = { listings, offset, limit, totalCount: exactAddress || postFiltered ? listings.length : (Number.isFinite(totalCount) ? totalCount : null), hasMore: !exactAddress && !postFiltered && listings.length === limit, filters: { propertyTypes, listingTypes, status: 'Active' }, source: 'RentCast' };
     await saveCached(cacheKey, 'sale-listings', result, 10 * 60 * 1000);
     return json({ ...result, usage });
   }),
