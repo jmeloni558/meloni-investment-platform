@@ -153,7 +153,7 @@
       const cleanQuery=cleanParams.toString();
       history.replaceState(null,'',location.pathname+(cleanQuery?'?'+cleanQuery:'')+location.hash);
       const destination=entryParams.get('return')||'';
-      window.PropertyThesisAuth.open('signin',destination.includes('mortgage-tools.html')?'Sign in to use Mortgage Tools. You will return to the tools after signing in.':plan?'Sign in to continue with the selected PropertyThesis plan.':'Sign in to your PropertyThesis account.');
+      window.PropertyThesisAuth.open('signin',/mortgage/.test(destination)?'Sign in to use Mortgage Tools. You will return to the tools after signing in.':plan?'Sign in to continue with the selected PropertyThesis plan.':'Sign in to your PropertyThesis account.');
     }
     const standard=shell.querySelector('.app-nav-actions'),guestNav=shell.querySelector('.pt-guest-nav');
     if(guest&&free){ensureNav(shell);enterFreeAnalysis();revealPreparedHome();return true;}

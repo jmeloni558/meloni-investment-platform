@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const RETURN_URL=location.pathname+location.search+location.hash;
+  const RETURN_URL='/index.html?app-action=mortgage';
   const LOGIN_URL='index.html?signin=1&return='+encodeURIComponent(RETURN_URL);
   const reveal=()=>document.documentElement.classList.remove('pt-auth-checking');
   const redirect=()=>location.replace(LOGIN_URL);
@@ -18,7 +18,8 @@
       const client=window.supabase.createClient('https://lmaiqpkogmmsldkziggy.supabase.co','sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7');
       const {data,error}=await client.auth.getSession();
       if(error||!data?.session?.user)return redirect();
-      reveal();
+      // Standalone links must land in the same workspace as the signed-in tab.
+      location.replace(RETURN_URL);
     }catch(_error){redirect();}
   }
 

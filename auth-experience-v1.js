@@ -44,12 +44,23 @@
   }
   function restoreForm(){['authEmail','authPassword'].forEach(id=>el(id)?.closest('.field')?.classList.remove('pt-auth-mode-hidden'));el('signInAction')?.closest('.actions')?.classList.remove('pt-auth-mode-hidden');el('ptAuthAlternative')?.classList.remove('pt-auth-mode-hidden');el('ptTurnstileAuth')?.classList.remove('pt-auth-mode-hidden');el('authMessage')?.classList.remove('pt-auth-mode-hidden');}
   function open(next='signin',customMessage=''){
-    ensureUi();restoreForm();if(typeof baseShow==='function')baseShow();else el('authModal')?.classList.remove('hidden');setMode(next,customMessage);setTimeout(()=>el('authEmail')?.focus(),0);
+    const x=window.scrollX,y=window.scrollY;
+    document.documentElement.classList.add('pt-auth-scroll-locked');
+    ensureUi();restoreForm();if(typeof baseShow==='function')baseShow();else el('authModal')?.classList.remove('hidden');setMode(next,customMessage);
+    window.scrollTo({left:x,top:y,behavior:'instant'});
+    setTimeout(()=>el('authEmail')?.focus({preventScroll:true}),0);
   }
   function confirmMatches(){return (el('authPassword')?.value||'')===(el('authPasswordConfirm')?.value||'');}
 
   function start(){
     ensureUi();baseShow=typeof window.showAuth==='function'?window.showAuth:null;window.showAuth=()=>open('signin');
+    const lockStyle=document.createElement('style');
+    lockStyle.textContent='html.pt-auth-scroll-locked,html.pt-auth-scroll-locked body{overflow:hidden!important;overflow-anchor:none!important}html.pt-auth-scroll-locked{scrollbar-gutter:stable}#authModal .modal{max-height:90dvh;overflow-y:auto;overscroll-behavior:contain}';
+    document.head.appendChild(lockStyle);
+    const modal=el('authModal');
+    if(modal)new MutationObserver(()=>{
+      if(modal.classList.contains('hidden')||modal.hidden)document.documentElement.classList.remove('pt-auth-scroll-locked');
+    }).observe(modal,{attributes:true,attributeFilter:['class','hidden']});
     window.PropertyThesisAuth={open,setMode,getMode:()=>mode,message,showVerification,getVerificationEmail:()=>verificationEmail,confirmMatches};
     setMode('signin');
   }
