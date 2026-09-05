@@ -1,0 +1,38 @@
+/* One neutral style for saved-property actions, regardless of legacy classes. */
+@media screen {
+  #propertyhub.section .hub-card .hub-actions .btn {
+    background: #fff !important;
+    color: #173f66 !important;
+    border: 1px solid #aabfce !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    min-height: 42px;
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: normal;
+    text-align: center;
+    transform: none !important;
+  }
+  #propertyhub.section .hub-card .hub-actions .btn:hover:not(:disabled) {
+    background: #edf3f8 !important;
+    border-color: #376a87 !important;
+  }
+  #propertyhub.section .hub-card .hub-actions .btn:focus-visible {
+    outline: 3px solid #175575 !important;
+    outline-offset: 3px;
+  }
+  #propertyhub.section .hub-card .hub-actions .btn:disabled {
+    background: #f3f4f6 !important;
+    color: #667085 !important;
+    border-color: #d0d5dd !important;
+    opacity: 1;
+    cursor: not-allowed;
+  }
+  /* Destructive intent remains clear without a different button fill. */
+  #propertyhub.section .hub-card .hub-actions .btn[data-hub-delete] {
+    color: #a12622 !important;
+    border-color: #cba5a2 !important;
+  }
+}

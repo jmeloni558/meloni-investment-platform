@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=41;
+  const VERSION=43;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -13,6 +13,8 @@
   let resumingFree=false;
   let freeDraftReady=false;
   let requestedActionHandled=false;
+  // UI navigation state only; authorization still belongs to the existing guards.
+  let lastAuthUserId=null,authEventSeen=false,authNavigationRevision=0,userNavigationRevision=0;
 
   function activeSection(){return document.querySelector('.section.active')?.id||'';}
   function isSignedIn(){try{return typeof cloudUser!=='undefined'&&!!cloudUser}catch(e){return false}}
@@ -163,11 +165,49 @@
   function retireLegacyNavigation(){document.querySelectorAll('.tab[data-tab],[data-app-advanced],[data-s8-advanced]').forEach(el=>{const id=el.dataset.tab||el.dataset.appAdvanced||el.dataset.s8Advanced;if(retired.has(id)||contextualOnly.has(id))el.hidden=true;});const active=activeSection();if(retired.has(active))go('dashboard');}
   function refresh(){if(!ensureToolbar())return false;cleanWorkflow();retireLegacyNavigation();const guest=document.getElementById('ptGuestGuidance');if(guest)guest.hidden=!uiShowsSignedOut();const sample=document.getElementById('ptSampleShowcase');if(sample)sample.hidden=!uiShowsSignedOut();if(mortgageMode){setMortgageMode(true);return true;}const active=activeSection();const newBtn=document.getElementById('appNavNew');if(newBtn)newBtn.classList.toggle('active',primary.includes(active));const existing=document.getElementById('appNavExisting');if(existing)existing.classList.toggle('active',active==='propertyhub');const mortgage=document.getElementById('appNavMortgage');if(mortgage)mortgage.classList.remove('active');return true;}
   function scheduleResume(){[150,500,1000,1800,3000].forEach(ms=>setTimeout(resumeFreeAnalysis,ms));}
-  function finishSignInNavigation(){
+  function finishSignInNavigation(userId,preserveSavedRestore){
+    const revision=++authNavigationRevision,navigation=userNavigationRevision;
     [0,100,350].forEach(ms=>setTimeout(refresh,ms));
     if(resumeFreeRequested()&&pendingFree()){scheduleResume();return;}
-    setTimeout(()=>{if(handleRequestedAction())return;setMortgageMode(false);try{if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');window.Stage6Dashboard?.render?.();}catch(_e){}setTimeout(refresh,0);},180);
+    setTimeout(()=>{
+      if(revision!==authNavigationRevision||navigation!==userNavigationRevision||lastAuthUserId!==userId)return;
+      if(sessionStorage.getItem('ptPasswordRecoveryPending')==='1')return;
+      if(handleRequestedAction())return;
+      // A saved-analysis restore may finish while initial auth is still settling.
+      try{if(preserveSavedRestore&&selectedAnalysisId&&primary.includes(activeSection()))return;}catch(_e){}
+      setMortgageMode(false);
+      try{if(typeof switchTab==='function')switchTab('propertyhub');else go('propertyhub');window.Stage6Dashboard?.render?.();}catch(_e){}
+      setTimeout(refresh,0);
+    },180);
   }
-  function start(){let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);document.addEventListener('click',()=>setTimeout(refresh,0));window.addEventListener('click',guardCalculatorClick,true);try{cloudClient?.auth?.onAuthStateChange?.((event,session)=>{if(session?.user){if(event==='SIGNED_IN')finishSignInNavigation();else{scheduleResume();setTimeout(handleRequestedAction,500);}}});cloudClient?.auth?.getSession?.().then(({data})=>{if(data?.session?.user&&sessionStorage.getItem('ptPasswordRecoveryPending')!=='1')finishSignInNavigation();}).catch(()=>{});}catch(_e){}window.addEventListener('storage',e=>{if(e.key==='ptEmailConfirmedAt')scheduleResume();});try{const channel=new BroadcastChannel('propertythesis-auth');channel.onmessage=e=>{if(e.data?.type==='email-confirmed'){try{window.focus();}catch(_e){}scheduleResume();}};}catch(_e){}[700,1400,2400,4000,6500].forEach(ms=>{setTimeout(resumeFreeAnalysis,ms);setTimeout(handleRequestedAction,ms+100);});setTimeout(refresh,700);setTimeout(refresh,1800);}
+  function handleSessionNavigation(event,session){
+    if(event==='SIGNED_OUT'){
+      lastAuthUserId=null;++authNavigationRevision;setTimeout(refresh,0);return;
+    }
+    const id=session?.user?.id;if(!id)return;
+    const preserveSavedRestore=lastAuthUserId===null,changed=id!==lastAuthUserId;lastAuthUserId=id;
+    if(event==='PASSWORD_RECOVERY'||sessionStorage.getItem('ptPasswordRecoveryPending')==='1'){
+      ++authNavigationRevision;setTimeout(refresh,0);return;
+    }
+    // SIGNED_IN also occurs when the same session is reconfirmed on tab focus.
+    // Never treat that background event as a request to leave an open report.
+    if(changed&&(event==='SIGNED_IN'||event==='INITIAL_SESSION'))finishSignInNavigation(id,preserveSavedRestore);
+    else{setTimeout(refresh,0);scheduleResume();setTimeout(handleRequestedAction,500);}
+  }
+  function start(){
+    let tries=0;const timer=setInterval(()=>{if(refresh())clearInterval(timer);if(++tries>80)clearInterval(timer)},120);
+    document.addEventListener('click',()=>setTimeout(refresh,0));
+    window.addEventListener('click',e=>{
+      if(e.target?.closest?.('#appNavShell button,#stage8Workflow button,[data-hub-open],[data-hub-report],[data-hub-edit],[data-pt-open],[data-pt-report],#gwNext,#gwSave'))++userNavigationRevision;
+    },true);
+    window.addEventListener('click',guardCalculatorClick,true);
+    try{
+      cloudClient?.auth?.onAuthStateChange?.((event,session)=>{authEventSeen=true;handleSessionNavigation(event,session);});
+      cloudClient?.auth?.getSession?.().then(({data})=>{if(!authEventSeen)handleSessionNavigation('INITIAL_SESSION',data?.session);}).catch(()=>{});
+    }catch(_e){}
+    window.addEventListener('storage',e=>{if(e.key==='ptEmailConfirmedAt')scheduleResume();});
+    try{const channel=new BroadcastChannel('propertythesis-auth');channel.onmessage=e=>{if(e.data?.type==='email-confirmed'){try{window.focus();}catch(_e){}scheduleResume();}};}catch(_e){}
+    [700,1400,2400,4000,6500].forEach(ms=>{setTimeout(resumeFreeAnalysis,ms);setTimeout(handleRequestedAction,ms+100);});setTimeout(refresh,700);setTimeout(refresh,1800);
+  }
   window.AppNavigationToolbar={refresh,go,openExisting,openMortgageTools,setMortgageMode,resumeFreeAnalysis};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
