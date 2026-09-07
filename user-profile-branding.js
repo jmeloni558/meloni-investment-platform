@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=1;
+  const VERSION=2;
   if((window.__userProfileBrandingVersion||0)>=VERSION)return;
   window.__userProfileBrandingVersion=VERSION;
 
@@ -14,14 +14,7 @@
   function getProfile(){return {...profile};}
 
   function neutralizeApp(){
-    document.title='Investment Property Analyzer';
-    const brand=document.querySelector('.top .brand');
-    if(brand){
-      const h=brand.querySelector('h1'),p=brand.querySelector('p');
-      if(h)h.textContent='Investment Property Analyzer';
-      if(p)p.textContent='Cash flow, valuation, financing, taxes and investment returns';
-    }
-    document.querySelectorAll('.print-only .mini').forEach(el=>{if(/Meloni Realty/i.test(el.textContent||''))el.textContent='Prepared with the Investment Property Analyzer';});
+    // Legacy compatibility hook: site identity is owned by the site branding module.
   }
 
   function injectStyles(){
