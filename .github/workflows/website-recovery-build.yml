@@ -1,0 +1,57 @@
+# REVIEW CANDIDATE: install only on an isolated review branch, never main.
+# Opening a draft PR runs this build. No deployment action or write permissions.
+name: Verify historical website recovery
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/website-recovery-build.yml'
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out the verified historical source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: d970a20c43ecfff34ce7babefed7147b9e2c04cb
+          persist-credentials: false
+      - name: Rebuild with the original Pages action
+        uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697
+        with:
+          source: .
+          destination: ./_site
+          future: false
+          verbose: true
+          build_revision: d970a20c43ecfff34ce7babefed7147b9e2c04cb
+      - name: Compare captured entry sources and inventory generated output
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib, subprocess
+          revision = 'd970a20c43ecfff34ce7babefed7147b9e2c04cb'
+          assert subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip() == revision
+          site = pathlib.Path('_site')
+          files = ['index.html','latest.html','app-core.html','cloud.js','protected-cloud-save-bridge.js','save-state-feedback.js','guided-save-existing-workflow-v8.js','unsaved-change-protection.js']
+          for name in files:
+              expected = subprocess.check_output(['git','show',revision+':'+name])
+              assert (site/name).read_bytes() == expected, 'Built file mismatch: '+name
+          assert (site/'assets/css/style.css').is_file(), 'Generated theme CSS missing'
+          assert (site/'CALCULATION_AUDIT.html').is_file(), 'Generated Markdown page missing'
+          hashes = {}
+          for file in sorted(site.rglob('*')):
+              assert not file.is_symlink(), 'Unexpected symlink'
+              if file.is_file():
+                  hashes[file.relative_to(site).as_posix()] = hashlib.sha256(file.read_bytes()).hexdigest()
+          pathlib.Path('recovery-build-manifest.json').write_text(json.dumps({'sourceCommit':revision,'files':hashes,'deploymentPerformed':False},indent=2)+'\n')
+          PY
+      - name: Retain verified build for recovery review
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: website-recovery-d970a20
+          path: |
+            _site/
+            recovery-build-manifest.json
+          retention-days: 30
+          if-no-files-found: error
