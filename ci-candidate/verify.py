@@ -9,7 +9,7 @@ for name,digest in expected.items():
 assert (site/'assets/css/style.css').is_file()
 assert (site/'CALCULATION_AUDIT.html').is_file()
 assert not (site/'ci-candidate').exists(), 'Build-only material exposed'
-auth=[n for n in expected if n.startswith('turnstile-auth-protection.') and n.endswith('.js')]
+auth=[n for n in expected if n.startswith('turnstile-auth-protection.') and n.endswith('.js') and len(n.split('.'))==3]
 assert len(auth)==1
 for route in ('index.html','latest.html','app-core.html'):
     assert auth[0] in (site/route).read_text()
