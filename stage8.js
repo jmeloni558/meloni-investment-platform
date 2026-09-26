@@ -85,8 +85,8 @@
     const active=activeSection();
     const primaryActive=active==='propertyfile'?'propertyhub':active;
     document.querySelectorAll('[data-s8-tab]').forEach(b=>b.classList.toggle('active',b.dataset.s8Tab===primaryActive));
-    const name=document.getElementById('s8ContextName');if(name)name.textContent=contextName();
-    const next=document.getElementById('s8NextText');if(next)next.textContent=nextText(active);
+    const name=document.getElementById('s8ContextName'),label=contextName();if(name&&name.textContent!==label)name.textContent=label;
+    const next=document.getElementById('s8NextText'),hint=nextText(active);if(next&&next.textContent!==hint)next.textContent=hint;
     const advancedTabs=ADVANCED.map(x=>x[1]);
     const adv=document.getElementById('s8AdvancedToggle');if(adv)adv.classList.toggle('active',advancedTabs.includes(active));
   }

@@ -1,10 +1,10 @@
 'use strict';
 (()=>{
   const VERSION=4;
-  if((window.__propertyThesisInvestmentThesisV||0)>=VERSION)return;
-  window.__propertyThesisInvestmentThesisV=VERSION;
+  if(typeof window!=='undefined'&&(window.__propertyThesisInvestmentThesisV||0)>=VERSION)return;
+  if(typeof window!=='undefined'&&!(typeof module!=='undefined'&&module.exports))window.__propertyThesisInvestmentThesisV=VERSION;
 
-  const finite=v=>Number.isFinite(Number(v));
+  const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
   const n=v=>Number(v);
   const money=v=>finite(v)?n(v).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'—';
   const pct=v=>finite(v)?(n(v)*100).toFixed(2)+'%':'—';
@@ -45,14 +45,17 @@
     return {flagged,labels};
   }
 
-  function build(){
-    const x=current();if(!x)return null;
+  function build(input){
+    const x=input||current();if(!x)return null;
     const {s,base,offer,y1,items,assumptions}=x;
+    if(!finite(base.IRR)||!finite(base.NPV)||!finite(base.cap)||!finite(offer.maxSupported)||(n(s.mortgage)>0&&!finite(y1.dcr))){
+      return {label:'Incomplete Investment Analysis',tone:'warn',narrative:'A complete investment conclusion is unavailable because one or more return, pricing-support or debt-coverage results are missing. Review the assumptions and recalculate before relying on this analysis.',strengths:[],risks:['One or more required calculation results are unavailable.'],strategy:'Review the assumptions and recalculate before making an acquisition decision.',assumptionIssues:quality(items).labels,assumptionRating:assumptions?.rating||'Not Rated',metrics:{price:offer.price,maxSupported:offer.maxSupported,IRR:base.IRR,cap:base.cap,dcr:y1.dcr,NPV:base.NPV,NOI:y1.noi}};
+    }
     const irrOk=finite(base.IRR)&&finite(s.requiredReturn)&&n(base.IRR)>=n(s.requiredReturn);
     const npvOk=finite(base.NPV)&&n(base.NPV)>=0;
     const capOk=finite(base.cap)&&finite(s.desiredCap)&&n(base.cap)>=n(s.desiredCap);
     const financed=finite(s.mortgage)&&n(s.mortgage)>0;
-    const debtOk=!financed||!finite(y1.dcr)||n(y1.dcr)>=1.20;
+    const debtOk=!financed||(finite(y1.dcr)&&n(y1.dcr)>=1.20);
     const priceOk=finite(offer.maxSupported)&&finite(offer.price)&&n(offer.price)<=n(offer.maxSupported)+1;
     const supportGap=finite(offer.price)&&finite(offer.maxSupported)?n(offer.price)-n(offer.maxSupported):0;
     const rentNeed=Math.max(...[offer.capRent,offer.irrRent].filter(finite).map(n),0);
@@ -119,6 +122,7 @@
   function schedule(){[0,60,160,320].forEach(ms=>setTimeout(()=>{hookHydration();apply();pin();},ms));}
   function start(){hookHydration();schedule();document.addEventListener('click',e=>{if(e.target?.closest?.('[data-s8-tab="dashboard"],[data-tab="dashboard"],#appNavReview,[data-app-review],#gwNext,#gwSave,[data-hub-open],[data-pt-open]'))schedule();},true);}
 
+  if(typeof module!=='undefined'&&module.exports){module.exports={build};return;}
   window.PropertyThesisInvestmentThesis={version:VERSION,apply,pin,build,narrative,hookHydration};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

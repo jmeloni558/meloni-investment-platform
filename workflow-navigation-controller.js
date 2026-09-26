@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=9;
+  const VERSION=10;
   if((window.__workflowNavigationControllerVersion||0)>=VERSION)return;
   window.__workflowNavigationControllerVersion=VERSION;
 
@@ -34,10 +34,16 @@
       try{window.InitialRepairsModel?.enhanceResults?.();}catch(e){}
     }
     if(id==='report'){
-      try{window.ReportBuilderV1?.renderReport?.();}catch(e){}
-      setTimeout(finalizeReport,0);
-      setTimeout(finalizeReport,100);
-      setTimeout(finalizeReport,240);
+      if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()&&window.Stage5ReportRefreshNeutralizer?.render){
+        // The shared flow waits for protected results and finalizes once.
+        // Repeated legacy finalizers keep rebuilding the same report controls.
+        window.Stage5ReportRefreshNeutralizer.render();
+      }else{
+        try{window.ReportBuilderV1?.renderReport?.();}catch(e){}
+        setTimeout(finalizeReport,0);
+        setTimeout(finalizeReport,100);
+        setTimeout(finalizeReport,240);
+      }
     }
     if(options.scroll!==false)window.scrollTo({top:0,behavior:'smooth'});
     return true;

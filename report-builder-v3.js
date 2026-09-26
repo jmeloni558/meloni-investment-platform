@@ -14,7 +14,7 @@
   function prefs(){try{return JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{};}catch(e){return {};}}
   function savePrefs(p){try{localStorage.setItem(PREF_KEY,JSON.stringify(p));}catch(e){}}
   function analysisKey(){const address=(state?.address||'').trim(),name=(state?.name||'').trim();return address||name||'current-analysis';}
-  function recon(){try{return (JSON.parse(localStorage.getItem(RECON_KEY)||'{}')||{})[analysisKey()]||{};}catch(e){return {};}}
+  function recon(){const shared=window.ReportBuilderV1?.getSharedOptions?.();if(shared)return shared.reconciliation||{};try{return (JSON.parse(localStorage.getItem(RECON_KEY)||'{}')||{})[analysisKey()]||{};}catch(e){return {};}}
 
   function injectStyles(){
     if(document.getElementById('reportBuilderV3Styles'))return;

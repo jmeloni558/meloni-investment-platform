@@ -50,8 +50,13 @@
       label.dataset.reportOrder=String(index+1).padStart(2,'0');
       grid.appendChild(label);
     });
-    let note=grid.parentElement.querySelector('.rb-report-order-note');
+    // Layout decorators can move the grid without moving its existing note.
+    // Reuse one note across the controls instead of adding a second copy.
+    const notes=[...document.querySelectorAll('#rbControls .rb-report-order-note')];
+    let note=notes.shift();
+    notes.forEach(extra=>extra.remove());
     if(!note){note=document.createElement('p');note.className='rb-report-order-note';grid.insertAdjacentElement('afterend',note);}
+    else if(grid.nextElementSibling!==note)grid.insertAdjacentElement('afterend',note);
     note.textContent='Listed in PDF reading order, left to right. Detail tables appear within their parent sections. The opening summary, snapshot and final conclusion are included automatically.';
     return true;
   }

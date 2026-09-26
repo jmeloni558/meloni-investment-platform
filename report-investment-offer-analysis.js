@@ -9,8 +9,8 @@
   const money=v=>finite(v)?Number(v).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'—';
   const pct=(v,d=2)=>finite(v)?(Number(v)*100).toFixed(d)+'%':'—';
   const esc=v=>String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
-  function enabled(){try{const raw=localStorage.getItem(PREF_KEY);return raw===null?true:raw==='1';}catch(_e){return true;}}
-  function setEnabled(v){try{localStorage.setItem(PREF_KEY,v?'1':'0');}catch(_e){}}
+  function enabled(){const shared=window.ReportBuilderV1?.getSharedOptions?.();if(shared)return shared.includeOffer!==false;try{const raw=localStorage.getItem(PREF_KEY);return raw===null?true:raw==='1';}catch(_e){return true;}}
+  function setEnabled(v){if(window.ReportBuilderV1?.setSharedOption?.('includeOffer',v))return;try{localStorage.setItem(PREF_KEY,v?'1':'0');}catch(_e){}}
   function calc(){try{return window.InvestmentOfferAnalysis?.calculate?.()||null;}catch(_e){return null;}}
 
   function ensureStyles(){if(document.getElementById('ptReportOfferStyles'))return;const s=document.createElement('style');s.id='ptReportOfferStyles';s.textContent=`

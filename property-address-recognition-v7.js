@@ -20,7 +20,7 @@
   }
   function hideSuggestions(input){
     ensureDismissStyle();
-    document.body.classList.add('pt-hide-address-suggestions');
+    if(!document.body.classList.contains('pt-hide-address-suggestions'))document.body.classList.add('pt-hide-address-suggestions');
     document.querySelectorAll('.pac-container').forEach(el=>{if(!dismissedDisplays.has(el))dismissedDisplays.set(el,{value:el.style.getPropertyValue('display'),priority:el.style.getPropertyPriority('display')});el.style.setProperty('display','none','important');el.setAttribute('aria-hidden','true');});
   }
   function showSuggestions(){

@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__propertyCharacteristicsVersion||0)>=VERSION)return;
   window.__propertyCharacteristicsVersion=VERSION;
 
@@ -52,6 +52,7 @@
     if(card&&card.dataset.ptPropertyCharacteristics!==pid){card.remove();card=null;}
     if(card)return true;
     card=document.createElement('div');card.className='pt-property-characteristics';card.dataset.ptPropertyCharacteristics=pid;
+    let opened=structuredClone(p);
     const type=fallback(p,'property_type');
     const types=['','Single Family','Condo','Townhouse','Manufactured','Multi-Family','Apartment','Other'];
     card.innerHTML=`<h4>Property Characteristics</h4><p>Saved once at the property level and reused across analyses, including Market Rent research.</p><div class="pt-characteristics-grid">
@@ -75,11 +76,18 @@
       const payload={property_type:card.querySelector('[data-pt-char-type]').value||null,bedrooms,bathrooms,living_area,year_built,units,updated_at:new Date().toISOString()};
       const btn=card.querySelector('[data-pt-char-save]');btn.disabled=true;btn.textContent='Saving…';
       try{
+        if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()){
+          const patch={...payload};delete patch.updated_at;
+          const result=await window.PropertyThesisProtectedCloudSaveBridge.saveProperty(opened,patch);
+          opened=structuredClone(result.property);
+        }else{
         const {error}=await cloudClient.from('properties').update(payload).eq('id',pid).eq('user_id',cloudUser.id);
         if(error){status('Property characteristics save failed: '+error.message);return;}
+        }
         if(typeof refreshCloud==='function')await refreshCloud();
         status('Property characteristics saved');btn.textContent='Saved';setTimeout(()=>{if(btn.isConnected)btn.textContent='Save Property Characteristics';},1200);
-      }finally{btn.disabled=false;}
+      }catch(error){status('Property characteristics save failed: '+error.message);}
+      finally{btn.disabled=false;if(btn.textContent==='Saving…')btn.textContent='Save Property Characteristics';}
     };
     return true;
   }

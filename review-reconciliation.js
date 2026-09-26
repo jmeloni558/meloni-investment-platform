@@ -47,7 +47,7 @@
     if(typeof fmtX==='function')return fmtX(v);
     return Number.isFinite(v)?v.toFixed(2)+'x':'N/A';
   }
-  function num(v){const x=Number(v);return Number.isFinite(x)?x:NaN;}
+  function num(v){if(v===null||v===undefined||v==='')return NaN;const x=Number(v);return Number.isFinite(x)?x:NaN;}
 
   function loadSaved(){
     try{return JSON.parse(localStorage.getItem(STORE_KEY)||'{}')||{};}catch(e){return {};}
@@ -60,8 +60,9 @@
     const address=(state?.address||'').trim();
     return address||name||'current-analysis';
   }
-  function getSavedForCurrent(){return loadSaved()[analysisKey()]||{};}
+  function getSavedForCurrent(){const shared=window.ReportBuilderV1?.getSharedOptions?.();return shared?shared.reconciliation||{}:loadSaved()[analysisKey()]||{};}
   function persistCurrent(reconciled,conclusion){
+    if(window.ReportBuilderV1?.setSharedOption?.('reconciliation',{reconciled:Number.isFinite(reconciled)&&reconciled>0?reconciled:null,conclusion:conclusion||''}))return;
     const all=loadSaved();
     all[analysisKey()]={reconciled:Number.isFinite(reconciled)?reconciled:null,conclusion:conclusion||''};
     saveSaved(all);
@@ -188,7 +189,7 @@
           </div>
           <div class="recon-input-row"><div><label for="reviewReconciledValue">Reconciled Investment Value</label><input id="reviewReconciledValue" type="number" step="1000" value="${Number.isFinite(currentRecon)?Math.round(currentRecon):''}" placeholder="Enter concluded value"></div><button type="button" class="btn secondary" id="reviewUseMidpoint">Use Midpoint</button></div>
           <div id="reviewReconciledDelta" class="recon-delta"></div>
-          <div class="recon-note">The midpoint is provided only as a reference. It is not automatically treated as the final value.</div>
+          <div class="recon-note">The midpoint is provided only as a reference. It is not automatically treated as the final value.${window.ReportBuilderV1?.getSharedOptions?.()?' To keep your value and recommendation with this shared analysis, open Client Report and click Save report options.':''}</div>
         </div>
         <div class="recon-panel">
           <h3>Investment Recommendation / Conclusion</h3>
@@ -215,6 +216,6 @@
     document.querySelector('[data-s8-tab="dashboard"]')?.addEventListener('click',()=>setTimeout(apply,0));
   }
 
-  window.ReviewReconciliation={apply};
+  window.ReviewReconciliation={apply,loadShared(){userEditedConclusion=false;document.getElementById('reviewReconciliation')?.remove();apply();}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

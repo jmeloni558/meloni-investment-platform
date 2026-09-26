@@ -6,9 +6,11 @@
   const SUPABASE_URL='https://lmaiqpkogmmsldkziggy.supabase.co';
   const SUPABASE_KEY='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
   let request=0;
+  let activeUserId=null,planChangeControls=null;
   const reveal=()=>document.documentElement.classList.remove('pt-account-nav-pending');
   const guests=new Map();
   function render(user,client,owner){
+    planChangeControls?.destroy();planChangeControls=null;
     const nav=document.querySelector('.pricing-nav,[data-account-nav]');if(!nav)return;
     if(!guests.has(nav))guests.set(nav,nav.innerHTML);
     if(!user){
@@ -37,9 +39,11 @@
         location.href=data.url;
       }catch(_error){button.disabled=false;button.textContent='Manage Subscription';alert('Billing management could not open. Please try again.');}
     });
+    if(!owner&&window.PropertyThesisPlanChanges){planChangeControls=window.PropertyThesisPlanChanges.mount({client,userId:user.id,getUserId:()=>activeUserId,container:document.querySelector('main')||document.body});}
     reveal();
   }
   async function refresh(user,client){
+    activeUserId=user?.id||null;
     const current=++request;
     if(!user){render(null,client,false);document.querySelectorAll('.sample-next-step>a').forEach(link=>{link.textContent='Start My Free Analysis →';link.href='index.html?from=guides';});return;}
     let owner=false;

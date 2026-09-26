@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=37;
+  const VERSION=41;
   if((window.__userBrandedPdfVersion||0)>=VERSION)return;
   window.__userBrandedPdfVersion=VERSION;
 
@@ -8,6 +8,37 @@
   const PRODUCT='PropertyThesis',TAGLINE='Know the Numbers. Make the Offer.',REPORT_TYPE='Investment Property Analysis';
   const CAPTURE_WIDTH=816,CAPTURE_SCALE=1.15,JPEG_QUALITY=.92,FOOTER_H=48,TOP_PAD=24,BOTTOM_PAD=10,PAGE_GAP=10,SIDE_PAD=22,ROW_PAD=30,ROW_BLEED=5;
   let preparedPdf=null,preparingPdf=null,warmTimer=0;
+  let downloadUrl=null;
+  let generating=false;
+  function syncControl(){
+    if(!window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.())return;
+    const button=document.getElementById('rbDownloadPdf');if(!button)return;
+    const ready=!!document.getElementById('ptReadyPdfDownload');
+    button.hidden=ready;
+    if(ready)button.style.setProperty('display','none','important');
+    else button.style.removeProperty('display');
+    button.disabled=generating;
+    button.setAttribute('aria-busy',String(generating));
+    const label=generating?'Preparing PDF…':'Generate PDF';
+    if(button.textContent!==label)button.textContent=label;
+  }
+  function clearDownload(){
+    document.getElementById('ptReadyPdfDownload')?.remove();
+    if(downloadUrl){URL.revokeObjectURL(downloadUrl);downloadUrl=null;}
+    syncControl();
+  }
+  function offerDownload(built){
+    clearDownload();
+    const button=document.getElementById('rbDownloadPdf');
+    if(!button)throw new Error('PDF download control is unavailable.');
+    downloadUrl=URL.createObjectURL(built.doc.output('blob'));
+    const link=document.createElement('a');link.id='ptReadyPdfDownload';
+    link.className='btn primary';link.style.minWidth='138px';link.href=downloadUrl;link.download=built.name;
+    link.textContent='Save PDF';link.setAttribute('aria-label','Save the prepared PDF');
+    button.insertAdjacentElement('afterend',link);
+    syncControl();
+    status('PDF ready. Select Save PDF to download the prepared report.');
+  }
 
   function prof(){return window.UserBranding?.getProfile?.()||{};}
   function filename(){const raw=(state?.address||state?.name||REPORT_TYPE).trim();return (raw.replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,70)||'PropertyThesis')+'-Investment-Analysis.pdf';}
@@ -87,8 +118,11 @@
     const scalePt=(pageW-(SIDE_PAD*2))/reportW,bodyBottom=pageH-FOOTER_H-BOTTOM_PAD;let page=1,y=0;
     const baseX=SIDE_PAD;
     const newPage=()=>{doc.addPage();page++;y=TOP_PAD;};
-    const BATCH_SIZE=10;
+    // Each html2canvas capture clones the document. Avoid ten concurrent
+    // clones competing for the main thread and memory on large reports.
+    const BATCH_SIZE=1;
     for(let start=0;start<list.length;start+=BATCH_SIZE){
+      await new Promise(resolve=>setTimeout(resolve,0));
       const batch=list.slice(start,start+BATCH_SIZE);
       const captured=await Promise.all(batch.map(async it=>{
         if(it.kind==='row')return{it,row:await snapRow(it.els)};
@@ -123,10 +157,12 @@
 
   function reportSignature(source){const p=prof();return `${source?.innerHTML||''}|${p.full_name||''}|${p.company_name||''}|${p.logo_url||''}`;}
   async function buildCurrentPdf(source,signature){let clone=null;try{await preparePreview();await ensureHtml2Canvas();const jsPDF=window.jspdf?.jsPDF;if(!jsPDF)throw new Error('PDF library unavailable.');clone=makeClone(source);await afterPaint();const list=items(clone);if(!list.length)throw new Error('Report components could not be prepared.');const doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait',compress:true}),p=prof();doc.setProperties({title:`${PRODUCT} | ${REPORT_TYPE}`,author:[p.full_name,p.company_name].filter(Boolean).join(' - ')||PRODUCT,subject:state?.address||state?.name||REPORT_TYPE,creator:PRODUCT});await render(doc,clone,list);const total=doc.getNumberOfPages();for(let i=1;i<=total;i++){doc.setPage(i);addFooter(doc,i,total,p);}return{doc,signature,name:filename(),builtAt:Date.now()};}finally{clone?.remove();}}
-  function prepareInBackground(){clearTimeout(warmTimer);warmTimer=setTimeout(()=>{const source=document.querySelector('#clientReport .rb-report');if(!source)return;window.PropertyThesisReportBranding?.apply?.();const signature=reportSignature(source);if(preparedPdf?.signature===signature||preparingPdf?.signature===signature)return;if(preparingPdf){preparingPdf.promise.finally(prepareInBackground);return;}const task=buildCurrentPdf(source,signature).then(built=>{if(reportSignature(document.querySelector('#clientReport .rb-report'))===signature)preparedPdf=built;return built;}).catch(e=>{console.warn('Background PDF preparation deferred',e);return null;}).finally(()=>{if(preparingPdf?.promise===task)preparingPdf=null;});preparingPdf={signature,promise:task};},1800);}
-  async function generate(){clearTimeout(warmTimer);const btn=document.getElementById('rbDownloadPdf');if(btn){btn.disabled=true;btn.textContent='Preparing PDF...';}try{const source=document.querySelector('#clientReport .rb-report');if(!source)throw new Error('Report preview is not available.');window.PropertyThesisReportBranding?.apply?.();await afterPaint();const signature=reportSignature(source);let built=preparedPdf?.signature===signature?preparedPdf:null;if(!built&&preparingPdf?.signature===signature)built=await preparingPdf.promise;if(!built)built=await buildCurrentPdf(source,signature);if(!built)throw new Error('PDF could not be prepared.');preparedPdf=built;built.doc.save(built.name);status('PDF downloaded from the current report preview');}catch(e){console.error(e);status(e?.message||'Unable to generate PDF');alert(e?.message||'Unable to generate PDF.');}finally{if(btn){btn.disabled=false;btn.textContent='Download PDF';}}}
+  function prepareInBackground(){clearTimeout(warmTimer);if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.())return;warmTimer=setTimeout(()=>{const source=document.querySelector('#clientReport .rb-report');if(!source)return;window.PropertyThesisReportBranding?.apply?.();const signature=reportSignature(source);if(preparedPdf?.signature===signature||preparingPdf?.signature===signature)return;if(preparingPdf){preparingPdf.promise.finally(prepareInBackground);return;}const task=buildCurrentPdf(source,signature).then(built=>{if(reportSignature(document.querySelector('#clientReport .rb-report'))===signature)preparedPdf=built;return built;}).catch(e=>{console.warn('Background PDF preparation deferred',e);return null;}).finally(()=>{if(preparingPdf?.promise===task)preparingPdf=null;});preparingPdf={signature,promise:task};},1800);}
+  async function generate(){if(generating)return;generating=true;clearDownload();clearTimeout(warmTimer);const btn=document.getElementById('rbDownloadPdf');if(btn){btn.disabled=true;btn.textContent='Preparing PDF...';}try{const source=document.querySelector('#clientReport .rb-report');if(!source)throw new Error('Report preview is not available.');window.PropertyThesisReportBranding?.apply?.();await afterPaint();const signature=reportSignature(source);let built=preparedPdf?.signature===signature?preparedPdf:null;if(!built&&preparingPdf?.signature===signature)built=await preparingPdf.promise;if(!built)built=await buildCurrentPdf(source,signature);if(!built)throw new Error('PDF could not be prepared.');preparedPdf=built;if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()){offerDownload(built);}else{built.doc.save(built.name);status('PDF download requested from the current report preview');}}catch(e){console.error(e);status(e?.message||'Unable to generate PDF');alert(e?.message||'Unable to generate PDF.');}finally{generating=false;if(btn){btn.disabled=false;btn.textContent='Download PDF';}syncControl();}}
 
-  document.addEventListener('click',e=>{if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh')){ensureHtml2Canvas().catch(()=>{});preparedPdf=null;prepareInBackground();}},true);
+  document.addEventListener('click',e=>{if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh')){clearDownload();ensureHtml2Canvas().catch(()=>{});preparedPdf=null;prepareInBackground();}},true);
   document.addEventListener('click',e=>{const b=e.target?.closest?.('#rbDownloadPdf');if(!b)return;e.preventDefault();e.stopImmediatePropagation();generate();},true);
-  window.UserBrandedPdf={generate,prepare:prepareInBackground,version:VERSION};
+  document.addEventListener('change',e=>{if(e.target?.closest?.('#rbControls'))clearDownload();},true);
+  document.addEventListener('propertythesis:analysis-loaded',clearDownload);
+  window.UserBrandedPdf={generate,prepare:prepareInBackground,syncControl,version:VERSION};
 })();

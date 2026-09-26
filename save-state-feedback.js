@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=4;
   if((window.__saveStateFeedbackVersion||0)>=VERSION)return;
   window.__saveStateFeedbackVersion=VERSION;
 
@@ -62,6 +62,7 @@
 
   function tracked(el){
     if(!el||!el.closest)return false;
+    if(el.closest('#rbControls,#reviewReconciliation')&&window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.())return false;
     if(el.closest('.pt-unsaved-new'))return false;
     return !!el.closest('#guidedSetup,#assumptions,#dashboard,#report,#scenarios,#support,#buydown');
   }
@@ -76,15 +77,15 @@
   if(typeof original==='function'){
     window.saveCurrentCloud=async function(...args){
       saving();
-      const beforeId=typeof selectedAnalysisId!=='undefined'?selectedAnalysisId:null;
       try{
         const out=await original.apply(this,args);
-        const msg=(document.getElementById('saveStatus')?.textContent||'').toLowerCase();
+        const msg=(document.getElementById('saveStatus')?.textContent||document.getElementById('ptProtectedSaveStatus')?.textContent||'').toLowerCase();
         if(/save canceled|enter an analysis name/.test(msg)){unsaved();return out;}
         if(/save failed|could not be updated/.test(msg)){error();return out;}
-        const afterId=typeof selectedAnalysisId!=='undefined'?selectedAnalysisId:null;
-        if(afterId||beforeId||/analysis saved/.test(msg))saved();
-        else unsaved();
+        // An existing selection is not confirmation that this request persisted.
+        // Protected saves return null on failure, including legacy permission denial.
+        if(out?.id)saved();
+        else error();
         return out;
       }catch(e){error();throw e;}
     };

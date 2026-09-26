@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=4;
+  const VERSION=5;
   if((window.__unsavedChangeProtectionVersion||0)>=VERSION)return;
   window.__unsavedChangeProtectionVersion=VERSION;
 
@@ -47,6 +47,7 @@
 
   function isTrackedInput(el){
     if(!el||!el.closest)return false;
+    if(el.closest('#rbControls,#reviewReconciliation')&&window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.())return false;
     if(el.closest('.pt-unsaved-new'))return false;
     return editRoots.some(id=>el.closest('#'+id))||!!el.closest('#guidedSetup');
   }
@@ -69,15 +70,8 @@
     markClean();
   },true);
 
-  document.addEventListener('click',e=>{
-    const save=e.target?.closest?.('#cloudSaveCurrent,[data-pt-save-new]');
-    if(!save)return;
-    [250,700,1400].forEach(ms=>setTimeout(()=>{
-      const status=document.getElementById('saveStatus')?.textContent||'';
-      if(/analysis saved to cloud/i.test(status))markClean();
-      try{if(selectedAnalysisId&&!document.querySelector('.pt-unsaved-new'))markClean();}catch(_e){}
-    },ms));
-  },true);
+  // Only confirmed save/open workflows may mark the editor clean. A selected
+  // record or a stale status message does not establish that a save succeeded.
 
   window.addEventListener('beforeunload',e=>{
     if(!dirty)return;

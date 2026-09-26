@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=12;
+  const VERSION=14;
   if((window.__propertyThesisGuidedSaveExistingWorkflowV||0)>=VERSION)return;
   window.__propertyThesisGuidedSaveExistingWorkflowV=VERSION;
 
@@ -47,10 +47,8 @@
         const out=await saveCurrentCloud(false);
         saved=!!out;
       }
-      if(!saved&&typeof saveLocal==='function'){
-        saveLocal();saved=true;
-      }
-      status(saved?'Analysis progress saved.':'Unable to save analysis progress.');
+      // A local draft must never disguise a failed account save.
+      status(saved?'Analysis progress saved.':'Unable to save analysis progress. Your changes remain unsaved.');
     }catch(e){status('Unable to save analysis progress: '+String(e?.message||e));}
     finally{saving=false;refreshGuidedSaveAction();if(btn)btn.disabled=false;}
   }
@@ -100,9 +98,16 @@
     const step=currentStep();
     const review=step===6;
     const next=document.getElementById('gwNext');
-    if(next){next.classList.toggle('pt-final-action-hidden',review);next.setAttribute('aria-hidden',review?'true':'false');}
-    b.classList.toggle('gw-hide',false);
-    b.textContent=review?'Calculate, Save & Review Results':'Save Progress';
+    if(next){
+      if(next.classList.contains('pt-final-action-hidden')!==review)next.classList.toggle('pt-final-action-hidden',review);
+      const hidden=review?'true':'false';
+      if(next.getAttribute('aria-hidden')!==hidden)next.setAttribute('aria-hidden',hidden);
+    }
+    if(b.classList.contains('gw-hide'))b.classList.remove('gw-hide');
+    const label=review?'Calculate, Save & Review Results':'Save Progress';
+    // This runs from an observer of the same form. Rewriting unchanged text
+    // creates another mutation and an endless refresh queue, even off-screen.
+    if(b.textContent!==label)b.textContent=label;
     b.onclick=e=>{
       e.preventDefault();e.stopPropagation();
       if(review)calculateSaveReview();else saveProgress();

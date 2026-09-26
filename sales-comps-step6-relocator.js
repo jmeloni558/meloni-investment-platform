@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__salesCompsStep6RelocatorV||0)>=VERSION)return;
   window.__salesCompsStep6RelocatorV=VERSION;
 
@@ -108,8 +108,7 @@
       try{if(typeof readFields==='function')readFields();}catch(_e){}
       let ok=false;
       try{if(typeof saveCurrentCloud==='function')ok=!!(await saveCurrentCloud(false));}catch(_e){}
-      if(!ok){try{if(typeof saveLocal==='function'){saveLocal();ok=true;}}catch(_e){}}
-      try{if(typeof setStatus==='function')setStatus(ok?'Analysis progress saved.':'Unable to save analysis progress.');}catch(_e){}
+      try{if(typeof setStatus==='function')setStatus(ok?'Analysis progress saved.':'Unable to save analysis progress. Your changes remain unsaved.');}catch(_e){}
     }finally{
       saving=false;
       if(b)b.disabled=false;

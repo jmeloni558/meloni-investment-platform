@@ -136,7 +136,10 @@
     const a=analysisById(id);if(!a)return;
     busy=true;rememberView(id,target);status(target==='report'?'Preparing protected report…':'Loading protected analysis…');
     try{
-      if(!hydrateAssumptions(a))throw new Error('Saved assumptions could not be loaded.');
+      if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()){
+        selectedPropertyId=a.property_id;selectedAnalysisId=a.id;selectedScenarioId=null;
+        await window.loadSelectedCloud();
+      }else if(!hydrateAssumptions(a))throw new Error('Saved assumptions could not be loaded.');
       try{window.MarketRentPriorResearchFix?.restore?.();}catch(_e){}
       try{if(typeof loadCloudScenarios==='function')await loadCloudScenarios(a.id);}catch(_e){}
       if(target!=='assumptions')await protectedResults();

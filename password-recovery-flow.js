@@ -51,9 +51,9 @@
       if(error)throw error;
       msg('Password updated successfully. Signing you out…');
       sessionStorage.removeItem('ptPasswordRecoveryPending');
+      history.replaceState(null,'',location.pathname);
       try{await client.auth.signOut({scope:'global'});}catch(_e){try{await client.auth.signOut();}catch(_e2){}}
-      history.replaceState(null,'',location.pathname+location.search);
-      setTimeout(()=>location.replace('https://propertythesis.com/index.html'),700);
+      setTimeout(()=>location.replace('/index.html'),700);
     }catch(e){msg(e?.message||'Unable to update password.');button.disabled=false;}
   }
 
