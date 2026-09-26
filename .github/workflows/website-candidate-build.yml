@@ -15,7 +15,8 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
       - name: Exclude build-only inputs
-        run: printf 'exclude: [ci-candidate]\n' > _config.yml
+        run: |
+          printf 'exclude: [ci-candidate]\n' > _config.yml
       - uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697
         with:
           source: .
