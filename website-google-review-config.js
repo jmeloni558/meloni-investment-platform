@@ -1,1 +1,0 @@
-window.PT_GOOGLE_SUGGESTIONS_REVIEW=Object.freeze({enabled:false,...{"projectUrl":"https://lmaiqpkogmmsldkziggy.supabase.co","publicKey":"sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7","guestSiteKey":"0x4AAAAAAFFmr_4uOg_cK3QT"}});

@@ -2,6 +2,13 @@ import hashlib,json,pathlib
 root=pathlib.Path('.')
 expected=json.loads((root/'ci-candidate/source-manifest.json').read_text())
 site=root/'_site'
+full=json.loads((root/'ci-candidate/full-source-manifest.json').read_text())
+import subprocess
+tracked=subprocess.check_output(['git','ls-files','-z']).decode().split('\0')
+actual={n for n in tracked if n and not n.startswith(('ci-candidate/','.github/'))}
+assert actual==set(full), 'Complete source inventory differs from the rollback-paired candidate'
+for name,digest in full.items():
+    assert hashlib.sha256((root/name).read_bytes()).hexdigest()==digest, 'Complete source drift: '+name
 for name,digest in expected.items():
     assert hashlib.sha256((root/name).read_bytes()).hexdigest()==digest, 'Source drift: '+name
     if name.endswith(('.html','.js','.css','.png','.svg','.webp','.ico','.jpg','.jpeg')):
