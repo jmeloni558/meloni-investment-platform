@@ -13,7 +13,12 @@ auth=[n for n in expected if n.startswith('turnstile-auth-protection.') and n.en
 assert len(auth)==1
 for route in ('index.html','latest.html','app-core.html'):
     assert auth[0] in (site/route).read_text()
-assert 'Production shared saving is not activated' in (site/'protected-cloud-save-bridge.js').read_text()
+bridges=[n for n in expected if n.startswith('protected-cloud-save-bridge.') and n.endswith('.js')]
+assert len(bridges)==1
+assert 'Production shared saving is not activated' not in (site/bridges[0]).read_text()
+configs=[n for n in expected if n.startswith('website-google-review-config.') and n.endswith('.js')]
+assert len(configs)==1
+assert 'https://propertythesis.com' in (site/configs[0]).read_text()
 files={p.relative_to(site).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(site.rglob('*')) if p.is_file()}
 pathlib.Path('candidate-build-manifest.json').write_text(json.dumps({'files':files,'productionReady':False,'deploymentPerformed':False},indent=2)+'\n')
 print('Verified source files:',len(expected),'built files:',len(files))
