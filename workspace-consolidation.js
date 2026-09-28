@@ -1,12 +1,22 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=3;
   if((window.__workspaceConsolidationVersion||0)>=VERSION)return;
   window.__workspaceConsolidationVersion=VERSION;
 
   const esc=v=>String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
   function status(msg){try{if(typeof setStatus==='function')setStatus(msg);}catch(_e){}}
   function signed(){try{return !!cloudUser;}catch(_e){return false;}}
+  let fieldSequence=0;
+  function linkFieldLabels(root){
+    root.querySelectorAll('label').forEach(label=>{
+      const control=label.nextElementSibling;
+      if(control&&['INPUT','SELECT','TEXTAREA'].includes(control.tagName)){
+        if(!control.id)control.id='pt-workspace-field-'+(++fieldSequence);
+        label.htmlFor=control.id;
+      }
+    });
+  }
 
   function ensureStyles(){
     if(document.getElementById('ptWorkspaceConsolidationStyle'))return;
@@ -40,7 +50,7 @@
   function decorateManager(){
     const host=document.getElementById('ptAnalysisContent');if(!host||host.querySelector('[data-pt-record-editor]'))return false;
     const newBtn=host.querySelector('[data-pt-new]');const pid=newBtn?.dataset?.ptNew;if(!pid)return false;
-    const p=currentProperty(pid);if(!p)return false;
+    const selected=currentProperty(pid);if(!selected)return false;const p=structuredClone(selected);
     const body=host.querySelector('.pt-body');if(!body)return false;
     const assigned=currentClient(p.client_id);
     const clients=(typeof cloudClients!=='undefined'?(cloudClients||[]):[]);
@@ -54,14 +64,30 @@
     const toolbar=body.querySelector('.pt-toolbar');body.insertBefore(card,toolbar||body.firstChild);
 
     const select=card.querySelector('[data-pt-client-select]');
+    const sharedMode=()=>window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.();
+    let propertySaveBusy=false;
+    async function saveShared(patch,assignment){
+      if(propertySaveBusy){status('Wait for the property save to finish.');return;}
+      propertySaveBusy=true;
+      try{
+        const saved=await window.PropertyThesisProtectedCloudSaveBridge.saveProperty(p,patch,assignment);
+        Object.assign(p,saved.property);
+        if(typeof refreshCloud==='function')await refreshCloud();
+        window.PropertyAnalysisManager?.render?.(pid);setTimeout(decorateManager,80);
+        status('Property and client details saved.');
+      }catch(e){select.value=p.client_id||'';status('Property save failed: '+e.message);}
+      finally{propertySaveBusy=false;}
+    }
     function drawClient(id,newMode=false){
-      const c=newMode?null:currentClient(id);const ed=card.querySelector('[data-pt-client-editor]');
+      const c=newMode?null:structuredClone(currentClient(id));const newClientId=newMode?crypto.randomUUID():null;const ed=card.querySelector('[data-pt-client-editor]');
       if(!newMode&&!c){ed.innerHTML='';return;}
       ed.innerHTML=`<div class="pt-workspace-grid"><div class="field wide"><label>Client Name</label><input data-pt-c-name value="${esc(c?.name||'')}"></div><div class="field"><label>Email</label><input data-pt-c-email type="email" value="${esc(c?.email||'')}"></div><div class="field"><label>Phone</label><input data-pt-c-phone value="${esc(c?.phone||'')}"></div><div class="field wide"><label>Client Notes</label><textarea data-pt-c-notes>${esc(c?.notes||'')}</textarea></div></div><div class="pt-workspace-actions"><button class="btn secondary" type="button" data-pt-save-client>${newMode?'Create & Assign Client':'Save Client Details'}</button></div>`;
+      linkFieldLabels(ed);
       ed.querySelector('[data-pt-save-client]').onclick=async()=>{
         if(!signed())return;
         const payload={user_id:cloudUser.id,name:ed.querySelector('[data-pt-c-name]').value.trim(),email:ed.querySelector('[data-pt-c-email]').value.trim()||null,phone:ed.querySelector('[data-pt-c-phone]').value.trim()||null,notes:ed.querySelector('[data-pt-c-notes]').value.trim()||null,updated_at:new Date().toISOString()};
         if(!payload.name){status('Client name is required');return;}
+        if(sharedMode()){const {user_id,updated_at,...patch}=payload;await saveShared({}, {id:newMode?newClientId:c.id,revision:newMode?0:c.revision,patch});return;}
         let data,error;
         if(newMode){({data,error}=await cloudClient.from('clients').insert(payload).select().single());}
         else{({data,error}=await cloudClient.from('clients').update(payload).eq('id',c.id).eq('user_id',cloudUser.id).select().single());}
@@ -70,10 +96,11 @@
         if(typeof refreshCloud==='function')await refreshCloud();status(newMode?'Client created and assigned':'Client details saved');if(window.PropertyAnalysisManager?.render)window.PropertyAnalysisManager.render(pid);setTimeout(decorateManager,80);
       };
     }
-    select.onchange=async()=>{const id=select.value||null;const {error}=await cloudClient.from('properties').update({client_id:id,updated_at:new Date().toISOString()}).eq('id',pid).eq('user_id',cloudUser.id);if(error){status('Client assignment failed: '+error.message);return;}if(typeof refreshCloud==='function')await refreshCloud();drawClient(id,false);status(id?'Client assigned':'Client unassigned');};
+    select.onchange=async()=>{const id=select.value||null;if(sharedMode()){await saveShared({}, {id,revision:id?clients.find(row=>row.id===id)?.revision:null});return;}const {error}=await cloudClient.from('properties').update({client_id:id,updated_at:new Date().toISOString()}).eq('id',pid).eq('user_id',cloudUser.id);if(error){status('Client assignment failed: '+error.message);return;}if(typeof refreshCloud==='function')await refreshCloud();drawClient(id,false);status(id?'Client assigned':'Client unassigned');};
     card.querySelector('[data-pt-new-client]').onclick=()=>{select.value='';drawClient(null,true);};
-    card.querySelector('[data-pt-save-property-details]').onclick=async()=>{if(!signed())return;const payload={name:card.querySelector('[data-pt-p-name]').value.trim(),address:card.querySelector('[data-pt-p-address]').value.trim()||null,city:card.querySelector('[data-pt-p-city]').value.trim()||null,state:card.querySelector('[data-pt-p-state]').value.trim()||null,postal_code:card.querySelector('[data-pt-p-zip]').value.trim()||null,notes:card.querySelector('[data-pt-p-notes]').value.trim()||null,updated_at:new Date().toISOString()};if(!payload.name){status('Property name is required');return;}const {error}=await cloudClient.from('properties').update(payload).eq('id',pid).eq('user_id',cloudUser.id);if(error){status('Property save failed: '+error.message);return;}if(typeof refreshCloud==='function')await refreshCloud();status('Property details saved');if(window.PropertyAnalysisManager?.render)window.PropertyAnalysisManager.render(pid);setTimeout(decorateManager,80);};
+    card.querySelector('[data-pt-save-property-details]').onclick=async()=>{if(!signed())return;const payload={name:card.querySelector('[data-pt-p-name]').value.trim(),address:card.querySelector('[data-pt-p-address]').value.trim()||null,city:card.querySelector('[data-pt-p-city]').value.trim()||null,state:card.querySelector('[data-pt-p-state]').value.trim()||null,postal_code:card.querySelector('[data-pt-p-zip]').value.trim()||null,notes:card.querySelector('[data-pt-p-notes]').value.trim()||null,updated_at:new Date().toISOString()};if(!payload.name){status('Property name is required');return;}if(sharedMode()){const {updated_at,...patch}=payload;await saveShared(patch);return;}const {error}=await cloudClient.from('properties').update(payload).eq('id',pid).eq('user_id',cloudUser.id);if(error){status('Property save failed: '+error.message);return;}if(typeof refreshCloud==='function')await refreshCloud();status('Property details saved');if(window.PropertyAnalysisManager?.render)window.PropertyAnalysisManager.render(pid);setTimeout(decorateManager,80);};
     if(assigned)drawClient(assigned.id,false);
+    linkFieldLabels(card);
     return true;
   }
 
@@ -98,3 +125,4 @@
   window.WorkspaceConsolidation={refresh,decorateManager,renderScenarioCloud};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(refresh,300),{once:true});else setTimeout(refresh,300);
 })();
+

@@ -1,16 +1,16 @@
 'use strict';
 (()=>{
-  const VERSION=17;
+  const VERSION=18;
   if((window.__propertyAddressRecognitionV||0)>=VERSION)return;
   window.__propertyAddressRecognitionV=VERSION;
 
-  const GOOGLE_KEY_STORAGE='pt_step1_google_places_key';
+
   const dismissedDisplays=new WeakMap();
   let googlePromise=null,lastLookup='',lookupBusy=false,syncingAddress=false,mobileScrollTimer=0,mobileAdjustedInput=null;
   const addressInputs=()=>[...document.querySelectorAll('#f_address,[data-src="f_address"],[data-pt-home-address]')];
   const isVisible=el=>{if(!el)return false;const style=getComputedStyle(el),rect=el.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0;};
   const visibleAddressInputs=()=>[...addressInputs(),...document.querySelectorAll('[data-pt-listing-address]')].filter(isVisible);
-  const key=()=>window.PROPERTYTHESIS_CONFIG?.googlePlacesKey||window.PROPERTYTHESIS_GOOGLE_PLACES_KEY||localStorage.getItem(GOOGLE_KEY_STORAGE)||'';
+
 
   function ensureDismissStyle(){
     if(document.getElementById('ptAddressDismissStyle'))return;
@@ -19,8 +19,9 @@
     document.head.appendChild(s);
   }
   function hideSuggestions(input){
+    controls.forEach(c=>c.close());
     ensureDismissStyle();
-    document.body.classList.add('pt-hide-address-suggestions');
+    if(!document.body.classList.contains('pt-hide-address-suggestions'))document.body.classList.add('pt-hide-address-suggestions');
     document.querySelectorAll('.pac-container').forEach(el=>{if(!dismissedDisplays.has(el))dismissedDisplays.set(el,{value:el.style.getPropertyValue('display'),priority:el.style.getPropertyPriority('display')});el.style.setProperty('display','none','important');el.setAttribute('aria-hidden','true');});
   }
   function showSuggestions(){
@@ -59,33 +60,22 @@
       setTimeout(()=>{hideSuggestions();focusNextField();},0);setTimeout(()=>hideSuggestions(),80);
     }catch(e){setStatus(e?.message||'Property recognition failed.','err');}finally{lookupBusy=false;}
   }
-  function loadGoogle(){
-    const k=key();if(!k)return Promise.reject(new Error('Google Places key not configured'));
-    if(window.google?.maps?.places)return Promise.resolve(window.google.maps.places);if(googlePromise)return googlePromise;
-    googlePromise=new Promise((resolve,reject)=>{const cb='__ptAddressRecognitionReady';window[cb]=()=>resolve(window.google?.maps?.places);const s=document.createElement('script');s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(k)+'&libraries=places&callback='+cb+'&v=weekly&auth_referrer_policy=origin';s.async=true;s.defer=true;s.dataset.ptAddressRecognitionGoogle='1';s.onerror=()=>reject(new Error('Unable to load Google address suggestions'));document.head.appendChild(s);});return googlePromise;
-  }
+  const controls=new Set();
+  const config=window.PT_GOOGLE_SUGGESTIONS_REVIEW||{};
+  const getGuestToken=window.PTWebsiteGoogleSuggestions.guestVerifier({siteKey:config.guestSiteKey,loadTurnstile:window.PTWebsiteGoogleSuggestions.loadTurnstile});
+  const suggest=window.PTWebsiteGoogleSuggestions.create({enabled:config.enabled===true,projectUrl:config.projectUrl,publicKey:config.publicKey,getClient:()=>typeof cloudClient==='undefined'?null:cloudClient,getGuestToken});
+  function loadGoogle(){return Promise.reject(Error('Direct Google requests are disabled in this candidate.'));}
   function attachInput(input){
-    if(!input||input.dataset.ptAddressRecognition==='1')return;input.dataset.ptAddressRecognition='1';input.setAttribute('autocomplete','off');
-    if(!key()){setStatus('Manual address entry is available. Address suggestions are not configured on this browser.');return;}
-    let activating=false;
-    const activate=async()=>{
-      if(activating||input.dataset.ptAddressAutocomplete==='1')return;activating=true;
-      try{
-      await loadGoogle();if(!window.google?.maps?.places?.Autocomplete)throw new Error('Google Places unavailable');input.dataset.ptAddressAutocomplete='1';
-      const ac=new google.maps.places.Autocomplete(input,{componentRestrictions:{country:'us'},types:['address'],fields:['formatted_address','place_id','geometry']});
-      if(input.matches('[data-pt-home-address]'))[0,50,250,1000].forEach(ms=>setTimeout(()=>input.removeAttribute('placeholder'),ms));
-      ac.addListener('place_changed',()=>{const place=ac.getPlace(),address=place?.formatted_address||input.value.trim();if(!address)return;const lat=place?.geometry?.location?.lat?.(),lng=place?.geometry?.location?.lng?.();input.dataset.placeId=place?.place_id||'';input.dataset.lat=Number.isFinite(lat)?String(lat):'';input.dataset.lng=Number.isFinite(lng)?String(lng):'';hideSuggestions(input);syncAddress(address);setTimeout(()=>hideSuggestions(input),0);if(input.matches('[data-pt-home-address]')){setStatus('Address recognized. Property details will be researched after you create or sign in to your account.','ok');return;}lookup(address);});
-      input.addEventListener('input',()=>{if(!syncingAddress&&isVisible(input))showSuggestions();makeMobileSuggestionRoom(input);},{passive:true});
-      input.addEventListener('focus',()=>{if(!syncingAddress&&isVisible(input)&&input.value.trim()!==lastLookup)showSuggestions();[120,320].forEach(ms=>setTimeout(()=>makeMobileSuggestionRoom(input),ms));},{passive:true});
-      input.addEventListener('blur',()=>{if(mobileAdjustedInput===input)mobileAdjustedInput=null;clearTimeout(mobileScrollTimer);},{passive:true});
-      input.addEventListener('change',e=>{if(syncingAddress||!e.isTrusted)return;const v=input.value.trim();if(v&&v!==lastLookup)syncAddress(v);});
-      setStatus('Address suggestions ready. Start typing and select the matching property.');
-      }catch(e){setStatus('Manual address entry is available. Google suggestions could not load.','err');}finally{activating=false;}
-    };
-    input.addEventListener('focus',activate,{once:true,passive:true});
-    input.addEventListener('pointerdown',activate,{once:true,passive:true});
-    input.addEventListener('input',activate,{once:true,passive:true});
-    setStatus('Address suggestions load when you select the address field.');
+    if(!input||input.dataset.ptAddressRecognition==='1')return;
+    input.dataset.ptAddressRecognition='1';
+    const control=window.PTAddressAutocomplete.attach(input,(_route,_method,body)=>suggest(body.input,input),{shouldSearch:()=>!syncingAddress&&isVisible(input),onSelect:row=>{
+      input.dataset.placeId=row.id||'';input.dataset.lat='';input.dataset.lng='';
+      controls.forEach(c=>c.close());syncAddress(row.address);
+      if(input.matches('[data-pt-home-address]')){setStatus('Address recognized. Property details will be researched after you create or sign in to your account.','ok');return;}
+      lookup(row.address);
+    }});
+    if(control)controls.add(control);
+    input.addEventListener('change',e=>{if(syncingAddress||!e.isTrusted)return;const value=input.value.trim();if(value)syncAddress(value);});
   }
   function attachAll(){addressInputs().forEach(attachInput);enforceStepVisibility();}
   function start(){

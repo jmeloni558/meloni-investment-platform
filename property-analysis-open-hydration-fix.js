@@ -45,7 +45,11 @@
     e.preventDefault();
     e.stopImmediatePropagation();
     const a=analysisById(b.dataset.ptOpen);
-    if(!a||!hydrate(a))return;
+    if(!a)return;
+    if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()){
+      selectedPropertyId=a.property_id;selectedAnalysisId=a.id;selectedScenarioId=null;
+      try{await window.loadSelectedCloud();}catch(error){try{setStatus('Open failed: '+error.message);}catch(_){}return;}
+    }else if(!hydrate(a))return;
     try{window.PropertyAnalysisManager?.close?.();}catch(_e){}
     try{if(typeof loadCloudScenarios==='function')await loadCloudScenarios(a.id);}catch(_e){}
     if(window.WorkflowNavigationController?.go)window.WorkflowNavigationController.go('dashboard');

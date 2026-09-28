@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=2;
   if((window.__marketRentCloudPersistenceVersion||0)>=VERSION)return;
   window.__marketRentCloudPersistenceVersion=VERSION;
 
@@ -26,10 +26,16 @@
       if(typeof selectedAnalysisId==='undefined'||!selectedAnalysisId)return false;
       if(typeof cloudClient==='undefined'||!cloudClient)return false;
       if(typeof cloudUser==='undefined'||!cloudUser)return false;
-      const s=support();if(!hasSupport(s))return false;
-      const signature=JSON.stringify(s);if(signature===lastSignature)return true;
+      const id=selectedAnalysisId,uid=cloudUser.id;
+      const s=clone(support());if(!hasSupport(s))return false;
+      const signature=JSON.stringify([uid,id,s]);
       let row=null;
-      if(typeof cloudAnalyses!=='undefined'&&Array.isArray(cloudAnalyses))row=cloudAnalyses.find(x=>x?.id===selectedAnalysisId)||null;
+      if(typeof cloudAnalyses!=='undefined'&&Array.isArray(cloudAnalyses))row=cloudAnalyses.find(x=>x?.id===id)||null;
+      if(signature===lastSignature&&JSON.stringify(row?.assumptions?.marketRentSupport)===JSON.stringify(s))return true;
+      if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()){
+        await window.PropertyThesisProtectedCloudSaveBridge.saveMarketRentSupport(id,s);
+        lastSignature=signature;return true;
+      }
       if(!row){const q=await cloudClient.from('analyses').select('id,assumptions').eq('id',selectedAnalysisId).single();if(q.error)throw q.error;row=q.data;}
       const assumptions={...(row?.assumptions||{}),marketRentSupport:clone(s)};
       const updatedAt=new Date().toISOString();
@@ -44,13 +50,15 @@
     }catch(e){try{if(typeof setStatus==='function')setStatus('Market rent support save failed: '+(e?.message||e));}catch(_e){}return false;}
   }
 
-  function schedule(ms=500){clearTimeout(timer);timer=setTimeout(persistNow,ms);}
+  const context=()=>({id:typeof selectedAnalysisId==='undefined'?null:selectedAnalysisId,uid:typeof cloudUser==='undefined'?null:cloudUser?.id});
+  const sameContext=expected=>{const current=context();return current.id===expected.id&&current.uid===expected.uid;};
+  function schedule(ms=500){clearTimeout(timer);const expected=context();timer=setTimeout(()=>{if(sameContext(expected))return persistNow();},ms);}
 
   document.addEventListener('click',e=>{
     if(e.target?.closest?.('[data-ptr-open]'))restore();
     if(e.target?.closest?.('[data-ptr-run]')){
-      const before=support()?.researchedAt||'';let tries=0;
-      const check=()=>{tries++;const now=support()?.researchedAt||'';if(now&&now!==before){schedule(0);return;}if(tries<40)setTimeout(check,250);};
+      const before=support()?.researchedAt||'',expected=context();let tries=0;
+      const check=()=>{if(!sameContext(expected))return;tries++;const now=support()?.researchedAt||'';if(now&&now!==before){schedule(0);return;}if(tries<40)setTimeout(check,250);};
       setTimeout(check,250);
     }
     if(e.target?.closest?.('[data-ptr-save-support],[data-ptr-use]'))schedule(50);

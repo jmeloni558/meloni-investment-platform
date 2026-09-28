@@ -1,0 +1,35 @@
+name: Verify inactive website candidate
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build:
+    if: github.head_ref == 'codex/website-candidate-build-20260926'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Exclude build-only inputs
+        run: |
+          printf 'exclude: [ci-candidate]\n' > _config.yml
+      - uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697
+        with:
+          source: .
+          destination: ./_site
+          future: false
+          build_revision: ${{ github.event.pull_request.head.sha }}
+      - name: Verify built output
+        run: python3 ci-candidate/verify.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: inactive-website-candidate
+          path: |
+            _site/
+            candidate-build-manifest.json
+          retention-days: 30
+          if-no-files-found: error

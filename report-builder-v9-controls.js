@@ -179,6 +179,7 @@
     controls.querySelector('.rb-pass3-note')?.remove();
     const emptyPass2=controls.querySelector('.rb-pass2-actions');
     if(emptyPass2&&!emptyPass2.children.length)emptyPass2.remove();
+    window.UserBrandedPdf?.syncControl?.();
     return true;
   }
 

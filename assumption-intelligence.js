@@ -1,8 +1,8 @@
 'use strict';
 (()=>{
   const VERSION=1;
-  if((window.__propertyThesisAssumptionIntelligenceV||0)>=VERSION)return;
-  window.__propertyThesisAssumptionIntelligenceV=VERSION;
+  if(typeof window!=='undefined'&&(window.__propertyThesisAssumptionIntelligenceV||0)>=VERSION)return;
+  if(typeof window!=='undefined'&&!(typeof module!=='undefined'&&module.exports))window.__propertyThesisAssumptionIntelligenceV=VERSION;
 
   const n=v=>Number(v);
   const finite=v=>Number.isFinite(n(v));
@@ -131,6 +131,7 @@
   function schedule(){[0,50,140].forEach(ms=>setTimeout(apply,ms));}
   function start(){hookStage6();schedule();document.addEventListener('click',e=>{if(e.target.closest('#guidedSetup,[data-tab="propertyhub"],[data-pt-cloud-refresh],[data-hub-edit],[data-pt-new]'))schedule();},true);document.addEventListener('input',e=>{if(e.target.closest('#guidedSetup'))setTimeout(guided,20);},true);document.addEventListener('change',e=>{if(e.target.closest('#guidedSetup'))setTimeout(guided,20);},true);}
 
+  if(typeof module!=='undefined'&&module.exports){module.exports={evaluate:rateAssumptions,summarize:summary};return;}
   window.PropertyThesisAssumptionIntelligence={version:VERSION,evaluate:rateAssumptions,summarize:summary,apply,guided,hub};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

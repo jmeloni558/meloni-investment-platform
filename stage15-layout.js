@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=13;
+  const VERSION=14;
   if((window.__stage15LayoutVersion||0)>=VERSION)return;
   window.__stage15LayoutVersion=VERSION;
 
@@ -163,9 +163,9 @@
       }
       if(!mirror.dataset.sourceSync){
         mirror.dataset.sourceSync='1';
-        mirror.addEventListener('input',()=>{source.value=mirror.value;});
+        mirror.addEventListener('input',()=>{const current=document.getElementById(id);if(current)current.value=mirror.value;});
         mirror.addEventListener('change',()=>{
-          source.value=mirror.value;
+          const current=document.getElementById(id);if(current)current.value=mirror.value;
           try{if(typeof readFields==='function')readFields();if(typeof render==='function')render();}catch(e){}
           setTimeout(syncReviewSetup,0);
         });
@@ -179,8 +179,8 @@
       return;
     }
     const signedIn=!!window.cloudUser||typeof cloudUser!=='undefined'&&!!cloudUser;
-    await saveCurrentCloud(false);
-    if(signedIn){
+    const saved=await saveCurrentCloud(false);
+    if(signedIn&&saved){
       try{if(typeof switchTab==='function')switchTab('dashboard')}catch(e){}
       setTimeout(()=>{apply();syncReviewSetup();},0);
     }

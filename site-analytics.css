@@ -3,4 +3,6 @@
 #ptAnalyticsChoices .pt-analytics-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}#ptAnalyticsChoices button{font:600 14px/1.3 Arial,sans-serif;min-height:44px;padding:10px 14px;border:1px solid #175c75;border-radius:8px;background:#f2f8fa;color:#15384b;cursor:pointer}#ptAnalyticsChoices button[data-choice]{background:#175c75;color:#fff}#ptAnalyticsChoices button:focus-visible,#ptAnalyticsPreferences:focus-visible{outline:3px solid #bd8a23;outline-offset:3px}
 #ptAnalyticsPreferences{font:inherit;color:inherit;background:transparent;border:0;padding:4px;cursor:pointer;text-decoration:underline;min-height:44px}
 @media(max-width:480px){#ptAnalyticsChoices{left:10px;bottom:10px;width:calc(100vw - 20px);padding:16px}#ptAnalyticsChoices .pt-analytics-actions{display:grid;grid-template-columns:1fr}#ptAnalyticsChoices button{width:100%}}
+/* Keep the optional banner out of the sign-in dialog's input and button area. */
+html.pt-auth-scroll-locked #ptAnalyticsChoices{display:none}
 @media print{#ptAnalyticsChoices,#ptAnalyticsPreferences{display:none!important}}

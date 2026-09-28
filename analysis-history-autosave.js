@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=1;
+  const VERSION=3;
   if((window.__analysisHistoryAutosaveVersion||0)>=VERSION)return;
   window.__analysisHistoryAutosaveVersion=VERSION;
 
@@ -35,7 +35,7 @@
   function showDraftState(text){const b=ensureDraftBadge();if(!b)return;b.hidden=false;b.className='pt-draft-state saved';b.textContent=text;}
   function hideDraftState(){const b=document.getElementById('ptDraftState');if(b)b.hidden=true;}
 
-  function tracked(el){return !!el?.closest?.('#guidedSetup,#assumptions,#dashboard,#report,#scenarios,#support,#buydown');}
+  function tracked(el){if(el?.closest?.('#rbControls,#reviewReconciliation')&&window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.())return false;return !!el?.closest?.('#guidedSetup,#assumptions,#dashboard,#report,#scenarios,#support,#buydown');}
   function readDraftState(){
     const snap={...(typeof state==='object'&&state?state:{})};
     try{
@@ -76,7 +76,7 @@
   }
 
   async function snapshotVersion(analysisId){
-    if(!analysisId||!cloudUser)return;
+    if(!analysisId||!cloudUser)return;if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.())return;
     const {data,error}=await cloudClient.from('analyses').select('*').eq('id',analysisId).eq('user_id',cloudUser.id).single();if(error||!data)return;
     const payload={user_id:cloudUser.id,analysis_id:data.id,property_id:data.property_id,name:data.name,assumptions:data.assumptions||{},outputs:data.outputs||{},report_meta:data.report_meta||{},created_at:new Date().toISOString()};
     const {error:verErr}=await cloudClient.from('analysis_versions').insert(payload);if(verErr)throw verErr;
@@ -87,6 +87,7 @@
     window.saveCurrentCloud=async function(...args){
       const beforeKey=draftKey();const beforeId=selectedAnalysisId;
       const out=await saveOriginal.apply(this,args);
+      if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()&&!out)return out;
       const msg=(document.getElementById('saveStatus')?.textContent||'').toLowerCase();
       if(/save canceled|enter an analysis name|save failed|could not be updated/.test(msg))return out;
       const afterId=selectedAnalysisId;
@@ -102,14 +103,15 @@
   function closeHistory(){document.getElementById('ptVersionModal')?.classList.add('hidden');}
   async function openHistory(id){
     if(!id||!cloudUser)return;const a=(cloudAnalyses||[]).find(x=>x.id===id);if(!a)return;
-    const m=ensureVersionModal(),host=document.getElementById('ptVersionContent');m.classList.remove('hidden');host.innerHTML='<div class="ptv-head"><div><h3>Version History</h3><p>Loading saved versions…</p></div><button class="ptv-close">×</button></div><div class="ptv-body"><div class="ptv-empty">Loading…</div></div>';host.querySelector('.ptv-close').onclick=closeHistory;
+    const opened=structuredClone(a);const m=ensureVersionModal(),host=document.getElementById('ptVersionContent');m.classList.remove('hidden');host.innerHTML='<div class="ptv-head"><div><h3>Version History</h3><p>Loading saved versions…</p></div><button class="ptv-close" aria-label="Close version history">×</button></div><div class="ptv-body"><div class="ptv-empty">Loading…</div></div>';host.querySelector('.ptv-close').onclick=closeHistory;
     const {data,error}=await cloudClient.from('analysis_versions').select('*').eq('analysis_id',id).order('created_at',{ascending:false});
     if(error){host.querySelector('.ptv-body').innerHTML='<div class="ptv-empty">Could not load version history.</div>';return;}
     const versions=data||[];const rows=versions.map((v,i)=>{const s=v.assumptions||{},o=v.outputs||{};return `<div class="ptv-row"><div class="ptv-top"><b>Version ${versions.length-i}</b><span>${esc(when(v.created_at))}</span></div><div class="ptv-metrics"><div class="ptv-metric"><span>Purchase Price</span><b>${esc(money(s.price))}</b></div><div class="ptv-metric"><span>Rent</span><b>${esc(money(s.rent))}</b></div><div class="ptv-metric"><span>IRR</span><b>${esc(pct(o.irr))}</b></div><div class="ptv-metric"><span>NPV</span><b>${esc(money(o.npv))}</b></div></div><button class="btn secondary" data-pt-version-restore="${esc(v.id)}">Restore This Version</button></div>`;}).join('');
-    host.innerHTML=`<div class="ptv-head"><div><h3>Version History — ${esc(a.name||'Analysis')}</h3><p>${versions.length} saved ${versions.length===1?'version':'versions'}. Restoring first preserves the current state as another version.</p></div><button class="ptv-close">×</button></div><div class="ptv-body"><div class="ptv-list">${rows||'<div class="ptv-empty">No versions have been created yet. The next cloud save will create the first version.</div>'}</div></div>`;host.querySelector('.ptv-close').onclick=closeHistory;host.querySelectorAll('[data-pt-version-restore]').forEach(b=>b.onclick=()=>restoreVersion(id,b.dataset.ptVersionRestore));
+    host.innerHTML=`<div class="ptv-head"><div><h3>Version History — ${esc(a.name||'Analysis')}</h3><p>${versions.length} saved ${versions.length===1?'version':'versions'}. Restoring first preserves the current saved analysis as another version. Unsaved editor inputs stay unchanged.</p></div><button class="ptv-close" aria-label="Close version history">×</button></div><div class="ptv-body"><div class="ptv-list">${rows||'<div class="ptv-empty">No versions have been created yet. The next cloud save will create the first version.</div>'}</div></div>`;host.querySelector('.ptv-close').onclick=closeHistory;host.querySelectorAll('[data-pt-version-restore]').forEach(b=>b.onclick=()=>restoreVersion(id,b.dataset.ptVersionRestore,opened));
   }
-  async function restoreVersion(analysisId,versionId){
-    if(!confirm('Restore this saved version? The current analysis will first be preserved in version history.'))return;
+  async function restoreVersion(analysisId,versionId,opened){
+    if(!confirm('Restore this saved version? The current saved analysis will first be preserved in version history. Unsaved editor inputs stay unchanged.'))return;
+    if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()){try{await window.PropertyThesisProtectedCloudSaveBridge.restoreVersion(opened,versionId);await refreshCloud();closeHistory();setStatus('Saved version restored. Reopen the analysis to load it; current editor inputs are unchanged.');}catch(e){setStatus('Version restore failed: '+e.message);}return;}
     const {data:v,error}=await cloudClient.from('analysis_versions').select('*').eq('id',versionId).eq('user_id',cloudUser.id).single();if(error||!v)return;
     try{await snapshotVersion(analysisId);}catch(_e){}
     const payload={name:v.name,assumptions:v.assumptions||{},outputs:v.outputs||{},report_meta:v.report_meta||{},updated_at:new Date().toISOString()};

@@ -18,6 +18,7 @@
   #report #rbControls[id] input[type=checkbox]{flex-shrink:0;width:16px;height:16px;accent-color:#175c92}
   #report #rbControls[id] .rb-report-order-note{font-size:12px;line-height:1.6;color:#526779;margin:14px 0 0}
   #report #rbControls[id] .rb-export-panel{margin:18px 20px 20px!important;padding:20px!important;background:#f0f6fa!important;border-radius:14px!important;border-top:3px solid #759eb6!important}
+  #report #rbControls[id] .rb-actions a.btn{text-decoration:none!important;font-family:inherit;font-size:12px!important;font-weight:800!important;line-height:1.45}
   #report #rbControls[id] .rb-actions button,
   #report #rbControls[id] .rb-section-preset-actions button{background:#fff!important;color:#254e69!important;border:1px solid #a9c0d1!important;box-shadow:none!important;border-radius:9px!important;min-height:44px!important;font-size:12px!important;padding:11px 16px!important}
   #report #rbControls[id] .rb-actions button:hover,

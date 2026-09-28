@@ -14,9 +14,11 @@
     if(typeof showAuth==='function'){showAuth();return;}
     document.getElementById('authModal')?.classList.remove('hidden');
   }
-  const streetViewUrl=l=>{const key=window.PROPERTYTHESIS_CONFIG?.googlePlacesKey||'';const location=Number.isFinite(Number(l.latitude))&&Number.isFinite(Number(l.longitude))?`${l.latitude},${l.longitude}`:(l.formattedAddress||'');if(!key||!location)return'';const q=new URLSearchParams({size:'640x360',location,key,source:'outdoor',fov:'80',pitch:'0',return_error_code:'true'});return`https://maps.googleapis.com/maps/api/streetview?${q}`;};
-  const streetView=l=>{const src=streetViewUrl(l),address=l.formattedAddress||'the property';return`<div class="pt-listing-streetview${src?'':' is-unavailable'}">${src?`<img data-streetview data-src="${esc(src)}" alt="Google Street View of ${esc(address)}">`:''}<span>Street View unavailable</span><em>Google Street View</em></div>`;};
-  function bindStreetViews(host){const images=[...host.querySelectorAll('[data-streetview]')];const load=img=>{if(!img.src&&img.dataset.src)img.src=img.dataset.src;img.addEventListener('error',()=>img.closest('.pt-listing-streetview')?.classList.add('is-unavailable'),{once:true});};if(!('IntersectionObserver'in window)){images.forEach(load);return;}const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){load(entry.target);observer.unobserve(entry.target);}}),{rootMargin:'180px'});images.forEach(img=>observer.observe(img));}
+  const googleReview=window.PT_GOOGLE_SUGGESTIONS_REVIEW||{};
+  const streetViewToken=window.PTWebsiteGoogleSuggestions.guestVerifier({siteKey:googleReview.guestSiteKey,loadTurnstile:window.PTWebsiteGoogleSuggestions.loadTurnstile,action:'guest_street_view'});
+  const requestStreetView=window.PTWebsiteStreetView.create({enabled:googleReview.enabled===true,projectUrl:googleReview.projectUrl,publicKey:googleReview.publicKey,getGuestToken:streetViewToken,getClient:()=>typeof cloudClient==='undefined'?null:cloudClient});
+  const streetView=l=>{const address=l.formattedAddress||'';return '<div class="pt-listing-streetview"><img data-streetview data-address="'+esc(address)+'" alt="Google Street View of '+esc(address)+'"><span>Street View unavailable</span><em>Google Street View</em></div>';};
+  function bindStreetViews(host){window.PTWebsiteStreetView.bind(host,requestStreetView);}
   function addRangeFields(host){
     const beforeSquareFeet=host.querySelector('[name="squareFootageMin"]')?.closest('.pt-listings-field');
     beforeSquareFeet?.insertAdjacentHTML('beforebegin','<div class="pt-listings-field"><label>Maximum bedrooms</label><input name="bedroomsMax" type="number" min="0"></div><div class="pt-listings-field"><label>Maximum bathrooms</label><input name="bathroomsMax" type="number" min="0" step=".5"></div>');

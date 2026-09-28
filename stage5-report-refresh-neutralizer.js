@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__stage5ReportRefreshNeutralizerVersion||0)>=VERSION)return;
   window.__stage5ReportRefreshNeutralizerVersion=VERSION;
 
@@ -14,6 +14,9 @@
     const assumptions={...saved.assumptions},embeddedBuy=assumptions.buyState;delete assumptions.buyState;
     try{state={...defaults,...assumptions};}catch(_e){return;}
     try{if(embeddedBuy&&typeof buydownDefaults!=='undefined')buyState={...buydownDefaults,...embeddedBuy};}catch(_e){}
+    // Opening a shared analysis already hydrated its inputs. A report refresh
+    // must not rebuild the hidden setup form and restart all its observers.
+    if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.())return;
     try{if(typeof renderFields==='function')renderFields();}catch(_e){}
     try{window.GuidedAnalysisSetup?.refresh?.();window.Stage15Layout?.apply?.();}catch(_e){}
   }
@@ -25,6 +28,11 @@
       else if(typeof analyze==='function')result=analyze(state);
     }catch(_e){}
     try{window.ReportBuilderV1?.render?.();}catch(_e){}
+    if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()&&window.ReportBuilderV9Controls?.finalizeReport){
+      window.ReportBuilderV9Controls.finalizeReport();
+      try{if(typeof setStatus==='function')setStatus('Current client report refreshed');}catch(_e){}
+      return true;
+    }
     try{window.ReportBuilderV8Presentation?.apply?.();}catch(_e){}
     try{window.ReportAssumptionsNarrative?.apply?.();}catch(_e){}
     try{window.ReportDetailOrder?.apply?.();}catch(_e){}

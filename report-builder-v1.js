@@ -21,15 +21,20 @@
     includeSensitivity:false
   };
   let prefs={...defaults};
+  let sharedPrefs=null,sharedGuard=null,sharedSaver=null;
+  function sharedActive(){return !!sharedPrefs&&sharedGuard?.()===true;}
+  function setSharedPreferences(value,guard,saver){sharedPrefs={...defaults,includeOffer:true,...value};sharedGuard=guard;sharedSaver=saver;window.ReviewReconciliation?.loadShared?.();loadPrefs();injectControls();renderReport();}
+  function getSharedOptions(){return sharedPrefs?(sharedActive()?{...sharedPrefs}:{...defaults,includeOffer:true}):null;}
+  function setSharedOption(key,value){if(!sharedActive())return false;sharedPrefs[key]=value;prefs[key]=value;return true;}
 
   function esc(v){return String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
   function money(v){return typeof fmtC==='function'?fmtC(v):(Number.isFinite(v)?v.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'N/A');}
   function pct(v){return typeof fmtP==='function'?fmtP(v):(Number.isFinite(v)?(v*100).toFixed(2)+'%':'N/A');}
   function mult(v){return typeof fmtX==='function'?fmtX(v):(Number.isFinite(v)?v.toFixed(2)+'x':'N/A');}
-  function loadPrefs(){try{prefs={...defaults,...JSON.parse(localStorage.getItem(PREF_KEY)||'{}')}}catch(e){prefs={...defaults}}}
-  function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs))}catch(e){}}
+  function loadPrefs(){if(sharedPrefs){prefs=getSharedOptions();return;}try{prefs={...defaults,...JSON.parse(localStorage.getItem(PREF_KEY)||'{}')}}catch(e){prefs={...defaults}}}
+  function savePrefs(){if(sharedPrefs){if(sharedActive())sharedPrefs={...sharedPrefs,...prefs};return;}try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs))}catch(e){}}
   function analysisKey(){const address=(state?.address||'').trim(),name=(state?.name||'').trim();return address||name||'current-analysis';}
-  function reconData(){try{return (JSON.parse(localStorage.getItem(RECON_KEY)||'{}')||{})[analysisKey()]||{};}catch(e){return {};}}
+  function reconData(){if(sharedPrefs)return getSharedOptions().reconciliation||{};try{return (JSON.parse(localStorage.getItem(RECON_KEY)||'{}')||{})[analysisKey()]||{};}catch(e){return {};}}
   function valueBox(label,value,sub=''){return `<div class="rb-stat"><span>${esc(label)}</span><b>${esc(value)}</b>${sub?`<small>${esc(sub)}</small>`:''}</div>`;}
   function row(label,value){return `<div class="rb-row"><span>${esc(label)}</span><b>${esc(value)}</b></div>`;}
   function section(id,title,body,subtitle=''){return `<section class="rb-section" data-rb-section="${id}"><div class="rb-section-head"><h2>${esc(title)}</h2>${subtitle?`<p>${esc(subtitle)}</p>`:''}</div>${body}</section>`;}
@@ -113,6 +118,13 @@
     }
     box.innerHTML=`<div class="sectionhead"><div><h2>Client Report Builder</h2><p>Select the sections to include in the client-facing report preview. These controls do not change the underlying analysis.</p></div><span class="badge">Page 3 • First Pass</span></div><div class="rb-control-grid"><div><div class="field"><label>Prepared For</label><input id="rbPreparedFor" value="${esc(prefs.preparedFor)}" placeholder="Client name (optional)"></div><div class="rb-actions"><button type="button" class="btn primary" id="rbRefresh">Refresh Report Preview</button><button type="button" class="btn secondary" id="rbSelectCore">Core Client Report</button><button type="button" class="btn ghost" id="rbSelectAll">Include All Details</button></div></div><div class="rb-toggle-grid">${toggleDefs.map(([key,label])=>`<label class="rb-toggle"><input type="checkbox" data-rb-pref="${key}" ${prefs[key]?'checked':''}><span>${esc(label)}</span></label>`).join('')}</div></div>`;
     const prepared=box.querySelector('#rbPreparedFor');
+    prepared?.setAttribute('maxlength','150');
+    if(sharedActive()){
+      const button=document.createElement('button');button.type='button';button.className='btn secondary';button.textContent='Save report options';button.id='rbSaveSharedOptions';
+      const notice=document.createElement('span');notice.setAttribute('role','status');
+      box.querySelector('.rb-actions')?.append(button,notice);
+      button.onclick=async()=>{if(button.disabled)return;const save=sharedSaver,guard=sharedGuard,choices=getSharedOptions();button.disabled=true;try{await save(choices);if(guard?.())notice.textContent='Report options saved.';}catch(e){if(guard?.())notice.textContent=e.message||'Report options could not be saved. Reopen the analysis before retrying.';}finally{button.disabled=false;}};
+    }
     prepared?.addEventListener('input',()=>{prefs.preparedFor=prepared.value;savePrefs();});
     box.querySelectorAll('[data-rb-pref]').forEach(el=>el.addEventListener('change',()=>{prefs[el.dataset.rbPref]=el.checked;savePrefs();renderReport();}));
     box.querySelector('#rbRefresh')?.addEventListener('click',()=>{prefs.preparedFor=prepared?.value||'';savePrefs();renderReport();});
@@ -192,6 +204,6 @@
     document.querySelector('[data-s8-tab="report"]')?.addEventListener('click',()=>setTimeout(apply,0));
   }
 
-  window.ReportBuilderV1={apply,render:renderReport};
+  window.ReportBuilderV1={apply,render:renderReport,setSharedPreferences,getSharedOptions,setSharedOption};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=2;
+  const VERSION=3;
   if((window.__propertyAnalysisManagerVersion||0)>=VERSION)return;
   window.__propertyAnalysisManagerVersion=VERSION;
 
@@ -88,7 +88,8 @@
   }
 
   async function openAnalysis(id,target){
-    const a=analyses().find(x=>x.id===id);if(!a||!hydrate(a))return;
+    const a=analyses().find(x=>x.id===id);if(!a)return;
+    if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()){selectedPropertyId=a.property_id;selectedAnalysisId=a.id;selectedScenarioId=null;const p=propertyFor(a.property_id);if(p)selectedClientId=p.client_id||null;try{await window.loadSelectedCloud();}catch(e){status('Open failed: '+e.message);return;}}else if(!hydrate(a))return;
     close();
     try{if(typeof loadCloudScenarios==='function')await loadCloudScenarios(id);}catch(_e){}
     if(window.WorkflowNavigationController&&typeof window.WorkflowNavigationController.go==='function')window.WorkflowNavigationController.go(target);
@@ -103,9 +104,20 @@
     },100);
   }
 
-  async function renameAnalysis(id){const a=analyses().find(x=>x.id===id);if(!a)return;const n=prompt('Rename analysis:',a.name||'Saved Analysis');if(n==null||!n.trim())return;const {error}=await cloudClient.from('analyses').update({name:n.trim(),updated_at:new Date().toISOString()}).eq('id',id).eq('user_id',cloudUser.id);if(error){status('Rename failed: '+error.message);return;}await refreshCloud();render(a.property_id);status('Analysis renamed');}
-  async function duplicateAnalysis(id){const a=analyses().find(x=>x.id===id);if(!a)return;const payload={user_id:cloudUser.id,property_id:a.property_id,name:(a.name||'Saved Analysis')+' — Copy',assumptions:{...(a.assumptions||{})},outputs:{...(a.outputs||{})},report_meta:{...(a.report_meta||{})},updated_at:new Date().toISOString()};const {error}=await cloudClient.from('analyses').insert(payload);if(error){status('Duplicate failed: '+error.message);return;}await refreshCloud();render(a.property_id);status('Analysis duplicated');}
-  async function deleteAnalysis(id){const a=analyses().find(x=>x.id===id);if(!a||!confirm('Delete '+(a.name||'this analysis')+'? This cannot be undone.'))return;const {error}=await cloudClient.from('analyses').delete().eq('id',id).eq('user_id',cloudUser.id);if(error){status('Delete failed: '+error.message);return;}await refreshCloud();render(a.property_id);status('Analysis deleted');}
+  async function renameAnalysis(id){const a=analyses().find(x=>x.id===id);if(!a)return;const n=prompt('Rename analysis:',a.name||'Saved Analysis');if(n==null||!n.trim())return;if(await sharedRecordAction('rename',a,n.trim()))return;const {error}=await cloudClient.from('analyses').update({name:n.trim(),updated_at:new Date().toISOString()}).eq('id',id).eq('user_id',cloudUser.id);if(error){status('Rename failed: '+error.message);return;}await refreshCloud();render(a.property_id);status('Analysis renamed');}
+  async function duplicateAnalysis(id){const a=analyses().find(x=>x.id===id);if(!a)return;if(await sharedRecordAction('duplicate',a))return;const payload={user_id:cloudUser.id,property_id:a.property_id,name:(a.name||'Saved Analysis')+' — Copy',assumptions:{...(a.assumptions||{})},outputs:{...(a.outputs||{})},report_meta:{...(a.report_meta||{})},updated_at:new Date().toISOString()};const {error}=await cloudClient.from('analyses').insert(payload);if(error){status('Duplicate failed: '+error.message);return;}await refreshCloud();render(a.property_id);status('Analysis duplicated');}
+  async function deleteAnalysis(id){const a=analyses().find(x=>x.id===id);if(!a||!confirm('Delete '+(a.name||'this analysis')+'? This cannot be undone.'))return;if(await sharedRecordAction('delete',a))return;const {error}=await cloudClient.from('analyses').delete().eq('id',id).eq('user_id',cloudUser.id);if(error){status('Delete failed: '+error.message);return;}await refreshCloud();render(a.property_id);status('Analysis deleted');}
+  async function sharedRecordAction(action,record,name){
+    const bridge=window.PropertyThesisProtectedCloudSaveBridge;
+    if(!bridge?.isSharedSaving?.())return false;
+    try{
+      await bridge.mutateRecord(action,structuredClone(record),name);
+      if(action==='delete'&&selectedAnalysisId===record.id){selectedAnalysisId=null;selectedScenarioId=null;cloudScenarios=[];if(typeof renderCloudScenarios==='function')renderCloudScenarios();}
+      await refreshCloud();render(record.property_id);
+      status(action==='rename'?'Analysis renamed':action==='duplicate'?'Analysis duplicated':'Analysis deleted. Property access retained.');
+    }catch(e){status('Property-file action failed: '+e.message);}
+    return true;
+  }
   function startNew(pid){close();const b=document.querySelector('[data-hub-edit="'+pid+'"]')||document.querySelector('[data-hub-open="'+pid+'"]');if(b)b.click();}
 
   document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-pt-manage]');if(!b)return;e.preventDefault();e.stopPropagation();open(b.dataset.ptManage);},false);

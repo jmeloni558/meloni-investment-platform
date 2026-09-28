@@ -129,7 +129,10 @@
     const p=(cloudProperties||[]).find(x=>x.id===pid);if(!p)return;
     const a=latestForProperty(pid);
     if(!a){startAnalysisForProperty(pid);return}
-    if(!hydrateSavedAnalysis(a))return;
+    if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()){
+      selectedPropertyId=pid;selectedAnalysisId=a.id;
+      try{await window.loadSelectedCloud();}catch(error){setStatus('Open failed: '+error.message);return;}
+    }else if(!hydrateSavedAnalysis(a))return;
     try{await loadCloudScenarios(a.id);}catch(_e){}
     goPrimary(target);
     try{if(typeof setStatus==='function')setStatus(target==='report'?'Saved analysis loaded — client report ready':'Saved analysis loaded');}catch(_e){}
@@ -145,6 +148,12 @@
   async function cloneAnalysis(pid){
     if(!cloudUser)return showAuth();
     const a=latestForProperty(pid);if(!a)return;
+    const bridge=window.PropertyThesisProtectedCloudSaveBridge;
+    if(bridge?.isSharedSaving?.()){
+      try{await bridge.mutateRecord('duplicate',structuredClone(a),(a.name||'Base Analysis')+' — Copy');await refreshCloud();renderHub();setStatus('Analysis cloned. Open the copy from Manage Analyses.');}
+      catch(error){setStatus('Clone failed: '+error.message)}
+      return;
+    }
     const payload={user_id:cloudUser.id,property_id:pid,name:(a.name||'Base Analysis')+' — Copy',assumptions:a.assumptions||{},outputs:a.outputs||{},report_meta:a.report_meta||{},updated_at:new Date().toISOString()};
     const {data,error}=await cloudClient.from('analyses').insert(payload).select().single();
     if(error){setStatus('Clone failed: '+error.message);return}
@@ -152,11 +161,20 @@
   }
   async function archiveProperty(pid){
     if(!cloudUser)return showAuth();const p=(cloudProperties||[]).find(x=>x.id===pid);if(!p)return;const next=!p.archived;
-    const {error}=await cloudClient.from('properties').update({archived:next,updated_at:new Date().toISOString()}).eq('id',pid).eq('user_id',cloudUser.id);
+const bridge=window.PropertyThesisProtectedCloudSaveBridge;
+    if(bridge?.isSharedSaving?.()){
+      try{const result=await bridge.saveProperty(structuredClone(p),{archived:next});Object.assign(p,result.property);renderHub();try{renderCloudLists()}catch(_e){}setStatus(next?'Property archived':'Property restored');}
+      catch(error){setStatus('Archive update failed: '+error.message)}
+      return;
+    }
+        const {error}=await cloudClient.from('properties').update({archived:next,updated_at:new Date().toISOString()}).eq('id',pid).eq('user_id',cloudUser.id);
     if(error){setStatus('Archive update failed: '+error.message);return}p.archived=next;renderHub();try{renderCloudLists()}catch(_e){}setStatus(next?'Property archived':'Property restored');
   }
   async function deletePropertyPermanently(pid){
     if(!cloudUser){showAuth();return}const p=(cloudProperties||[]).find(x=>x.id===pid);if(!p)return;
+    if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()){
+      setStatus('Permanent property deletion is not available in shared development. Archive the property to hide it from active properties.');return;
+    }
     const analyses=(cloudAnalyses||[]).filter(a=>a.property_id===pid),label=p.name||p.address||'this property';
     const extra=analyses.length?` This will also permanently delete ${analyses.length} saved ${analyses.length===1?'analysis':'analyses'} and their saved financing scenarios.`:'';
     if(!window.confirm(`Delete ${label}?${extra} This cannot be undone.`))return;

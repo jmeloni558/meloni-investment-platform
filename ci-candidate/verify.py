@@ -1,0 +1,31 @@
+import hashlib,json,pathlib
+root=pathlib.Path('.')
+expected=json.loads((root/'ci-candidate/source-manifest.json').read_text())
+site=root/'_site'
+full=json.loads((root/'ci-candidate/full-source-manifest.json').read_text())
+import subprocess
+tracked=subprocess.check_output(['git','ls-files','-z']).decode().split('\0')
+actual={n for n in tracked if n and not n.startswith(('ci-candidate/','.github/'))}
+assert actual==set(full), 'Complete source inventory differs from the rollback-paired candidate'
+for name,digest in full.items():
+    assert hashlib.sha256((root/name).read_bytes()).hexdigest()==digest, 'Complete source drift: '+name
+for name,digest in expected.items():
+    assert hashlib.sha256((root/name).read_bytes()).hexdigest()==digest, 'Source drift: '+name
+    if name.endswith(('.html','.js','.css','.png','.svg','.webp','.ico','.jpg','.jpeg')):
+        assert hashlib.sha256((site/name).read_bytes()).hexdigest()==digest, 'Built asset drift: '+name
+assert (site/'assets/css/style.css').is_file()
+assert (site/'CALCULATION_AUDIT.html').is_file()
+assert not (site/'ci-candidate').exists(), 'Build-only material exposed'
+auth=[n for n in expected if n.startswith('turnstile-auth-protection.') and n.endswith('.js') and len(n.split('.'))==3]
+assert len(auth)==1
+for route in ('index.html','latest.html','app-core.html'):
+    assert auth[0] in (site/route).read_text()
+bridges=[n for n in expected if n.startswith('protected-cloud-save-bridge.') and n.endswith('.js')]
+assert len(bridges)==1
+assert 'Production shared saving is not activated' not in (site/bridges[0]).read_text()
+configs=[n for n in expected if n.startswith('website-google-review-config.') and n.endswith('.js')]
+assert len(configs)==1
+assert 'https://propertythesis.com' in (site/configs[0]).read_text()
+files={p.relative_to(site).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(site.rglob('*')) if p.is_file()}
+pathlib.Path('candidate-build-manifest.json').write_text(json.dumps({'files':files,'productionReady':False,'deploymentPerformed':False},indent=2)+'\n')
+print('Verified source files:',len(expected),'built files:',len(files))
