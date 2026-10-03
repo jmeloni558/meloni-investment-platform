@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=5, BUCKET='report-brand-assets';
+  const VERSION=6, BUCKET='report-brand-assets';
   if((window.__profileSystemVersion||0)>=VERSION)return;
   window.__profileSystemVersion=VERSION;
 
@@ -23,6 +23,24 @@
   function ensureButton(){const host=document.querySelector('.top .topactions');if(!host)return null;let b=$('profileBrandBtn');if(!b){b=document.createElement('button');b.id='profileBrandBtn';b.type='button';b.className='btn ghost hidden';b.textContent='Profile & Branding';const auth=document.querySelector('.authbar');if(auth)host.insertBefore(b,auth);else host.appendChild(b);}b.onclick=openStudio;return b;}
 
   async function session(){const c=client();if(!c)return null;try{const {data}=await c.auth.getSession();return data?.session||null}catch(e){return null}}
+  // Verify with Auth before an interactive profile operation; cached sessions can outlive deletion.
+  async function verifiedSession(){
+    const s=await session(),c=client();
+    if(!s?.user||!c){try{showAuth()}catch(_e){}return null;}
+    let result;
+    try{result=await c.auth.getUser();}catch(_e){status('Unable to verify your account. Check your connection and try again.');return null;}
+    if(result.error){
+      if(!['user_not_found','session_not_found','bad_jwt','refresh_token_not_found'].includes(result.error.code)&&![401,403].includes(result.error.status)){
+        status('Unable to verify your account. Check your connection and try again.');return null;
+      }
+    }else if(result.data?.user?.id===s.user.id)return s;
+    else if(result.data?.user){status('Your account changed. Close this window and try again.');return null;}
+    await c.auth.signOut({scope:'local'}).catch(()=>{});
+    profile={...DEFAULTS};closeStudio();
+    try{await setCloudUser(null);}catch(_e){}
+    try{showAuth();authMsg('Your session is no longer valid. Please sign in again.');}catch(_e){}
+    return null;
+  }
   async function syncButton(){const b=ensureButton();if(!b)return;const s=await session();b.classList.toggle('hidden',!s?.user);}
 
   function formData(){return {full_name:$('psFullName').value.trim(),professional_title:$('psTitleField').value.trim(),company_name:$('psCompany').value.trim(),email:$('psEmail').value.trim(),phone:$('psPhone').value.trim(),website:$('psWebsite').value.trim(),license_number:$('psLicense').value.trim(),logo_url:profile.logo_url||'',brand_color:safeColor($('psColorText').value.trim()||$('psColor').value),report_footer:$('psFooter').value.trim(),report_disclaimer:$('psDisclaimer').value.trim()};}
@@ -40,9 +58,9 @@
   $('psClose').onclick=closeStudio;$('psCancel').onclick=closeStudio;$('psSave').onclick=saveProfile;$('psLogoFile').onchange=uploadLogo;$('psRemoveLogo').onclick=()=>{profile.logo_url='';refreshPreview();};m.addEventListener('keydown',e=>{if(e.key==='Escape')closeStudio();});$('psClose').focus();['psCompany','psColor','psColorText','psFullName','psTitleField','psLicense','psEmail','psPhone','psWebsite','psFooter','psDisclaimer'].forEach(id=>$(id).addEventListener('input',()=>{if(id==='psColor')$('psColorText').value=$('psColor').value;if(id==='psColorText'&&/^#[0-9a-f]{6}$/i.test($('psColorText').value))$('psColor').value=$('psColorText').value;refreshPreview();}));}
 
   async function loadProfile(){const s=await session();const c=client();if(!s?.user||!c){profile={...DEFAULTS};return profile;}const base=defaultsFor(s.user);const {data,error}=await c.from('profiles').select('*').eq('user_id',s.user.id).maybeSingle();if(error){console.error('Profile load failed',error);profile={...base,email:s.user.email||''};return profile;}profile={...base,...(data||{}),email:data?.email||s.user.email||''};applyReportBranding();return profile;}
-  async function openStudio(){const s=await session();if(!s?.user){try{showAuth()}catch(e){}return;}buildStudio();fill({...profile,email:profile.email||s.user.email||''});status('Loading profile…');await loadProfile();fill(profile);status('');}
-  async function saveProfile(){const s=await session(),c=client();if(!s?.user||!c)return status('Sign in to save your profile.');const fields=Object.fromEntries(Object.entries(formData()).map(([key,value])=>[key,value===''?null:value]));profile={...profile,...fields};status('Saving profile…');const {data,error}=await c.from('profiles').upsert({user_id:s.user.id,...fields,updated_at:new Date().toISOString()},{onConflict:'user_id'}).select().single();if(error)return status(error.message);profile={...DEFAULTS,...data};status('Profile saved.');applyReportBranding();setTimeout(closeStudio,350);}
-  async function uploadLogo(e){const file=e.target.files?.[0],s=await session(),c=client();if(!file||!s?.user||!c)return;if(!/^image\/(png|jpeg|webp|gif)$/i.test(file.type))return $('psLogoStatus').textContent='Choose a PNG, JPG, WEBP or GIF.';if(file.size>2*1024*1024)return $('psLogoStatus').textContent='Logo must be 2 MB or smaller.';const ext=(file.name.split('.').pop()||'png').replace(/[^a-z0-9]/gi,'').toLowerCase();const path=`${s.user.id}/logo-${Date.now()}.${ext}`;$('psLogoStatus').textContent='Uploading logo…';const r=await c.storage.from(BUCKET).upload(path,file,{contentType:file.type,cacheControl:'31536000',upsert:false});if(r.error)return $('psLogoStatus').textContent=r.error.message;profile.logo_url=c.storage.from(BUCKET).getPublicUrl(r.data.path).data?.publicUrl||'';$('psLogoStatus').textContent='Logo uploaded. Save profile to apply.';refreshPreview();e.target.value='';}
+  async function openStudio(){const s=await verifiedSession();if(!s?.user)return;buildStudio();fill({...profile,email:profile.email||s.user.email||''});status('Loading profile…');await loadProfile();fill(profile);status('');}
+  async function saveProfile(){const s=await verifiedSession(),c=client();if(!s?.user||!c)return;const fields=Object.fromEntries(Object.entries(formData()).map(([key,value])=>[key,value===''?null:value]));profile={...profile,...fields};status('Saving profile…');const {data,error}=await c.from('profiles').upsert({user_id:s.user.id,...fields,updated_at:new Date().toISOString()},{onConflict:'user_id'}).select().single();if(error)return status(error.message);profile={...DEFAULTS,...data};status('Profile saved.');applyReportBranding();setTimeout(closeStudio,350);}
+  async function uploadLogo(e){const file=e.target.files?.[0],s=await verifiedSession(),c=client();if(!file||!s?.user||!c)return;if(!/^image\/(png|jpeg|webp|gif)$/i.test(file.type))return $('psLogoStatus').textContent='Choose a PNG, JPG, WEBP or GIF.';if(file.size>2*1024*1024)return $('psLogoStatus').textContent='Logo must be 2 MB or smaller.';const ext=(file.name.split('.').pop()||'png').replace(/[^a-z0-9]/gi,'').toLowerCase();const path=`${s.user.id}/logo-${Date.now()}.${ext}`;$('psLogoStatus').textContent='Uploading logo…';const r=await c.storage.from(BUCKET).upload(path,file,{contentType:file.type,cacheControl:'31536000',upsert:false});if(r.error)return $('psLogoStatus').textContent=r.error.message;profile.logo_url=c.storage.from(BUCKET).getPublicUrl(r.data.path).data?.publicUrl||'';$('psLogoStatus').textContent='Logo uploaded. Save profile to apply.';refreshPreview();e.target.value='';}
 
   function applyReportBranding(){const report=document.querySelector('#clientReport .rb-report');if(!report)return false;const color=safeColor(profile.brand_color);const cover=report.querySelector('.rb-cover');if(cover)cover.style.background=`linear-gradient(125deg,${color} 0%,${color} 62%,#334155 135%)`;const company=profile.company_name||'PropertyThesis';const brand=report.querySelector('.rb-brand');if(brand)brand.textContent=company.toUpperCase();cover?.querySelector('.rb-brand-logo')?.remove();if(cover&&profile.logo_url){const img=document.createElement('img');img.className='rb-brand-logo';img.src=profile.logo_url;img.alt=company+' logo';brand?.insertAdjacentElement('beforebegin',img);}const meta=cover?.querySelector('.rb-meta');if(meta){const who=[profile.full_name,profile.professional_title,profile.license_number].filter(Boolean).join(' • ')||'PropertyThesis';const contact=[profile.email,profile.phone,profile.website].filter(Boolean).join(' • ');[...meta.querySelectorAll('span')].forEach(s=>{if(/Prepared by:/i.test(s.textContent||''))s.innerHTML=`<b>Prepared by:</b> ${esc(who)}`;});meta.querySelector('.rb-profile-contact')?.remove();if(contact)meta.insertAdjacentHTML('beforeend',`<span class="rb-profile-contact"><b>Contact:</b> ${esc(contact)}</span>`);}const footer=report.querySelector('.rb-footer');if(footer){const brandEl=footer.querySelector('.rb-footer-brand');if(brandEl)brandEl.textContent=company;footer.querySelector('.rb-profile-footer')?.remove();if(profile.report_footer||profile.report_disclaimer){const d=document.createElement('div');d.className='rb-profile-footer';d.textContent=[profile.report_footer,profile.report_disclaimer].filter(Boolean).join(' • ');footer.prepend(d);}}return true;}
 
