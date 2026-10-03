@@ -31,7 +31,7 @@
     const rows=[
       ['Net Operating Income',y=>money(y.noi),''],
       ['− Interest',y=>money(y.interest),''],
-      ['− Depreciation',()=>money(result.depreciation),''],
+      ['− Depreciation',y=>money(y.depreciation??result.depreciation),''],
       ['− Amortization of Points',y=>money(pointsAmort(y)),''],
       ['− Amortization of Origination Fee',y=>money(originationAmort(y)),''],
       ['= Taxable Income',y=>money(y.taxable),'subtotal'],

@@ -140,7 +140,7 @@
   }
   function taxOpsTable(){
     const years=result?.years||[],ap=state.loanYears?result.pointCost/state.loanYears:0,ao=state.loanYears?state.origFee/state.loanYears:0;
-    return `<div class="rb-tablewrap"><table><thead><tr><th>Year</th><th>NOI</th><th>Interest</th><th>Depreciation</th><th>Taxable Income</th><th>Taxes From Operations</th></tr></thead><tbody>${years.map(y=>`<tr><td>${y.year}</td><td>${money(y.noi)}</td><td>${money(y.interest)}</td><td>${money(result.depreciation)}</td><td>${money(y.taxable)}</td><td>${money(y.opTax)}</td></tr>`).join('')}</tbody></table></div>`;
+    return `<div class="rb-tablewrap"><table><thead><tr><th>Year</th><th>NOI</th><th>Interest</th><th>Depreciation</th><th>Taxable Income</th><th>Taxes From Operations</th></tr></thead><tbody>${years.map(y=>`<tr><td>${y.year}</td><td>${money(y.noi)}</td><td>${money(y.interest)}</td><td>${money(y.depreciation??result.depreciation)}</td><td>${money(y.taxable)}</td><td>${money(y.opTax)}</td></tr>`).join('')}</tbody></table></div>`;
   }
   function investmentCashflowTable(){
     const headers=['Year 0',...(result?.years||[]).map(y=>'Year '+y.year)];
