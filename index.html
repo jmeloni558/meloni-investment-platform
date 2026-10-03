@@ -43,7 +43,7 @@
         const r=await fetch('./app-core.html?cb='+Date.now(),{cache:'no-store'});
         if(!r.ok)throw new Error('Unable to load application');
         let html=await r.text();
-        html=html.replace('propertythesis-assistant.css?v=3','propertythesis-assistant.css?v=20261003-profile');
+        html=html.replace('</head>','<link rel="stylesheet" href="propertythesis-assistant.css?v=20261003-profile"></head>');
         html=html.replace('<title>Investment Property Analyzer | Meloni Realty</title>','<title>PropertyThesis | Know the Numbers. Make the Offer.</title>');
         html=html.replace('content="Investment property cash flow, valuation, debt service, tax, IRR, NPV and amortization analysis."','content="PropertyThesis helps real estate investors model property income, financing, valuation, taxes, cash flow, IRR, NPV and investment returns."');
         html=html.replace('<h1>Investment Property Analyzer</h1><p>Meloni Realty • income, valuation, financing, taxes and investment returns</p>','<h1>PropertyThesis</h1><p>Know the Numbers. Make the Offer.</p>');
