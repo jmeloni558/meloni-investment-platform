@@ -92,7 +92,7 @@
       row('Taxes From Operations', heads, 'head'),
       row('Net Operating Income', ys.map(y => money(y.noi))),
       row('− Interest', ys.map(y => money(y.interest))),
-      row('− Depreciation', ys.map(() => money(resultObj().depreciation))),
+      row('− Depreciation', ys.map(y => money(y.depreciation??resultObj().depreciation))),
       row('− Amortization of Points', ys.map(y => money(pointsAmort(y)))),
       row('− Amortization of Origination Fee', ys.map(y => money(originationAmort(y)))),
       row('= Taxable Income', ys.map(y => money(y.taxable)), 'subtotal'),

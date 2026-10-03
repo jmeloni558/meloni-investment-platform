@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION = 7;
+  const VERSION = 8;
   if ((window.__propertyThesisProFormaDownloadControllerVersion || 0) >= VERSION) return;
   window.__propertyThesisProFormaDownloadControllerVersion = VERSION;
 
@@ -129,13 +129,15 @@
     XLSX.utils.book_append_sheet(wb,assumptionSheet,'Assumptions');
 
     const cfBrand=brandedRows('Projected After-Tax Cash Flow'),cfHeaderRow=cfBrand.length+1,cfFirst=cfHeaderRow+1;
+    const basis=`MAX(0,${A}5-${A}6)`;
+    const accumulatedDep=`IF(${A}12>0,${basis}*MIN(${A}14/${A}12,1),0)`;
     const cfRows=[
       ['Potential Gross Income',...ys.map((y,i)=>cell(i?`${colName(i)}${cfFirst}*(1+${A}9)`:`${A}8*${A}7*12`,y.pgi))],
       ['− Vacancy and Credit Losses',...ys.map((y,i)=>cell(`${colName(i+1)}${cfFirst}*${A}10`,y.vac))],
       ['= Effective Gross Income',...ys.map((y,i)=>cell(`${colName(i+1)}${cfFirst}-${colName(i+1)}${cfFirst+1}`,y.egi))],
       ['− Operating Expenses',...ys.map((y,i)=>cell(`${colName(i+1)}${cfFirst+2}*${A}11`,y.opex))],
       ['= Net Operating Income',...ys.map((y,i)=>cell(`${colName(i+1)}${cfFirst+2}-${colName(i+1)}${cfFirst+3}`,y.noi))],
-      ['− Debt Service',...ys.map((y,i)=>cell(`IF(OR(${i+1}>${A}19,${A}16=0),0,IF(${A}17=1,${A}16*${A}18,-PMT(${A}18/12,${A}19*12,${A}16)*12))`,y.debt))],
+      ['− Debt Service',...ys.map((y,i)=>cell(`IF(OR(${i+1}>${A}19,${A}16=0,${A}19<=0),0,IF(${A}17=1,${A}16*${A}18+IF(AND(${i+1}=${A}19,${A}14>${A}19),${A}16,0),-PMT(${A}18/12,${A}19*12,${A}16)*12))`,y.debt))],
       ['= Before-Tax Cash Flow',...ys.map((y,i)=>cell(`${colName(i+1)}${cfFirst+4}-${colName(i+1)}${cfFirst+5}`,num(y.noi)-num(y.debt)))],
       ['− Taxes from Operations',...ys.map((y,i)=>cell(`'Taxes From Operations'!${colName(i+1)}${cfFirst+7}`,y.opTax))],
       ['= After-Tax Cash Flow',...ys.map((y,i)=>cell(`${colName(i+1)}${cfFirst+6}-${colName(i+1)}${cfFirst+7}`,y.atcf))]
@@ -144,8 +146,8 @@
 
     const taxRows=[
       ['Net Operating Income',...ys.map((y,i)=>cell(`'After Tax Cash Flow'!${colName(i+1)}${cfFirst+4}`,y.noi))],
-      ['− Interest',...ys.map((y,i)=>cell(`IF(OR(${i+1}>${A}19,${A}16=0),0,IF(${A}17=1,${A}16*${A}18,-CUMIPMT(${A}18/12,${A}19*12,${A}16,${i*12+1},${(i+1)*12},0)))`,y.interest))],
-      ['− Depreciation',...ys.map(()=>cell(`(${A}5-${A}6)/${A}12`,r.depreciation))],
+      ['− Interest',...ys.map((y,i)=>cell(`IF(OR(${i+1}>${A}19,${A}16=0,${A}18=0,${A}19<=0),0,IF(${A}17=1,${A}16*${A}18,-CUMIPMT(${A}18/12,${A}19*12,${A}16,${i*12+1},${(i+1)*12},0)))`,y.interest))],
+      ['− Depreciation',...ys.map((y,i)=>cell(`IF(${A}12>0,${basis}*MAX(0,MIN(1,${A}12-${i}))/${A}12,0)`,num(s.depLife)>0?Math.max(0,num(s.price)-num(s.land))*Math.max(0,Math.min(1,num(s.depLife)-i))/num(s.depLife):0))],
       ['− Amortization of Points',...ys.map(y=>cell(`IF(${y.year}<=${A}19,(${A}16*${A}20/100)/${A}19,0)`,pointsAmort(y)))],
       ['− Amortization of Origination Fee',...ys.map(y=>cell(`IF(${y.year}<=${A}19,${A}21/${A}19,0)`,originationAmort(y)))],
       ['= Taxable Income',...ys.map((y,i)=>cell(`${colName(i+1)}${cfFirst}-${colName(i+1)}${cfFirst+1}-${colName(i+1)}${cfFirst+2}-${colName(i+1)}${cfFirst+3}-${colName(i+1)}${cfFirst+4}`,y.taxable))],
@@ -163,11 +165,11 @@
     const saleFormula=(i,f,v,z)=>num(ys[i].year)===hold?cell(f,v,z):null;
     const saleRows=[
       ['Net Sales Price',...ys.map((y,i)=>saleFormula(i,`${A}5*(1+${A}13)^${A}14*(1-${A}15)`,r.netSale))],
-      ['− Book Value',...ys.map((y,i)=>saleFormula(i,`${A}5-((${A}5-${A}6)/${A}12*${A}14)`,r.book))],
+      ['− Book Value',...ys.map((y,i)=>saleFormula(i,`${A}5-(${accumulatedDep})`,r.book))],
       ['= Gain (Loss) on Sale',...ys.map((y,i)=>saleFormula(i,`${colName(i+1)}${cfFirst}-${colName(i+1)}${cfFirst+1}`,r.gain))],
       ['× Applicable Gain Tax Rate',...ys.map((y,i)=>saleFormula(i,`IF(${A}14=1,${A}22,${A}24)`,gainRate,'0.00%'))],
       ['= Taxes Due on Gain/Loss',...ys.map((y,i)=>saleFormula(i,`${colName(i+1)}${cfFirst+2}*${colName(i+1)}${cfFirst+3}`,taxesGain))],
-      ['Accumulated Depreciation',...ys.map((y,i)=>saleFormula(i,`(${A}5-${A}6)/${A}12*${A}14`,r.accDep))],
+      ['Accumulated Depreciation',...ys.map((y,i)=>saleFormula(i,accumulatedDep,r.accDep))],
       ['× Depreciation Tax Rate',...ys.map((y,i)=>saleFormula(i,`${A}23`,s.depTax,'0.00%'))],
       ['= Taxes Due on Depreciation',...ys.map((y,i)=>saleFormula(i,`${colName(i+1)}${cfFirst+5}*${colName(i+1)}${cfFirst+6}`,depTax))],
       ['Taxes Due on Sale',...ys.map((y,i)=>saleFormula(i,`${colName(i+1)}${cfFirst+4}+${colName(i+1)}${cfFirst+7}`,r.saleTax))]
@@ -180,7 +182,7 @@
       ['Acquisition Price',cell(`${A}5`,s.price)],['Year 1 NOI',cell(`'After Tax Cash Flow'!B${cfFirst+4}`,ys[0].noi)],
       ['Capitalization Rate',cell(`B6/B5`,r.cap,'0.00%')],['Desired Cap Rate',cell(`${A}26`,s.desiredCap,'0.00%')],
       ['Cap-Supported Value',cell(`B6/B8`,num(ys[0].noi)/num(s.desiredCap))],['Initial Equity',cell(`${A}5-${A}16+(${A}16*${A}20/100)+${A}21+${A}28`,initialEquity)],
-      ['After-Tax Reversion',cell(`'Taxes Due on Sale'!${colName(hold)}${cfFirst}-'Taxes Due on Sale'!${colName(hold)}${cfFirst+8}-IF(${A}17=1,IF(${A}14>=${A}19,0,${A}16),MAX(0,-FV(${A}18/12,MIN(${A}14,${A}19)*12,PMT(${A}18/12,${A}19*12,${A}16),${A}16)))`,reversion)],
+      ['After-Tax Reversion',cell(`'Taxes Due on Sale'!${colName(hold)}${cfFirst}-'Taxes Due on Sale'!${colName(hold)}${cfFirst+8}-IF(${A}16=0,0,IF(${A}17=1,IF(${A}14>${A}19,0,${A}16),IF(${A}19<=0,${A}16,MAX(0,-FV(${A}18/12,MIN(${A}14,${A}19)*12,PMT(${A}18/12,${A}19*12,${A}16),${A}16)))))`,reversion)],
       [],['Investment Cash Flow',cell('-B10',-initialEquity),...ys.map((y,i)=>cell(`'After Tax Cash Flow'!${colName(i+1)}${cfFirst+8}${i===ys.length-1?'+B11':''}`,num(y.atcf)+(i===ys.length-1?reversion:0)))],
       ['Internal Rate of Return',cell(`IRR(B13:${colName(ys.length+1)}13)`,r.IRR,'0.00%')],['Net Present Value',cell(`NPV(${A}25,C13:${colName(ys.length+1)}13)+B13`,r.NPV)]
     ];
