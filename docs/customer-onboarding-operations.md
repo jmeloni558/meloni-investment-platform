@@ -25,4 +25,6 @@ Run customer-onboarding-health.sql. Investigate failed/uncertain/stale claims an
 
 Do not reset/delete deliveries merely to retry. Reconcile Resend provider IDs or idempotency key onboarding-<delivery UUID>. Accepted is not proof of inbox delivery. Keep unknown outcomes held; do not assume indefinite provider deduplication. Correct known outcomes transactionally after review, without advancing a member twice or re-enrolling stopped accounts.
 
-The health query is an operator check, not an automatic alert. Production activation is pending the remaining checks above.
+The health query is an operator check. The separate monitor add-on is prepared but not installed: a private scheduler calls /monitor using the sender secret; both alerts_enabled and ONBOARDING_ALERTS_ENABLED must be true. It reports failed/uncertain/stale claims and overdue active queues to jamie@propertythesis.com, with one attempt per 24 hours. It has no customer-data payload. Because alerts share the database and email provider, total outages require an independent dashboard check.
+
+Resend-origin bounce test passed October 4: event msg_3KErTTQ0xqmkHsi2Dy8Ntp4Ob4J returned 200 on its first attempt and suppressed the labeled simulator recipient. The temporary sender was replaced with a 410-only function. Production remains disabled. Monitor handler tests and staging SQL transaction tests (rolled back) passed; real operator-alert delivery has not yet been authorized or tested.

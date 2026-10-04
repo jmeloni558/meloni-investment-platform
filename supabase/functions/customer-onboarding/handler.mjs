@@ -1,4 +1,5 @@
 import { renderEmail } from './content.mjs';
+import { runMonitor } from './monitor.mjs';
 
 const same = (a, b) => {
   if (!a || !b || a.length !== b.length) return false;
@@ -42,9 +43,10 @@ export function createHandler({ env, rpc, getUser, send, verifyWebhook, pause = 
         }
         return json({received:true});
       }
-      if(route!=='customer-onboarding' && route!=='send')return json({error:'Not found'},404);
+      if(route!=='customer-onboarding' && route!=='send' && route!=='monitor')return json({error:'Not found'},404);
       if(req.method!=='POST')return json({error:'Method not allowed'},405);
       if(!same(req.headers.get('x-onboarding-secret')||'',env('ONBOARDING_CRON_SECRET')||''))return json({error:'Unauthorized'},401);
+      if(route==='monitor')return json(await runMonitor({env,rpc,send}));
       if(env('ONBOARDING_ENABLED')!=='true')return json({status:'disabled'});
       const project=env('SUPABASE_URL');
       if(!['https://lmaiqpkogmmsldkziggy.supabase.co','https://oxyjbfhpsxaaerchyaql.supabase.co'].includes(project))return json({error:'Unsupported environment'},503);
