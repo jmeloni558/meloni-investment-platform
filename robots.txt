@@ -1,6 +1,6 @@
 User-agent: *
 Allow: /
-Disallow: /app-core.html
+# Allow the application resource to be fetched when rendering the homepage.
 Disallow: /login.html
 Disallow: /latest.html
 Disallow: /latest-v2.html
