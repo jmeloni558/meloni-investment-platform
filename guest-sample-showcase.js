@@ -11,7 +11,7 @@
       let s=document.querySelector('script[data-pt-sample-proforma]');
       if(!s){
         s=document.createElement('script');
-        s.src='guest-sample-proforma-download.js?cb='+Date.now();
+        s.src='guest-sample-proforma-download.release-20261004-ca724b77d08c.js?cb='+Date.now();
         s.async=true;
         s.dataset.ptSampleProforma='1';
         document.head.appendChild(s);

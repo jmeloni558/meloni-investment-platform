@@ -79,7 +79,7 @@
               return;
             }
             const script=document.createElement('script');
-            script.src='report-proforma-download-controller-v1.js?direct='+Date.now();
+            script.src='report-proforma-download-controller-v1.release-20261004-64f5dc38de75.js?direct='+Date.now();
             script.async=false;
             script.dataset.ptProformaExporter='1';
             script.onload=resolve;
