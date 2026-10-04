@@ -24,7 +24,7 @@
     if(!document.getElementById('ptGuestSampleProFormaLoader')){
       const proforma=document.createElement('script');
       proforma.id='ptGuestSampleProFormaLoader';
-      proforma.src='guest-sample-proforma-download.js?v=2';
+      proforma.src='guest-sample-proforma-download.release-20261004-ca724b77d08c.js?v=2';
       document.head.appendChild(proforma);
     }
     if(!document.getElementById('ptGuestSampleShowcaseLoader')){

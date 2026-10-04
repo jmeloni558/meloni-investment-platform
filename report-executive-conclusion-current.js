@@ -12,7 +12,7 @@
     const old=document.getElementById('ptReportProFormaLoader');
     if(old&&old.dataset.version==='3')return;
     old?.remove();
-    const s=document.createElement('script');s.id='ptReportProFormaLoader';s.dataset.version='3';s.src='report-pro-forma.js?v=3&build=20260823-1422-pro-forma-v3';s.async=false;s.onload=()=>window.PropertyThesisReportProForma?.schedule?.();
+    const s=document.createElement('script');s.id='ptReportProFormaLoader';s.dataset.version='3';s.src='report-pro-forma.release-20261004-993de6fb0a27.js?v=3&build=20260823-1422-pro-forma-v3';s.async=false;s.onload=()=>window.PropertyThesisReportProForma?.schedule?.();
     (document.body||document.head||document.documentElement).appendChild(s);
   }
 
