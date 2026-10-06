@@ -1,7 +1,7 @@
 .address-suggestions{position:relative;z-index:30;background:#fff;border:1px solid #98a2b3;border-radius:6px;padding:4px;margin-top:4px;color:#101828}
 .address-suggestions[hidden]{display:none}
-.address-option{display:block;width:100%;text-align:left;white-space:normal;padding:10px;border:0;background:#fff;color:#101828;cursor:pointer}
-.address-option:hover,.address-option[aria-selected="true"]{background:#e9efff}
+.address-suggestions .address-option{display:block;width:100%;min-height:44px;margin:0;text-align:left;white-space:normal;padding:10px 12px;border:0;border-bottom:1px solid #eaecf0;border-radius:0;background:#fff;color:#101828;font:400 14px/1.4 Arial,sans-serif;letter-spacing:normal;text-transform:none;box-shadow:none;cursor:pointer}
+.address-suggestions .address-option:hover,.address-suggestions .address-option[aria-selected="true"]{background:#e9efff;color:#101828}
 .address-option:focus-visible{outline:2px solid #175cd3;outline-offset:-2px}
 .maps-attribution{padding:6px 10px;font-size:12px;color:#475467}
 .address-help{display:block;font-size:12px;line-height:1.4;margin-top:4px;color:#475467}
