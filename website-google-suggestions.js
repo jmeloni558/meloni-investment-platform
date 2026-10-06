@@ -56,7 +56,7 @@
     Promise.resolve().then(loadTurnstile).then(value=>{
      if(finished)return;ts=value;
      if(!input.isConnected)return done(Error('Address field closed.'));
-     widget=ts.render(host,{sitekey:siteKey,action,theme:'auto',retry:'never','refresh-expired':'never','refresh-timeout':'never',
+     widget=ts.render(host,{sitekey:siteKey,action,appearance:'interaction-only',theme:'auto',retry:'never','refresh-expired':'never','refresh-timeout':'never',
       callback:token=>token?done(null,token):done(Error('Verification failed.')),
       'error-callback':()=>done(Error('Verification unavailable.')),
       'expired-callback':()=>done(Error('Verification expired.')),
