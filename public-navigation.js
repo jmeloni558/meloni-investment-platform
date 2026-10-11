@@ -14,6 +14,12 @@
         const signIn=[...nav.querySelectorAll('a,button')].find(node=>/sign in/i.test(node.textContent));
         signIn?nav.insertBefore(link,signIn):nav.appendChild(link);
       }
+      const signIn=[...nav.querySelectorAll('a,button')].find(node=>/^sign in$/i.test(node.textContent.trim()));
+      if(signIn){
+        let appLink=nav.querySelector('[data-pt-play-app]');
+        if(!appLink){appLink=document.createElement('a');appLink.dataset.ptPlayApp='1';appLink.href='https://play.google.com/store/apps/details?id=com.propertythesis.app';appLink.textContent='Google Play App';appLink.target='_blank';appLink.rel='noopener noreferrer';}
+        if(appLink.nextElementSibling!==signIn)nav.insertBefore(appLink,signIn);
+      }
       if(!nav.classList.contains('pt-public-navigation'))nav.classList.add('pt-public-navigation');
       const page=route(location.href),guide=!!document.querySelector('.guide-shell');
       const listings=document.body.classList.contains('pt-guest-listings')||document.querySelector('#ptListingsPanel.is-open');
