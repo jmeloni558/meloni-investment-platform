@@ -57,6 +57,7 @@
     footer.className='pt-compliance-footer';
     footer.setAttribute('aria-label','PropertyThesis company and licensing information');
     footer.innerHTML=`<div class="pt-footer-inner">
+      <section class="pt-footer-share" aria-label="PropertyThesis Android app"><div><p class="pt-footer-heading">Take PropertyThesis with you</p><p>Available on Google Play in the United States for compatible Android devices. Sign in with the same PropertyThesis account you use on the website.</p></div><div class="pt-share-actions"><a href="https://play.google.com/store/apps/details?id=com.propertythesis.app" target="_blank" rel="noopener noreferrer">Get PropertyThesis on Google Play</a></div></section>
       <div class="pt-footer-grid">
         <section><p class="pt-footer-brand">PropertyThesis</p><p class="pt-footer-division">A division and registered fictitious name of MELONI REALTY INC<br>Florida Fictitious Name Registration G26000120794<br>Florida Licensed Real Estate Brokerage</p></section>
         <section><p class="pt-footer-heading">Licensing</p><p class="pt-footer-copy">Jamie Meloni, Licensed Real Estate Broker<br>Broker License BK3167461<br>Brokerage License CQ1067291</p></section>

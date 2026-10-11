@@ -108,3 +108,10 @@ if(process.env.WRITE_ONBOARDING_PREVIEW==='1') {
   const dir=new URL('../prototypes/release-integration/onboarding-preview/',import.meta.url);mkdirSync(dir,{recursive:true});
   for(let i=0;i<7;i++)writeFileSync(new URL(`${i===0?'welcome':`week-${i}`}.html`,dir),renderEmail(i,{unsubscribeUrl:'https://propertythesis.com/email-preferences-preview',tips:true}).html);
 }
+
+test('welcome includes public Play URL in HTML and text by default',async()=>{
+ const f=fixture();await f.run();const mail=f.sends[0].body;
+ const link='https://play.google.com/store/apps/details?id=com.propertythesis.app';
+ assert.ok(mail.html.includes('href="'+link+'"'));assert.ok(mail.text.includes(link));
+ assert.doesNotMatch(mail.text,/request access|early testing/);
+});
