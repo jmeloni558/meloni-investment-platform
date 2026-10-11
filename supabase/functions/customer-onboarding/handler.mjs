@@ -68,7 +68,7 @@ export function createHandler({ env, rpc, getUser, send, verifyWebhook, pause = 
           || (allow.length&&!allow.includes(job.email.toLowerCase()))
           || !await rpc('onboarding_can_send',{p_id:job.id})) { await finish('cancelled');continue; }
         const unsubscribeUrl=`${project}/functions/v1/customer-onboarding/unsubscribe?token=${job.token}`;
-        let body;try { body=renderEmail(job.step,{unsubscribeUrl,tips:job.tips,appDownloadUrl:env('ONBOARDING_PUBLIC_APP_URL')||''}); }
+        let body;try { body=renderEmail(job.step,{unsubscribeUrl,tips:job.tips,appDownloadUrl:env('ONBOARDING_PUBLIC_APP_URL')||'https://play.google.com/store/apps/details?id=com.propertythesis.app'}); }
         catch{await finish('failed');continue;}
         let status='uncertain',providerId=null;
         try {
