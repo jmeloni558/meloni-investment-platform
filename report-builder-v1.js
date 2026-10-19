@@ -181,6 +181,7 @@
 
     html+=`<div class="rb-footer">This analysis is an investment decision-support model based on the assumptions entered by the analyst/user. Actual rents, expenses, financing, taxes, resale proceeds and returns may differ. This report is not an appraisal, tax opinion, legal opinion or guarantee of investment performance.</div></div>`;
     host.innerHTML=html;
+    window.PropertyThesisIncomeComps?.applyReport?.();
     return true;
   }
 

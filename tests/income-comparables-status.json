@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-19",
+  "status": "development candidate; not published",
+  "baseCommit": "026a447aac8ea837db1244c45ca67ada6c7c851a",
+  "stagingDatabase": "oxyjbfhpsxaaerchyaql",
+  "stagingMigration": "property_income_comparables",
+  "productionChanged": false,
+  "tests": {
+    "node": "10 passing model and DOM integration tests; DOM backend and engine are synthetic",
+    "stagingSql": "transaction rolled back: insert/read/update, stale revision refusal, cross-owner attach refusal, cross-owner read isolation, subject deletion cascade",
+    "advisors": "No findings on the added table or trigger. Existing project advisories remain unchanged."
+  },
+  "releaseGates": [
+    "Full signed-in staging website flow using the deployed protected engine and actual database; refresh and second-session checks",
+    "Generated PDF visual acceptance including multi-page comp tables",
+    "Integrate new table into existing customer-data export, recovery snapshot, restore and inventory workflows before production migration",
+    "Verify current staging deployment contains Mac/iOS authentication changes before replacing any staging assets",
+    "Android and iOS native presentation/report implementation is separate and not yet included"
+  ]
+}
