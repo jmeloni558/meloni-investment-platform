@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-19",
+  "status": "development candidate; not published",
+  "baseCommit": "026a447aac8ea837db1244c45ca67ada6c7c851a",
+  "stagingDatabase": "oxyjbfhpsxaaerchyaql",
+  "stagingMigration": "property_income_comparables",
+  "productionChanged": false,
+  "tests": {
+    "node": "22 passing model, synthetic DOM and recovery guard tests",
+    "stagingSql": "transaction rolled back: insert/read/update, stale revision refusal, cross-owner attach refusal, cross-owner read isolation, subject deletion cascade",
+    "advisors": "No findings on the added table or trigger. Existing project advisories remain unchanged.",
+    "recovery": "Windows DPAPI synthetic evidence encrypt/decrypt, staging row restore and subject cascade passed; transaction rolled back",
+    "pdf": "Actual release text renderer produced six-page 20-comp report; all comp addresses and indicated value text checked, pages rendered and visually inspected. Wide table corrected to seven columns."
+  },
+  "releaseGates": [
+    "Full signed-in staging website flow using the deployed protected engine and actual database; refresh and second-session checks",
+    "Verify current staging deployment contains Mac/iOS authentication changes before replacing any staging assets",
+    "Android and iOS native presentation/report implementation is separate and not yet included"
+  ],
+  "backupIntegration": "Local operator exporter and deletion/restore guards updated; whole-public-schema archive already includes table; explicit archive TOC guard and receipt count added. No production backup executed.",
+  "blocker": "Latest complete staging deployment from October 9 is on the Mac; Windows has older October 4 bundle. Awaiting ZIP path before staging replacement."
+}
