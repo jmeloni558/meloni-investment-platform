@@ -13,15 +13,16 @@ Status: development candidate; staging table installed; not published.
 Comps belong to the subject property across its analyses. Refreshing or changing the evidence clears the prior reconciliation. Source edits do not silently change saved snapshots. Existing property/analysis limits still apply to comparable properties. No separate automatic comparable-data provider is introduced.
 
 ## Verified
-- 10 model and synthetic DOM tests pass.
+- 22 model, synthetic DOM and recovery guard tests pass.
+- Synthetic Windows DPAPI/staging restore rehearsal passed and rolled back.
+- Actual PDF renderer verified with 20 comps across six pages.
 - Staging transaction test passed for revision checks, account ownership and subject-delete cascade; fixtures rolled back.
 - Desktop synthetic preview inspected.
 - Production assets and database unchanged.
 
 ## Required before production
 - Run the full signed-in staging workflow against the deployed income engine, including reload and a second session.
-- Visually verify a generated multipage PDF with a long evidence set.
-- Include property_income_comparables in data export, encrypted recovery, restore, retention inventory and deletion verification. The existing operational retention-restore-preflight.cjs is outside this tracked candidate and currently lacks this table. Do not bypass its schema-drift gate.
+- Operational overlays in operations/ are installed in the local operator workspace; see operations/README.md for archive and restoration scope. A full project recovery drill is not claimed.
 - Preserve current staging authentication/verification assets from the concurrent Mac/iOS work when packaging deployment.
 - Test responsive layout in the real app shell and keyboard interactions.
 - Native Android/iOS adoption requires separate integration and builds; this change does not update installed apps.
