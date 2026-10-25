@@ -22,7 +22,8 @@ function reportModel(source,profile={}){
    const columns=[...el.children].map(panel=>{
     const entries=[{title:clean(panel.querySelector('h3'))}];
     let rents=false;
-    for(const row of panel.querySelectorAll('.rb-row')){
+    for(const row of panel.querySelectorAll('.rb-row,h4')){
+     if(row.tagName==='H4'){if(clean(row)==='Mortgage Assumptions')entries.push({title:clean(row)});continue;}
      const label=clean(row.children[0]),value=clean(row.children[1]).replace(/(\d+)\.(\d+)/g,(_,whole,decimal)=>whole+(decimal.replace(/0+$/,'')?'.'+decimal.replace(/0+$/,''):''));
      const isRent=/^(Units \/ Apartments|Unit \d+ Monthly Rent|Monthly Rent|Total Monthly Rent)$/.test(label);
      if(isRent&&!rents){entries.push({title:'Units & Monthly Rents'});rents=true;}
