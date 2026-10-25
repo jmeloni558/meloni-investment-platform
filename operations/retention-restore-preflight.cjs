@@ -11,7 +11,7 @@ const PRODUCTION_TABLES=Object.freeze(TABLES.filter(t=>!['mobile_places_usage','
 // A reviewed optional migration table is checked when present. Unknown tables still block.
 function tablesForProject(project,inventory=[]){
  const base=project==='lmaiqpkogmmsldkziggy'?PRODUCTION_TABLES:TABLES;
- return inventory.some(r=>r.table_name==='property_income_comparables')?[...base,'property_income_comparables'].sort():base;
+ return [...base,...['property_income_comparables','property_sales_comparables'].filter(t=>inventory.some(r=>r.table_name===t))].sort();
 }
 function findingsSql(tables){return [
   `select 'auth.users' as source,count(*)::int as matches from auth.users where id=any($1::uuid[])`,
