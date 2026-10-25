@@ -45,6 +45,7 @@
         let html=await r.text();
         // Only the current PDF controller may register the download click handler.
         html=html.replace(/<script\b[^>]*src=["']user-branded-pdf-v[^"']*["'][^>]*><\/script>/gi,'');
+        html=html.replace(/<script\b[^>]*src=["']propertythesis-branding-seo-20261003\.js[^"']*["'][^>]*><\/script>/gi,'');
         // The core remains noindex when opened directly; the public entry must not inherit that directive.
         if(location.pathname==='/'||location.pathname.endsWith('/index.html'))html=html.replace('id="ptSeoRobots" name="robots" content="noindex,nofollow"','id="ptSeoRobots" name="robots" content="index,follow,max-image-preview:large"');
         html=html.replace('</head>','<link rel="stylesheet" href="propertythesis-assistant.css?v=20261003-profile"></head>');
