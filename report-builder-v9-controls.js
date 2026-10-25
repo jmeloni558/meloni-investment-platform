@@ -119,7 +119,7 @@
     const refresh=document.getElementById('rbRefresh');
     const download=document.getElementById('rbDownloadPdf');
     const proforma=ensureProFormaButton();
-    if(refresh)refresh.textContent='Refresh Preview';
+    if(refresh)refresh.remove();
 
     if(grid){
       let recipient=grid.querySelector('.rb-recipient-panel');
@@ -162,11 +162,11 @@
       if(!exportPanel){
         exportPanel=document.createElement('div');
         exportPanel.className='rb-export-panel';
-        exportPanel.appendChild(zoneHead('3 · Preview & Export','Refresh the on-screen report, then download the client PDF or the branded Excel pro forma.'));
+        exportPanel.appendChild(zoneHead('3 · Preview & Export','The preview updates automatically as you change report options. Download the client PDF or Excel pro forma when ready.'));
         controls.appendChild(exportPanel);
       }
       if(mainActions.parentElement!==exportPanel)exportPanel.appendChild(mainActions);
-      if(refresh&&refresh.parentElement!==mainActions)mainActions.appendChild(refresh);
+
       if(download&&download.parentElement!==mainActions){download.className='btn primary';mainActions.appendChild(download);}
       if(proforma&&proforma.parentElement!==mainActions)mainActions.appendChild(proforma);
     }

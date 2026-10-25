@@ -116,7 +116,7 @@
       const host=document.getElementById('clientReport');
       host?.insertAdjacentElement('beforebegin',box);
     }
-    box.innerHTML=`<div class="sectionhead"><div><h2>Client Report Builder</h2><p>Select the sections to include in the client-facing report preview. These controls do not change the underlying analysis.</p></div><span class="badge">Page 3 • First Pass</span></div><div class="rb-control-grid"><div><div class="field"><label>Prepared For</label><input id="rbPreparedFor" value="${esc(prefs.preparedFor)}" placeholder="Client name (optional)"></div><div class="rb-actions"><button type="button" class="btn primary" id="rbRefresh">Refresh Report Preview</button><button type="button" class="btn secondary" id="rbSelectCore">Core Client Report</button><button type="button" class="btn ghost" id="rbSelectAll">Include All Details</button></div></div><div class="rb-toggle-grid">${toggleDefs.map(([key,label])=>`<label class="rb-toggle"><input type="checkbox" data-rb-pref="${key}" ${prefs[key]?'checked':''}><span>${esc(label)}</span></label>`).join('')}</div></div>`;
+    box.innerHTML=`<div class="sectionhead"><div><h2>Client Report Builder</h2><p>Select the sections to include in the client-facing report preview. These controls do not change the underlying analysis.</p></div><span class="badge">Page 3 • First Pass</span></div><div class="rb-control-grid"><div><div class="field"><label>Prepared For</label><input id="rbPreparedFor" value="${esc(prefs.preparedFor)}" placeholder="Client name (optional)"></div><div class="rb-actions"><button type="button" class="btn secondary" id="rbSelectCore">Core Client Report</button><button type="button" class="btn ghost" id="rbSelectAll">Include All Details</button></div></div><div class="rb-toggle-grid">${toggleDefs.map(([key,label])=>`<label class="rb-toggle"><input type="checkbox" data-rb-pref="${key}" ${prefs[key]?'checked':''}><span>${esc(label)}</span></label>`).join('')}</div></div>`;
     const prepared=box.querySelector('#rbPreparedFor');
     prepared?.setAttribute('maxlength','150');
     if(sharedActive()){
@@ -125,7 +125,7 @@
       box.querySelector('.rb-actions')?.append(button,notice);
       button.onclick=async()=>{if(button.disabled)return;const save=sharedSaver,guard=sharedGuard,choices=getSharedOptions();button.disabled=true;try{await save(choices);if(guard?.())notice.textContent='Report options saved.';}catch(e){if(guard?.())notice.textContent=e.message||'Report options could not be saved. Reopen the analysis before retrying.';}finally{button.disabled=false;}};
     }
-    prepared?.addEventListener('input',()=>{prefs.preparedFor=prepared.value;savePrefs();});
+    prepared?.addEventListener('input',()=>{prefs.preparedFor=prepared.value;savePrefs();renderReport();window.ReportBuilderV9Controls?.finalizeReport?.();});
     box.querySelectorAll('[data-rb-pref]').forEach(el=>el.addEventListener('change',()=>{prefs[el.dataset.rbPref]=el.checked;savePrefs();renderReport();}));
     box.querySelector('#rbRefresh')?.addEventListener('click',()=>{prefs.preparedFor=prepared?.value||'';savePrefs();renderReport();});
     box.querySelector('#rbSelectCore')?.addEventListener('click',()=>{Object.assign(prefs,{includeAssumptions:true,includeValuation:true,includeFinancing:true,includeOperating:true,includeDisposition:true,includeReturns:true,includeDetailedCashflow:true,includeTaxOperations:false,includeSaleTax:false,includeInvestmentCashflow:true,includeSensitivity:false});savePrefs();injectControls();renderReport();});
