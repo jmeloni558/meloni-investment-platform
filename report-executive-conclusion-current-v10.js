@@ -62,6 +62,8 @@
   }
 
   function apply(){
+    if(window.PropertyThesisReportReader)return true; // The current reader owns thesis and conclusion.
+
     const box=document.querySelector('#clientReport .rb-report > .rb-conclusion'),p=box?.querySelector('p');
     renameSections();refineReportLabels();if(!p)return false;
     const text=compose();if(!text)return false;

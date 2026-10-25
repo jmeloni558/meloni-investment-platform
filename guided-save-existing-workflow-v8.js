@@ -128,6 +128,10 @@
     const del=card.querySelector('[data-hub-delete]');
     const pid=open?.dataset?.stage7File||open?.dataset?.hubOpen||edit?.dataset?.hubEdit||report?.dataset?.hubReport||manage?.dataset?.ptManage;
     if(!pid)return;
+    // Preserve focus, disclosure state and scroll anchors on unchanged cards.
+    const existingPrimary=actions.querySelector('.pt-hub-primary-flow');
+    const existingMore=actions.querySelector('.pt-hub-more');
+    if(existingPrimary&&existingMore&&!edit&&!clone&&open?.parentElement===existingPrimary&&(!report||report.parentElement===existingPrimary)&&(!manage||manage.parentElement===existingMore)&&(!archive||archive.parentElement===existingMore)&&(!del||del.parentElement===existingMore))return;
     const hasAnalysis=!!report;
     clone?.remove();
     if(manage){manage.textContent='Analysis versions';manage.title='View and manage the saved analyses for this property.';}
