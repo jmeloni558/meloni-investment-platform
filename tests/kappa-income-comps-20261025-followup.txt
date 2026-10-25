@@ -1,0 +1,34 @@
+Kappa report review — October 25, 2026
+Source: PropertyThesis-Income-Comparables-QA-2026-10-25.docx
+
+Independent creation, calculations, two-comparable persistence, adoption, snapshot
+refresh, unlink, conflict rejection and current eight-page PDF passed. Final
+subject NOI 63,840 / selected cap .0806 = 792,059.5533, displayed 792,060.
+The older one-comparable PDF and minus-glyph issue are superseded historical
+evidence, not current calculation/export failures.
+
+D1 confirmed by code inspection: the dialog used revision/timestamp inequality
+against its cached source list, so an older tab's source revision falsely marked
+a successfully refreshed newer snapshot as outdated. Candidate now distinguishes
+older cached metadata from newer source evidence. Missing sources still warn.
+C1 confirmed: report unconditionally appended a period to source text. Candidate
+uses a separator only when terminal punctuation is absent, escaping user text.
+
+Eleven model regression assertions passed using Node VM, including older/equal/
+newer source metadata and punctuation/escaping cases. The jsdom workflow also passed using the same test callback in Node VM: 12 total passing regression checks.
+
+Kappa's narrow-view override did not work. Separate Codex test already verified
+474 CSS-pixel viewport, single-column fields and no body horizontal overflow.
+Native devices remain untested for this feature. Invalid-date model validation
+has automated coverage; do not call that a server/API bypass test.
+Preserve Kappa's three dated fixtures and final 8.06% reconciliation.
+
+Staging deployed: f28cf179-c4d0-48f2-a1f8-330e9363d336.
+ZIP SHA256: 50b495609ce54ca7246edbd0f79d687dd32f4ac0f91441099539eeeb5daf236a
+Both served JS files match tested candidate bytes. Native iOS verification HTML
+matches baseline after removing Cloudflare analytics injection; framing CSP preserved.
+Production and native builds unchanged. Kappa fixtures untouched.
+Retest D1 in two tabs after refreshing a newer source snapshot, then export PDF
+and check C1 source/notes punctuation. Use fresh page loads for this code version.
+
+

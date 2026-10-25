@@ -16,6 +16,10 @@ test('property comp save/reopen, report, adoption, refresh and account isolation
  for(const [k,v] of Object.entries({analysis:'a',salePrice:600000,saleDate:'2026-09-01',incomeBasis:'actual',period:'T12',source:'Seller records'}))f.elements[k].value=v;
  f.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await pause();assert.equal(stored.evidence.items.length,1);assert.equal(stored.evidence.items[0].capRate,.0798);
  await w.PropertyThesisIncomeComps.open('subject');assert.match(w.document.querySelector('[data-ic-body]').textContent,/7.98%/);
+ w.cloudAnalyses[0].revision=0;await w.PropertyThesisIncomeComps.open('subject');assert.doesNotMatch(w.document.querySelector('[data-ic-body]').textContent,/Source changed or unavailable/);
+ w.cloudAnalyses[0].revision=2;await w.PropertyThesisIncomeComps.open('subject');assert.match(w.document.querySelector('[data-ic-body]').textContent,/Source changed or unavailable/);
+ w.cloudAnalyses[0].revision=1;
+
  let rec=w.document.querySelector('[data-ic-reconcile]');rec.elements.rate.value=8;rec.elements.rationale.value='Similar tenancy; conservative reconciliation';rec.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await pause();assert.equal(stored.revision,2);
  await w.PropertyThesisIncomeComps.prepareReport();assert.match(w.document.querySelector('[data-rb-section="incomeComparables"]').textContent,/\$1,000,000/);
  w.document.querySelector('[data-ic-adopt]').click();assert.equal(w.state.desiredCap,.08);assert.equal(dirty,true);

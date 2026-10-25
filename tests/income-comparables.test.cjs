@@ -11,3 +11,19 @@ test('equal-weight median and mean do not double weight large sales',()=>{const 
 test('adoption requires positive rate, included evidence and rationale',()=>{assert.throws(()=>M.reconciliation(.08,'', [make()]),/Explain/);assert.throws(()=>M.reconciliation(0,'reason',[make()]),/greater/);assert.throws(()=>M.reconciliation(.08,'reason',[]),/Include/);});
 test('report shows value at selected rate, mismatch and escaped evidence',()=>{const c=make();c.source='<img src=x onerror=alert(1)>';const html=M.reportHtml({items:[c],reconciliation:{rate:.08,notes:'Close substitutes'}},80000,.07);assert.match(html,/\$1,000,000/);assert.match(html,/different cap rate/);assert.match(html,/&lt;img/);assert.doesNotMatch(html,/<img/);assert.match(html,/Actual operating data/);});
 test('missing NOI does not render a zero valuation',()=>{const html=M.reportHtml({items:[make()],reconciliation:{rate:.08,notes:'reason'}},null,.08);assert.match(html,/Not indicated/);});
+test('source freshness distinguishes an older tab cache from a newer source edit',()=>{
+ const c=make();
+ assert.equal(M.sourceIsStale(c,{revision:3,updated_at:'2026-10-18'}),false);
+ assert.equal(M.sourceIsStale(c,{revision:4,updated_at:'2026-10-19'}),false);
+ assert.equal(M.sourceIsStale(c,{revision:5,updated_at:'2026-10-20'}),true);
+ assert.equal(M.sourceIsStale(c,{revision:4,updated_at:'2026-10-19T00:01:00Z'}),true);
+ assert.equal(M.sourceIsStale(c,null),true);
+});
+test('report source-note separators preserve punctuation and escape text',()=>{
+ const c=make(); c.source='Synthetic transaction.'; c.notes='Already punctuated!';
+ let html=M.reportHtml({items:[c]},47880,.08);
+ assert.match(html,/Source: Synthetic transaction\. Already punctuated! Snapshot:/);
+ c.source='Synthetic transaction'; c.notes='<b>Untrusted note</b>';
+ html=M.reportHtml({items:[c]},47880,.08);
+ assert.match(html,/Source: Synthetic transaction\. &lt;b&gt;Untrusted note&lt;\/b&gt;\. Snapshot:/);
+});
