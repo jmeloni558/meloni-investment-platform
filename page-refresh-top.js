@@ -19,13 +19,17 @@
     if(candidate?.path===location.pathname)sessionStorage.removeItem(RETURN_KEY);
   }catch(_e){}
   const savedY=Number.isFinite(returnPosition)?returnPosition:navigationType==='back_forward'?Number(history.state?.ptScrollY):null;
-  let scrollFrame=0;
   const remember=()=>{
-    scrollFrame=0;
     try{history.replaceState({...history.state,ptScrollY:Math.max(0,Math.round(scrollY))},'');}catch(_e){}
   };
-  addEventListener('scroll',()=>{if(!scrollFrame)scrollFrame=requestAnimationFrame(remember);},{passive:true});
+  // Do not update browser history on every scroll frame. In addition to main-
+  // thread work, replaceState notifies browser integrations on every wheel/key
+  // animation frame. Native back/forward restoration already tracks scrolling.
   addEventListener('pagehide',remember);
+  let userInteracted=false;
+  const yieldToUser=()=>{userInteracted=true;};
+  ['wheel','touchstart','pointerdown','keydown'].forEach(type=>addEventListener(type,yieldToUser,{capture:true,passive:true}));
+  const initialTop=()=>{if(!userInteracted)top();};
   document.addEventListener('click',event=>{
     const link=event.target?.closest?.('a[href]');
     if(!link||link.matches('.pt-site-brand')||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
@@ -44,20 +48,20 @@
     const root=document.documentElement;
     const previousAnchor=root.style.overflowAnchor;
     root.style.overflowAnchor='none';
-    top();
-    addEventListener('DOMContentLoaded',top,{once:true});
-    addEventListener('load',()=>[0,50,150,350,700,1200].forEach(ms=>setTimeout(top,ms)),{once:true});
-    setTimeout(()=>{root.style.overflowAnchor=previousAnchor;top()},1400);
+    initialTop();
+    addEventListener('DOMContentLoaded',initialTop,{once:true});
+    addEventListener('load',()=>[0,50,150,350,700,1200].forEach(ms=>setTimeout(initialTop,ms)),{once:true});
+    setTimeout(()=>{root.style.overflowAnchor=previousAnchor;initialTop()},1400);
     return;
   }
   if(isReload){
-    const holdTop=()=>window.scrollTo({top:0,behavior:'instant'});
+    const holdTop=initialTop;
     holdTop();
     addEventListener('DOMContentLoaded',holdTop,{once:true});
     addEventListener('load',()=>[0,50,150,350,700].forEach(ms=>setTimeout(holdTop,ms)),{once:true});
     return;
   }
   if(Number.isFinite(savedY)&&savedY>0){
-    addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo({top:savedY,behavior:'instant'}))),{once:true});
+    addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!userInteracted)window.scrollTo({top:savedY,behavior:'instant'});})),{once:true});
   }
 })();
