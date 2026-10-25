@@ -6,7 +6,7 @@ test('guidance explains optional evidence, handles sign-in changes and survives 
  w.cloudUser=null;w.eval(fs.readFileSync(path.join(__dirname,'../analysis-evidence-guidance.js'),'utf8'));
  const apply=w.PropertyThesisEvidenceGuidance.apply;apply();apply();
  assert.equal(w.document.querySelectorAll('#ptEvidenceOverview').length,1);
- assert.match(w.document.querySelector('#ptEvidenceOverview').textContent,/either type of comparable, both types, or neither/);
+ assert.match(w.document.querySelector('#ptEvidenceOverview').textContent,/any of the three comp types, combine them, or analyze the subject alone/);
  assert.equal(w.document.querySelectorAll('#ptEvidenceOverview img').length,2);
  for(const img of w.document.querySelectorAll('#ptEvidenceOverview img')){assert.ok(img.alt);assert.equal(img.getAttribute('loading'),'lazy');assert.ok(fs.existsSync(path.join(__dirname,'..',img.getAttribute('src'))));}
  assert.equal(w.document.getElementById('ptEvidenceWorkspace').hidden,true);
