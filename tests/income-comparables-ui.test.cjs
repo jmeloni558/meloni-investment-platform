@@ -1,7 +1,7 @@
 // Requires jsdom 26.1.0 in the test runtime (no production dependency).
 const {test}=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');const {JSDOM}=require('jsdom');
 const pause=()=>new Promise(r=>setTimeout(r,160));
-test('property comp save/reopen, report, adoption, refresh and account isolation',async()=>{
+test('property comp save/reopen, subject-rate notes, report, refresh and account isolation',async()=>{
  const dom=new JSDOM('<body><div id="propertyhub"><div class="hub-card"><button data-hub-open="subject"></button><div class="hub-actions"></div></div></div><div id="dashboard"><div class="grid"></div></div><input id="f_desiredCap"><div id="clientReport"><div class="rb-report"><section data-rb-section="valuation"></section><div class="rb-footer"></div></div></div></body>',{runScripts:'outside-only',url:'https://fixture.invalid'}),w=dom.window;
  try{
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
@@ -21,10 +21,11 @@ test('property comp save/reopen, report, adoption, refresh and account isolation
  w.cloudAnalyses[0].revision=1;
  stored.evidence.items[0].period='T12 ending September 2026';await w.PropertyThesisIncomeComps.open('subject');w.document.querySelector('[data-ic-edit]').click();assert.equal(w.document.querySelector('[data-ic-add]').elements.period.value,'T12 ending September 2026');
 
- assert.equal(w.document.querySelector('[data-ic-valuation]').open,false);const beforeRate=w.state.desiredCap;w.document.querySelector('[data-ic-median]').click();assert.equal(w.document.querySelector('[data-ic-reconcile]').elements.rate.value,'7.98');assert.equal(w.state.desiredCap,beforeRate);
- let rec=w.document.querySelector('[data-ic-reconcile]');rec.elements.rate.value=8;rec.elements.rationale.value='Similar tenancy; conservative reconciliation';rec.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await pause();assert.equal(stored.revision,2);
+ assert.equal(w.document.querySelector('[data-ic-valuation]').open,false);assert.equal(w.document.querySelector('[data-ic-adopt]'),null);assert.equal(w.document.querySelector('[data-ic-reconcile] [name=rate]'),null);w.state.desiredCap=.08;await w.PropertyThesisIncomeComps.open('subject');assert.match(w.document.querySelector('[data-ic-valuation]').textContent,/8.00%/);
+ let rec=w.document.querySelector('[data-ic-reconcile]');rec.elements.rationale.value='Similar tenancy; conservative reconciliation';rec.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await pause();assert.equal(stored.revision,2);
  await w.PropertyThesisIncomeComps.prepareReport();assert.match(w.document.querySelector('[data-rb-section="incomeComparables"]').textContent,/\$1,000,000/);
- w.document.querySelector('[data-ic-adopt]').click();assert.equal(w.state.desiredCap,.08);assert.equal(dirty,true);
+ assert.equal(stored.evidence.reconciliation.rate,.08);assert.equal(w.state.desiredCap,.08);assert.equal(dirty,false);
+ w.state.desiredCap=.075;await w.PropertyThesisIncomeComps.open('subject');assert.match(w.document.querySelector('[data-ic-valuation]').textContent,/rate has changed/);
  w.document.querySelector('[data-ic-toggle]').click();await pause();assert.equal(stored.evidence.reconciliation,null);assert.equal(stored.evidence.items[0].included,false);
  // A concurrent update must not be overwritten by this session.
  stored.revision++;w.document.querySelector('[data-ic-toggle]').click();await pause();assert.match(w.document.querySelector('[data-ic-status]').textContent,/another session/);assert.equal(stored.evidence.items[0].included,false);
