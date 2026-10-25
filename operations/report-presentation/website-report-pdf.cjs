@@ -18,6 +18,21 @@ function reportModel(source,profile={}){
    const note=clean(copy);if(note)blocks.push({kind:'disclaimer',text:note});
    return;
   }
+  if(el.classList.contains('rb-two')&&el.closest('[data-rb-section="assumptions"]')){
+   const columns=[...el.children].map(panel=>{
+    const entries=[{title:clean(panel.querySelector('h3'))}];
+    let rents=false;
+    for(const row of panel.querySelectorAll('.rb-row')){
+     const label=clean(row.children[0]),value=clean(row.children[1]).replace(/(\d+)\.(\d+)/g,(_,whole,decimal)=>whole+(decimal.replace(/0+$/,'')?'.'+decimal.replace(/0+$/,''):''));
+     const isRent=/^(Units \/ Apartments|Unit \d+ Monthly Rent|Monthly Rent|Total Monthly Rent)$/.test(label);
+     if(isRent&&!rents){entries.push({title:'Units & Monthly Rents'});rents=true;}
+     if(!isRent&&rents){entries.push({title:'Operating Assumptions'});rents=false;}
+     entries.push({label,value});
+    }
+    return entries;
+   });
+   blocks.push({kind:'columns',columns});return;
+  }
   if(/^H[1-6]$/.test(el.tagName)){heading=clean(el);blocks.push({kind:'heading',text:heading});return;}
   if(el.tagName==='TABLE'){
    let rows=[...el.querySelectorAll('tr')].map(tr=>[...tr.children].map(clean));

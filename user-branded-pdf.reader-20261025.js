@@ -162,7 +162,7 @@
 
     if(window.PropertyThesisTextPdf)return window.PropertyThesisTextPdf;
 
-    if(!textRendererPromise)textRendererPromise=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='website-report-pdf.reader-20261025.js?v=1';script.onload=()=>window.PropertyThesisTextPdf?resolve(window.PropertyThesisTextPdf):reject(Error('PDF text renderer did not initialize.'));script.onerror=()=>reject(Error('Unable to load the PDF text renderer. Please retry.'));document.head.appendChild(script);}).catch(e=>{textRendererPromise=null;throw e;});
+    if(!textRendererPromise)textRendererPromise=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='website-report-pdf.assumptions-01cb891e83e4.js';script.onload=()=>window.PropertyThesisTextPdf?resolve(window.PropertyThesisTextPdf):reject(Error('PDF text renderer did not initialize.'));script.onerror=()=>reject(Error('Unable to load the PDF text renderer. Please retry.'));document.head.appendChild(script);}).catch(e=>{textRendererPromise=null;throw e;});
 
     return textRendererPromise;
 

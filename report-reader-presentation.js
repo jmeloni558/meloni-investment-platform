@@ -9,6 +9,13 @@
   function apply(){
     const report=document.querySelector('#clientReport .rb-report');if(!report)return false;
     const section=name=>report.querySelector('[data-rb-section="'+name+'"]');
+    const assumptionsPanel=section('assumptions');
+    for(const row of assumptionsPanel?.querySelectorAll('.rb-row')||[]){const value=row.children[1];if(value){const formatted=value.textContent.replace(/(\d+)\.(\d+)/g,(_,whole,decimal)=>whole+(decimal.replace(/0+$/,'')?'.'+decimal.replace(/0+$/,''):''));if(value.textContent!==formatted)value.textContent=formatted;}}
+    const propertyPanel=assumptionsPanel?.querySelector('.rb-panel');
+    if(propertyPanel){
+      const rows=[...propertyPanel.querySelectorAll('.rb-row')].filter(row=>/^(Units \/ Apartments|Unit \d+ Monthly Rent|Monthly Rent|Total Monthly Rent)$/.test(row.children[0]?.textContent.trim()));
+      if(rows.length){let group=propertyPanel.querySelector('.pt-unit-rents');if(!group){group=document.createElement('div');group.className='pt-unit-rents';group.innerHTML='<h4>Units & Monthly Rents</h4>';rows[0].before(group);}for(const row of rows)if(row.parentElement!==group)group.append(row);}
+    }
     const snapshot=stats(section('snapshot')),operating=stats(section('operating')),financing=stats(section('financing')),returns=stats(section('returns')),valuation=stats(section('valuation')),rent=stats(section('marketRentSupport')),assumptions=stats(section('assumptions'));
     const price=snapshot['Acquisition Price']?.n,noi=snapshot['Year 1 NOI']?.n,cap=snapshot['Capitalization Rate']?.n;
     const target=number(snapshot['Capitalization Rate']?.note.replace(/^Target\s*/i,''));
@@ -75,7 +82,7 @@
   }
   function schedule(){clearTimeout(timer);timer=setTimeout(()=>{observer?.disconnect();try{apply();}finally{observe();}},40);}
   function observe(){const host=document.getElementById('clientReport');if(host)observer?.observe(host,{childList:true,subtree:true,characterData:true});}
-  function start(){if(!document.getElementById('ptReaderStyles')){const s=document.createElement('style');s.id='ptReaderStyles';s.textContent='#clientReport [hidden]{display:none!important}#clientReport .pt-reader-copy{font-size:13px!important;line-height:1.65!important;color:#354a5d!important;margin:10px 0 14px!important}#clientReport .pt-reader-summary{background:#eff7f6!important;border:0!important;border-radius:10px;margin:20px 30px;padding:20px!important}#clientReport .rb-conclusion{border-left-color:#148478!important}';document.head.appendChild(s);}observer=new MutationObserver(schedule);observe();schedule();}
+  function start(){if(!document.getElementById('ptReaderStyles')){const s=document.createElement('style');s.id='ptReaderStyles';s.textContent='#clientReport .pt-unit-rents{margin:12px 0;padding:10px;background:#eef6f5;border-radius:6px}#clientReport .pt-unit-rents h4{margin:0 0 8px;color:#126a60}#clientReport [hidden]{display:none!important}#clientReport .pt-reader-copy{font-size:13px!important;line-height:1.65!important;color:#354a5d!important;margin:10px 0 14px!important}#clientReport .pt-reader-summary{background:#eff7f6!important;border:0!important;border-radius:10px;margin:20px 30px;padding:20px!important}#clientReport .rb-conclusion{border-left-color:#148478!important}';document.head.appendChild(s);}observer=new MutationObserver(schedule);observe();schedule();}
   window.PropertyThesisReportReader={apply,stats,number};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
