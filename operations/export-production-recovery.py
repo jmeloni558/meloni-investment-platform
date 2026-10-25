@@ -26,9 +26,10 @@ def main():
             raise RuntimeError('Required schemas unavailable')
         counts = {name: db.execute('select count(*) from ' + name).fetchone()[0] for name in
                   ['auth.users', 'public.properties', 'public.analyses', 'public.scenarios', 'storage.objects']}
-        has_income_comps = db.execute("select to_regclass('public.property_income_comparables') is not null").fetchone()[0]
-        if has_income_comps:
-            counts['public.property_income_comparables'] = db.execute('select count(*) from public.property_income_comparables').fetchone()[0]
+        comp_tables = [t for t in ['property_income_comparables', 'property_sales_comparables']
+                       if db.execute("select to_regclass(%s) is not null", ('public.' + t,)).fetchone()[0]]
+        for t in comp_tables:
+            counts['public.' + t] = db.execute('select count(*) from public.' + t).fetchone()[0]
         env = os.environ.copy()
         env.update(PGHOST='aws-0-us-west-2.pooler.supabase.com', PGPORT='5432',
                    PGUSER='postgres.lmaiqpkogmmsldkziggy', PGDATABASE='postgres',
@@ -50,8 +51,9 @@ def main():
     listing = subprocess.run([str(binary / 'pg_restore.exe'), '--list'], input=payload, capture_output=True, timeout=60)
     if listing.returncode or b'TABLE DATA' not in listing.stdout:
         raise RuntimeError('Archive structure verification failed')
-    if has_income_comps and b'TABLE DATA public property_income_comparables ' not in listing.stdout:
-        raise RuntimeError('Income comparable data missing from recovery archive')
+    for t in comp_tables:
+        if ('TABLE DATA public ' + t + ' ').encode() not in listing.stdout:
+            raise RuntimeError('Comparable data missing from recovery archive: ' + t)
     digest = hashlib.sha256(payload).hexdigest()
     encrypted = encrypt_password(base64.b64encode(payload).decode('ascii'))
     archive = folder / 'application-checkpoint.pgcustom.dpapi'
