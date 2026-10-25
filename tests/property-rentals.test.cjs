@@ -24,3 +24,5 @@ test('rental comps and manual source reach the actual PDF download',async()=>{
  assert.equal(captured.querySelectorAll('[data-rb-section="marketRentSupport"] tbody tr').length,1);assert.match(captured.textContent,/Synthetic manual rental/);assert.match(captured.textContent,/MLS TEST/);assert.doesNotMatch(captured.textContent,/Excluded rental/);assert.equal(captured.isConnected,false);await new Promise(r=>setTimeout(r,60));assert.ok(w.document.querySelector('#ptReadyPdfDownload'));
  }finally{f.close();}
 });
+
+test('branding does not load legacy rental autosave with property comps enabled',()=>{const f=fixture();try{f.w.eval(read('propertythesis-branding-seo-20261003.js'));f.w.document.dispatchEvent(new f.w.Event('DOMContentLoaded'));assert.equal(f.w.document.getElementById('ptMarketRentCloudPersistenceLoader'),null);}finally{f.close();}});
