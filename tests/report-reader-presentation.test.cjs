@@ -30,3 +30,18 @@ test('profile header puts product first, escapes profile, and preserves recipien
  try{w.state={price:500000,hold:10};w.UserBranding={getProfile:()=>({company_name:'<script>bad</script>',full_name:'A long professional name',email:'test@example.invalid'})};w.eval(fs.readFileSync(path.join(__dirname,'../report-branding-reader.js'),'utf8'));w.PropertyThesisReportBranding.apply();const h=w.document.querySelector('.pt-split-head');assert(h.firstElementChild.classList.contains('pt-product-side'));assert(h.lastElementChild.classList.contains('pt-user-side'));assert(!h.querySelector('script'));assert(!h.querySelector('.pt-product-mark'));assert.match(w.document.querySelector('.pt-header-meta').textContent,/Client Name/);assert(!w.document.querySelector('.pt-header-meta').textContent.includes('test@example'));
  }finally{w.close();}
 });
+
+ test('standalone thesis explains goals without inventing comps; conclusion tests pricing and return goals',()=>{
+ const d=fixture(),w=d.window;try{
+ const snap=w.document.querySelector('[data-rb-section="snapshot"]');snap.insertAdjacentHTML('beforeend',stat('Gross Rent Multiplier','10.51x','Target 8.35x'));
+ w.PropertyThesisReportReader.apply();const opening=w.document.querySelector('[data-rb-section="readerSummary"]'),ending=w.document.querySelector('[data-rb-section="readerConclusion"]');
+ for(const word of ['6.50%','10.00%','8.35','before expenses','not promised','standalone property analysis'])assert(opening.textContent.includes(word),word);
+ assert(!/challenge|partly support|falls short|5.60%/.test(opening.textContent));
+ assert.match(ending.textContent,/10.51 times annual gross rent, above the 8.35x target/);
+ assert.match(ending.textContent,/rather than independent market confirmation/);
+ assert.equal(w.document.querySelectorAll('[data-rb-section="incomeComparables"],[data-rb-section="salesComparables"]').length,0);
+ snap.querySelectorAll('b')[2].textContent='7.00%';w.PropertyThesisReportReader.apply();assert.match(ending.textContent,/partly support/);
+ snap.querySelectorAll('b')[3].textContent='8.00x';w.document.querySelector('[data-rb-section="returns"] b').textContent='12.00%';w.document.querySelectorAll('[data-rb-section="financing"] b')[1].textContent='$20,000';w.PropertyThesisReportReader.apply();assert.match(ending.textContent,/modeled results support/);
+ assert.equal(w.document.querySelector('.rb-report').lastElementChild,ending);
+ }finally{w.close();}
+ });
