@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=43;
+  const VERSION=44;
   if((window.__userBrandedPdfVersion||0)>=VERSION)return;
   window.__userBrandedPdfVersion=VERSION;
 
@@ -176,7 +176,13 @@
 
     if(!response.ok)throw Error('Unable to load the report font. Please retry.');
 
-    const base64=await renderer.build(source,prof(),new Uint8Array(await response.arrayBuffer()));
+    const font=new Uint8Array(await response.arrayBuffer());
+    if(document.querySelector('#clientReport .rb-report')!==source)throw Error('The report changed while preparing the PDF. Please download again.');
+    window.ReportSalesComparables?.apply?.();
+    window.PropertyThesisReportReader?.apply?.();
+    // Snapshot after all evidence and narrative have been applied, before async rendering.
+    const snapshot=source.cloneNode(true);
+    const base64=await renderer.build(snapshot,prof(),font);
 
     const blob=new Blob([Uint8Array.from(atob(base64),c=>c.charCodeAt(0))],{type:'application/pdf'});
 

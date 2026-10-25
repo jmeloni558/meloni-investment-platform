@@ -59,3 +59,25 @@ test('public entry uses immutable current workflow assets even with old cache pa
   }finally{f.close();}
  }
 });
+
+test('sales section survives preview replacement and does not continuously mutate',async()=>{
+ const f=fixture();try{const w=f.w;f.rows.set('p',{property_id:'p',revision:1,evidence:{selectedComps:[{id:'a',formattedAddress:'Retained sale',lastSalePrice:465000}]}});await w.PropertyThesisPropertySales.prepareReport();
+ const host=w.document.querySelector('#clientReport');host.innerHTML='<div class="rb-report"><section data-rb-section="valuation"></section></div>';
+ await new Promise(r=>setTimeout(r,150));const sec=host.querySelector('[data-rb-section="salesComparables"]');assert.ok(sec);w.ReportSalesComparables.apply();assert.equal(host.querySelector('[data-rb-section="salesComparables"]'),sec,'unchanged evidence retains its DOM');
+ }finally{f.close();}
+});
+test('public download click hydrates saved sales and captures the sales comparison narrative',async()=>{
+ const f=fixture();try{const w=f.w;w.state={address:'Synthetic subject',price:599000,units:3};
+ f.rows.set('p',{property_id:'p',revision:1,evidence:{selectedComps:[480000,385000,465000].map((price,i)=>({id:String(i),formattedAddress:'Synthetic saved sale '+i,lastSalePrice:price,lastSaleDate:'2026-05-05',source:'Synthetic records'}))}});
+ w.document.querySelector('.rb-report').innerHTML='<header class="rb-cover"></header><section data-rb-section="snapshot"><div class="rb-stat"><span>Acquisition Price</span><b>$599,000</b></div></section><section data-rb-section="valuation"></section><div class="rb-footer"></div>';
+ w.document.body.insertAdjacentHTML('beforeend','<button id="rbDownloadPdf">Generate PDF</button>');
+ w.requestAnimationFrame=fn=>w.setTimeout(fn,0);w.fetch=async()=>({ok:true,arrayBuffer:async()=>fs.readFileSync(path.join(__dirname,'../assets/report-NotoSans-Regular.ttf'))});w.URL.createObjectURL=()=> 'blob:test';w.URL.revokeObjectURL=()=>{};w.alert=m=>assert.fail(m);w.PropertyThesisProtectedCloudSaveBridge={isSharedSaving:()=>true};
+ let captured,resolve;const done=new Promise(r=>resolve=r);const vm=require('node:vm'),sandbox={window:{},console,TextEncoder,TextDecoder,setTimeout,clearTimeout,Uint8Array,ArrayBuffer,DataView,Buffer,atob,btoa};vm.runInNewContext(read('website-report-pdf.reader-20261025.js'),sandbox);w.PropertyThesisTextPdf={build:async(source,profile,font)=>{captured=source;const pdf=await sandbox.window.PropertyThesisTextPdf.build(source,profile,Uint8Array.from(font));fs.writeFileSync(path.join(__dirname,'../output/pdf/three-sales-download-verification.pdf'),Buffer.from(pdf,'base64'));resolve();return pdf;}};
+ const html=read('index.html'),strip=html.split('\n').find(line=>line.includes('html=html.replace(/<script'));
+ assert.ok(strip);const core=new Function('html',strip+';return html;')(read('app-core.html'));
+ assert.doesNotMatch(core,/<script[^>]+src="user-branded-pdf-v/);
+ w.eval(read('report-reader-presentation.js'));w.eval(read('user-branded-pdf.reader-20261025.js'));
+ w.document.querySelector('#rbDownloadPdf').click();await Promise.race([done,new Promise((_,reject)=>setTimeout(()=>reject(Error('download did not reach renderer')),10000))]);
+ assert.equal(captured.querySelectorAll('[data-rb-section="salesComparables"] tbody tr').length,3);assert.match(captured.textContent,/\$134,000 above the \$465,000 median of 3 comparable sales/);assert.match(captured.textContent,/unadjusted/);assert.equal(captured.isConnected,false);await new Promise(r=>setTimeout(r,60));assert.ok(w.document.querySelector('#ptReadyPdfDownload'));
+ }finally{f.close();}
+});
