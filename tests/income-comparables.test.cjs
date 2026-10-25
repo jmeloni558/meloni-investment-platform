@@ -22,8 +22,10 @@ test('source freshness distinguishes an older tab cache from a newer source edit
 test('report source-note separators preserve punctuation and escape text',()=>{
  const c=make(); c.source='Synthetic transaction.'; c.notes='Already punctuated!';
  let html=M.reportHtml({items:[c]},47880,.08);
- assert.match(html,/Source: Synthetic transaction\. Already punctuated! Snapshot:/);
+ assert.doesNotMatch(html,/engine 4|comp revision|source analysis revision|Snapshot:/);
+ assert.match(html,/Source: Synthetic transaction\. Already punctuated!<\/p>/);
  c.source='Synthetic transaction'; c.notes='<b>Untrusted note</b>';
  html=M.reportHtml({items:[c]},47880,.08);
- assert.match(html,/Source: Synthetic transaction\. &lt;b&gt;Untrusted note&lt;\/b&gt;\. Snapshot:/);
+ assert.doesNotMatch(html,/engine 4|comp revision|source analysis revision|Snapshot:/);
+ assert.match(html,/Source: Synthetic transaction\. &lt;b&gt;Untrusted note&lt;\/b&gt;\.<\/p>/);
 });
