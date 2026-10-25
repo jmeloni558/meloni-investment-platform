@@ -18,6 +18,7 @@ async function submit(w){w.document.querySelector('[data-comp-form]').dispatchEv
 async function complete(w){
  fill(w,{address:'100 Test Comp',price:600000,land:100000,units:4,hold:7,initialRepairs:0,saleDate:'2026-09-01'});await submit(w);
  assert.equal(w.document.querySelector('[name=incomeBasis]').value,'mls');assert.equal(w.document.querySelector('[name=period]').value,'Past 12 months');
+ fill(w,{rent:1500,vacancy:5,rentGrowth:2,period:'Past 12 months'});await submit(w);assert.match(w.document.querySelector('[data-comp-status]').textContent,/Enter a source/);assert.equal(w.document.activeElement.name,'source');assert.equal(w.document.querySelector('[name=source]').getAttribute('aria-invalid'),'true');
  fill(w,{rent:1500,vacancy:5,rentGrowth:2,period:'Past 12 months',source:'Seller records.'});await submit(w);
  fill(w,{opEx:30});await submit(w);await submit(w);await submit(w);await submit(w);
 }

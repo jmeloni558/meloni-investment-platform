@@ -21,6 +21,7 @@ test('property comp save/reopen, report, adoption, refresh and account isolation
  w.cloudAnalyses[0].revision=1;
  stored.evidence.items[0].period='T12 ending September 2026';await w.PropertyThesisIncomeComps.open('subject');w.document.querySelector('[data-ic-edit]').click();assert.equal(w.document.querySelector('[data-ic-add]').elements.period.value,'T12 ending September 2026');
 
+ assert.equal(w.document.querySelector('[data-ic-valuation]').open,false);const beforeRate=w.state.desiredCap;w.document.querySelector('[data-ic-median]').click();assert.equal(w.document.querySelector('[data-ic-reconcile]').elements.rate.value,'7.98');assert.equal(w.state.desiredCap,beforeRate);
  let rec=w.document.querySelector('[data-ic-reconcile]');rec.elements.rate.value=8;rec.elements.rationale.value='Similar tenancy; conservative reconciliation';rec.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await pause();assert.equal(stored.revision,2);
  await w.PropertyThesisIncomeComps.prepareReport();assert.match(w.document.querySelector('[data-rb-section="incomeComparables"]').textContent,/\$1,000,000/);
  w.document.querySelector('[data-ic-adopt]').click();assert.equal(w.state.desiredCap,.08);assert.equal(dirty,true);
