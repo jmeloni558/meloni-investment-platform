@@ -8,12 +8,12 @@ function setup(){
  w.structuredClone=structuredClone;w.confirm=()=>true;w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
  w.cloudUser={id:'user'};w.selectedPropertyId='subject';w.state={address:'Untouched subject',price:800000,desiredCap:.06};w.cloudProperties=[{id:'subject',address:'Subject address'}];w.cloudAnalyses=[];
  let stored=null,reject=false,calls=0;
- w.PropertyThesisIncomeEngineBridge={requestServer:async a=>{calls++;assert.equal(a.address,'100 Test Comp');return {engineVersion:4,IRR:.11,NPV:1000,years:[{pgi:72000,vac:3600,egi:68400,opex:20520,noi:47880,atcf:40000,dcr:2}]};},current:()=>({years:[{noi:60000}]})};
+ w.PropertyThesisIncomeEngineBridge={requestServer:async a=>{calls++;assert.equal(a.address,'100 Test Comp');const pgi=a.rent*a.units*12,vac=pgi*a.vacancy,egi=pgi-vac,opex=egi*a.opEx;return {engineVersion:4,IRR:.11,NPV:1000,years:[{pgi,vac,egi,opex,noi:egi-opex,atcf:40000,dcr:2}]};},current:()=>({years:[{noi:60000}]})};
  w.cloudClient={from(table){assert.equal(table,'property_income_comparables','must never create a standalone property/analysis');let op='read',payload,filters={};return{select(){return this;},eq(k,v){filters[k]=v;return this;},insert(p){op='insert';payload=p;return this;},update(p){op='update';payload=p;return this;},async maybeSingle(){if(op!=='read'){if(reject)return{error:{message:'conflict'}};if(op==='update'&&stored.revision!==filters.revision)return{data:null};stored={...stored,...structuredClone(payload)};}return{data:stored?structuredClone(stored):null};}};}};
- for(const f of ['income-comparables-model.js','income-comparable-analysis.js','income-comparables.js'])w.eval(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
+ for(const f of ['unit-rents.js','income-comparables-model.js','income-comparable-analysis.js','income-comparables.js'])w.eval(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
  return {dom,w,get stored(){return stored;},set reject(v){reject=v;},get calls(){return calls;}};
 }
-function fill(w,values){for(const [name,value] of Object.entries(values)){const el=w.document.querySelector(`[data-comp-form] [name="${name}"]`);assert.ok(el,name);el.value=String(value);el.dispatchEvent(new w.Event('input',{bubbles:true}));}}
+function fill(w,values){for(const [name,value] of Object.entries(values)){if(name==='rent'){for(const el of w.document.querySelectorAll('[data-unit-rent]')){el.value=String(value);el.dispatchEvent(new w.Event('input',{bubbles:true}));}continue;}const el=w.document.querySelector(`[data-comp-form] [name="${name}"]`);assert.ok(el,name);el.value=String(value);el.dispatchEvent(new w.Event('input',{bubbles:true}));}}
 async function submit(w){w.document.querySelector('[data-comp-form]').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await wait();}
 async function complete(w){
  fill(w,{address:'100 Test Comp',price:600000,land:100000,units:4,hold:7,initialRepairs:0,saleDate:'2026-09-01'});await submit(w);
@@ -31,7 +31,7 @@ test('new comp follows six steps, calculates cap first, saves under subject, edi
  await w.PropertyThesisIncomeComps.open('subject');assert.doesNotMatch(w.document.querySelector('[data-ic-body]').textContent,/Source changed or unavailable/);
  w.document.querySelector('[data-ic-edit]').click();assert.equal(w.document.querySelector('[name="address"]').value,'100 Test Comp');assert.equal(w.document.querySelector('[name="price"]').value,'600000');
  fill(w,{price:650000});for(let i=0;i<6;i++)await submit(w);await submit(w);assert.equal(x.stored.evidence.items.length,1);assert.equal(x.stored.evidence.items[0].capRate,47880/650000);assert.equal(x.stored.evidence.reconciliation,null);assert.equal(JSON.stringify(w.state),subject);
- await w.PropertyThesisIncomeComps.prepareReport();assert.match(w.document.querySelector('[data-rb-section="incomeComparables"]').textContent,/subject-owned comp revision 2/);
+ await w.PropertyThesisIncomeComps.prepareReport();assert.match(w.document.querySelector('[data-rb-section="incomeComparables"]').textContent,/Monthly unit rents: Unit 1:/);
  }finally{x.dom.window.close();}
 });
 test('invalid inputs, account change, failed save and cancellation do not save or overwrite subject',async()=>{
@@ -53,7 +53,9 @@ test('financing choices seed editable terms, preserve private classification and
  fill(w,{mortRate:7});select('private');assert.equal(w.document.querySelector('[name=mortRate]').value,'7');select('cash');assert.equal(w.document.querySelector('[name=mortgage]'),null);select('private');assert.equal(w.document.querySelector('[name=mortgage]').value,'450000');
  await submit(w);assert.equal(w.document.querySelector('[name=ordinaryTax]').value,'28');assert.equal(w.document.querySelector('[name=ordinaryTax]').step,'1');fill(w,{ordinaryTax:28.5});await submit(w);assert.match(w.document.querySelector('[data-comp-status]').textContent,/whole percentage/);
  fill(w,{ordinaryTax:28});await submit(w);await submit(w);await submit(w);
- assert.equal(x.stored.evidence.items[0].assumptions.incomeCompFinancingType,'private');assert.equal(x.stored.evidence.items[0].assumptions.mortgage,450000);assert.equal(x.stored.evidence.items[0].capRate,.0798);
+ assert.equal(x.stored.evidence.items[0].assumptions.incomeCompFinancingType,'private');assert.equal(x.stored.evidence.items[0].assumptions.mortgage,450000);assert.equal(x.stored.evidence.items[0].capRate,.0684);
  await w.PropertyThesisIncomeComps.open('subject');w.document.querySelector('[data-ic-edit]').click();await submit(w);await submit(w);await submit(w);assert.equal(w.document.querySelector('[data-comp-financing]').value,'private');assert.equal(w.document.querySelector('[name=mortRate]').value,'7');
  }finally{x.dom.window.close();}
 });
+
+test('unequal comp rents survive save and reopen and drive annual income',async()=>{const t=setup(),w=t.w;try{await w.PropertyThesisIncomeComps.open('subject');await complete(w);await submit(w);w.document.querySelector('[data-ic-edit]').click();await submit(w);const rents=[1000,1400,1800,2200];for(const [i,v] of rents.entries()){const e=w.document.querySelector(`[data-unit-rent="${i}"]`);e.value=v;e.dispatchEvent(new w.Event('input',{bubbles:true}));}for(let i=0;i<6;i++)await submit(w);const c=t.stored.evidence.items[0];assert.deepEqual(Array.from(c.assumptions.unitRents),rents);assert.equal(c.assumptions.units,4);assert.equal(c.assumptions.rent,1600);assert.equal(c.operating.pgi,76800);w.document.querySelector('[data-ic-edit]').click();await submit(w);assert.equal(w.document.querySelector('[data-unit-rent="3"]').value,'2200');}finally{t.dom.window.close();}});
