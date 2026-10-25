@@ -5,11 +5,21 @@
   const route=href=>{try{return new URL(href,location.href).pathname.split('/').pop()||'index.html';}catch{return '';}};
   function signedInAppLink(){
     const signOut=document.getElementById('signOutBtn');
-    const visible=signOut&&!signOut.hidden&&!signOut.classList.contains('hidden')&&getComputedStyle(signOut).display!=='none';
+    const toolbar=document.querySelector('#appNavShell .app-nav-toolbar,[data-account-toolbar]');
     let link=document.getElementById('ptSignedInPlayApp');
+    const visible=signOut&&!signOut.hidden&&!signOut.classList.contains('hidden')&&getComputedStyle(signOut).display!=='none';
     if(!visible){if(link)link.remove();return;}
-    if(!link){link=document.createElement('a');link.id='ptSignedInPlayApp';link.href='https://play.google.com/store/apps/details?id=com.propertythesis.app';link.textContent='Google Play App';link.target='_blank';link.rel='noopener noreferrer';link.className='btn ghost';link.style.cssText='display:inline-flex;align-items:center;padding:6px 9px;text-decoration:none;white-space:nowrap;';}
+    if(!toolbar)return;
+    let actions=toolbar.querySelector('.pt-account-menu-actions');
+    if(!actions){actions=document.createElement('div');actions.className='pt-account-menu-actions';actions.style.cssText='display:flex;align-items:center;gap:7px;margin-left:auto;flex-wrap:wrap';toolbar.append(actions);}
+    if(signOut.parentElement!==actions)actions.append(signOut);
+    if(!link){link=document.createElement('a');link.id='ptSignedInPlayApp';link.href='https://play.google.com/store/apps/details?id=com.propertythesis.app';link.textContent='Google Play App';link.target='_blank';link.rel='noopener noreferrer';}
     if(link.nextElementSibling!==signOut)signOut.before(link);
+    for(const item of [link,signOut]){
+      const css='align-items:center;justify-content:center;min-height:40px;padding:9px 12px;border:1px solid #d7e0e8;border-radius:8px;background:#fff;color:#344054;font-size:11px;font-weight:800;line-height:18px;text-decoration:none;white-space:nowrap;cursor:pointer';
+      if(item.style.cssText!==css+';')item.style.cssText=css;
+    }
+    if(toolbar.style.flexWrap!=='wrap')toolbar.style.flexWrap='wrap';
   }
   function refresh(){
     signedInAppLink();
@@ -47,3 +57,4 @@
   addEventListener('popstate',schedule);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refresh,{once:true});else refresh();
 })();
+
