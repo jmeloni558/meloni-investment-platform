@@ -38,3 +38,24 @@ test('six saved property comps survive a fresh session and populate the actual P
  }finally{f.close();}
 });
 
+
+test('failed or obsolete editor never traps the user in the dialog',async()=>{
+ for(const editor of [undefined,{getSelected:()=>[]},{mount:()=>{throw Error('failed initialization');}}]){
+  const f=fixture();try{f.w.PropertyThesisSalesComps=editor;await f.w.PropertyThesisPropertySales.open('p');assert.equal(f.w.document.querySelector('[data-psc-save]').disabled,true);f.w.document.querySelector('[data-psc-close]').click();assert.equal(f.w.document.querySelector('#ptSalesDialog').open,false);assert.equal(f.rows.size,0);}finally{f.close();}
+ }
+});
+test('public entry uses immutable current workflow assets even with old cache paths',async()=>{
+ const crypto=require('node:crypto');
+ for(const entry of ['index.html','latest.html']){
+  const html=read(entry),scripts=JSON.parse('['+html.match(/const scripts=\[([^\]]+)\]/)[1].replaceAll("'",'"')+']');
+  for(const base of ['guided-analysis-unit-rents','market-evidence-sales-comps-v3','property-sales-comparables','report-sales-comparables-v2','sales-comps-step6-relocator','analysis-evidence-guidance','user-branded-pdf.reader-20261025']){
+   const file=scripts.find(n=>n.startsWith(base+'.sales-workspace-'));assert.ok(file,base+' must not reuse cached filename');const source=read(file);assert.equal(source.replaceAll("\r\n","\n"),read(base+'.js').replaceAll("\r\n","\n"));assert.ok(file.includes(crypto.createHash('sha256').update(source).digest('hex').slice(0,12)));
+  }
+  const f=fixture();try{
+   f.w.document.body.insertAdjacentHTML('beforeend','<section id="assumptions"><div class="grid"></div></section>');f.w.scrollTo=()=>{};
+   for(const file of scripts.filter(n=>/^(guided-analysis-unit-rents|market-evidence-sales-comps-v3)\.sales-workspace-/.test(n)))f.w.eval(read(file));
+   await new Promise(r=>setTimeout(r,200));assert.equal(f.w.document.querySelectorAll('.gw-step').length,6);assert.doesNotMatch([...f.w.document.querySelectorAll('.gw-step')].map(e=>e.textContent).join(' '),/Comparable/);
+   await f.w.PropertyThesisPropertySales.open('p');assert.ok(f.w.document.querySelector('#ptSalesDialog [data-se-fetch]'));assert.ok(f.w.document.querySelector('#ptSalesDialog [data-se-type]'));assert.ok(f.w.document.querySelector('#ptSalesDialog [data-se-manual]'));f.w.PropertyThesisPropertySales.close();
+  }finally{f.close();}
+ }
+});
