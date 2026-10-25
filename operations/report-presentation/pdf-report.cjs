@@ -30,7 +30,7 @@ async function createPdf(model,fontBytes,now=new Date()){
  function newPage(){page=doc.addPage([612,792]);pages.push(page);tags.pageSetup(page);page.semanticText=page.drawText.bind(page);const targetPage=page;for(const method of ['drawText','drawImage','drawRectangle','drawLine']){const draw=page[method].bind(page);page[method]=(...args)=>tags.draw(targetPage,null,()=>draw(...args));}if(!(model.clientLayout&&pages.length===1)){page.drawText('PropertyThesis',{x:48,y:751,size:18,font,color:teal});page.drawText('INVESTMENT ANALYSIS',{x:395,y:753,size:9,font,color:muted});page.drawLine({start:{x:48,y:737},end:{x:564,y:737},color:rule,thickness:1});}y=716;}
  function room(h){if(y-h<58)newPage();}
  function text(value,size=10,color=ink,gap=8,role='P'){const owner=role?tags.element(role):null;const lines=wrap(value,size,width),height=lines.length*size*1.5+gap;if(model.clientLayout&&height<600)room(height);for(const line of lines){room(size*1.5);drawText(line,{x:48,y:y-size,size,font,color},owner);y-=size*1.5;}y-=gap;}
- const columnWidths=n=>n===4?[54,136,148,178]:n===3?[280,118,118]:Array(n).fill(width/n);
+ const columnWidths=n=>n===4?[86,143,143,144]:n===3?[280,118,118]:Array(n).fill(width/n);
  function row(values,header=false,table=false,tableOwner=null,repeat=false){const rowOwner=repeat?null:tags.element(table?'TR':'P',tableOwner||undefined);const widths=table?columnWidths(values.length):[310,206],size=table&&values.length>4?8:header?9:10;const cells=values.map((v,i)=>wrap(v,size,widths[i]-16));const h=Math.max(...cells.map(c=>c.length))*14+10;room(h);if(header)page.drawRectangle({x:48,y:y-h,width,height:h,color:rgb(.9,.95,.94)});let x=48;cells.forEach((lines,i)=>{const owner=repeat?null:table?tags.element(header||i===0?'TH':'TD',rowOwner,header||i===0?{O:'Table',Scope:header?'Column':'Row'}:undefined):rowOwner;lines.forEach((line,j)=>{const right=i>0;drawText(line,{x:right?x+widths[i]-8-font.widthOfTextAtSize(line,size):x+8,y:y-14-j*14,size,font,color:header?teal:ink},owner);});x+=widths[i];});y-=h;page.drawLine({start:{x:48,y},end:{x:564,y},color:rule,thickness:.5});}
  newPage();
  const color=/^#[a-f0-9]{6}$/i.test(model.brandColor||'')?model.brandColor:'#102b4e';
@@ -74,7 +74,7 @@ async function createPdf(model,fontBytes,now=new Date()){
   if(block.kind==='heading')bodyStarted=true;
   if(!bodyStarted)continue;
   if(block.kind==='title'){room(85);text(block.text,22,ink,8,'H2');}
-  else if(block.kind==='heading'){const upcoming=model.blocks[blockIndex+1];if(upcoming?.kind==='columns'){const height=Math.max(...upcoming.columns.map(c=>c.reduce((n,e)=>n+wrap(e.title||e.label+': '+e.value,e.title?10:9.5,226).length*14+(e.title?16:9),0)))+20;room(Math.min(height,600)+48);}const next=model.blocks.slice(blockIndex+1,blockIndex+3).filter(b=>b.kind==='text');const following=model.clientLayout?Math.min(350,next.reduce((sum,b)=>sum+wrap(b.text,9,width).length*13.5+8,0)):0;room(Math.max(model.blocks[blockIndex+1]?.kind==='heading'?140:75,following+48));y-=12;text(block.text,13,teal,6,'H2');}
+  else if(block.kind==='heading'){if(block.text==='Conclusion'){let h=13*1.5+18;for(const following of model.blocks.slice(blockIndex+1)){if(following.kind!=='text')break;h+=wrap(following.text,10.5,width).length*10.5*1.5+10;}if(h<=658)room(h);}const upcoming=model.blocks[blockIndex+1];if(upcoming?.kind==='columns'){const height=Math.max(...upcoming.columns.map(c=>c.reduce((n,e)=>n+wrap(e.title||e.label+': '+e.value,e.title?10:9.5,226).length*14+(e.title?16:9),0)))+20;room(Math.min(height,600)+48);}const next=model.blocks.slice(blockIndex+1,blockIndex+3).filter(b=>b.kind==='text');const following=model.clientLayout?Math.min(350,next.reduce((sum,b)=>sum+wrap(b.text,9,width).length*13.5+8,0)):0;room(Math.max(model.blocks[blockIndex+1]?.kind==='heading'?140:75,following+48));y-=12;text(block.text,13,teal,6,'H2');}
   else if(block.kind==='row')row(block.values);
   else if(block.kind==='columns'){
    const cw=246,gutter=24,size=9.5,lineHeight=14;
@@ -100,7 +100,7 @@ async function createPdf(model,fontBytes,now=new Date()){
      const x=48+i*(cw+gutter);
      page.drawRectangle({x,y:y-height,width:cw,height,color:rgb(.96,.98,.98),borderColor:rule,borderWidth:.6});
      let cy=y-17;
-     for(const e of segment.part){const owner=tags.element(e.title?'H3':'P');if(e.title&&cy<y-17){page.drawLine({start:{x:x+10,y:cy+6},end:{x:x+cw-10,y:cy+6},color:rule,thickness:.6});}for(const line of e.lines){drawText(line,{x:x+10,y:cy,size:e.title?10:size,font,color:e.title?teal:ink},owner);cy-=lineHeight;}cy-=e.title?16:9;}
+     for(const e of segment.part){const owner=tags.element(e.title?'H3':'P');if(e.title&&cy<y-17){page.drawLine({start:{x:x+10,y:cy+12},end:{x:x+cw-10,y:cy+12},color:rule,thickness:.6});}for(const line of e.lines){drawText(line,{x:x+10,y:cy,size:e.title?10:size,font,color:e.title?teal:ink},owner);cy-=lineHeight;}cy-=e.title?16:9;}
     });
     y-=height+12;if(columns.some(c=>c.length))newPage();
    }
