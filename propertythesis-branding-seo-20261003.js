@@ -13,7 +13,7 @@
   }
 
   function ensureMarketRentPersistence(){
-    if(window.MarketRentCloudPersistence||document.getElementById('ptMarketRentCloudPersistenceLoader'))return;
+    if(window.PropertyThesisPropertyRentals||window.MarketRentCloudPersistence||document.getElementById('ptMarketRentCloudPersistenceLoader'))return;
     const s=document.createElement('script');
     s.id='ptMarketRentCloudPersistenceLoader';
     s.src='market-rent-cloud-persistence.js?v=1';
