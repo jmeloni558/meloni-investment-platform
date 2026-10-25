@@ -18,9 +18,10 @@ native/ios-verification/index.html and page.js were preserved. No _redirects add
 The iOS verification page still has frame-ancestors capacitor://localhost,
 no-store, no-referrer, noindex/nofollow, nosniff, and no X-Frame-Options header.
 External Cloudflare and Supabase Auth settings were not changed.
-Focused served JS hashes match. HTML matches after removing Cloudflare's injected
-analytics beacon. An attempted full Python HTTP crawl received 403; a complete
-post-deployment public-asset crawl is therefore not claimed.
+Full follow-up public-asset check: all 339 served paths returned HTTP 200 and
+matched the candidate after reversing Cloudflare's injected analytics beacon and
+email-address obfuscation. No unexplained differences. _headers is not publicly
+served; the effective iOS headers were separately checked above.
 
 Live browser tests under the existing staging onboarding2 test account:
 - Synthetic subject and comparable seeded in staging, not real customer property.
@@ -39,6 +40,14 @@ Live browser tests under the existing staging onboarding2 test account:
   the second stale save was rejected, preserving the first save.
 - Included evidence and 8% reconciliation restored, reloaded after final deploy.
 - Escape dismisses modal. Desktop visual check passed.
+- Follow-up refresh/edit changed synthetic closed sale from $600,000 to $650,000
+  and income basis to normalized: cap recalculated from 7.98% to 7.37% and prior
+  reconciliation cleared. Unlink removed only the evidence; the source property
+  and analysis remained selectable. Re-added the $600,000 actual-income example
+  and restored an explicit 8% reconciliation for review.
+- At 400% browser zoom (474 CSS-pixel viewport), the dialog fit within the
+  viewport and the four evidence fields stacked in a single column. No body
+  horizontal overflow. Escape dismissal passed; original 100% zoom restored.
 
 Backup integration:
 Existing recovery/deletion guards include property_income_comparables.
@@ -47,7 +56,8 @@ cascade passed again on October 25. Transaction rolled back. No customer rows
 exported and no plaintext backup file written. This was not a full-project restore.
 
 Limits: synthetic property seeding does not test normal creation quotas. No new
-physical iOS/Android or mobile viewport acceptance was performed. Native auth
+physical iOS/Android acceptance was performed. Narrow desktop-browser layout
+testing is not native-device testing. Native auth
 gates remain unchanged. Production promotion and native releases are separate.
 
 Synthetic fixture IDs retained for further staging review:

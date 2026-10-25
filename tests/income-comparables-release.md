@@ -1,6 +1,7 @@
 # Income comparable analyses — release candidate
 
-Status: development candidate; staging table installed; not published.
+Status: deployed to staging on October 25, 2026; not published to production.
+See ../STAGING-ACCEPTANCE-20261025.txt for deployment identity and acceptance evidence.
 
 ## Workflow
 1. Save each comparable property and its income analysis using the existing calculator.
@@ -21,10 +22,13 @@ Comps belong to the subject property across its analyses. Refreshing or changing
 - Production assets and database unchanged.
 
 ## Required before production
-- Run the full signed-in staging workflow against the deployed income engine, including reload and a second session.
+- Signed-in staging calculation/save/reload, second-session conflict, cap adoption,
+  report/PDF, edit/unlink and narrow browser layout checks passed. Independent
+  Kappa review remains in progress, including ordinary property-creation flows.
 - Operational overlays in operations/ are installed in the local operator workspace; see operations/README.md for archive and restoration scope. A full project recovery drill is not claimed.
 - Preserve current staging authentication/verification assets from the concurrent Mac/iOS work when packaging deployment.
-- Test responsive layout in the real app shell and keyboard interactions.
+- Narrow desktop-browser layout and Escape dismissal passed. Physical native-device
+  testing remains separate.
 - Native Android/iOS adoption requires separate integration and builds; this change does not update installed apps.
 
 ## Files
