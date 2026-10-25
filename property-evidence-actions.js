@@ -1,0 +1,7 @@
+'use strict';
+(()=>{
+ const selectors=['[data-hub-open]','[data-ic-open]','[data-prc-open]','[data-psc-open]','[data-hub-report]'];
+ function apply(){for(const card of document.querySelectorAll('#propertyhub .hub-card')){const group=card.querySelector('.pt-hub-primary-flow')||card.querySelector('.hub-actions');if(!group)continue;const buttons=selectors.map(s=>card.querySelector(s)).filter(Boolean);buttons.forEach((button,i)=>{if(group.children[i]!==button)group.insertBefore(button,group.children[i]||null);});}}
+ const css=document.createElement('style');css.textContent=`#propertyhub .pt-hub-primary-flow{gap:9px!important}#propertyhub .pt-hub-primary-flow [data-hub-open]{order:0!important;background:#153b58!important;color:white!important}#propertyhub [data-ic-open]{order:1!important;background:#e8f5ef!important;border-color:#70ac91!important;color:#17623f!important}#propertyhub [data-prc-open]{order:2!important;background:#fff4de!important;border-color:#d7ae5c!important;color:#754f12!important}#propertyhub [data-psc-open]{order:3!important;background:#e8f1fc!important;border-color:#82a8d2!important;color:#20578a!important}#propertyhub [data-hub-report]{order:4!important;background:#f0eafa!important;border-color:#ac96c8!important;color:#65418b!important}`;document.head.appendChild(css);
+ let timer;const schedule=()=>{clearTimeout(timer);timer=setTimeout(apply,100);};new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});schedule();window.PropertyEvidenceActions={apply};
+})();

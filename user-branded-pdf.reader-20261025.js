@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION=44;
+  const VERSION=45;
   if((window.__userBrandedPdfVersion||0)>=VERSION)return;
   window.__userBrandedPdfVersion=VERSION;
 
@@ -178,7 +178,7 @@
 
     const font=new Uint8Array(await response.arrayBuffer());
     if(document.querySelector('#clientReport .rb-report')!==source)throw Error('The report changed while preparing the PDF. Please download again.');
-    window.ReportSalesComparables?.apply?.();
+    window.ReportSalesComparables?.apply?.();window.ReportMarketRentSupport?.apply?.();
     window.PropertyThesisReportReader?.apply?.();
     // Snapshot after all evidence and narrative have been applied, before async rendering.
     const snapshot=source.cloneNode(true);
@@ -193,7 +193,7 @@
   }
 
   function prepareInBackground(){clearTimeout(warmTimer);if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.())return;warmTimer=setTimeout(()=>{const source=document.querySelector('#clientReport .rb-report');if(!source)return;window.PropertyThesisReportBranding?.apply?.();window.PropertyThesisReportReader?.apply?.();const signature=reportSignature(source);if(preparedPdf?.signature===signature||preparingPdf?.signature===signature)return;if(preparingPdf){preparingPdf.promise.finally(prepareInBackground);return;}const task=buildCurrentPdf(source,signature).then(built=>{if(reportSignature(document.querySelector('#clientReport .rb-report'))===signature)preparedPdf=built;return built;}).catch(e=>{console.warn('Background PDF preparation deferred',e);return null;}).finally(()=>{if(preparingPdf?.promise===task)preparingPdf=null;});preparingPdf={signature,promise:task};},1800);}
-  async function generate(){if(generating)return;generating=true;clearDownload();clearTimeout(warmTimer);const btn=document.getElementById('rbDownloadPdf');if(btn){btn.disabled=true;btn.textContent='Preparing PDF...';}try{await window.PropertyThesisIncomeComps?.prepareReport?.();await window.PropertyThesisPropertySales?.prepareReport?.();const source=document.querySelector('#clientReport .rb-report');if(!source)throw new Error('Report preview is not available.');window.PropertyThesisReportBranding?.apply?.();window.PropertyThesisReportReader?.apply?.();await afterPaint();const signature=reportSignature(source);let built=preparedPdf?.signature===signature?preparedPdf:null;if(!built&&preparingPdf?.signature===signature)built=await preparingPdf.promise;if(!built)built=await buildCurrentPdf(source,signature);if(!built)throw new Error('PDF could not be prepared.');preparedPdf=built;if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()){offerDownload(built);}else{built.doc.save(built.name);status('PDF download requested from the current report preview');}}catch(e){console.error(e);status(e?.message||'Unable to generate PDF');alert(e?.message||'Unable to generate PDF.');}finally{generating=false;if(btn){btn.disabled=false;btn.textContent='Download PDF';}syncControl();}}
+  async function generate(){if(generating)return;generating=true;clearDownload();clearTimeout(warmTimer);const btn=document.getElementById('rbDownloadPdf');if(btn){btn.disabled=true;btn.textContent='Preparing PDF...';}try{await window.PropertyThesisIncomeComps?.prepareReport?.();await window.PropertyThesisPropertySales?.prepareReport?.();await window.PropertyThesisPropertyRentals?.prepareReport?.();const source=document.querySelector('#clientReport .rb-report');if(!source)throw new Error('Report preview is not available.');window.PropertyThesisReportBranding?.apply?.();window.PropertyThesisReportReader?.apply?.();await afterPaint();const signature=reportSignature(source);let built=preparedPdf?.signature===signature?preparedPdf:null;if(!built&&preparingPdf?.signature===signature)built=await preparingPdf.promise;if(!built)built=await buildCurrentPdf(source,signature);if(!built)throw new Error('PDF could not be prepared.');preparedPdf=built;if(window.PropertyThesisProtectedCloudSaveBridge?.isSharedSaving?.()){offerDownload(built);}else{built.doc.save(built.name);status('PDF download requested from the current report preview');}}catch(e){console.error(e);status(e?.message||'Unable to generate PDF');alert(e?.message||'Unable to generate PDF.');}finally{generating=false;if(btn){btn.disabled=false;btn.textContent='Download PDF';}syncControl();}}
 
   document.addEventListener('click',e=>{if(e.target?.closest?.('[data-s8-tab="report"],[data-tab="report"],#rbRefresh')){clearDownload();textRenderer().catch(()=>{});preparedPdf=null;prepareInBackground();}},true);
   document.addEventListener('click',e=>{const b=e.target?.closest?.('#rbDownloadPdf');if(!b)return;e.preventDefault();e.stopImmediatePropagation();generate();},true);
