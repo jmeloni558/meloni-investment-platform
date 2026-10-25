@@ -11,7 +11,7 @@
     if(!visible){if(link)link.remove();return;}
     if(!toolbar)return;
     let actions=toolbar.querySelector('.pt-account-menu-actions');
-    if(!actions){actions=document.createElement('div');actions.className='pt-account-menu-actions';actions.style.cssText='display:flex;align-items:center;gap:7px;margin-left:auto;flex-wrap:wrap';toolbar.append(actions);}
+    if(!actions){actions=document.createElement('div');actions.className='pt-account-menu-actions';actions.style.cssText='display:contents';toolbar.append(actions);}
     if(signOut.parentElement!==actions)actions.append(signOut);
     if(!link){link=document.createElement('a');link.id='ptSignedInPlayApp';link.href='https://play.google.com/store/apps/details?id=com.propertythesis.app';link.textContent='Google Play App';link.target='_blank';link.rel='noopener noreferrer';}
     if(link.nextElementSibling!==signOut)signOut.before(link);
@@ -20,6 +20,8 @@
       if(item.style.cssText!==css+';')item.style.cssText=css;
     }
     if(toolbar.style.flexWrap!=='wrap')toolbar.style.flexWrap='wrap';
+    if(toolbar.style.justifyContent!=='center')toolbar.style.justifyContent='center';
+    const primary=toolbar.querySelector('.app-nav-actions');if(primary&&primary.style.display!=='contents')primary.style.display='contents';
   }
   function refresh(){
     signedInAppLink();
