@@ -195,6 +195,7 @@
     try{window.PropertyThesisMarketRentConclusion?.enhanceReport?.();}catch(e){}
     try{window.UserBranding?.applyReportBranding?.();}catch(e){}
     try{window.PropertyThesisReportBranding?.apply?.();}catch(e){}
+    window.PropertyThesisReportReader?.apply?.();
     apply();
   }
 

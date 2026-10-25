@@ -3,5 +3,5 @@ const items=Array.from({length:20},(_,i)=>({id:'comp'+i,address:(100+i)+' Synthe
 const html=M.reportHtml({items,reconciliation:{rate:.08,notes:'Synthetic cap reconciliation.'}},80000,.08);
 const dom=new JSDOM('<div class="rb-report">'+html+'</div>');
 const sandbox={window:{},console,TextEncoder,TextDecoder,setTimeout,clearTimeout,Uint8Array,ArrayBuffer,DataView,Buffer,atob,btoa};
-vm.runInNewContext(fs.readFileSync('website-report-pdf.release-20261004-684125971df7.js','utf8'),sandbox);
+vm.runInNewContext(fs.readFileSync('website-report-pdf.reader-20261025.js','utf8'),sandbox);
 (async()=>{const renderer=sandbox.window.PropertyThesisTextPdf;const source=dom.window.document.querySelector('.rb-report');const model=renderer.reportModel(source,{});const table=model.blocks.find(b=>b.kind==='table');if(table.rows.length!==21||table.rows[0].length!==7)throw Error('Comp table transposed');const pdf=await renderer.build(source,{},new Uint8Array(fs.readFileSync('assets/report-NotoSans-Regular.ttf')));fs.writeFileSync('tests/income-comparables-20-comp.pdf',Buffer.from(pdf,'base64'));console.log('PDF generated: 20 comp rows, seven columns, actual release renderer.');})().catch(e=>{console.error(e);process.exitCode=1});
