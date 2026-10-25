@@ -84,7 +84,7 @@
   function applyReport(){
     resetAccount();const host=document.querySelector('#clientReport .rb-report');if(!host)return;
     const record=cache.get(pid()),r=window.PropertyThesisIncomeEngineBridge?.current?.();
-    const html=record?M.reportHtml(record.evidence,r?.years?.[0]?.noi,typeof state==='object'?state.desiredCap:null):'';
+    const html=record?M.reportHtml(record.evidence,r?.years?.[0]?.noi,typeof state==='object'?state.desiredCap:null,typeof state==='object'?state.price:null):'';
     let old=host.querySelector('[data-rb-section="incomeComparables"]');if(old&&reportSignatures.get(old)===html)return;old?.remove();if(!html)return;
     const t=document.createElement('template');t.innerHTML=html;reportSignatures.set(t.content.firstElementChild,html);const anchor=host.querySelector('[data-rb-section="salesComparables"],[data-rb-section="valuation"]');if(anchor)anchor.after(t.content);else if(host.querySelector('.rb-footer'))host.querySelector('.rb-footer').before(t.content);else host.append(t.content);
   }
