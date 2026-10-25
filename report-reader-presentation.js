@@ -5,6 +5,18 @@
   const number=text=>{const s=String(text??'').trim();if(!/[0-9]/.test(s)||/N\/A|not |unknown|unavailable/i.test(s))return null;const n=Number(s.replace(/[$,%x\s()]/g,''));return Number.isFinite(n)?(/^\(/.test(s)?-n:n):null;};
   function stats(section){const map={};for(const el of section?.querySelectorAll('.rb-stat,.rb-row')||[]){const label=el.children[0]?.textContent.trim(),value=el.children[1]?.textContent.trim();if(label)map[label]={text:value,n:number(value),note:el.querySelector('small')?.textContent||''};}return map;}
   function paragraph(section,key,copy){if(!section)return;let p=section.querySelector('[data-reader-copy="'+key+'"]');if(!copy){p?.remove();return;}if(!p){p=document.createElement('p');p.className='rb-analysis-copy pt-reader-copy';p.dataset.readerCopy=key;section.querySelector('.rb-section-head')?.insertAdjacentElement('afterend',p);}if(p.textContent!==copy)p.textContent=copy;}
+  function compactNumbers(report){
+    // Only displayed metrics and narrative: leave addresses, profile details and links intact.
+    const targets=report.querySelectorAll('.rb-stat > :nth-child(2),.rb-stat small,.rb-row > :nth-child(2),.pt-reader-copy,.rb-analysis-copy,.rb-section p,.rb-section svg text,td');
+    for(const target of targets){
+      if((target.tagName==='TD'||target.tagName==='text')&&!/^[\s$()\-+\d,%.x×–—/]+$/.test(target.textContent))continue;
+      const walker=document.createTreeWalker(target,NodeFilter.SHOW_TEXT);let node;
+      while((node=walker.nextNode())){if(node.parentElement.closest('a,script,style'))continue;
+        const formatted=node.nodeValue.replace(/(\d+)\.(\d+)(?![\d.])/g,(_,whole,decimal)=>whole+(decimal.replace(/0+$/,'')?'.'+decimal.replace(/0+$/,''):''));
+        if(formatted!==node.nodeValue)node.nodeValue=formatted;
+      }
+    }
+  }
   let observer,timer;
   function apply(){
     const report=document.querySelector('#clientReport .rb-report');if(!report)return false;
@@ -78,6 +90,7 @@
     paragraph(rental,'rental-basis',total>=0&&units>0&&concluded>=0?`The analysis uses ${money(total)} total monthly rent across ${units} unit${units===1?'':'s'} (${money(total/units)} per unit on average). The separate rental research concludes ${money(concluded)} per month; it is supporting research, not a replacement for the unit rents shown in this analysis. ${total/units>concluded+1?'The average rent used is higher than that research conclusion, so the rental evidence does not by itself validate the assumed unit rents.':'The average and research conclusion should be reconciled to the specific units.'} Check leases, unit size and condition before treating the rents as achievable.`:'');
     const saleStats=stats(sales),median=saleStats['Median Sale Price']?.n,count=saleStats['Selected Comparables']?.n;
     paragraph(sales,'sales',price>0&&median>0?`The subject's ${money(price)} acquisition price is ${money(Math.abs(price-median))} ${price>=median?'above':'below'} the ${money(median)} median of ${count||'the selected'} comparable sale${count===1?'':'s'}. These sale prices are unadjusted for property differences; the comparison alone does not establish fair value.`:'');
+    compactNumbers(report);
     return true;
   }
   function schedule(){clearTimeout(timer);timer=setTimeout(()=>{observer?.disconnect();try{apply();}finally{observe();}},40);}
