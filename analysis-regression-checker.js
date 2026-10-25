@@ -130,9 +130,8 @@
     return true;
   }
   function start(){
-    document.addEventListener('click',e=>{
-      if(e.target?.closest?.('.tab[data-tab="propertyhub"]'))setTimeout(autoRun,220);
-    },false);
+    // QA is explicit: entering the library must not calculate every saved
+    // analysis or insert a late results panel above the user's scroll position.
     let tries=0;
     const timer=setInterval(()=>{
       if(document.getElementById('propertyhub')){ensureUi();clearInterval(timer);}

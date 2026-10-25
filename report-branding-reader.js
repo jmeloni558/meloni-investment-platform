@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=9;
+  const VERSION=10;
   if((window.__propertyThesisReportBrandingV||0)>=VERSION)return;
   window.__propertyThesisReportBrandingV=VERSION;
   const PRODUCT='PropertyThesis';
@@ -64,6 +64,7 @@
     `;
   }
 
+  const headerMarkup=new WeakMap();
   function apply(){
     const report=document.querySelector('#clientReport .rb-report');
     if(!report)return false;
@@ -86,11 +87,12 @@
     ].filter(Boolean).join('');
     let head=cover.querySelector('.pt-master-header');
     if(!head){head=document.createElement('div');head.className='pt-master-header';cover.prepend(head);}
-    head.style.setProperty('--pt-user-accent',safeColor(p.brand_color));
-    head.innerHTML=`<div class="pt-split-head"><div class="pt-product-side"><div class="pt-product-name">${PRODUCT}</div><div class="pt-product-tag">${TAGLINE}</div><div class="pt-report-kicker">PROPERTY INVESTMENT REPORT</div></div><div class="pt-user-side">${p.logo_url?`<img src="${esc(p.logo_url)}" alt="${esc(company)} logo">`:''}<div><span class="pt-user-label">Prepared by</span><strong class="pt-user-company">${esc(company)}</strong>${person?`<span class="pt-user-person">${esc(person)}</span>`:''}${contact?`<span class="pt-user-contact">${esc(contact)}</span>`:''}</div></div></div><div class="pt-title-band"><h1>${esc(address)}</h1><p class="address" style="display:none">${esc(address)}</p>${metaItems?`<div class="pt-header-meta">${metaItems}</div>`:''}</div>`;
-    [...cover.children].forEach(el=>{if(el!==head)el.style.display='none';});
+    if(head.style.getPropertyValue('--pt-user-accent')!==safeColor(p.brand_color))head.style.setProperty('--pt-user-accent',safeColor(p.brand_color));
+    const markup=`<div class="pt-split-head"><div class="pt-product-side"><div class="pt-product-name">${PRODUCT}</div><div class="pt-product-tag">${TAGLINE}</div><div class="pt-report-kicker">PROPERTY INVESTMENT REPORT</div></div><div class="pt-user-side">${p.logo_url?`<img src="${esc(p.logo_url)}" alt="${esc(company)} logo">`:''}<div><span class="pt-user-label">Prepared by</span><strong class="pt-user-company">${esc(company)}</strong>${person?`<span class="pt-user-person">${esc(person)}</span>`:''}${contact?`<span class="pt-user-contact">${esc(contact)}</span>`:''}</div></div></div><div class="pt-title-band"><h1>${esc(address)}</h1><p class="address" style="display:none">${esc(address)}</p>${metaItems?`<div class="pt-header-meta">${metaItems}</div>`:''}</div>`;
+    if(headerMarkup.get(head)!==markup||!head.querySelector('.pt-split-head')){head.innerHTML=markup;headerMarkup.set(head,markup);}
+    [...cover.children].forEach(el=>{if(el!==head&&el.style.display!=='none')el.style.display='none';});
     const footer=report.querySelector('.rb-footer');
-    if(footer){let prod=footer.querySelector('.pt-report-product');if(!prod){prod=document.createElement('div');prod.className='pt-report-product';footer.appendChild(prod);}prod.textContent=`${PRODUCT} • ${TAGLINE}`;}
+    if(footer){let prod=footer.querySelector('.pt-report-product');if(!prod){prod=document.createElement('div');prod.className='pt-report-product';footer.appendChild(prod);}const text=`${PRODUCT} • ${TAGLINE}`;if(prod.textContent!==text)prod.textContent=text;}
     return true;
   }
 
