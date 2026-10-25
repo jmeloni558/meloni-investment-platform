@@ -74,7 +74,7 @@ async function createPdf(model,fontBytes,now=new Date()){
   if(block.kind==='heading')bodyStarted=true;
   if(!bodyStarted)continue;
   if(block.kind==='title'){room(85);text(block.text,22,ink,8,'H2');}
-  else if(block.kind==='heading'){const next=model.blocks.slice(blockIndex+1,blockIndex+3).filter(b=>b.kind==='text');const following=model.clientLayout?Math.min(350,next.reduce((sum,b)=>sum+wrap(b.text,9,width).length*13.5+8,0)):0;room(Math.max(75,following+48));y-=12;text(block.text,13,teal,6,'H2');}
+  else if(block.kind==='heading'){const next=model.blocks.slice(blockIndex+1,blockIndex+3).filter(b=>b.kind==='text');const following=model.clientLayout?Math.min(350,next.reduce((sum,b)=>sum+wrap(b.text,9,width).length*13.5+8,0)):0;room(Math.max(model.blocks[blockIndex+1]?.kind==='heading'?140:75,following+48));y-=12;text(block.text,13,teal,6,'H2');}
   else if(block.kind==='row')row(block.values);
   else if(block.kind==='cards'){
    for(let i=0;i<block.items.length;i+=2){
@@ -86,7 +86,8 @@ async function createPdf(model,fontBytes,now=new Date()){
   }
   else if(block.kind==='table'){const [head,...rows]=block.rows;if(!head)continue;const tableOwner=tags.element('Table');const widths=columnWidths(head.length),size=head.length>4?8:9,headHeight=Math.max(...head.map((v,i)=>wrap(v,size,widths[i]-16).length))*14+10,firstHeight=rows[0]?Math.max(...rows[0].map((v,i)=>wrap(v,head.length>4?8:10,widths[i]-16).length))*14+10:0;room(headHeight+firstHeight);row(head,true,true,tableOwner);for(const values of rows){const widths=columnWidths(values.length),h=Math.max(...values.map((v,i)=>wrap(v,values.length>4?8:10,widths[i]-16).length))*14+10;if(y-h<58){newPage();text((block.heading||'Report table')+' (continued)',13,teal,8,null);row(head,true,true,tableOwner,true);}row(values,false,true,tableOwner);}y-=8;}
   else if(block.kind==='logo'||block.kind==='identity')continue;
-  else text(block.text,9,muted);
+  else if(block.kind==='disclaimer')text(block.text,8,muted,6);
+  else text(block.text,10.5,ink,10);
  }
  pages.forEach((p,i)=>{p.drawText((model.releaseReport?'PropertyThesis report':'Development sample')+' | Generated '+now.toISOString().slice(0,10)+' UTC',{x:48,y:32,size:8,font,color:muted});p.drawText((i+1)+' / '+pages.length,{x:535,y:32,size:8,font,color:muted});});
  tags.finish();

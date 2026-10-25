@@ -15,10 +15,7 @@ function reportModel(source,profile={}){
   if(el.classList.contains('rb-cover')||el.classList.contains('pt-report-product'))return;
   if(el.classList.contains('rb-footer')){
    const copy=el.cloneNode(true);copy.querySelectorAll('.pt-report-product').forEach(node=>node.remove());
-   const note=clean(copy),previous=blocks.at(-1);
-   // Keep the disclaimer with the final conclusion paragraph, never a page by itself.
-   if(note&&previous?.kind==='text')previous.text+='\n\n'+note;
-   else if(note)blocks.push({kind:'text',text:note});
+   const note=clean(copy);if(note)blocks.push({kind:'disclaimer',text:note});
    return;
   }
   if(/^H[1-6]$/.test(el.tagName)){heading=clean(el);blocks.push({kind:'heading',text:heading});return;}
