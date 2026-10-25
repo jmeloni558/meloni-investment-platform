@@ -1,0 +1,58 @@
+Income comparables staging acceptance — October 25, 2026
+
+Owner authorized staging deployment and continued testing. No production or native
+application deployment was performed.
+
+Cloudflare project: propertythesis-staging
+Final deployment: 6669aee8-0785-4877-911c-e186397a68af
+URL: https://staging.propertythesis.com/
+Initial integration deployment: 3f8829ba-9501-4c76-b156-362cc091b2dd
+Final ZIP: PropertyThesis-staging-income-comps-2026-10-25-pdf-fix.zip
+SHA-256: fc11b99baddfa097d6e004ff76c9a45aada7b8c9be7ff21840522aa3b36eb3bb
+Local evidence: ../staging-income-comps-20261025/
+
+The complete 336-file Mac baseline was verified, then extended to 340 files.
+334 baseline files remain identical. Only index.html/latest.html script references
+changed; four comp/report assets were added. All 19 .mjs files, _headers,
+native/ios-verification/index.html and page.js were preserved. No _redirects added.
+The iOS verification page still has frame-ancestors capacitor://localhost,
+no-store, no-referrer, noindex/nofollow, nosniff, and no X-Frame-Options header.
+External Cloudflare and Supabase Auth settings were not changed.
+Focused served JS hashes match. HTML matches after removing Cloudflare's injected
+analytics beacon. An attempted full Python HTTP crawl received 403; a complete
+post-deployment public-asset crawl is therefore not claimed.
+
+Live browser tests under the existing staging onboarding2 test account:
+- Synthetic subject and comparable seeded in staging, not real customer property.
+- Server calculation: $72,000 gross income, $3,600 vacancy, $20,520 operating
+  expenses, $47,880 NOI. Closed sale $600,000 gives 7.98% cap rate.
+- Comparable save, reconciliation at 8%, and page reload passed.
+- Explicit adoption marks subject dirty; normal Save Analysis persisted 0.08
+  and incremented analysis revision to 2.
+- Report includes source/period/notes, operating breakdown and $598,500 value.
+- PDF generated in browser; owner completed Edge's download Save prompt.
+  Downloaded eight-page PDF verified for figures and table layout.
+- Fixed unsupported vacancy-minus glyph using 'Less vacancy:' and replaced
+  division symbol with 'divided by'. Ten model/UI tests passed after this change;
+  the same PDF renderer was rerun and the corrected table visually inspected.
+- Include/exclude clears reconciliation. Two tabs loaded the same revision;
+  the second stale save was rejected, preserving the first save.
+- Included evidence and 8% reconciliation restored, reloaded after final deploy.
+- Escape dismisses modal. Desktop visual check passed.
+
+Backup integration:
+Existing recovery/deletion guards include property_income_comparables.
+Synthetic staging encrypted DPAPI round-trip, row restore and subject deletion
+cascade passed again on October 25. Transaction rolled back. No customer rows
+exported and no plaintext backup file written. This was not a full-project restore.
+
+Limits: synthetic property seeding does not test normal creation quotas. No new
+physical iOS/Android or mobile viewport acceptance was performed. Native auth
+gates remain unchanged. Production promotion and native releases are separate.
+
+Synthetic fixture IDs retained for further staging review:
+Subject 1b063512-50f5-456b-80cb-f0c29b8e8d16
+Comparable 83512ba7-fe92-4804-999f-a1dfea34d3a8
+Account 4177e6fe-dff9-46d7-82f7-905e662410eb
+
+Rollback baseline remains the verified Mac ZIP in the integration evidence folder.
