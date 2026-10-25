@@ -3,7 +3,16 @@
   const navSelector='.pt-guest-nav,.pricing-nav,.glossary-nav,.guide-nav,.pt-site-nav,.sample-toolbar';
   const isStart=node=>/^start\s+(?:(?:my|your)\s+)?free\s+analysis\b/i.test(node.textContent.trim());
   const route=href=>{try{return new URL(href,location.href).pathname.split('/').pop()||'index.html';}catch{return '';}};
+  function signedInAppLink(){
+    const signOut=document.getElementById('signOutBtn');
+    const visible=signOut&&!signOut.hidden&&!signOut.classList.contains('hidden')&&getComputedStyle(signOut).display!=='none';
+    let link=document.getElementById('ptSignedInPlayApp');
+    if(!visible){if(link)link.remove();return;}
+    if(!link){link=document.createElement('a');link.id='ptSignedInPlayApp';link.href='https://play.google.com/store/apps/details?id=com.propertythesis.app';link.textContent='Google Play App';link.target='_blank';link.rel='noopener noreferrer';link.className='btn ghost';link.style.cssText='display:inline-flex;align-items:center;padding:6px 9px;text-decoration:none;white-space:nowrap;';}
+    if(link.nextElementSibling!==signOut)signOut.before(link);
+  }
   function refresh(){
+    signedInAppLink();
     document.querySelectorAll('a,button').forEach(node=>{
       if(isStart(node)&&!node.classList.contains('pt-free-analysis-cta'))node.classList.add('pt-free-analysis-cta');
     });
