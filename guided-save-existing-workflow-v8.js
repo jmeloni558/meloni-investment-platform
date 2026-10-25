@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=14;
+  const VERSION=15;
   if((window.__propertyThesisGuidedSaveExistingWorkflowV||0)>=VERSION)return;
   window.__propertyThesisGuidedSaveExistingWorkflowV=VERSION;
 
@@ -23,7 +23,9 @@
       #propertyhub .pt-hub-primary-flow [data-hub-open]{order:-2!important}
       #propertyhub .pt-hub-primary-flow .pt-manage-analysis,#propertyhub .pt-hub-primary-flow [data-pt-manage]{order:0!important}
       #propertyhub .pt-hub-admin-flow{display:flex;gap:7px;flex-wrap:wrap;width:100%;padding-top:8px;margin-top:2px;border-top:1px solid #edf1f5}
-      #propertyhub .pt-hub-admin-flow .hub-delete{margin-left:auto}
+      #propertyhub .pt-hub-more{width:100%}
+      #propertyhub .pt-hub-more summary{cursor:pointer;font-weight:600;color:#475569;padding:4px 0}
+      #propertyhub .pt-hub-more button{margin:7px 7px 0 0}
       #propertyhub .hub-actions{display:block}
       #propertyhub .pt-unavailable-action[disabled]{opacity:.55;cursor:not-allowed;background:#f8fafc!important;color:#667085!important}
       @media(max-width:950px){#propertyhub .pt-hub-admin-flow .hub-delete{margin-left:0}}
@@ -117,29 +119,30 @@
 
   function modernizeHubCard(card){
     const actions=card.querySelector('.hub-actions');if(!actions)return;
-    const open=card.querySelector('[data-hub-open]');
+    const open=card.querySelector('[data-stage7-file],[data-hub-open]');
     const report=card.querySelector('[data-hub-report]');
     const edit=card.querySelector('[data-hub-edit]');
     const manage=card.querySelector('[data-pt-manage]');
     const clone=card.querySelector('[data-hub-clone]');
     const archive=card.querySelector('[data-hub-archive]');
     const del=card.querySelector('[data-hub-delete]');
-    const pid=open?.dataset?.hubOpen||edit?.dataset?.hubEdit||report?.dataset?.hubReport||manage?.dataset?.ptManage;
+    const pid=open?.dataset?.stage7File||open?.dataset?.hubOpen||edit?.dataset?.hubEdit||report?.dataset?.hubReport||manage?.dataset?.ptManage;
     if(!pid)return;
     const hasAnalysis=!!report;
     clone?.remove();
-    if(manage)manage.textContent='Manage Analyses';
+    if(manage){manage.textContent='Analysis versions';manage.title='View and manage the saved analyses for this property.';}
     if(open)open.textContent='Open Property';
-    if(edit)edit.textContent='Edit Guided Analysis';
+    edit?.remove();
     let reportBtn=report;
     if(!reportBtn){reportBtn=document.createElement('button');reportBtn.type='button';reportBtn.className='btn secondary pt-unavailable-action';reportBtn.textContent='Client Report';reportBtn.disabled=true;reportBtn.title='Save the first analysis to create a client report.';}else reportBtn.textContent='Client Report';
     let newBtn=card.querySelector('[data-pt-new]');
     if(hasAnalysis&&!newBtn){newBtn=document.createElement('button');newBtn.type='button';newBtn.className='btn ghost';newBtn.dataset.ptNew=pid;newBtn.textContent='Start New Analysis';}
     if(!newBtn){newBtn=document.createElement('button');newBtn.type='button';newBtn.className='btn ghost pt-unavailable-action';newBtn.textContent='Start New Analysis';newBtn.disabled=true;newBtn.title='Save the first analysis before starting another.';}
     const primary=document.createElement('div');primary.className='pt-hub-primary-flow';
-    [open,edit,newBtn,reportBtn,manage].forEach(x=>{if(x)primary.appendChild(x);});
+    [open,reportBtn,card.querySelector('[data-ic-open]')].forEach(x=>{if(x)primary.appendChild(x);});
     const admin=document.createElement('div');admin.className='pt-hub-admin-flow';
-    [archive,del].forEach(x=>{if(x)admin.appendChild(x);});
+    const more=document.createElement('details');more.className='pt-hub-more';const summary=document.createElement('summary');summary.textContent='More actions';more.appendChild(summary);
+    [manage,newBtn,archive,del].forEach(x=>{if(x)more.appendChild(x);});admin.appendChild(more);
     actions.replaceChildren(primary,admin);
   }
 

@@ -41,3 +41,18 @@ test('invalid inputs, account change, failed save and cancellation do not save o
  w.confirm=()=>false;w.document.querySelector('[data-comp-cancel]').click();assert.ok(w.document.querySelector('[data-comp-form]'));assert.equal(w.state.address,'Untouched subject');
  }finally{x.dom.window.close();}
 });
+test('financing choices seed editable terms, preserve private classification and reject fractional ordinary tax',async()=>{
+ const x=setup(),w=x.w;try{
+ await w.PropertyThesisIncomeComps.open('subject');fill(w,{address:'100 Test Comp',price:600000,land:100000,units:4,hold:7,initialRepairs:0,saleDate:'2026-09-01'});await submit(w);
+ fill(w,{rent:1500,vacancy:5,rentGrowth:2,source:'MLS'});await submit(w);await submit(w);
+ const select=v=>{const e=w.document.querySelector('[data-comp-financing]');e.value=v;e.dispatchEvent(new w.Event('change',{bubbles:true}));};
+ assert.equal(w.document.querySelector('[data-comp-financing]').value,'cash');assert.equal(w.document.querySelector('[name=mortgage]'),null);
+ select('mortgage');assert.equal(w.document.querySelector('[name=mortgage]').value,'480000');assert.equal(w.document.querySelector('[name=mortRate]').value,'6.5');
+ const down=w.document.querySelector('[data-comp-down]');down.value=25;down.dispatchEvent(new w.Event('input',{bubbles:true}));assert.equal(w.document.querySelector('[name=mortgage]').value,'450000');
+ fill(w,{mortRate:7});select('private');assert.equal(w.document.querySelector('[name=mortRate]').value,'7');select('cash');assert.equal(w.document.querySelector('[name=mortgage]'),null);select('private');assert.equal(w.document.querySelector('[name=mortgage]').value,'450000');
+ await submit(w);assert.equal(w.document.querySelector('[name=ordinaryTax]').value,'28');assert.equal(w.document.querySelector('[name=ordinaryTax]').step,'1');fill(w,{ordinaryTax:28.5});await submit(w);assert.match(w.document.querySelector('[data-comp-status]').textContent,/whole percentage/);
+ fill(w,{ordinaryTax:28});await submit(w);await submit(w);await submit(w);
+ assert.equal(x.stored.evidence.items[0].assumptions.incomeCompFinancingType,'private');assert.equal(x.stored.evidence.items[0].assumptions.mortgage,450000);assert.equal(x.stored.evidence.items[0].capRate,.0798);
+ await w.PropertyThesisIncomeComps.open('subject');w.document.querySelector('[data-ic-edit]').click();await submit(w);await submit(w);await submit(w);assert.equal(w.document.querySelector('[data-comp-financing]').value,'private');assert.equal(w.document.querySelector('[name=mortRate]').value,'7');
+ }finally{x.dom.window.close();}
+});
