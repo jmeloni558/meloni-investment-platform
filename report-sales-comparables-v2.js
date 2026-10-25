@@ -8,7 +8,7 @@
   const money=v=>n(v)!=null?n(v).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'—';
   const avg=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:null;
   const med=a=>{const x=a.filter(Number.isFinite).sort((a,b)=>a-b);if(!x.length)return null;const m=Math.floor(x.length/2);return x.length%2?x[m]:(x[m-1]+x[m])/2;};
-  const date=v=>{try{return v?new Date(v).toLocaleDateString():'—';}catch(_e){return '—';}};
+  const date=v=>{try{return v?new Date(v).toLocaleDateString('en-US',{timeZone:'UTC'}):'—';}catch(_e){return '—';}};
   function comps(){
     const s=state?.marketEvidence?.salesComps,snapshots=Array.isArray(s?.selectedComps)?s.selectedComps.filter(Boolean):[];
     if(!Array.isArray(s?.selectedIds))return snapshots;
