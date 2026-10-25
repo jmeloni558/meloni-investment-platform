@@ -1,0 +1,23 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {chromium}=require('playwright');
+const root=path.resolve(__dirname,'..');
+(async()=>{
+ const b=await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});
+ const p=await b.newPage({viewport:{width:1280,height:900}});
+ await p.route('**/*',async r=>{const url=new URL(r.request().url()),f=path.join(root,url.pathname);if(url.hostname==='fixture.invalid'&&url.pathname.startsWith('/assets/'))return r.fulfill({body:fs.readFileSync(f),contentType:'image/webp'});return r.abort();});
+ await p.setContent('<base href="https://fixture.invalid/"><style>body{margin:0;background:#fff;font:16px Arial,sans-serif}.pt-home-section{padding:48px max(24px,calc((100vw - 1120px)/2))}#propertyhub,#assumptions,#report{margin:24px}</style><div id="ptHomeExperience"><section class="pt-home-starter"></section></div><div id="propertyhub"></div><section id="assumptions"></section><section id="report"><div id="clientReport"></div></section>');
+ await p.addScriptTag({content:fs.readFileSync(path.join(root,'analysis-evidence-guidance.js'),'utf8')});
+ await p.locator('#ptEvidenceOverview img').last().scrollIntoViewIfNeeded();
+ await p.waitForFunction(()=>[...document.querySelectorAll('#ptEvidenceOverview img')].every(x=>x.complete&&x.naturalWidth));
+ await p.locator('#ptEvidenceOverview').screenshot({path:path.join(root,'tests/evidence-guidance-desktop.png')});
+ await p.setViewportSize({width:390,height:844});
+ await p.locator('#ptEvidenceOverview').screenshot({path:path.join(root,'tests/evidence-guidance-mobile.png')});
+ assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no mobile overflow');
+ await p.locator('#ptEvidenceOverview img').first().scrollIntoViewIfNeeded();
+ await p.waitForFunction(()=>[...document.querySelectorAll('#ptEvidenceOverview img')].every(x=>x.complete&&x.naturalWidth));
+ await p.evaluate(()=>{window.cloudUser={id:'test'};PropertyThesisEvidenceGuidance.apply();document.getElementById('ptHomeExperience').hidden=true;document.getElementById('ptEvidenceWorkspace').open=true;});
+ assert.equal(await p.locator('#ptEvidenceWorkspace').isVisible(),true);
+ await p.screenshot({path:path.join(root,'tests/evidence-guidance-signed-in.png'),fullPage:true});
+ await p.emulateMedia({media:'print'});assert.equal(await p.locator('#ptEvidenceWorkspace').isVisible(),false);
+ await b.close();console.log('Desktop/mobile layout, loaded images, signed-in guidance and print exclusion passed.');
+})().catch(e=>{console.error(e);process.exitCode=1;});

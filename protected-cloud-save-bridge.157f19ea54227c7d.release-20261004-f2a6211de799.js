@@ -290,6 +290,7 @@
         const embeddedBuy=assumptions.buyState;
         delete assumptions.buyState;delete assumptions.mobile_scenarios;
         state={...state,...assumptions};
+        if(!Array.isArray(assumptions.unitRents))delete state.unitRents;
         if(embeddedBuy&&typeof embeddedBuy==='object')buyState={...buyState,...embeddedBuy};
         if(typeof renderFields==='function')renderFields();
         if(typeof render==='function')render();

@@ -17,7 +17,7 @@
     BLANK_IDS.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     try{
       if(typeof state==='object'&&state){
-        state={...state,name:'',address:'',price:0,land:0,units:0,rent:0,hold:0,initialRepairs:0};
+        state={...state,name:'',address:'',price:0,land:0,units:0,rent:0,hold:0,initialRepairs:0};delete state.unitRents;
       }
     }catch(e){}
     try{window.GuidedAnalysisSetup?.reset?.();}catch(e){}

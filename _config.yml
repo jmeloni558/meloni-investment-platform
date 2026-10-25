@@ -1,0 +1,6 @@
+exclude:
+  - operations
+  - tests
+  - supabase
+  - ci-candidate
+  - STAGING-ACCEPTANCE-20261025.txt

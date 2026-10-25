@@ -1,12 +1,13 @@
 'use strict';
 (()=>{
-  const VERSION=3;
+  const VERSION=4;
   if((window.__ptGuidedFinancingDefaultsV||0)>=VERSION)return;
   window.__ptGuidedFinancingDefaultsV=VERSION;
 
   let opening=false;
   let freshAnalysis=false;
   let explicitCash=false;
+  let defaultsApplied=false;
 
   function stepFourActive(){
     return !!document.querySelector('#gwSteps .gw-step.active[data-step="3"]');
@@ -26,6 +27,8 @@
   }
 
   function applyFieldDefaults(){
+    if(defaultsApplied)return;
+    defaultsApplied=true;
     const price=Number(document.getElementById('f_price')?.value)||0;
     const mortgage=Number(document.getElementById('f_mortgage')?.value)||0;
     const rate=Number(document.getElementById('f_mortRate')?.value)||0;
@@ -35,6 +38,7 @@
     if(years<=0)setSource('f_loanYears',30);
     const structure=document.getElementById('f_interestOnly');
     if(structure&&String(structure.value)!=='false')setSource('f_interestOnly','false');
+    window.GuidedAnalysisSetup?.refresh?.();
   }
 
   function financingFieldsVisible(){return !!document.querySelector('#gwBody [data-src="f_mortgage"]');}
@@ -65,7 +69,7 @@
     return true;
   }
 
-  function markFresh(){freshAnalysis=true;explicitCash=false;}
+  function markFresh(){freshAnalysis=true;explicitCash=false;defaultsApplied=false;}
   function schedule(){[0,50,130,260,500].forEach(ms=>setTimeout(()=>openFinancingFields(0),ms));}
 
   document.addEventListener('click',e=>{
@@ -75,8 +79,9 @@
     if(e.target?.closest?.('#gwSteps [data-step="3"],#gwNext,[data-s8-tab="assumptions"]'))schedule();
   },true);
 
-  document.addEventListener('propertythesis:analysis-loaded',()=>{freshAnalysis=false;explicitCash=false;});
+  document.addEventListener('propertythesis:analysis-loaded',()=>{freshAnalysis=false;explicitCash=false;defaultsApplied=true;});
   document.addEventListener('change',e=>{
+    if(e.target?.matches?.('#gwBody [data-src="f_mortRate"],#gwBody [data-src="f_interestOnly"],#gwBody [data-src="f_loanYears"]')){defaultsApplied=true;return;}
     if(e.target?.matches?.('#f_mortRate,#f_interestOnly,#f_mortgage,#f_loanYears'))return;
     if(stepFourActive())setTimeout(()=>openFinancingFields(0),0);
   },true);

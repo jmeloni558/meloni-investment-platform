@@ -123,7 +123,7 @@
 
   function useConclusion(){
     const v=Number(document.querySelector('[data-ptr-conclusion]')?.value);if(!Number.isFinite(v)||v<=0){status('Enter a valid concluded market rent');return;}
-    try{syncNote(false);saveSupport({concludedRent:v},false);state.rent=v;const base=document.getElementById('f_rent');if(base)base.value=v;document.querySelectorAll('[data-src="f_rent"]').forEach(x=>x.value=v);if(typeof render==='function')render();try{window.GuidedAnalysisSetup?.refresh?.();}catch(_e){}try{window.GuidedAssumptionGuidance?.apply?.();}catch(_e){}markDirty();status('Concluded market rent applied to analysis');close();}catch(e){status('Could not apply concluded rent: '+e.message);}
+    try{syncNote(false);saveSupport({concludedRent:v},false);state.rent=v;if(Array.isArray(state.unitRents))state.unitRents=Array(Math.max(1,Math.round(Number(state.units)||1))).fill(v);const base=document.getElementById('f_rent');if(base)base.value=v;document.querySelectorAll('[data-src="f_rent"]').forEach(x=>x.value=v);if(typeof render==='function')render();try{window.GuidedAnalysisSetup?.refresh?.();}catch(_e){}try{window.GuidedAssumptionGuidance?.apply?.();}catch(_e){}markDirty();status('Concluded market rent applied to analysis');close();}catch(e){status('Could not apply concluded rent: '+e.message);}
   }
 
   function decorate(){
