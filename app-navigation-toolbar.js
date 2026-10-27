@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=45;
+  const VERSION=46;
   if((window.__appNavigationToolbarV||0)>=VERSION)return;
   window.__appNavigationToolbarV=VERSION;
 
@@ -166,7 +166,7 @@ function openMortgageTools(){if(!isSignedIn()){promptSignIn('Sign in to use Prop
   }
   function cleanWorkflow(){const workflow=document.getElementById('stage8Workflow');if(!workflow)return false;workflow.classList.add('app-toolbar-clean');return true;}
   function retireLegacyNavigation(){document.querySelectorAll('.tab[data-tab],[data-app-advanced],[data-s8-advanced]').forEach(el=>{const id=el.dataset.tab||el.dataset.appAdvanced||el.dataset.s8Advanced;if(retired.has(id)||contextualOnly.has(id))el.hidden=true;});const active=activeSection();if(retired.has(active))go('dashboard');}
-  function refresh(){if(!ensureToolbar())return false;cleanWorkflow();retireLegacyNavigation();const guest=document.getElementById('ptGuestGuidance');if(guest)guest.hidden=!uiShowsSignedOut();const sample=document.getElementById('ptSampleShowcase');if(sample)sample.hidden=!uiShowsSignedOut();const listings=document.getElementById('ptListingsPanel')?.classList.contains('is-open');if(mortgageMode&&!listings)setMortgageMode(true);const active=activeSection();const selected=listings?'appNavListings':mortgageMode?'appNavMortgage':active==='propertyhub'?'appNavExisting':primary.includes(active)?'appNavNew':'';document.querySelectorAll('#appNavShell .app-nav-action').forEach(button=>{const current=button.id===selected;button.classList.toggle('active',current);if(current)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});return true;}
+  function refresh(){if(!ensureToolbar())return false;cleanWorkflow();retireLegacyNavigation();const guest=document.getElementById('ptGuestGuidance');if(guest)guest.hidden=!uiShowsSignedOut();const sample=document.getElementById('ptSampleShowcase');if(sample)sample.hidden=!uiShowsSignedOut();const listings=document.getElementById('ptListingsPanel')?.classList.contains('is-open');if(mortgageMode&&!listings)setMortgageMode(true);const active=activeSection();const selected=document.getElementById('ptBpoWorkspace')?'appNavExisting':listings?'appNavListings':mortgageMode?'appNavMortgage':active==='propertyhub'?'appNavExisting':primary.includes(active)?'appNavNew':'';document.querySelectorAll('#appNavShell .app-nav-action').forEach(button=>{const current=button.id===selected;button.classList.toggle('active',current);if(current)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});return true;}
   function scheduleResume(){[150,500,1000,1800,3000].forEach(ms=>setTimeout(resumeFreeAnalysis,ms));}
   function finishSignInNavigation(userId,preserveSavedRestore){
     const revision=++authNavigationRevision,navigation=userNavigationRevision;
