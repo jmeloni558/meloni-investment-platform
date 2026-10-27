@@ -19,3 +19,36 @@ test('Unsupported fields, missing citations, invalid facts and opinions rejected
 test('Checkbox import preserves a manually chosen conflicting option',()=>{
  const r=C.applyAI({field_0064:true},{fields:[entry('field_0070',true)]});assert.equal(r.values.field_0064,true);assert.equal(r.values.field_0070,undefined);
 });
+test('MLS numeric units normalize, ambiguous numbers warn, and sparse fills are flagged',async()=>{
+ const {cleanExtraction}=await import('../supabase/functions/bpo-extract/contract.mjs');
+ const fact=(name,value)=>({name,value,document:0,page:1,evidence:'quoted MLS fact'});
+ const r=cleanExtraction({fields:[fact('sold.1.address','123 Test St'),fact('sold.1.price','$490,000'),fact('sold.1.gla','1,715 Sq Ft'),fact('sold.1.dom','16 days'),fact('sold.1.baths','2/1')],warnings:[]},C.schema,[{path:'owner/report/a.pdf',name:'Source.pdf'}]);
+ assert.equal(r.fields.find(f=>f.name==='sold.1.gla').value,'1715');
+ assert.equal(r.fields.find(f=>f.name==='sold.1.price').value,'490000');
+ assert.equal(r.fields.find(f=>f.name==='sold.1.dom').value,'16');
+ assert.ok(r.warnings.some(w=>w.includes('needs review')));
+ assert.ok(r.warnings.some(w=>w.includes('beds, baths')));
+});
+test('Section extraction covers every allowed field once with exact response names',async()=>{
+ const {extractionScopes,schemaFor,forbidden,instructions}=await import('../supabase/functions/bpo-extract/contract.mjs');
+ const scopes=extractionScopes(C.schema),all=scopes.flat().map(f=>f.name);
+ assert.equal(new Set(all).size,all.length);
+ assert.deepEqual([...all].sort(),C.schema.filter(f=>!forbidden(f.name)).map(f=>f.name).sort());
+ for(const scope of scopes)assert.deepEqual(schemaFor(scope).properties.fields.items.properties.name.enum,scope.map(f=>f.name));
+ assert.match(instructions,/active AND pending/);
+ assert.match(instructions,/never invent a pending contract price/);
+});
+test('Long descriptions fit the PDF and retain full evidence without truncating numbers',async()=>{
+ const {fitExtraction}=await import('../supabase/functions/bpo-extract/contract.mjs');
+ const {PDFDocument,StandardFonts}=require('pdf-lib'),doc=await PDFDocument.create(),font=await doc.embedFont(StandardFonts.Helvetica);
+ const original='COLONY KEY / Ballast Point / South Tampa';
+ const r=fitExtraction({fields:[entry('active.1.location',original),entry('active.1.price','555000')],warnings:[]},C.schema,t=>font.widthOfTextAtSize(t,5.5));
+ assert.ok(font.widthOfTextAtSize(r.fields[0].value,5.5)<=C.byName.get('active.1.location').w-4);
+ assert.ok(r.fields[0].evidence.includes(original));assert.equal(r.fields[1].value,'555000');
+});
+test('Marketing language does not establish quality and boolean facts retain their scope',async()=>{
+ const {cleanExtraction}=await import('../supabase/functions/bpo-extract/contract.mjs');
+ const fact=(name,value,evidence)=>({name,value,document:0,page:1,evidence});
+ const r=cleanExtraction({fields:[fact('sold.1.quality','Renovated','Beautifully renovated'),fact('sold.1.energy','false','Green Energy Generation Y/N: No'),fact('sold.1.basement','None stated','No basement information'),fact('active.1.condition','Excellent','In excellent condition')],warnings:[]},C.schema,[{path:'a',name:'MLS.pdf'}]);
+ assert.deepEqual(r.fields.map(f=>[f.name,f.value]),[['sold.1.energy','No generation'],['active.1.condition','MLS: Excellent']]);
+});

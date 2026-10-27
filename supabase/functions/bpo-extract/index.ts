@@ -1,6 +1,8 @@
 import { withSupabase } from 'npm:@supabase/server@1.4.1';
 import schema from './fields.json' with { type: 'json' };
-import { cleanExtraction, forbidden, instructions, responseSchema } from './contract.mjs';
+import { extractText } from 'npm:unpdf@1.9.1';
+import { PDFDocument, StandardFonts } from 'npm:pdf-lib@1.17.1';
+import { cleanExtraction, instructions, extractionScopes, schemaFor, fitExtraction } from './contract.mjs';
 
 export default { fetch: withSupabase({auth:'user'}, async(req,ctx)=>{
   const origin=req.headers.get('origin');
@@ -37,14 +39,22 @@ export default { fetch: withSupabase({auth:'user'}, async(req,ctx)=>{
       const bytes=new Uint8Array(await blob.arrayBuffer());if(new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')return json({error:'A source file is not a PDF.'},400);
       let binary='';for(let p=0;p<bytes.length;p+=16384)binary+=String.fromCharCode(...bytes.subarray(p,p+16384));
       content.push({type:'input_text',text:`Document index ${i}: ${String(d.name).slice(0,200)}`},{type:'input_file',filename:`source-${i}.pdf`,file_data:'data:application/pdf;base64,'+btoa(binary)});
+      try{
+        const extracted=await extractText(bytes.slice(),{mergePages:false});
+        const pages=Array.isArray(extracted.text)?extracted.text:[extracted.text];
+        content.push({type:'input_text',text:JSON.stringify({document:i,untrustedPageTranscripts:pages.slice(0,40).map((text,page)=>({page:page+1,text:text.slice(0,18000)}))})});
+      }catch{ /* Scanned/unreadable text layers still have the original visual PDF input. */ }
     }
-    const allowed=schema.filter(f=>!forbidden(f.name));
-    content.unshift({type:'input_text',text:JSON.stringify({subject:report.address,fields:allowed.map(f=>({name:f.name,label:f.label,type:f.kind})),existing:Object.fromEntries(allowed.filter(f=>report.field_values[f.name]!==undefined).map(f=>[f.name,report.field_values[f.name]]))})});
-    const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(140000),body:JSON.stringify({model:Deno.env.get('BPO_EXTRACT_MODEL')||'gpt-5-mini',store:false,instructions,input:[{role:'user',content}],reasoning:{effort:'low'},max_output_tokens:14000,text:{format:{type:'json_schema',name:'bpo_source_facts',strict:true,schema:responseSchema}}})});
+    const results=await Promise.all(extractionScopes(schema).map(async allowed=>{
+    const context={type:'input_text',text:JSON.stringify({task:'Complete only this assigned section. Review every field against all source pages; include every supported fact. Other sections are handled separately.',subject:report.address,fields:allowed.map(f=>({name:f.name,label:f.label,type:f.kind})),existing:Object.fromEntries(allowed.filter(f=>report.field_values[f.name]!==undefined&&report.field_values[f.name]!==''&&report.field_values[f.name]!==false).map(f=>[f.name,report.field_values[f.name]]))})};
+    const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(140000),body:JSON.stringify({model:Deno.env.get('BPO_EXTRACT_MODEL')||'gpt-5-mini',store:false,instructions,input:[{role:'user',content:[context,...content]}],reasoning:{effort:'low'},max_output_tokens:14000,text:{format:{type:'json_schema',name:'bpo_source_facts',strict:true,schema:schemaFor(allowed)}}})});
     const payload=await response.json();
-    if(!response.ok||payload.status!=='completed'){console.error('BPO extraction failed',{status:response.status,code:payload.error?.code,state:payload.status});return json({error:'AI could not finish reading the PDFs. Your files are saved; try Fill form from uploaded files again.'},502);}
+    if(!response.ok||payload.status!=='completed'){console.error('BPO extraction failed',{status:response.status,code:payload.error?.code,state:payload.status});throw Error('Section extraction incomplete');}
     const text=payload.output?.flatMap((x:any)=>x.content||[]).filter((x:any)=>x.type==='output_text').map((x:any)=>x.text).join('')||'';
-    const result=cleanExtraction(JSON.parse(text),schema,documents);
+    return cleanExtraction(JSON.parse(text),allowed,documents);
+    }));
+    const fontDoc=await PDFDocument.create(),font=await fontDoc.embedFont(StandardFonts.Helvetica);
+    const result=fitExtraction({fields:results.flatMap(r=>r.fields),warnings:[...new Set(results.flatMap(r=>r.warnings))]},schema,(text:string)=>font.widthOfTextAtSize(text,5.5));
     return json({...result,revision:report.revision});
   }catch(e){console.error('BPO extraction failed',{type:e?.name});return json({error:'AI extraction did not finish. Your files are saved; retry or edit the form manually.'},502);}
 })};
