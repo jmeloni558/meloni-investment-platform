@@ -26,7 +26,7 @@ def main():
             raise RuntimeError('Required schemas unavailable')
         counts = {name: db.execute('select count(*) from ' + name).fetchone()[0] for name in
                   ['auth.users', 'public.properties', 'public.analyses', 'public.scenarios', 'storage.objects']}
-        comp_tables = [t for t in ['property_income_comparables', 'property_sales_comparables', 'property_rental_comparables']
+        comp_tables = [t for t in ['property_income_comparables', 'property_sales_comparables', 'property_rental_comparables', 'bpo_reports', 'bpo_access']
                        if db.execute("select to_regclass(%s) is not null", ('public.' + t,)).fetchone()[0]]
         for t in comp_tables:
             counts['public.' + t] = db.execute('select count(*) from public.' + t).fetchone()[0]
