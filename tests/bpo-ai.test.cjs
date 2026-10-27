@@ -38,3 +38,11 @@ test('Section extraction covers every allowed field once with exact response nam
  assert.match(instructions,/active AND pending/);
  assert.match(instructions,/never invent a pending contract price/);
 });
+test('Long descriptions fit the PDF and retain full evidence without truncating numbers',async()=>{
+ const {fitExtraction}=await import('../supabase/functions/bpo-extract/contract.mjs');
+ const {PDFDocument,StandardFonts}=require('pdf-lib'),doc=await PDFDocument.create(),font=await doc.embedFont(StandardFonts.Helvetica);
+ const original='COLONY KEY / Ballast Point / South Tampa';
+ const r=fitExtraction({fields:[entry('active.1.location',original),entry('active.1.price','555000')],warnings:[]},C.schema,t=>font.widthOfTextAtSize(t,5.5));
+ assert.ok(font.widthOfTextAtSize(r.fields[0].value,5.5)<=C.byName.get('active.1.location').w-4);
+ assert.ok(r.fields[0].evidence.includes(original));assert.equal(r.fields[1].value,'555000');
+});
