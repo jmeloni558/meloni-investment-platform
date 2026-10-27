@@ -14,3 +14,31 @@ body.pt-bpo-active main.shell > :not(#appNavShell):not(#ptBpoWorkspace):not(.foo
 .pt-bpo-entry-grid textarea{width:100%;min-height:80px}.pt-bpo-upload{background:white;border:1px solid #bad0dc;border-radius:10px;padding:18px;margin:16px 0}
 .pt-bpo-ai-disclosure{font-size:13px;color:#425b6b}.pt-bpo-subject-title{overflow-wrap:anywhere}
 @media(max-width:700px){.pt-bpo-workflow{grid-template-columns:repeat(2,minmax(0,1fr))}.pt-bpo-entry-grid,.pt-bpo-comp-summary{grid-template-columns:1fr}.pt-bpo-workspace{padding:12px}.pt-bpo-workspace header{flex-wrap:wrap}}
+/* Match the saved income-property workspace, including its workflow masthead. */
+#ptBpoWorkspace{display:flex;flex-direction:column;padding:0;border:0;background:transparent;font-family:inherit;margin:24px 0}
+#ptBpoWorkspace>header{display:none}
+#ptBpoWorkspace>[data-status]{order:2;font-size:13px;border-radius:8px;margin-top:20px}
+.pt-bpo-workflow-shell{border:2px solid #376a87;border-radius:16px;background:#eaf2f8;box-shadow:0 10px 26px #102d4629;overflow:hidden;margin-bottom:32px}
+.pt-bpo-workflow-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;background:#123b56;border-bottom:3px solid #65b9ac;padding:18px 20px;color:white}
+.pt-bpo-workflow-heading h2{font-size:20px;margin:0;font-weight:800;color:white}
+.pt-bpo-workflow-heading p{margin:5px 0 0;font-size:14px;color:#e1edf4}
+.pt-bpo-workflow-heading>strong{font-size:12px;padding:7px 11px;border:1px solid #94b5c9;border-radius:8px}
+.pt-bpo-workflow-shell .pt-bpo-workflow{gap:14px;padding:18px;margin:0}
+.pt-bpo-workflow-shell .pt-bpo-workflow button{display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;gap:12px;padding:24px 14px 18px;min-height:122px;border:2px solid #b3c7d5;background:white;color:#123b56;box-shadow:0 3px 8px #102d4614;border-radius:10px;position:relative}
+.pt-bpo-workflow-shell .pt-bpo-workflow .pt-bpo-step-number{display:flex;align-items:center;justify-content:center;border:1px solid #a3bfd0;border-radius:50%;width:36px;height:36px;background:#eaf2f8;font-size:16px;font-weight:700;letter-spacing:0}
+.pt-bpo-workflow-shell .pt-bpo-step-copy{display:flex;flex-direction:column;gap:6px;text-transform:none;letter-spacing:0}
+.pt-bpo-step-copy strong{font-size:17px;line-height:1.35}.pt-bpo-workflow-shell .pt-bpo-step-copy small{font-size:13px;line-height:1.5;color:#404e60;letter-spacing:0}
+.pt-bpo-workflow-shell .pt-bpo-step-cue{grid-column:2;font-size:12px;font-weight:800;color:#175575;text-transform:none;letter-spacing:0}
+.pt-bpo-workflow-shell .pt-bpo-workflow button[aria-current=step]{background:#e6f5f0;border-color:#127563;box-shadow:inset 0 -4px #127563}
+.pt-bpo-workflow-shell .pt-bpo-workflow button[aria-current=step] .pt-bpo-step-number{background:#126653;color:white;border-color:#126653}
+.pt-bpo-guide{border:1px solid #c2dbe2;border-left:5px solid #078575;background:#f2f8f7;border-radius:9px;padding:16px;margin:0 0 24px}
+.pt-bpo-guide summary{font-weight:700;cursor:pointer;font-size:14px}
+.pt-bpo-library-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.pt-bpo-library-heading h2{margin:0 auto 0 0;font-size:22px}.pt-bpo-library-heading>span{font-size:12px;color:#64748b}
+#ptBpoWorkspace .pt-bpo-library{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:32px}
+#ptBpoWorkspace .pt-bpo-library article{background:white;border:1px solid #d2e0f1;border-radius:14px;box-shadow:0 6px 22px #2845650d;padding:16px}
+.pt-bpo-library h3{font-size:18px;color:#172238;margin:2px 0 5px}.pt-bpo-card-address{font-size:11px;color:#62718b;margin:0 0 14px!important}
+.pt-bpo-card-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.pt-bpo-card-metrics>div{background:#f7f9fc;border:1px solid #e0e7f2;border-radius:8px;padding:10px;min-width:0}
+.pt-bpo-card-metrics small{display:block;font-size:10px;letter-spacing:0;color:#62718b;margin-bottom:5px}.pt-bpo-card-metrics strong{font-size:14px;overflow-wrap:anywhere;color:#152d40}
+.pt-bpo-card-updated{font-size:12px;color:#50617a;margin:16px 0}.pt-bpo-card-actions{display:flex;flex-wrap:wrap;gap:6px}.pt-bpo-card-actions button{margin:0}
+@media(max-width:1000px){.pt-bpo-workflow-shell .pt-bpo-workflow{grid-template-columns:repeat(2,minmax(0,1fr))}.pt-bpo-card-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){#ptBpoWorkspace .pt-bpo-library{grid-template-columns:1fr}.pt-bpo-workflow-shell .pt-bpo-workflow{grid-template-columns:1fr;padding:12px}.pt-bpo-workflow-heading{padding:16px}.pt-bpo-workflow-shell .pt-bpo-workflow button{min-height:110px}.pt-bpo-library-heading h2{width:100%}}
