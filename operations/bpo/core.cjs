@@ -27,4 +27,17 @@ async function exportPDF(template,values){const errors=issues(values);if(errors.
  try{while(size>4&&!fits())size=Math.max(4,size-.25);if(!fits())throw Error('overflow');}catch(e){throw Error(f.label+': shorten this entry or replace unsupported characters to fit the printed form.');}
  control.setFontSize(size);if(calculated(f.name))control.enableReadOnly();
  }form.updateFieldAppearances(font);doc.setTitle('Residential Broker Price Opinion');doc.setProducer('PropertyThesis BPO');return doc.save();}
-module.exports={schema,byName,groups,number,money,recalculate,calculated,issues,applyRecord,listingRecord,parseMLS,exportPDF};
+function applyAI(input,result){
+ const v={...input},sources={...(input._aiFields||{})},warnings=[...(result.warnings||[])];let applied=0,preserved=0;
+ const entries=Array.isArray(result.fields)?result.fields:[],addresses=new Map(entries.filter(e=>/^(sold|active)\.[1-3]\.address$/.test(e.name)).map(e=>[e.name.replace(/\.address$/,''),e.value]));
+ const normalize=x=>String(x??'').toLowerCase().replace(/[^a-z0-9]/g,'');
+ for(const e of entries){const f=byName.get(e.name);if(!f||calculated(e.name)||e.name.includes('.adj_')||e.name.startsWith('repair.')||['field_0477','field_0478','field_0479','field_0480','field_0483','field_0484'].includes(e.name))continue;
+  const prefix=e.name.match(/^(sold|active)\.[1-3]/)?.[0];if(prefix){const old=input[prefix+'.address'],incoming=addresses.get(prefix);if(!incoming||(old&&normalize(old)!==normalize(incoming))){preserved++;continue;}}
+  const current=v[e.name],old=sources[e.name];if(current!==undefined&&current!==''&&current!==false&&current!==e.value&&(!old||old.value!==current)){preserved++;continue;}
+  if(e.value===true){const group=groups.find(g=>g.includes(e.name));if(group?.some(n=>n!==e.name&&v[n]===true)){preserved++;continue;}}
+  if(e.value!==''&&e.value!==null&&e.value!==undefined){v[e.name]=e.value;sources[e.name]={value:e.value,path:e.path,filename:e.filename,page:e.page,evidence:e.evidence};applied++;}
+ }
+ if(preserved)warnings.push(`${preserved} proposed fields were left unchanged to preserve your entries or existing comparable identities.`);
+ v._aiFields=sources;v._aiReview={at:new Date().toISOString(),warnings,applied};return {values:recalculate(v),applied,preserved,warnings};
+}
+module.exports={schema,byName,groups,number,money,recalculate,calculated,issues,applyRecord,listingRecord,parseMLS,exportPDF,applyAI};
