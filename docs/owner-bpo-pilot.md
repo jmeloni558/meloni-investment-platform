@@ -50,3 +50,9 @@ Clear dollar/percentage concessions in a sold comp's financing text are subtract
 All feature adjustments are signed dollar amounts for each comparable. Beds/baths sum to the form's rooms row; porch/patio/deck/fireplace sum to the porches row; fence/pool sum to the pool row. Editing a helper component explicitly replaces its grouped row. Form-level overrides are preserved on subsequent visits until a component is deliberately edited again. Unknown features do not receive guessed adjustments. Final opinions remain manual.
 
 Tests: bpo-adjustments.test.cjs checks concession parsing, sign direction, missing facts, rate updates, manual preservation, grouped sums, invalid input and exported PDF field values. The browser fixture tests all five steps, rate and component entry, manual overrides, persistence and export.
+
+## Blanket adjustment workflow refinement
+
+Step 4 shows one set of common factors without individual comparable panels. Bedrooms, bathrooms, year built and living area use (subject minus comparable) times the entered nonnegative rate. Remaining features accept signed flat dollar amounts applied to every sold/active comparable. No inference is made from qualitative descriptions. Missing numeric facts are review items, not zero. Factors are saved per BPO in _adjustments.globals (living area retains _adjustments.rate).
+
+Generated amounts update as factors change. Step 5 manual exceptions and prior manual adjustments are preserved. The explicit Apply entered factors to all comps action replaces individual overrides only in categories with entered factors; blank categories and final opinion are untouched. Legacy per-comp helper breakdowns remain backward compatible until a blanket factor manages their shared PDF row. Clearing a factor removes its generated amount without deleting manual overrides.
