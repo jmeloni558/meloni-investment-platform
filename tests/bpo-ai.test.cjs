@@ -46,3 +46,9 @@ test('Long descriptions fit the PDF and retain full evidence without truncating 
  assert.ok(font.widthOfTextAtSize(r.fields[0].value,5.5)<=C.byName.get('active.1.location').w-4);
  assert.ok(r.fields[0].evidence.includes(original));assert.equal(r.fields[1].value,'555000');
 });
+test('Marketing language does not establish quality and boolean facts retain their scope',async()=>{
+ const {cleanExtraction}=await import('../supabase/functions/bpo-extract/contract.mjs');
+ const fact=(name,value,evidence)=>({name,value,document:0,page:1,evidence});
+ const r=cleanExtraction({fields:[fact('sold.1.quality','Renovated','Beautifully renovated'),fact('sold.1.energy','false','Green Energy Generation Y/N: No'),fact('sold.1.basement','None stated','No basement information'),fact('active.1.condition','Excellent','In excellent condition')],warnings:[]},C.schema,[{path:'a',name:'MLS.pdf'}]);
+ assert.deepEqual(r.fields.map(f=>[f.name,f.value]),[['sold.1.energy','No generation'],['active.1.condition','MLS: Excellent']]);
+});

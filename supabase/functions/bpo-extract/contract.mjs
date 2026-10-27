@@ -1,4 +1,4 @@
-export const forbidden = name => /\.(adj_|net$|adjusted$|ppsf$)/.test(name) || name.startsWith('repair.') || ['field_0477','field_0478','field_0479','field_0480','field_0483','field_0484'].includes(name);
+export const forbidden = name => /\.(adj_|net$|adjusted$|ppsf$|quality$|utility$)/.test(name) || name.startsWith('repair.') || ['field_0477','field_0478','field_0479','field_0480','field_0483','field_0484'].includes(name);
 export function cleanExtraction(payload, schema, documents) {
   const fields = [], warnings = (Array.isArray(payload?.warnings) ? payload.warnings : []).slice(0,20).map(x=>String(x).slice(0,500));
   const allowed = new Map(schema.filter(f=>!forbidden(f.name)).map(f=>[f.name,f]));
@@ -7,6 +7,10 @@ export function cleanExtraction(payload, schema, documents) {
     const f=allowed.get(item.name), doc=documents[item.document];
     if (!f || seen.has(item.name) || !doc || !Number.isInteger(item.page) || item.page<1 || item.page>40 || typeof item.evidence!=='string' || !item.evidence.trim()) continue;
     let value=String(item.value??'').trim(); if(!value || value.length>1800) continue;
+    if(f.kind!=='check'&&/^(?:not (?:stated|provided|specified)|none stated|unknown|n\/?a)$/i.test(value))continue;
+    if(f.name.endsWith('.energy')&&/^false$/i.test(value)&&/generation\s*Y\/N:\s*No/i.test(item.evidence))value='No generation';
+    if(f.kind!=='check'&&/^(?:true|false)$/i.test(value)){warnings.push(`${f.label}: ambiguous yes/no value needs review.`);continue;}
+    if(f.name.endsWith('.condition')&&!/^MLS:/i.test(value))value='MLS: '+value;
     if(f.kind==='check'){if(!['true','false'].includes(value))continue;value=value==='true';}
     else if(/\.(price|gla|beds|baths|rooms|year|dom)$/.test(f.name)){
       const suffix=f.name.split('.').pop();
