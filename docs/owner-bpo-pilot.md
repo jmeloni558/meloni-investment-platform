@@ -56,3 +56,9 @@ Tests: bpo-adjustments.test.cjs checks concession parsing, sign direction, missi
 Step 4 shows one set of common factors without individual comparable panels. Bedrooms, bathrooms, year built and living area use (subject minus comparable) times the entered nonnegative rate. Remaining features accept signed flat dollar amounts applied to every sold/active comparable. No inference is made from qualitative descriptions. Missing numeric facts are review items, not zero. Factors are saved per BPO in _adjustments.globals (living area retains _adjustments.rate).
 
 Generated amounts update as factors change. Step 5 manual exceptions and prior manual adjustments are preserved. The explicit Apply entered factors to all comps action replaces individual overrides only in categories with entered factors; blank categories and final opinion are untouched. Legacy per-comp helper breakdowns remain backward compatible until a blanket factor manages their shared PDF row. Clearing a factor removes its generated amount without deleting manual overrides.
+
+
+## Summary and package
+Steps 6 and 7 provide an editable fact-based narrative and local combined PDF download. The summary follows the BPO Summaries format: header, subject/market, individual sold and active/pending discussions, conclusion. It does not infer comparable weighting or final value. Preparers replace writing prompts and confirm review. BPO fact changes invalidate that confirmation. Narrative and document roles/order persist in field_values. No permissions or schema changes.
+
+Package order: editable BPO, summary, tax/IMAPP, optional subject MLS, sold, active/pending. Every upload must be assigned or excluded. Originals remain unchanged. Interactive supporting PDFs require a separate static copy to prevent broken form fields; the BPO remains interactive. Corrupt/encrypted source PDFs fail by filename. Six-comp draft pagination is tested at 2-3 pages; additional narrative may extend it.

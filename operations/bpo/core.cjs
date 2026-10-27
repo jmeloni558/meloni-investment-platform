@@ -42,4 +42,4 @@ function applyAI(input,result){
  v._aiFields=sources;v._aiReview={at:new Date().toISOString(),warnings,applied};return {values:recalculate(v),applied,preserved,warnings};
 }
 function applyAdjustments(input,overwrite=false){const r=adjustments.apply(input,number,money,overwrite);return {...r,values:recalculate(r.values)};}
-module.exports={blanketFields:adjustments.blanketFields,applyAdjustments,adjustmentParts:adjustments.parts,concession:adjustments.concession,schema,byName,groups,number,money,recalculate,calculated,issues,applyRecord,listingRecord,parseMLS,exportPDF,applyAI};
+module.exports={...require('./summary.cjs'),blanketFields:adjustments.blanketFields,applyAdjustments,adjustmentParts:adjustments.parts,concession:adjustments.concession,schema,byName,groups,number,money,recalculate,calculated,issues,applyRecord,listingRecord,parseMLS,exportPDF,applyAI};
