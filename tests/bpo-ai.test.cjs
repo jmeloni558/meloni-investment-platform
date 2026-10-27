@@ -29,3 +29,12 @@ test('MLS numeric units normalize, ambiguous numbers warn, and sparse fills are 
  assert.ok(r.warnings.some(w=>w.includes('needs review')));
  assert.ok(r.warnings.some(w=>w.includes('beds, baths')));
 });
+test('Section extraction covers every allowed field once with exact response names',async()=>{
+ const {extractionScopes,schemaFor,forbidden,instructions}=await import('../supabase/functions/bpo-extract/contract.mjs');
+ const scopes=extractionScopes(C.schema),all=scopes.flat().map(f=>f.name);
+ assert.equal(new Set(all).size,all.length);
+ assert.deepEqual([...all].sort(),C.schema.filter(f=>!forbidden(f.name)).map(f=>f.name).sort());
+ for(const scope of scopes)assert.deepEqual(schemaFor(scope).properties.fields.items.properties.name.enum,scope.map(f=>f.name));
+ assert.match(instructions,/active AND pending/);
+ assert.match(instructions,/never invent a pending contract price/);
+});
