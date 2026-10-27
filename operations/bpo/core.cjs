@@ -1,4 +1,5 @@
 'use strict';
+const adjustments=require('./adjustments.cjs');
 const schema=require('../../assets/bpo/fields.json');
 const {PDFDocument,StandardFonts,rgb,layoutMultilineText}=require('pdf-lib');
 const byName=new Map(schema.map(f=>[f.name,f]));
@@ -10,7 +11,7 @@ function recalculate(input){const v={...input};for(const kind of ['sold','active
  }let total=0,invalid=false;for(let i=0;i<10;i++){const x=v[`repair.${i}.cost`];if(x!==undefined&&String(x).trim()!==''){const n=number(x);if(n===null||n<0)invalid=true;else total+=n;}}v['repair.total']=invalid?'':money(total);return v;}
 const groups=[[4,5,6,7],[23,24,25,26,27],[28,29,30],[33,36,37],[40,41,42],[49,50,51],[56,57],[60,61],[64,65,66,67,68,69,70,71,72],[74,75],[259,260,261],[262,263]].map(g=>g.map(n=>'field_'+String(n).padStart(4,'0')));
 const calculated=n=>/\.(ppsf|net|adjusted)$/.test(n)||n==='repair.total';
-function issues(v){const errors=[];for(const g of groups){if(g.filter(n=>v[n]===true).length>1)errors.push('Select only one option for '+byName.get(g[0]).label+'.');}for(const f of schema){const x=v[f.name];if(x!==undefined&&String(x).trim()!==''&&(f.name.includes('.adj_')||/\.(price|cost|gla)$/.test(f.name)||['field_0477','field_0478','field_0479','field_0480'].includes(f.name))){const n=number(x);if(n===null||(!f.name.includes('.adj_')&&n<0))errors.push(f.label+': enter a valid '+(f.name.includes('.adj_')?'signed ':'nonnegative ')+'number.');}}return errors;}
+function issues(v){const errors=[];const a=v._adjustments;if(a){if(String(a.rate??'').trim()&&(number(a.rate)===null||number(a.rate)<0))errors.push('Square-footage rate: enter a nonnegative dollar amount.');for(const [key,parts] of Object.entries(a.parts||{}))for(const [name,x] of Object.entries(parts)){if(String(x??'').trim()&&number(x)===null)errors.push(key+' '+name+': enter a signed dollar amount.');}}for(const g of groups){if(g.filter(n=>v[n]===true).length>1)errors.push('Select only one option for '+byName.get(g[0]).label+'.');}for(const f of schema){const x=v[f.name];if(x!==undefined&&String(x).trim()!==''&&(f.name.includes('.adj_')||/\.(price|cost|gla)$/.test(f.name)||['field_0477','field_0478','field_0479','field_0480'].includes(f.name))){const n=number(x);if(n===null||(!f.name.includes('.adj_')&&n<0))errors.push(f.label+': enter a valid '+(f.name.includes('.adj_')?'signed ':'nonnegative ')+'number.');}}return errors;}
 function applyRecord(values,record,target){const v={...values};const set=(k,value)=>{if(value!==undefined&&value!==null&&String(value).trim()!=='')v[k]=String(value);};const keys=['address','price','gla','beds','baths','rooms','year','site','date','dom','source','garage','pool','hvac','design','tenure'];if(target==='subject'){
  set('field_0008',record.address);for(const kind of ['sold','active'])for(const key of keys)set(`${kind}.0.${key}`,record[key]);
  }else for(const key of keys)set(target+'.'+key,record[key]);return recalculate(v);}
@@ -40,4 +41,5 @@ function applyAI(input,result){
  if(preserved)warnings.push(`${preserved} proposed fields were left unchanged to preserve your entries or existing comparable identities.`);
  v._aiFields=sources;v._aiReview={at:new Date().toISOString(),warnings,applied};return {values:recalculate(v),applied,preserved,warnings};
 }
-module.exports={schema,byName,groups,number,money,recalculate,calculated,issues,applyRecord,listingRecord,parseMLS,exportPDF,applyAI};
+function applyAdjustments(input){const r=adjustments.apply(input,number,money);return {...r,values:recalculate(r.values)};}
+module.exports={applyAdjustments,adjustmentParts:adjustments.parts,concession:adjustments.concession,schema,byName,groups,number,money,recalculate,calculated,issues,applyRecord,listingRecord,parseMLS,exportPDF,applyAI};
