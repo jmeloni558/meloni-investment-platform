@@ -15,9 +15,12 @@ function concession(text,price){
  return {amount:Math.round(amount*100)/100};
 }
 const parts={rooms:['beds','baths'],porches:['porch','patio','deck','fireplace'],pool:['fence','pool']};
-function apply(input,number,money){
- const v={...input},state=structuredClone(input._adjustments||{rate:'',generated:{},parts:{}});state.generated||={};state.parts||={};const warnings=[];
- const put=(key,n)=>{const prior=state.generated[key],current=v[key];if(String(current??'').trim()&&(!prior||String(current)!==String(prior.value)))return false;v[key]=money(n);state.generated[key]={value:v[key]};return true;};
+const blanketFields=[
+ ['location','Location'],['site','Site'],['view','View'],['design','Design and appeal'],['quality','Quality of construction'],['year','Year built','difference'],['condition','Condition'],['beds','Bedrooms','difference','rooms'],['baths','Bathrooms','difference','rooms'],['basement','Basement'],['utility','Functional utility'],['hvac','Heating / cooling'],['energy','Energy efficient items'],['garage','Garage / carport'],['porch','Porches','flat','porches'],['patio','Patio','flat','porches'],['deck','Deck','flat','porches'],['fireplace','Fireplace','flat','porches'],['fence','Fence','flat','pool'],['pool','Pool'],['other','Other']
+];
+function apply(input,number,money,overwrite=false){
+ const v={...input},state=structuredClone(input._adjustments||{rate:'',generated:{},parts:{}});state.generated||={};state.parts||={};const warnings=[];let preserved=0;
+ const put=(key,n,blanket=false)=>{const prior=state.generated[key],current=v[key];if(!(blanket&&overwrite)&&String(current??'').trim()&&(!prior||String(current)!==String(prior.value))){if(blanket)preserved++;return false;}v[key]=money(n);state.generated[key]={value:v[key],...(blanket?{blanket:true}:{})};return true;};
  for(const kind of ['sold','active'])for(let i=1;i<=3;i++){
   const p=kind+'.'+i+'.';if(!v[p+'address'])continue;
   if(kind==='sold'){
@@ -27,16 +30,29 @@ function apply(input,number,money){
   }
   const rate=number(state.rate),subject=number(v['sold.0.gla']),comp=number(v[p+'gla']);
   if(String(state.rate??'').trim()){
-   if(rate!==null&&rate>=0&&subject>0&&comp>0)put(p+'adj_gla',Math.round((subject-comp)*rate*100)/100);
+   if(rate!==null&&rate>=0&&subject>0&&comp>0)put(p+'adj_gla',Math.round((subject-comp)*rate*100)/100,true);
    else {warnings.push({prefix:p,message:'A valid rate and both living areas are needed for the size adjustment.'});const k=p+'adj_gla',old=state.generated[k];if(old&&v[k]===old.value){v[k]='';delete state.generated[k];}}
   }else {const k=p+'adj_gla',old=state.generated[k];if(old&&v[k]===old.value){v[k]='';delete state.generated[k];}}
+  const globals=state.globals||{},managed=new Set();
+  for(const target of new Set(blanketFields.map(f=>f[3]||f[0]))){
+   const fields=blanketFields.filter(f=>(f[3]||f[0])===target),touched=fields.some(f=>Object.hasOwn(globals,f[0]));
+   if(!touched)continue;managed.add(target);
+   const key=p+'adj_'+target,entered=fields.filter(f=>String(globals[f[0]]??'').trim());let sum=0,valid=true;
+   for(const [name,label,mode] of entered){const factor=number(globals[name]);if(factor===null||(mode==='difference'&&factor<0)){valid=false;continue;}
+    if(mode==='difference'){const sub=number(v['sold.0.'+name]),comp=number(v[p+name]);if(sub===null||comp===null||sub<0||comp<0){valid=false;warnings.push({prefix:p,message:label+' difference needs numeric subject and comparable facts. Review Step 5.'});}else sum+=(sub-comp)*factor;}
+    else sum+=factor;
+   }
+   if(entered.length&&valid)put(key,Math.round(sum*100)/100,true);
+   else {const old=state.generated[key];if(old?.blanket&&v[key]===old.value){v[key]='';delete state.generated[key];}}
+  }
   for(const [group,keys] of Object.entries(parts)){
+   if(managed.has(group))continue;
    const values=state.parts[p+group];if(!values)continue;
    const ns=keys.map(k=>String(values[k]??'').trim()?number(values[k]):0);
    // Manual combined form values override helpers until the user edits a component again.
    if(ns.every(n=>n!==null))put(p+'adj_'+group,Math.round(ns.reduce((a,b)=>a+b,0)*100)/100);
   }
  }
- v._adjustments=state;return {values:v,warnings};
+ v._adjustments=state;return {values:v,warnings,preserved};
 }
-module.exports={concession,parts,apply};
+module.exports={concession,parts,blanketFields,apply};

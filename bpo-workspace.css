@@ -44,3 +44,5 @@ body.pt-bpo-active main.shell > :not(#appNavShell):not(#ptBpoWorkspace):not(.foo
 @media(max-width:650px){#ptBpoWorkspace .pt-bpo-library{grid-template-columns:1fr}.pt-bpo-workflow-shell .pt-bpo-workflow{grid-template-columns:1fr;padding:12px}.pt-bpo-workflow-heading{padding:16px}.pt-bpo-workflow-shell .pt-bpo-workflow button{min-height:110px}.pt-bpo-library-heading h2{width:100%}}
 
 .pt-bpo-workflow-shell .pt-bpo-workflow{grid-template-columns:repeat(5,minmax(0,1fr))}.pt-bpo-adjustment-parts{border:1px solid #b9cbd7;border-radius:8px;margin:18px 0;padding:16px}.pt-bpo-adjustment-parts legend{font-weight:700}.pt-bpo-review-warning{color:#854800;background:#fff5df;padding:10px;border-radius:6px}@media(max-width:1100px){.pt-bpo-workflow-shell .pt-bpo-workflow{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){.pt-bpo-workflow-shell .pt-bpo-workflow{grid-template-columns:1fr}}
+
+.pt-bpo-factor{padding:12px;background:#f7fafc;border:1px solid #d7e3eb;border-radius:8px}.pt-bpo-factor small{display:block;color:#4c6173;letter-spacing:0;line-height:1.45;margin-top:6px}
