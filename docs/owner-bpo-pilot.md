@@ -40,3 +40,13 @@ Database logical backups include BPO records and access grants; recovery invento
 - tests/bpo-recovery.test.cjs: BPO rows prevent a false clean-deletion result.
 
 Build: use operations/bpo/build.cjs with the existing pdf-lib/esbuild dependencies. Template preparation requires the user-provided source PDF path as its first argument; assets are committed so runtime does not require that local file.
+
+## Five-step adjustment preparation (October 27)
+
+The saved BPO workflow is Subject, Comps, Neighborhood & Market, Adjustments, then BPO Report. Step 4 stores its living-area rate, component breakdowns and generated-value tracking inside the existing private field_values JSON under _adjustments. No new table or access grant is required.
+
+Clear dollar/percentage concessions in a sold comp's financing text are subtracted from its sold price; unknown, ambiguous, requested or unsupported amounts remain review items. Percentage amounts use the sold price. Active/pending prices do not receive automatic concession deductions. A user-entered nonnegative living-area rate produces (subject GLA - comp GLA) times rate, rounded to cents. Source values must be present and positive. Existing manual adjustments are preserved, including overrides made in the final form. Use the explicit automatic-value buttons to restore the source/rate calculation. Revisit Step 4 after changing source facts or rates.
+
+All feature adjustments are signed dollar amounts for each comparable. Beds/baths sum to the form's rooms row; porch/patio/deck/fireplace sum to the porches row; fence/pool sum to the pool row. Editing a helper component explicitly replaces its grouped row. Form-level overrides are preserved on subsequent visits until a component is deliberately edited again. Unknown features do not receive guessed adjustments. Final opinions remain manual.
+
+Tests: bpo-adjustments.test.cjs checks concession parsing, sign direction, missing facts, rate updates, manual preservation, grouped sums, invalid input and exported PDF field values. The browser fixture tests all five steps, rate and component entry, manual overrides, persistence and export.
