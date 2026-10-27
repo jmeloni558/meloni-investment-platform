@@ -1,0 +1,1 @@
+const path=require('path');require('esbuild').buildSync({entryPoints:[path.join(__dirname,'core.cjs')],bundle:true,platform:'browser',target:'chrome110',globalName:'PropertyThesisBPOCore',minify:true,nodePaths:(process.env.NODE_PATH||'').split(path.delimiter).filter(Boolean),outfile:path.resolve(__dirname,'../../bpo-core.js')});
