@@ -48,3 +48,5 @@ body.pt-bpo-active main.shell > :not(#appNavShell):not(#ptBpoWorkspace):not(.foo
 .pt-bpo-factor{padding:12px;background:#f7fafc;border:1px solid #d7e3eb;border-radius:8px}.pt-bpo-factor small{display:block;color:#4c6173;letter-spacing:0;line-height:1.45;margin-top:6px}
 
 .pt-bpo-summary-section{display:block;margin:20px 0;font-weight:700}.pt-bpo-summary-section textarea{display:block;width:100%;font-weight:400;line-height:1.6;margin-top:8px}.pt-bpo-package-files>div{padding:16px;margin:12px 0;border:1px solid #c7dce6;border-radius:10px}.pt-bpo-workflow{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+
+.pt-bpo-fields select{position:absolute;box-sizing:border-box;font:8px Arial;padding:0;border:1px solid #9eb2be;min-height:0;border-radius:0;color:#102d40}.pt-bpo-fields input[readonly]{color:#173d53}
