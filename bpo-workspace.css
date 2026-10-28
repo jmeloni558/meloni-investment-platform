@@ -52,3 +52,5 @@ body.pt-bpo-active main.shell > :not(#appNavShell):not(#ptBpoWorkspace):not(.foo
 .pt-bpo-fields select{position:absolute;box-sizing:border-box;font:8px Arial;padding:0;border:1px solid #9eb2be;min-height:0;border-radius:0;color:#102d40}.pt-bpo-fields input[readonly]{color:#173d53}
 
 .pt-bpo-market-table-wrap{overflow-x:auto}.pt-bpo-market-table{width:100%;border-collapse:collapse;table-layout:fixed}.pt-bpo-market-table th,.pt-bpo-market-table td{padding:10px;text-align:left;border-bottom:1px solid #d3e1e8}.pt-bpo-market-table input{width:100%;min-width:0;box-sizing:border-box}.pt-bpo-market-table thead{background:#edf5f8}@media(max-width:600px){.pt-bpo-market-table th,.pt-bpo-market-table td{padding:6px;font-size:12px}}
+
+.pt-bpo-listing-match{padding:16px;margin:12px 0;border:1px solid #9bbccc;border-left:5px solid #168b79;border-radius:10px;background:#f2faf8}.pt-bpo-workspace [data-subject-status]{padding:12px;background:#eef5fa;border-radius:8px;font-weight:600}.pt-bpo-workspace [data-subject-status]:empty{display:none}
