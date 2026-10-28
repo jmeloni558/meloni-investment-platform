@@ -25,11 +25,13 @@ function sections(v){const notes=v._summaryNotes||{},subject=k=>t(v['sold.0.'+k]
  if(n(g('adjusted'))!==null)body+=` The resulting adjusted ${kind==='sold'?'sale-price':'asking-price'} indication is ${money(g('adjusted'))}.`;
  const key=kind+'.'+i;if(notes[key])body+='\n\n'+notes[key];
  if(notes.primary===key)body+=' This is the preparer’s selected primary sold comparable.';
+ if(kind==='active'&&notes.primaryActive===key)body+=' The preparer selected this as the primary active/pending comparable'+(t(notes.primaryActiveReason)?' because '+notes.primaryActiveReason:'.')+(t(notes.primaryActiveReason)&&!/[.!?]$/.test(notes.primaryActiveReason)?'.':'');
  if(kind==='active')body+=' An active or pending asking price is not a closed-sale price; final contract terms and concessions remain unconfirmed.';
  out.push({title:`${kind==='sold'?'Sold':'Active / Pending'} Comparable ${i} - ${g('address')}`,body});
  }}
  let conclusion=t(notes.conclusion)||t(v.field_0482);if(!conclusion)conclusion='The value opinion below reflects the preparer’s judgment. Relative comparable weighting and its rationale have not been supplied.';
  if(notes.primary&&v[notes.primary+'.address'])conclusion+=` Greatest weight is assigned by the preparer to ${v[notes.primary+'.address']}${t(notes.primaryReason)?' because '+notes.primaryReason:'. The supporting rationale has not been supplied.'}${t(notes.primaryReason)&&!/[.!?]$/.test(notes.primaryReason)?'.':''}`;
+ if(/^active\.[1-3]$/.test(notes.primaryActive||'')&&v[notes.primaryActive+'.address'])conclusion+=' The primary competitive listing is '+v[notes.primaryActive+'.address']+'. Its asking price provides competitive context, not a verified closed-sale value.';
  conclusion+=`\n\n${n(v.field_0477)!==null?'The concluded as-is market value is '+money(v.field_0477)+'.':'An as-is value opinion has not yet been finalized.'}${n(v.field_0478)!==null?' The suggested list price is '+money(v.field_0478)+'.':''}`;
  if(n(subject('price'))!==null&&n(v.field_0477)!==null){const d=n(subject('price'))-n(v.field_0477);conclusion+=d===0?' The reported asking price equals this opinion.':` The reported asking price is ${money(Math.abs(d))} ${d>0?'above':'below'} the concluded value.`;}
  out.push({title:'Value Conclusion',body:conclusion});return out;
