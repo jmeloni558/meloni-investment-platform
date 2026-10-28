@@ -5,14 +5,26 @@ const num=x=>n(x)===null?t(x):n(x).toLocaleString('en-US',{maximumFractionDigits
 const labels={financing:'seller concessions',location:'location',tenure:'ownership',site:'site',view:'view',design:'design and appeal',quality:'construction quality',year:'age',condition:'condition',rooms:'room count',gla:'living area',basement:'basement',utility:'functional utility',hvac:'heating/cooling',energy:'energy efficiency',garage:'garage/carport',porches:'outdoor features',fireplace:'fireplace',fence:'fence',pool:'pool',other:'other differences'};
 function sections(v){const notes=v._summaryNotes||{},subject=k=>t(v['sold.0.'+k]),out=[];
  const facts=[subject('gla')?`${num(subject('gla'))} square feet of living area`:'',subject('beds')?`${subject('beds')} bedrooms`:'',subject('baths')?`${subject('baths')} bathrooms`:''].filter(Boolean);
- let overview=`The subject at ${v.field_0008||subject('address')||'the reported address'}${subject('design')?' is described as '+subject('design')+'. It':''}${facts.length?' offers '+facts.join(', '):''}.${subject('year')?' Built in '+subject('year')+'.':''}`;
+ let overview=`The subject at ${v.field_0008||subject('address')||'the reported address'}${subject('design')?' is described as '+subject('design')+(facts.length?'. It':''):''}${facts.length?' offers '+facts.join(', '):''}.${subject('year')?' Built in '+subject('year')+'.':''}`;
  if(notes.subject)overview+=' '+notes.subject;
  const details=['condition','garage','view','tenure'].filter(k=>subject(k)).map(k=>`${({condition:'Condition',garage:'Garage/carport',view:'View',tenure:'Ownership'})[k]}: ${subject(k)}`);
  if(details.length)overview+='\n\n'+details.join('; ')+'.';
  if(n(subject('price'))!==null)overview+=`\n\nThe subject’s reported asking price is ${money(subject('price'))}${subject('dom')?' with '+subject('dom')+' reported days on market':''}. This is an asking price, not evidence of an achieved sale price.`;
  out.push({title:'Subject Property',body:overview});
- const market=[];const trend=[[23,'depressed'],[24,'slow'],[25,'stable'],[26,'improving'],[27,'excellent']].find(([i])=>v['field_00'+i]===true);if(trend)market.push('The market is characterized as '+trend[1]+'.');const supply=[[40,'normal'],[41,'an oversupply'],[42,'a shortage']].find(([i])=>v['field_00'+i]===true);if(supply)market.push(supply[0]===40?'The reported supply of comparable listings is normal.':'There is '+supply[1]+' of comparable listings.');if(t(v.field_0053))market.push('Typical marketing time is approximately '+v.field_0053+' days.');for(const [flag,pct,months,verb] of [[33,31,32,'decreased'],[36,34,35,'increased']])if(v['field_00'+flag]===true&&n(v.market_price_change_percent??v['field_00'+pct])!==null)market.push(`Reported prices have ${verb} ${num(v.market_price_change_percent??v['field_00'+pct])}%${t(v.market_price_change_months??v['field_00'+months])?' over '+(v.market_price_change_months??v['field_00'+months])+' months':''}.`);
- if(n(v.market_months_supply)!==null)market.push('Reported inventory is '+num(v.market_months_supply)+' months of supply.');if(notes.market)market.push(notes.market);if(!market.length)market.push('Market conditions and exposure time have not been established in the supplied BPO information.');
+ const market=[];const trend=[[23,'depressed'],[24,'slow'],[25,'stable'],[26,'improving'],[27,'excellent']].find(([i])=>v['field_00'+i]===true);if(trend)market.push('The market is characterized as '+trend[1]+'.');if(t(v.field_0053))market.push('Typical marketing time is approximately '+v.field_0053+' days.');for(const [flag,pct,months,verb] of [[33,31,32,'decreased'],[36,34,35,'increased']])if(v['field_00'+flag]===true&&n(v.market_price_change_percent??v['field_00'+pct])!==null)market.push(`Reported prices have ${verb} ${num(v.market_price_change_percent??v['field_00'+pct])}%${t(v.market_price_change_months??v['field_00'+months])?' over '+(v.market_price_change_months??v['field_00'+months])+' months':''}.`);
+ if(v.field_0037===true)market.push('Reported market prices are stable'+(t(v.market_price_change_months)?' over '+v.market_price_change_months+' months':'')+'.');
+ if(n(v.market_months_supply)!==null)market.push('Reported inventory is '+num(v.market_months_supply)+' months of supply.');
+ for(const [area,label] of [['zip','ZIP '+(t(v.market_zip)||'area')],['county',t(v.market_county)||'County area']]){
+  const p='market_'+area+'_',stats=[];
+  if(n(v[p+'median_home_value'])!==null)stats.push('median home value of '+money(v[p+'median_home_value']));
+  if(n(v[p+'median_list_price'])!==null)stats.push('median list price of '+money(v[p+'median_list_price']));
+  if(n(v[p+'list_price_12month_change'])!==null){const change=n(v[p+'list_price_12month_change']);stats.push('list prices '+(change===0?'unchanged':(change>0?'up ':'down ')+num(Math.abs(change))+'%')+' over 12 months');}
+  if(n(v[p+'median_home_age'])!==null)stats.push('median home age of '+num(v[p+'median_home_age'])+' years');
+  if(stats.length)market.push(label+' reports '+stats.join(', ')+'.');
+ }
+ const occupancy=[];if(n(v.field_0038)!==null)occupancy.push(num(v.field_0038)+'% owner occupied');if(n(v.field_0039)!==null)occupancy.push(num(v.field_0039)+'% renter occupied');if(occupancy.length)market.push('Reported neighborhood occupancy is '+occupancy.join(' and ')+'.');
+ if(Object.keys(v).some(k=>/^market_(zip|county)_median/.test(k)&&n(v[k])!==null))market.push('These area-wide statistics provide market context; they are not the subject’s value or a substitute for comparable-property evidence.');
+ if(notes.market)market.push(notes.market);if(!market.length)market.push('Market conditions and exposure time have not been established in the supplied BPO information.');
  out.push({title:'Neighborhood and Market Conditions',body:market.join(' ')});
  for(const kind of ['sold','active']){
  if(kind==='active'&&notes.competition)out.push({title:'Competitive Listings Context',body:notes.competition});
@@ -22,6 +34,9 @@ function sections(v){const notes=v._summaryNotes||{},subject=k=>t(v['sold.0.'+k]
  const delta=n(g('gla'))!==null&&n(subject('gla'))!==null?n(g('gla'))-n(subject('gla')):null;if(delta!==null)body+=delta===0?' Its living area matches the subject.':` It is ${num(Math.abs(delta))} square feet ${delta>0?'larger':'smaller'} than the subject.`;
  const adjustments=Object.entries(labels).filter(([k])=>n(g('adj_'+k))!==null&&n(g('adj_'+k))!==0).map(([k,label])=>`${label} (${n(g('adj_'+k))>0?'+':''}${money(g('adj_'+k))})`);
  if(adjustments.length)body+='\n\nThe BPO adjusts for '+adjustments.join(', ')+'.';
+ if(g('design'))body+=' The comparable design is described as '+g('design')+'.';
+ const designKey=p+'adj_design',generated=v._adjustments?.generated?.[designKey];
+ if(generated&&n(v[designKey])===n(generated.value)&&n(g('adj_design'))!==null&&n(g('adj_design'))!==0&&n(v._adjustments?.globals?.design)>0){body+=' Under the preparer’s single-story preference, this '+(n(g('adj_design'))>0?'adds to the inferior multistory/upper-floor comparable to reflect the single-story subject':'deducts from the superior single-story comparable to reflect the multistory/upper-floor subject')+'.';}
  if(n(g('adjusted'))!==null)body+=` The resulting adjusted ${kind==='sold'?'sale-price':'asking-price'} indication is ${money(g('adjusted'))}.`;
  const key=kind+'.'+i;if(notes[key])body+='\n\n'+notes[key];
  if(notes.primary===key)body+=' This is the preparer’s selected primary sold comparable.';

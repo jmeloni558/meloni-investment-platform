@@ -1,5 +1,14 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const C=require('../operations/bpo/core.cjs');
+test('Step 3 quantities reach both the editable form and market narrative without cross-mapping',async()=>{
+ const v={field_0008:'Synthetic market test',field_0033:true,market_price_change_percent:'7',market_price_change_months:'12',market_months_supply:'4.2',market_zip:'33543',market_county:'Pasco County',market_zip_median_home_value:'406000',market_county_median_home_value:'339000',market_zip_median_list_price:'449000',market_county_median_list_price:'345000',market_zip_list_price_12month_change:'2.2',market_county_list_price_12month_change:'4.6',market_zip_median_home_age:'16',market_county_median_home_age:'30',field_0038:'85',field_0039:'15'};
+ const body=C.draftSummary(v).sections.find(s=>s.title==='Neighborhood and Market Conditions').body;
+ for(const text of ['decreased 7%','12 months','4.2 months','ZIP 33543 reports','Pasco County reports','$406,000','$339,000','$449,000','$345,000','up 2.2%','up 4.6%','16 years','30 years','85% owner','15% renter','not the subject'])assert.ok(body.includes(text),text);
+ const fs=require('fs'),{PDFDocument}=require('pdf-lib');const pdf=await PDFDocument.load(await C.exportPDF(fs.readFileSync('assets/bpo/template.pdf'),v));const f=pdf.getForm();
+ for(const key of Object.keys(v).filter(k=>k.startsWith('market_')))assert.equal(f.getTextField(key).getText().replace(/[$,]/g,''),v[key],key);
+ assert.equal(f.getTextField('market_owner_percent').getText(),'85');assert.equal(f.getTextField('market_renter_percent').getText(),'15');
+ const empty=C.draftSummary({field_0037:true}).sections.find(s=>s.title==='Neighborhood and Market Conditions').body;assert.ok(empty.includes('stable'));assert.ok(!empty.includes('median'));assert.ok(!empty.includes('0%'));
+});
 test('neighborhood report quantities preserve geography, signed changes and source precision',async()=>{
  const {cleanExtraction}=await import('../supabase/functions/bpo-extract/contract.mjs');
  const data={market_zip:'33543',market_county:'Pasco County',market_zip_median_home_value:'406340',market_county_median_home_value:'$339K',market_zip_median_list_price:'$449K',market_county_median_list_price:'$345K',market_zip_list_price_12month_change:'+2.2%',market_county_list_price_12month_change:'+4.6%',market_zip_median_home_age:'16',market_county_median_home_age:'30',market_months_supply:'4.19',field_0038:'85%',field_0039:'15%',market_price_change_percent:'-7%',market_price_change_months:'12'};
