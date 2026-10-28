@@ -11,6 +11,7 @@ export function cleanExtraction(payload, schema, documents) {
     if(f.name==='field_0053'&&!/typical|average|median|neighborhood|normal|exposure/i.test(item.evidence)){warnings.push('Normal marketing time: property-specific days on market are not a neighborhood estimate; not imported.');continue;}
     if(f.name.endsWith('.energy')&&/^false$/i.test(value)&&/generation\s*Y\/N:\s*No/i.test(item.evidence))value='No generation';
     if(f.kind!=='check'&&/^(?:true|false)$/i.test(value)){warnings.push(`${f.label}: ambiguous yes/no value needs review.`);continue;}
+    if(f.name.endsWith('.condition')&&!/condition|renovat|repair|damage|maintain|updated|remodel|deferred|deteriorat/i.test(item.evidence)){warnings.push(`${f.label}: no explicit condition evidence; not imported.`);continue;}
     if(f.name.endsWith('.condition')&&!/^MLS:/i.test(value))value='MLS: '+value;
     if(f.kind==='check'){if(!['true','false'].includes(value))continue;value=value==='true';}
     else if(/\.(price|gla|beds|baths|rooms|year|dom|financing)$/.test(f.name)||['field_0038','field_0039'].includes(f.name)||f.name.startsWith('market_')&&!['market_zip','market_county'].includes(f.name)){
