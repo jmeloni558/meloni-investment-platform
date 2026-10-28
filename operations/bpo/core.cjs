@@ -5,6 +5,7 @@ const {PDFDocument,StandardFonts,rgb,layoutMultilineText}=require('pdf-lib');
 const byName=new Map(schema.map(f=>[f.name,f]));
 function number(v){if(v===null||v===undefined||String(v).trim()==='')return null;const s=String(v).trim().replace(/[$,]/g,'');if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(s))return null;const n=Number(s);return Number.isFinite(n)?n:null;}
 function money(n){return Number(n).toLocaleString('en-US',{maximumFractionDigits:2});}
+function subjectEdit(input,name,value){const v={...input},match=/^(sold|active)\.0\.(.+)$/.exec(name);if(!match||!byName.has(name)||calculated(name))return v;const other=(match[1]==='sold'?'active':'sold')+'.0.'+match[2];v[name]=value;if(byName.has(other))v[other]=value;if(match[2]==='address')v.field_0008=value;return v;}
 function recalculate(input){const v={...input};for(const kind of ['sold','active'])for(let i=0;i<4;i++){
  const p=`${kind}.${i}.`,price=number(v[p+'price']),gla=number(v[p+'gla']);v[p+'ppsf']=price!==null&&gla>0?money(price/gla):'';
  if(i){const fs=schema.filter(f=>f.name.startsWith(p+'adj_'));let sum=0,invalid=false;for(const f of fs){const x=v[f.name];if(x!==undefined&&String(x).trim()!==''){const n=number(x);if(n===null)invalid=true;else sum+=n;}}v[p+'net']=invalid||(price===null&&!fs.some(f=>String(v[f.name]??'').trim()))?'':money(sum);v[p+'adjusted']=!invalid&&price!==null?money(price+sum):'';}
@@ -42,4 +43,4 @@ function applyAI(input,result){
  v._aiFields=sources;v._aiReview={at:new Date().toISOString(),warnings,applied};return {values:recalculate(v),applied,preserved,warnings};
 }
 function applyAdjustments(input,overwrite=false){const r=adjustments.apply(input,number,money,overwrite);return {...r,values:recalculate(r.values)};}
-module.exports={...require('./summary.cjs'),blanketFields:adjustments.blanketFields,applyAdjustments,adjustmentParts:adjustments.parts,concession:adjustments.concession,schema,byName,groups,number,money,recalculate,calculated,issues,applyRecord,listingRecord,parseMLS,exportPDF,applyAI};
+module.exports={subjectEdit,...require('./summary.cjs'),blanketFields:adjustments.blanketFields,applyAdjustments,adjustmentParts:adjustments.parts,concession:adjustments.concession,schema,byName,groups,number,money,recalculate,calculated,issues,applyRecord,listingRecord,parseMLS,exportPDF,applyAI};
