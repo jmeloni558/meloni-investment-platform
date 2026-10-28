@@ -1,19 +1,9 @@
 'use strict';
 const {PDFDocument,StandardFonts,rgb}=require('pdf-lib');
-function fingerprint(v){return JSON.stringify(Object.keys(v).filter(k=>!k.startsWith('_')).sort().map(k=>[k,v[k]]));}
+function fingerprint(v){return JSON.stringify([v._summaryNotes||{},Object.keys(v).filter(k=>!k.startsWith('_')).sort().map(k=>[k,v[k]])]);}
 const text=x=>String(x??'').trim();
 const cash=x=>text(x)?Number(String(x).replace(/[$,]/g,'')).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'not entered';
-function draft(v){
- const subject=v.field_0008||v['sold.0.address']||'Subject property';
- const sections=[{title:'Subject Property and Market Overview',body:`${subject} is the subject of this broker price opinion. ${['gla','beds','baths','year'].map((k,i)=>text(v['sold.0.'+k])?`${['Living area','Bedrooms','Bathrooms','Year built'][i]}: ${v['sold.0.'+k]}.`:'').filter(Boolean).join(' ')} The description reflects the information entered in the BPO; condition, occupancy and source discrepancies should be verified before reliance.\n\n${[[23,'depressed'],[24,'slow'],[25,'stable'],[26,'improving'],[27,'excellent']].filter(([n])=>v['field_00'+n]===true).map(([,s])=>`The entered market assessment is ${s}.`).join(' ')||'A market trend has not been entered; add a discussion supported by your market sources.'} ${text(v.field_0053)?`The entered marketing period is ${v.field_0053} days.`:''} ${text(v.field_0047)&&text(v.field_0048)?`The reported market price range is ${cash(v.field_0047)} to ${cash(v.field_0048)}.`:''} Explain the subject’s neighborhood, competing inventory and any material source conflicts here.`}];
- for(const kind of ['sold','active'])for(let i=1;i<=3;i++){
-  const p=kind+'.'+i+'.',g=k=>text(v[p+k]);if(!g('address'))continue;
-  const differences=['gla','beds','baths','year','condition','design'].filter(k=>g(k)&&text(v['sold.0.'+k])&&g(k)!==text(v['sold.0.'+k])).map(k=>`${({gla:'living area',beds:'bedrooms',baths:'bathrooms',year:'year built',condition:'condition',design:'design'})[k]} is ${g(k)} compared with ${v['sold.0.'+k]} for the subject`);
-  sections.push({title:`${kind==='sold'?'Sold':'Active / Pending'} Comparable ${i} — ${g('address')}`,body:`${g('address')} ${kind==='sold'?`has an entered closed-sale price of ${cash(g('price'))}${g('date')?' and sale date of '+g('date'):''}`:`is included as active/pending competition at an entered asking price of ${cash(g('price'))}`}. ${g('distance')?`Reported distance: ${g('distance')}. `:''}${g('dom')?`Reported days on market: ${g('dom')}. `:''}${differences.length?'Compared with the subject, '+differences.join('; ')+'. ':''}The entered net adjustment is ${cash(g('net'))}, producing an adjusted ${kind==='sold'?'sale-price indication':'asking-price indication'} of ${cash(g('adjusted'))}. ${kind==='active'?'An asking price is competitive evidence, not a completed transaction; a pending contract price is not established by the listing price. ':'This sale should be weighed for its similarity, timing and the reliability of its source data. '}Add your explanation of the most important adjustments and the weight you give this comparable.`});
- }
- sections.push({title:'Value Conclusion',body:`${text(v.field_0482)||'Explain how the sold evidence and active/pending competition support your final opinion, identifying the most persuasive comparables and any limitations.'}\n\n${text(v.field_0477)?`The entered as-is market value opinion is ${cash(v.field_0477)}.`:'An as-is market value opinion has not yet been entered in the BPO.'} ${text(v.field_0478)?`The recommended as-is list price is ${cash(v.field_0478)}.`:''} These are the preparer’s entered opinions; the summary does not independently select a value or assign comparable weights.`});
- return {source:fingerprint(v),sections};
-}
+function draft(v){return {source:fingerprint(v),sections:require('./narrative.cjs').sections(v)};}
 function validate(v){if(!v._summary?.sections?.length)throw Error('Generate and review the BPO summary in Step 6 first.');if(v._summary.source!==fingerprint(v))throw Error('BPO facts changed after the summary was prepared. Review and confirm the summary against the current form in Step 6.');}
 async function summaryPDF(v){
  validate(v);const d=await PDFDocument.create(),font=await d.embedFont(StandardFonts.Helvetica),bold=await d.embedFont(StandardFonts.HelveticaBold);let page,y;
@@ -24,7 +14,7 @@ async function summaryPDF(v){
  add();draw('Broker Price Opinion Summary',bold,19,25);draw(v.field_0008||'Subject property',bold,12,18);
  draw(`BPO date: ${v.field_0002||'Not entered'}   |   Prepared by: ${v.field_0018||v.field_0009||'Not entered'}`,font,10,15);if(v.field_0015)draw(v.field_0015,font,10,15);
  draw(`As-is value: ${cash(v.field_0477)}   |   Recommended list: ${cash(v.field_0478)}`,font,10,15);y-=12;
- for(const s of v._summary.sections){const body=lines(s.body,font,11);const needed=24+body.length*15+12;if(y<115||(s.title==='Value Conclusion'&&needed<660&&y-needed<58))add();draw(s.title,bold,12,18);y-=4;draw(s.body,font,11,15);y-=14;}
+ for(const s of v._summary.sections){const body=lines(s.body,font,11);const needed=24+body.length*15+12;if(y<115||(needed<640&&y-needed<58))add();draw(s.title,bold,12,18);y-=4;draw(s.body,font,11,15);y-=14;}
  d.getPages().forEach((p,i)=>p.drawText(`BPO Summary  |  ${i+1} / ${d.getPageCount()}`,{x:48,y:30,size:9,font,color:rgb(.35,.4,.45)}));return d.save();
 }
 async function mergePackage(bpo,summary,attachments){const d=await PDFDocument.load(bpo);for(const a of [{name:'BPO Summary',bytes:summary},...attachments]){let src;try{src=await PDFDocument.load(a.bytes);}catch(_){throw Error(`Cannot read ${a.name}. Supply an unencrypted, valid PDF.`);}if(src.getForm().getFields().length)throw Error(`${a.name} contains interactive fields. Supply a separate static copy for the supporting-document package; the original remains unchanged.`);for(const p of await d.copyPages(src,src.getPageIndices()))d.addPage(p);}return d.save();}
