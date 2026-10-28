@@ -23,6 +23,8 @@ export function cleanExtraction(payload, schema, documents) {
     }
     seen.add(item.name);fields.push({name:item.name,value,path:doc.path,filename:doc.name,page:item.page,evidence:item.evidence.slice(0,400)});
   }
+  const change=fields.find(f=>f.name==='market_price_change_percent');
+  if(change){const amount=Number(change.value),options=['field_0033','field_0036','field_0037'];const selected=fields.find(f=>options.includes(f.name)&&f.value===true);const direction=selected?.name||(amount<0||/\b(decreased|declined|fell)\b/i.test(change.evidence)?'field_0033':/\b(increased|rose|grew)\b/i.test(change.evidence)?'field_0036':amount===0?'field_0037':null);change.value=String(Math.abs(amount));if(direction&&!selected){const existing=fields.find(f=>f.name===direction);if(existing)existing.value=true;else fields.push({...change,name:direction,value:true});}}
   for(const prefix of ['sold.0','sold.1','sold.2','sold.3','active.0','active.1','active.2','active.3']){
     if(fields.some(f=>f.name===prefix+'.address')){
       const missing=['price','gla','beds','baths'].filter(k=>!seen.has(prefix+'.'+k));
