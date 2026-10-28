@@ -402,7 +402,7 @@
   {
     "name": "market_price_change_percent",
     "pdfName": "market_price_change_percent",
-    "label": "market price change percent",
+    "label": "Property-type market price change (%)",
     "page": 0,
     "x": 414.0,
     "y": 805.0,
@@ -422,7 +422,7 @@
   {
     "name": "market_price_change_months",
     "pdfName": "market_price_change_months",
-    "label": "market price change months",
+    "label": "Market price change period (months)",
     "page": 0,
     "x": 491.0,
     "y": 805.0,
@@ -462,7 +462,7 @@
   {
     "name": "field_0038",
     "pdfName": "market_owner_percent",
-    "label": "market owner percent",
+    "label": "Owner occupied (%)",
     "page": 0,
     "x": 174.0,
     "y": 773.0,
@@ -482,7 +482,7 @@
   {
     "name": "field_0039",
     "pdfName": "market_renter_percent",
-    "label": "market renter percent",
+    "label": "Renter occupied (%)",
     "page": 0,
     "x": 330.0,
     "y": 773.0,
@@ -502,7 +502,7 @@
   {
     "name": "market_zip",
     "pdfName": "market_zip",
-    "label": "market zip",
+    "label": "ZIP code",
     "page": 0,
     "x": 270.0,
     "y": 758.0,
@@ -522,7 +522,7 @@
   {
     "name": "market_county",
     "pdfName": "market_county",
-    "label": "market county",
+    "label": "County",
     "page": 0,
     "x": 443.0,
     "y": 758.0,
@@ -542,7 +542,7 @@
   {
     "name": "market_zip_median_home_value",
     "pdfName": "market_zip_median_home_value",
-    "label": "market zip median home value",
+    "label": "ZIP: Median home value",
     "page": 0,
     "x": 270.0,
     "y": 745.0,
@@ -562,7 +562,7 @@
   {
     "name": "market_county_median_home_value",
     "pdfName": "market_county_median_home_value",
-    "label": "market county median home value",
+    "label": "County: Median home value",
     "page": 0,
     "x": 443.0,
     "y": 745.0,
@@ -582,7 +582,7 @@
   {
     "name": "market_zip_median_list_price",
     "pdfName": "market_zip_median_list_price",
-    "label": "market zip median list price",
+    "label": "ZIP: Median list price",
     "page": 0,
     "x": 270.0,
     "y": 733.0,
@@ -602,7 +602,7 @@
   {
     "name": "market_county_median_list_price",
     "pdfName": "market_county_median_list_price",
-    "label": "market county median list price",
+    "label": "County: Median list price",
     "page": 0,
     "x": 443.0,
     "y": 733.0,
@@ -622,7 +622,7 @@
   {
     "name": "market_zip_list_price_12month_change",
     "pdfName": "market_zip_list_price_12month_change",
-    "label": "market zip list price 12month change",
+    "label": "ZIP: List price 12month change",
     "page": 0,
     "x": 270.0,
     "y": 721.0,
@@ -642,7 +642,7 @@
   {
     "name": "market_county_list_price_12month_change",
     "pdfName": "market_county_list_price_12month_change",
-    "label": "market county list price 12month change",
+    "label": "County: List price 12month change",
     "page": 0,
     "x": 443.0,
     "y": 721.0,
@@ -662,7 +662,7 @@
   {
     "name": "market_zip_median_home_age",
     "pdfName": "market_zip_median_home_age",
-    "label": "market zip median home age",
+    "label": "ZIP: Median home age",
     "page": 0,
     "x": 270.0,
     "y": 709.0,
@@ -682,7 +682,7 @@
   {
     "name": "market_county_median_home_age",
     "pdfName": "market_county_median_home_age",
-    "label": "market county median home age",
+    "label": "County: Median home age",
     "page": 0,
     "x": 443.0,
     "y": 709.0,
@@ -702,7 +702,7 @@
   {
     "name": "field_0047",
     "pdfName": "subject_value_low",
-    "label": "subject value low",
+    "label": "Neighborhood value range: low ($)",
     "page": 0,
     "x": 167.0,
     "y": 668.0,
@@ -722,7 +722,7 @@
   {
     "name": "field_0048",
     "pdfName": "subject_value_high",
-    "label": "subject value high",
+    "label": "Neighborhood value range: high ($)",
     "page": 0,
     "x": 304.0,
     "y": 668.0,
@@ -802,7 +802,7 @@
   {
     "name": "field_0053",
     "pdfName": "subject_marketing_days",
-    "label": "subject marketing days",
+    "label": "Normal neighborhood marketing time (days)",
     "page": 0,
     "x": 151.0,
     "y": 628.0,
@@ -962,7 +962,7 @@
   {
     "name": "sold.0.address",
     "pdfName": "subject_shared.address",
-    "label": "Subject address",
+    "label": "Subject Address",
     "page": 0,
     "x": 140.0,
     "y": 491.0,
@@ -982,7 +982,7 @@
   {
     "name": "sold.1.address",
     "pdfName": "sold.1.address",
-    "label": "Sold comp 1 address",
+    "label": "Sold comp 1 Address",
     "page": 0,
     "x": 236.0,
     "y": 491.0,
@@ -1002,7 +1002,7 @@
   {
     "name": "sold.2.address",
     "pdfName": "sold.2.address",
-    "label": "Sold comp 2 address",
+    "label": "Sold comp 2 Address",
     "page": 0,
     "x": 354.0,
     "y": 491.0,
@@ -1022,7 +1022,7 @@
   {
     "name": "sold.3.address",
     "pdfName": "sold.3.address",
-    "label": "Sold comp 3 address",
+    "label": "Sold comp 3 Address",
     "page": 0,
     "x": 472.0,
     "y": 491.0,
@@ -1042,7 +1042,7 @@
   {
     "name": "sold.0.city",
     "pdfName": "subject_shared.city",
-    "label": "Subject city",
+    "label": "Subject City",
     "page": 0,
     "x": 140.0,
     "y": 477.5,
@@ -1062,7 +1062,7 @@
   {
     "name": "sold.1.city",
     "pdfName": "sold.1.city",
-    "label": "Sold comp 1 city",
+    "label": "Sold comp 1 City",
     "page": 0,
     "x": 236.0,
     "y": 477.5,
@@ -1082,7 +1082,7 @@
   {
     "name": "sold.2.city",
     "pdfName": "sold.2.city",
-    "label": "Sold comp 2 city",
+    "label": "Sold comp 2 City",
     "page": 0,
     "x": 354.0,
     "y": 477.5,
@@ -1102,7 +1102,7 @@
   {
     "name": "sold.3.city",
     "pdfName": "sold.3.city",
-    "label": "Sold comp 3 city",
+    "label": "Sold comp 3 City",
     "page": 0,
     "x": 472.0,
     "y": 477.5,
@@ -1122,7 +1122,7 @@
   {
     "name": "sold.0.state",
     "pdfName": "subject_shared.state",
-    "label": "Subject state",
+    "label": "Subject State",
     "page": 0,
     "x": 140.0,
     "y": 464.0,
@@ -1142,7 +1142,7 @@
   {
     "name": "sold.0.zip",
     "pdfName": "subject_shared.zip",
-    "label": "Subject zip",
+    "label": "Subject ZIP code",
     "page": 0,
     "x": 170.0,
     "y": 464.0,
@@ -1162,7 +1162,7 @@
   {
     "name": "sold.1.state",
     "pdfName": "sold.1.state",
-    "label": "Sold comp 1 state",
+    "label": "Sold comp 1 State",
     "page": 0,
     "x": 236.0,
     "y": 464.0,
@@ -1182,7 +1182,7 @@
   {
     "name": "sold.1.zip",
     "pdfName": "sold.1.zip",
-    "label": "Sold comp 1 zip",
+    "label": "Sold comp 1 ZIP code",
     "page": 0,
     "x": 266.0,
     "y": 464.0,
@@ -1202,7 +1202,7 @@
   {
     "name": "sold.2.state",
     "pdfName": "sold.2.state",
-    "label": "Sold comp 2 state",
+    "label": "Sold comp 2 State",
     "page": 0,
     "x": 354.0,
     "y": 464.0,
@@ -1222,7 +1222,7 @@
   {
     "name": "sold.2.zip",
     "pdfName": "sold.2.zip",
-    "label": "Sold comp 2 zip",
+    "label": "Sold comp 2 ZIP code",
     "page": 0,
     "x": 384.0,
     "y": 464.0,
@@ -1242,7 +1242,7 @@
   {
     "name": "sold.3.state",
     "pdfName": "sold.3.state",
-    "label": "Sold comp 3 state",
+    "label": "Sold comp 3 State",
     "page": 0,
     "x": 472.0,
     "y": 464.0,
@@ -1262,7 +1262,7 @@
   {
     "name": "sold.3.zip",
     "pdfName": "sold.3.zip",
-    "label": "Sold comp 3 zip",
+    "label": "Sold comp 3 ZIP code",
     "page": 0,
     "x": 502.0,
     "y": 464.0,
@@ -1282,7 +1282,7 @@
   {
     "name": "sold.0.distance",
     "pdfName": "sold.0.proximity",
-    "label": "Subject distance",
+    "label": "Subject Proximity to subject",
     "page": 0,
     "x": 140.0,
     "y": 450.5,
@@ -1302,7 +1302,7 @@
   {
     "name": "sold.1.distance",
     "pdfName": "sold.1.proximity",
-    "label": "Sold comp 1 distance",
+    "label": "Sold comp 1 Proximity to subject",
     "page": 0,
     "x": 236.0,
     "y": 450.5,
@@ -1322,7 +1322,7 @@
   {
     "name": "sold.2.distance",
     "pdfName": "sold.2.proximity",
-    "label": "Sold comp 2 distance",
+    "label": "Sold comp 2 Proximity to subject",
     "page": 0,
     "x": 354.0,
     "y": 450.5,
@@ -1342,7 +1342,7 @@
   {
     "name": "sold.3.distance",
     "pdfName": "sold.3.proximity",
-    "label": "Sold comp 3 distance",
+    "label": "Sold comp 3 Proximity to subject",
     "page": 0,
     "x": 472.0,
     "y": 450.5,
@@ -1362,7 +1362,7 @@
   {
     "name": "sold.0.price",
     "pdfName": "subject_shared.price",
-    "label": "Subject price",
+    "label": "Subject Price ($)",
     "page": 0,
     "x": 140.0,
     "y": 437.0,
@@ -1382,7 +1382,7 @@
   {
     "name": "sold.1.price",
     "pdfName": "sold.1.price",
-    "label": "Sold comp 1 price",
+    "label": "Sold comp 1 Price ($)",
     "page": 0,
     "x": 236.0,
     "y": 437.0,
@@ -1402,7 +1402,7 @@
   {
     "name": "sold.2.price",
     "pdfName": "sold.2.price",
-    "label": "Sold comp 2 price",
+    "label": "Sold comp 2 Price ($)",
     "page": 0,
     "x": 354.0,
     "y": 437.0,
@@ -1422,7 +1422,7 @@
   {
     "name": "sold.3.price",
     "pdfName": "sold.3.price",
-    "label": "Sold comp 3 price",
+    "label": "Sold comp 3 Price ($)",
     "page": 0,
     "x": 472.0,
     "y": 437.0,
@@ -1442,7 +1442,7 @@
   {
     "name": "sold.0.ppsf",
     "pdfName": "subject_shared.ppsf",
-    "label": "Subject ppsf",
+    "label": "Subject Price per square foot ($)",
     "page": 0,
     "x": 140.0,
     "y": 423.5,
@@ -1462,7 +1462,7 @@
   {
     "name": "sold.1.ppsf",
     "pdfName": "sold.1.ppsf",
-    "label": "Sold comp 1 ppsf",
+    "label": "Sold comp 1 Price per square foot ($)",
     "page": 0,
     "x": 236.0,
     "y": 423.5,
@@ -1482,7 +1482,7 @@
   {
     "name": "sold.2.ppsf",
     "pdfName": "sold.2.ppsf",
-    "label": "Sold comp 2 ppsf",
+    "label": "Sold comp 2 Price per square foot ($)",
     "page": 0,
     "x": 354.0,
     "y": 423.5,
@@ -1502,7 +1502,7 @@
   {
     "name": "sold.3.ppsf",
     "pdfName": "sold.3.ppsf",
-    "label": "Sold comp 3 ppsf",
+    "label": "Sold comp 3 Price per square foot ($)",
     "page": 0,
     "x": 472.0,
     "y": 423.5,
@@ -1522,7 +1522,7 @@
   {
     "name": "sold.0.source",
     "pdfName": "subject_shared.source",
-    "label": "Subject source",
+    "label": "Subject Source",
     "page": 0,
     "x": 140.0,
     "y": 410.0,
@@ -1542,7 +1542,7 @@
   {
     "name": "sold.1.source",
     "pdfName": "sold.1.source",
-    "label": "Sold comp 1 source",
+    "label": "Sold comp 1 Source",
     "page": 0,
     "x": 236.0,
     "y": 410.0,
@@ -1562,7 +1562,7 @@
   {
     "name": "sold.2.source",
     "pdfName": "sold.2.source",
-    "label": "Sold comp 2 source",
+    "label": "Sold comp 2 Source",
     "page": 0,
     "x": 354.0,
     "y": 410.0,
@@ -1582,7 +1582,7 @@
   {
     "name": "sold.3.source",
     "pdfName": "sold.3.source",
-    "label": "Sold comp 3 source",
+    "label": "Sold comp 3 Source",
     "page": 0,
     "x": 472.0,
     "y": 410.0,
@@ -1602,7 +1602,7 @@
   {
     "name": "sold.0.date",
     "pdfName": "sold.0.sale_date",
-    "label": "Subject date",
+    "label": "Subject Date",
     "page": 0,
     "x": 140.0,
     "y": 396.5,
@@ -1622,7 +1622,7 @@
   {
     "name": "sold.1.date",
     "pdfName": "sold.1.sale_date",
-    "label": "Sold comp 1 date",
+    "label": "Sold comp 1 Date",
     "page": 0,
     "x": 236.0,
     "y": 396.5,
@@ -1642,7 +1642,7 @@
   {
     "name": "sold.2.date",
     "pdfName": "sold.2.sale_date",
-    "label": "Sold comp 2 date",
+    "label": "Sold comp 2 Date",
     "page": 0,
     "x": 354.0,
     "y": 396.5,
@@ -1662,7 +1662,7 @@
   {
     "name": "sold.3.date",
     "pdfName": "sold.3.sale_date",
-    "label": "Sold comp 3 date",
+    "label": "Sold comp 3 Date",
     "page": 0,
     "x": 472.0,
     "y": 396.5,
@@ -1682,7 +1682,7 @@
   {
     "name": "sold.0.dom",
     "pdfName": "subject_shared.dom",
-    "label": "Subject dom",
+    "label": "Subject Days on market",
     "page": 0,
     "x": 140.0,
     "y": 383.0,
@@ -1702,7 +1702,7 @@
   {
     "name": "sold.1.dom",
     "pdfName": "sold.1.dom",
-    "label": "Sold comp 1 dom",
+    "label": "Sold comp 1 Days on market",
     "page": 0,
     "x": 236.0,
     "y": 383.0,
@@ -1722,7 +1722,7 @@
   {
     "name": "sold.2.dom",
     "pdfName": "sold.2.dom",
-    "label": "Sold comp 2 dom",
+    "label": "Sold comp 2 Days on market",
     "page": 0,
     "x": 354.0,
     "y": 383.0,
@@ -1742,7 +1742,7 @@
   {
     "name": "sold.3.dom",
     "pdfName": "sold.3.dom",
-    "label": "Sold comp 3 dom",
+    "label": "Sold comp 3 Days on market",
     "page": 0,
     "x": 472.0,
     "y": 383.0,
@@ -1762,7 +1762,7 @@
   {
     "name": "sold.0.reo",
     "pdfName": "subject_shared.reo",
-    "label": "Subject reo",
+    "label": "Subject REO / corporate owned",
     "page": 0,
     "x": 140.0,
     "y": 369.5,
@@ -1782,7 +1782,7 @@
   {
     "name": "sold.1.reo",
     "pdfName": "sold.1.reo",
-    "label": "Sold comp 1 reo",
+    "label": "Sold comp 1 REO / corporate owned",
     "page": 0,
     "x": 236.0,
     "y": 369.5,
@@ -1802,7 +1802,7 @@
   {
     "name": "sold.2.reo",
     "pdfName": "sold.2.reo",
-    "label": "Sold comp 2 reo",
+    "label": "Sold comp 2 REO / corporate owned",
     "page": 0,
     "x": 354.0,
     "y": 369.5,
@@ -1822,7 +1822,7 @@
   {
     "name": "sold.3.reo",
     "pdfName": "sold.3.reo",
-    "label": "Sold comp 3 reo",
+    "label": "Sold comp 3 REO / corporate owned",
     "page": 0,
     "x": 472.0,
     "y": 369.5,
@@ -1842,7 +1842,7 @@
   {
     "name": "sold.0.financing",
     "pdfName": "sold.0.concessions",
-    "label": "Subject financing",
+    "label": "Subject Seller concessions ($)",
     "page": 0,
     "x": 140.0,
     "y": 340.0,
@@ -1862,7 +1862,7 @@
   {
     "name": "sold.1.financing",
     "pdfName": "sold.1.concessions",
-    "label": "Sold comp 1 financing",
+    "label": "Sold comp 1 Seller concessions ($)",
     "page": 0,
     "x": 236.0,
     "y": 340.0,
@@ -1882,7 +1882,7 @@
   {
     "name": "sold.1.adj_financing",
     "pdfName": "sold.1.concessions_adjustment",
-    "label": "Sold comp 1 financing adjustment ($)",
+    "label": "Sold comp 1 Seller concessions ($) adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 340.0,
@@ -1902,7 +1902,7 @@
   {
     "name": "sold.2.financing",
     "pdfName": "sold.2.concessions",
-    "label": "Sold comp 2 financing",
+    "label": "Sold comp 2 Seller concessions ($)",
     "page": 0,
     "x": 354.0,
     "y": 340.0,
@@ -1922,7 +1922,7 @@
   {
     "name": "sold.2.adj_financing",
     "pdfName": "sold.2.concessions_adjustment",
-    "label": "Sold comp 2 financing adjustment ($)",
+    "label": "Sold comp 2 Seller concessions ($) adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 340.0,
@@ -1942,7 +1942,7 @@
   {
     "name": "sold.3.financing",
     "pdfName": "sold.3.concessions",
-    "label": "Sold comp 3 financing",
+    "label": "Sold comp 3 Seller concessions ($)",
     "page": 0,
     "x": 472.0,
     "y": 340.0,
@@ -1962,7 +1962,7 @@
   {
     "name": "sold.3.adj_financing",
     "pdfName": "sold.3.concessions_adjustment",
-    "label": "Sold comp 3 financing adjustment ($)",
+    "label": "Sold comp 3 Seller concessions ($) adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 340.0,
@@ -1982,7 +1982,7 @@
   {
     "name": "sold.0.location",
     "pdfName": "subject_shared.location",
-    "label": "Subject location",
+    "label": "Subject Location",
     "page": 0,
     "x": 140.0,
     "y": 326.5,
@@ -2002,7 +2002,7 @@
   {
     "name": "sold.1.location",
     "pdfName": "sold.1.location",
-    "label": "Sold comp 1 location",
+    "label": "Sold comp 1 Location",
     "page": 0,
     "x": 236.0,
     "y": 326.5,
@@ -2022,7 +2022,7 @@
   {
     "name": "sold.1.adj_location",
     "pdfName": "sold.1.location_adjustment",
-    "label": "Sold comp 1 location adjustment ($)",
+    "label": "Sold comp 1 Location adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 326.5,
@@ -2042,7 +2042,7 @@
   {
     "name": "sold.2.location",
     "pdfName": "sold.2.location",
-    "label": "Sold comp 2 location",
+    "label": "Sold comp 2 Location",
     "page": 0,
     "x": 354.0,
     "y": 326.5,
@@ -2062,7 +2062,7 @@
   {
     "name": "sold.2.adj_location",
     "pdfName": "sold.2.location_adjustment",
-    "label": "Sold comp 2 location adjustment ($)",
+    "label": "Sold comp 2 Location adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 326.5,
@@ -2082,7 +2082,7 @@
   {
     "name": "sold.3.location",
     "pdfName": "sold.3.location",
-    "label": "Sold comp 3 location",
+    "label": "Sold comp 3 Location",
     "page": 0,
     "x": 472.0,
     "y": 326.5,
@@ -2102,7 +2102,7 @@
   {
     "name": "sold.3.adj_location",
     "pdfName": "sold.3.location_adjustment",
-    "label": "Sold comp 3 location adjustment ($)",
+    "label": "Sold comp 3 Location adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 326.5,
@@ -2122,7 +2122,7 @@
   {
     "name": "sold.0.tenure",
     "pdfName": "subject_shared.tenure",
-    "label": "Subject tenure",
+    "label": "Subject Property Rights",
     "page": 0,
     "x": 140.0,
     "y": 313.0,
@@ -2142,7 +2142,7 @@
   {
     "name": "sold.1.tenure",
     "pdfName": "sold.1.tenure",
-    "label": "Sold comp 1 tenure",
+    "label": "Sold comp 1 Property Rights",
     "page": 0,
     "x": 236.0,
     "y": 313.0,
@@ -2162,7 +2162,7 @@
   {
     "name": "sold.1.adj_tenure",
     "pdfName": "sold.1.tenure_adjustment",
-    "label": "Sold comp 1 tenure adjustment ($)",
+    "label": "Sold comp 1 Property Rights adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 313.0,
@@ -2182,7 +2182,7 @@
   {
     "name": "sold.2.tenure",
     "pdfName": "sold.2.tenure",
-    "label": "Sold comp 2 tenure",
+    "label": "Sold comp 2 Property Rights",
     "page": 0,
     "x": 354.0,
     "y": 313.0,
@@ -2202,7 +2202,7 @@
   {
     "name": "sold.2.adj_tenure",
     "pdfName": "sold.2.tenure_adjustment",
-    "label": "Sold comp 2 tenure adjustment ($)",
+    "label": "Sold comp 2 Property Rights adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 313.0,
@@ -2222,7 +2222,7 @@
   {
     "name": "sold.3.tenure",
     "pdfName": "sold.3.tenure",
-    "label": "Sold comp 3 tenure",
+    "label": "Sold comp 3 Property Rights",
     "page": 0,
     "x": 472.0,
     "y": 313.0,
@@ -2242,7 +2242,7 @@
   {
     "name": "sold.3.adj_tenure",
     "pdfName": "sold.3.tenure_adjustment",
-    "label": "Sold comp 3 tenure adjustment ($)",
+    "label": "Sold comp 3 Property Rights adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 313.0,
@@ -2262,7 +2262,7 @@
   {
     "name": "sold.0.site",
     "pdfName": "subject_shared.site",
-    "label": "Subject site",
+    "label": "Subject Site",
     "page": 0,
     "x": 140.0,
     "y": 299.5,
@@ -2282,7 +2282,7 @@
   {
     "name": "sold.1.site",
     "pdfName": "sold.1.site",
-    "label": "Sold comp 1 site",
+    "label": "Sold comp 1 Site",
     "page": 0,
     "x": 236.0,
     "y": 299.5,
@@ -2302,7 +2302,7 @@
   {
     "name": "sold.1.adj_site",
     "pdfName": "sold.1.site_adjustment",
-    "label": "Sold comp 1 site adjustment ($)",
+    "label": "Sold comp 1 Site adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 299.5,
@@ -2322,7 +2322,7 @@
   {
     "name": "sold.2.site",
     "pdfName": "sold.2.site",
-    "label": "Sold comp 2 site",
+    "label": "Sold comp 2 Site",
     "page": 0,
     "x": 354.0,
     "y": 299.5,
@@ -2342,7 +2342,7 @@
   {
     "name": "sold.2.adj_site",
     "pdfName": "sold.2.site_adjustment",
-    "label": "Sold comp 2 site adjustment ($)",
+    "label": "Sold comp 2 Site adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 299.5,
@@ -2362,7 +2362,7 @@
   {
     "name": "sold.3.site",
     "pdfName": "sold.3.site",
-    "label": "Sold comp 3 site",
+    "label": "Sold comp 3 Site",
     "page": 0,
     "x": 472.0,
     "y": 299.5,
@@ -2382,7 +2382,7 @@
   {
     "name": "sold.3.adj_site",
     "pdfName": "sold.3.site_adjustment",
-    "label": "Sold comp 3 site adjustment ($)",
+    "label": "Sold comp 3 Site adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 299.5,
@@ -2402,7 +2402,7 @@
   {
     "name": "sold.0.view",
     "pdfName": "subject_shared.view",
-    "label": "Subject view",
+    "label": "Subject View",
     "page": 0,
     "x": 140.0,
     "y": 286.0,
@@ -2422,7 +2422,7 @@
   {
     "name": "sold.1.view",
     "pdfName": "sold.1.view",
-    "label": "Sold comp 1 view",
+    "label": "Sold comp 1 View",
     "page": 0,
     "x": 236.0,
     "y": 286.0,
@@ -2442,7 +2442,7 @@
   {
     "name": "sold.1.adj_view",
     "pdfName": "sold.1.view_adjustment",
-    "label": "Sold comp 1 view adjustment ($)",
+    "label": "Sold comp 1 View adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 286.0,
@@ -2462,7 +2462,7 @@
   {
     "name": "sold.2.view",
     "pdfName": "sold.2.view",
-    "label": "Sold comp 2 view",
+    "label": "Sold comp 2 View",
     "page": 0,
     "x": 354.0,
     "y": 286.0,
@@ -2482,7 +2482,7 @@
   {
     "name": "sold.2.adj_view",
     "pdfName": "sold.2.view_adjustment",
-    "label": "Sold comp 2 view adjustment ($)",
+    "label": "Sold comp 2 View adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 286.0,
@@ -2502,7 +2502,7 @@
   {
     "name": "sold.3.view",
     "pdfName": "sold.3.view",
-    "label": "Sold comp 3 view",
+    "label": "Sold comp 3 View",
     "page": 0,
     "x": 472.0,
     "y": 286.0,
@@ -2522,7 +2522,7 @@
   {
     "name": "sold.3.adj_view",
     "pdfName": "sold.3.view_adjustment",
-    "label": "Sold comp 3 view adjustment ($)",
+    "label": "Sold comp 3 View adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 286.0,
@@ -2542,7 +2542,7 @@
   {
     "name": "sold.0.design",
     "pdfName": "subject_shared.design",
-    "label": "Subject design",
+    "label": "Subject Design",
     "page": 0,
     "x": 140.0,
     "y": 272.5,
@@ -2562,7 +2562,7 @@
   {
     "name": "sold.1.design",
     "pdfName": "sold.1.design",
-    "label": "Sold comp 1 design",
+    "label": "Sold comp 1 Design",
     "page": 0,
     "x": 236.0,
     "y": 272.5,
@@ -2582,7 +2582,7 @@
   {
     "name": "sold.1.adj_design",
     "pdfName": "sold.1.design_adjustment",
-    "label": "Sold comp 1 design adjustment ($)",
+    "label": "Sold comp 1 Design adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 272.5,
@@ -2602,7 +2602,7 @@
   {
     "name": "sold.2.design",
     "pdfName": "sold.2.design",
-    "label": "Sold comp 2 design",
+    "label": "Sold comp 2 Design",
     "page": 0,
     "x": 354.0,
     "y": 272.5,
@@ -2622,7 +2622,7 @@
   {
     "name": "sold.2.adj_design",
     "pdfName": "sold.2.design_adjustment",
-    "label": "Sold comp 2 design adjustment ($)",
+    "label": "Sold comp 2 Design adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 272.5,
@@ -2642,7 +2642,7 @@
   {
     "name": "sold.3.design",
     "pdfName": "sold.3.design",
-    "label": "Sold comp 3 design",
+    "label": "Sold comp 3 Design",
     "page": 0,
     "x": 472.0,
     "y": 272.5,
@@ -2662,7 +2662,7 @@
   {
     "name": "sold.3.adj_design",
     "pdfName": "sold.3.design_adjustment",
-    "label": "Sold comp 3 design adjustment ($)",
+    "label": "Sold comp 3 Design adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 272.5,
@@ -2682,7 +2682,7 @@
   {
     "name": "sold.0.quality",
     "pdfName": "subject_shared.quality",
-    "label": "Subject quality",
+    "label": "Subject Quality",
     "page": 0,
     "x": 140.0,
     "y": 259.0,
@@ -2702,7 +2702,7 @@
   {
     "name": "sold.1.quality",
     "pdfName": "sold.1.quality",
-    "label": "Sold comp 1 quality",
+    "label": "Sold comp 1 Quality",
     "page": 0,
     "x": 236.0,
     "y": 259.0,
@@ -2722,7 +2722,7 @@
   {
     "name": "sold.1.adj_quality",
     "pdfName": "sold.1.quality_adjustment",
-    "label": "Sold comp 1 quality adjustment ($)",
+    "label": "Sold comp 1 Quality adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 259.0,
@@ -2742,7 +2742,7 @@
   {
     "name": "sold.2.quality",
     "pdfName": "sold.2.quality",
-    "label": "Sold comp 2 quality",
+    "label": "Sold comp 2 Quality",
     "page": 0,
     "x": 354.0,
     "y": 259.0,
@@ -2762,7 +2762,7 @@
   {
     "name": "sold.2.adj_quality",
     "pdfName": "sold.2.quality_adjustment",
-    "label": "Sold comp 2 quality adjustment ($)",
+    "label": "Sold comp 2 Quality adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 259.0,
@@ -2782,7 +2782,7 @@
   {
     "name": "sold.3.quality",
     "pdfName": "sold.3.quality",
-    "label": "Sold comp 3 quality",
+    "label": "Sold comp 3 Quality",
     "page": 0,
     "x": 472.0,
     "y": 259.0,
@@ -2802,7 +2802,7 @@
   {
     "name": "sold.3.adj_quality",
     "pdfName": "sold.3.quality_adjustment",
-    "label": "Sold comp 3 quality adjustment ($)",
+    "label": "Sold comp 3 Quality adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 259.0,
@@ -2822,7 +2822,7 @@
   {
     "name": "sold.0.year",
     "pdfName": "subject_shared.year",
-    "label": "Subject year",
+    "label": "Subject Year built",
     "page": 0,
     "x": 140.0,
     "y": 245.5,
@@ -2842,7 +2842,7 @@
   {
     "name": "sold.1.year",
     "pdfName": "sold.1.year",
-    "label": "Sold comp 1 year",
+    "label": "Sold comp 1 Year built",
     "page": 0,
     "x": 236.0,
     "y": 245.5,
@@ -2862,7 +2862,7 @@
   {
     "name": "sold.1.adj_year",
     "pdfName": "sold.1.year_adjustment",
-    "label": "Sold comp 1 year adjustment ($)",
+    "label": "Sold comp 1 Year built adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 245.5,
@@ -2882,7 +2882,7 @@
   {
     "name": "sold.2.year",
     "pdfName": "sold.2.year",
-    "label": "Sold comp 2 year",
+    "label": "Sold comp 2 Year built",
     "page": 0,
     "x": 354.0,
     "y": 245.5,
@@ -2902,7 +2902,7 @@
   {
     "name": "sold.2.adj_year",
     "pdfName": "sold.2.year_adjustment",
-    "label": "Sold comp 2 year adjustment ($)",
+    "label": "Sold comp 2 Year built adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 245.5,
@@ -2922,7 +2922,7 @@
   {
     "name": "sold.3.year",
     "pdfName": "sold.3.year",
-    "label": "Sold comp 3 year",
+    "label": "Sold comp 3 Year built",
     "page": 0,
     "x": 472.0,
     "y": 245.5,
@@ -2942,7 +2942,7 @@
   {
     "name": "sold.3.adj_year",
     "pdfName": "sold.3.year_adjustment",
-    "label": "Sold comp 3 year adjustment ($)",
+    "label": "Sold comp 3 Year built adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 245.5,
@@ -2962,7 +2962,7 @@
   {
     "name": "sold.0.condition",
     "pdfName": "subject_shared.condition",
-    "label": "Subject condition",
+    "label": "Subject Condition",
     "page": 0,
     "x": 140.0,
     "y": 232.0,
@@ -2982,7 +2982,7 @@
   {
     "name": "sold.1.condition",
     "pdfName": "sold.1.condition",
-    "label": "Sold comp 1 condition",
+    "label": "Sold comp 1 Condition",
     "page": 0,
     "x": 236.0,
     "y": 232.0,
@@ -3002,7 +3002,7 @@
   {
     "name": "sold.1.adj_condition",
     "pdfName": "sold.1.condition_adjustment",
-    "label": "Sold comp 1 condition adjustment ($)",
+    "label": "Sold comp 1 Condition adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 232.0,
@@ -3022,7 +3022,7 @@
   {
     "name": "sold.2.condition",
     "pdfName": "sold.2.condition",
-    "label": "Sold comp 2 condition",
+    "label": "Sold comp 2 Condition",
     "page": 0,
     "x": 354.0,
     "y": 232.0,
@@ -3042,7 +3042,7 @@
   {
     "name": "sold.2.adj_condition",
     "pdfName": "sold.2.condition_adjustment",
-    "label": "Sold comp 2 condition adjustment ($)",
+    "label": "Sold comp 2 Condition adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 232.0,
@@ -3062,7 +3062,7 @@
   {
     "name": "sold.3.condition",
     "pdfName": "sold.3.condition",
-    "label": "Sold comp 3 condition",
+    "label": "Sold comp 3 Condition",
     "page": 0,
     "x": 472.0,
     "y": 232.0,
@@ -3082,7 +3082,7 @@
   {
     "name": "sold.3.adj_condition",
     "pdfName": "sold.3.condition_adjustment",
-    "label": "Sold comp 3 condition adjustment ($)",
+    "label": "Sold comp 3 Condition adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 232.0,
@@ -3102,7 +3102,7 @@
   {
     "name": "sold.0.rooms",
     "pdfName": "subject_shared.total",
-    "label": "Subject rooms",
+    "label": "Subject Total rooms",
     "page": 0,
     "x": 140.0,
     "y": 218.5,
@@ -3122,7 +3122,7 @@
   {
     "name": "sold.0.beds",
     "pdfName": "subject_shared.beds",
-    "label": "Subject beds",
+    "label": "Subject Bedrooms",
     "page": 0,
     "x": 170.0,
     "y": 218.5,
@@ -3142,7 +3142,7 @@
   {
     "name": "sold.0.baths",
     "pdfName": "subject_shared.baths",
-    "label": "Subject baths",
+    "label": "Subject Bathrooms",
     "page": 0,
     "x": 200.0,
     "y": 218.5,
@@ -3162,7 +3162,7 @@
   {
     "name": "sold.1.rooms",
     "pdfName": "sold.1.total",
-    "label": "Sold comp 1 rooms",
+    "label": "Sold comp 1 Total rooms",
     "page": 0,
     "x": 236.0,
     "y": 218.5,
@@ -3182,7 +3182,7 @@
   {
     "name": "sold.1.beds",
     "pdfName": "sold.1.beds",
-    "label": "Sold comp 1 beds",
+    "label": "Sold comp 1 Bedrooms",
     "page": 0,
     "x": 256.6667,
     "y": 218.5,
@@ -3202,7 +3202,7 @@
   {
     "name": "sold.1.baths",
     "pdfName": "sold.1.baths",
-    "label": "Sold comp 1 baths",
+    "label": "Sold comp 1 Bathrooms",
     "page": 0,
     "x": 277.3333,
     "y": 218.5,
@@ -3222,7 +3222,7 @@
   {
     "name": "sold.1.adj_rooms",
     "pdfName": "sold.1.rooms_adjustment",
-    "label": "Sold comp 1 rooms adjustment ($)",
+    "label": "Sold comp 1 Total rooms adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 218.5,
@@ -3242,7 +3242,7 @@
   {
     "name": "sold.2.rooms",
     "pdfName": "sold.2.total",
-    "label": "Sold comp 2 rooms",
+    "label": "Sold comp 2 Total rooms",
     "page": 0,
     "x": 354.0,
     "y": 218.5,
@@ -3262,7 +3262,7 @@
   {
     "name": "sold.2.beds",
     "pdfName": "sold.2.beds",
-    "label": "Sold comp 2 beds",
+    "label": "Sold comp 2 Bedrooms",
     "page": 0,
     "x": 374.6667,
     "y": 218.5,
@@ -3282,7 +3282,7 @@
   {
     "name": "sold.2.baths",
     "pdfName": "sold.2.baths",
-    "label": "Sold comp 2 baths",
+    "label": "Sold comp 2 Bathrooms",
     "page": 0,
     "x": 395.3333,
     "y": 218.5,
@@ -3302,7 +3302,7 @@
   {
     "name": "sold.2.adj_rooms",
     "pdfName": "sold.2.rooms_adjustment",
-    "label": "Sold comp 2 rooms adjustment ($)",
+    "label": "Sold comp 2 Total rooms adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 218.5,
@@ -3322,7 +3322,7 @@
   {
     "name": "sold.3.rooms",
     "pdfName": "sold.3.total",
-    "label": "Sold comp 3 rooms",
+    "label": "Sold comp 3 Total rooms",
     "page": 0,
     "x": 472.0,
     "y": 218.5,
@@ -3342,7 +3342,7 @@
   {
     "name": "sold.3.beds",
     "pdfName": "sold.3.beds",
-    "label": "Sold comp 3 beds",
+    "label": "Sold comp 3 Bedrooms",
     "page": 0,
     "x": 492.6667,
     "y": 218.5,
@@ -3362,7 +3362,7 @@
   {
     "name": "sold.3.baths",
     "pdfName": "sold.3.baths",
-    "label": "Sold comp 3 baths",
+    "label": "Sold comp 3 Bathrooms",
     "page": 0,
     "x": 513.3333,
     "y": 218.5,
@@ -3382,7 +3382,7 @@
   {
     "name": "sold.3.adj_rooms",
     "pdfName": "sold.3.rooms_adjustment",
-    "label": "Sold comp 3 rooms adjustment ($)",
+    "label": "Sold comp 3 Total rooms adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 218.5,
@@ -3402,7 +3402,7 @@
   {
     "name": "sold.0.gla",
     "pdfName": "subject_shared.gla",
-    "label": "Subject gla",
+    "label": "Subject Heated living area (sq. ft.)",
     "page": 0,
     "x": 140.0,
     "y": 205.0,
@@ -3422,7 +3422,7 @@
   {
     "name": "sold.1.gla",
     "pdfName": "sold.1.gla",
-    "label": "Sold comp 1 gla",
+    "label": "Sold comp 1 Heated living area (sq. ft.)",
     "page": 0,
     "x": 236.0,
     "y": 205.0,
@@ -3442,7 +3442,7 @@
   {
     "name": "sold.1.adj_gla",
     "pdfName": "sold.1.gla_adjustment",
-    "label": "Sold comp 1 gla adjustment ($)",
+    "label": "Sold comp 1 Heated living area (sq. ft.) adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 205.0,
@@ -3462,7 +3462,7 @@
   {
     "name": "sold.2.gla",
     "pdfName": "sold.2.gla",
-    "label": "Sold comp 2 gla",
+    "label": "Sold comp 2 Heated living area (sq. ft.)",
     "page": 0,
     "x": 354.0,
     "y": 205.0,
@@ -3482,7 +3482,7 @@
   {
     "name": "sold.2.adj_gla",
     "pdfName": "sold.2.gla_adjustment",
-    "label": "Sold comp 2 gla adjustment ($)",
+    "label": "Sold comp 2 Heated living area (sq. ft.) adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 205.0,
@@ -3502,7 +3502,7 @@
   {
     "name": "sold.3.gla",
     "pdfName": "sold.3.gla",
-    "label": "Sold comp 3 gla",
+    "label": "Sold comp 3 Heated living area (sq. ft.)",
     "page": 0,
     "x": 472.0,
     "y": 205.0,
@@ -3522,7 +3522,7 @@
   {
     "name": "sold.3.adj_gla",
     "pdfName": "sold.3.gla_adjustment",
-    "label": "Sold comp 3 gla adjustment ($)",
+    "label": "Sold comp 3 Heated living area (sq. ft.) adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 205.0,
@@ -3542,7 +3542,7 @@
   {
     "name": "sold.0.basement",
     "pdfName": "subject_shared.basement",
-    "label": "Subject basement",
+    "label": "Subject Basement",
     "page": 0,
     "x": 140.0,
     "y": 191.5,
@@ -3562,7 +3562,7 @@
   {
     "name": "sold.1.basement",
     "pdfName": "sold.1.basement",
-    "label": "Sold comp 1 basement",
+    "label": "Sold comp 1 Basement",
     "page": 0,
     "x": 236.0,
     "y": 191.5,
@@ -3582,7 +3582,7 @@
   {
     "name": "sold.1.adj_basement",
     "pdfName": "sold.1.basement_adjustment",
-    "label": "Sold comp 1 basement adjustment ($)",
+    "label": "Sold comp 1 Basement adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 191.5,
@@ -3602,7 +3602,7 @@
   {
     "name": "sold.2.basement",
     "pdfName": "sold.2.basement",
-    "label": "Sold comp 2 basement",
+    "label": "Sold comp 2 Basement",
     "page": 0,
     "x": 354.0,
     "y": 191.5,
@@ -3622,7 +3622,7 @@
   {
     "name": "sold.2.adj_basement",
     "pdfName": "sold.2.basement_adjustment",
-    "label": "Sold comp 2 basement adjustment ($)",
+    "label": "Sold comp 2 Basement adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 191.5,
@@ -3642,7 +3642,7 @@
   {
     "name": "sold.3.basement",
     "pdfName": "sold.3.basement",
-    "label": "Sold comp 3 basement",
+    "label": "Sold comp 3 Basement",
     "page": 0,
     "x": 472.0,
     "y": 191.5,
@@ -3662,7 +3662,7 @@
   {
     "name": "sold.3.adj_basement",
     "pdfName": "sold.3.basement_adjustment",
-    "label": "Sold comp 3 basement adjustment ($)",
+    "label": "Sold comp 3 Basement adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 191.5,
@@ -3682,7 +3682,7 @@
   {
     "name": "sold.0.utility",
     "pdfName": "subject_shared.utility",
-    "label": "Subject utility",
+    "label": "Subject Functional utility",
     "page": 0,
     "x": 140.0,
     "y": 178.0,
@@ -3702,7 +3702,7 @@
   {
     "name": "sold.1.utility",
     "pdfName": "sold.1.utility",
-    "label": "Sold comp 1 utility",
+    "label": "Sold comp 1 Functional utility",
     "page": 0,
     "x": 236.0,
     "y": 178.0,
@@ -3722,7 +3722,7 @@
   {
     "name": "sold.1.adj_utility",
     "pdfName": "sold.1.utility_adjustment",
-    "label": "Sold comp 1 utility adjustment ($)",
+    "label": "Sold comp 1 Functional utility adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 178.0,
@@ -3742,7 +3742,7 @@
   {
     "name": "sold.2.utility",
     "pdfName": "sold.2.utility",
-    "label": "Sold comp 2 utility",
+    "label": "Sold comp 2 Functional utility",
     "page": 0,
     "x": 354.0,
     "y": 178.0,
@@ -3762,7 +3762,7 @@
   {
     "name": "sold.2.adj_utility",
     "pdfName": "sold.2.utility_adjustment",
-    "label": "Sold comp 2 utility adjustment ($)",
+    "label": "Sold comp 2 Functional utility adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 178.0,
@@ -3782,7 +3782,7 @@
   {
     "name": "sold.3.utility",
     "pdfName": "sold.3.utility",
-    "label": "Sold comp 3 utility",
+    "label": "Sold comp 3 Functional utility",
     "page": 0,
     "x": 472.0,
     "y": 178.0,
@@ -3802,7 +3802,7 @@
   {
     "name": "sold.3.adj_utility",
     "pdfName": "sold.3.utility_adjustment",
-    "label": "Sold comp 3 utility adjustment ($)",
+    "label": "Sold comp 3 Functional utility adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 178.0,
@@ -3822,7 +3822,7 @@
   {
     "name": "sold.0.hvac",
     "pdfName": "subject_shared.hvac",
-    "label": "Subject hvac",
+    "label": "Subject Heating / cooling",
     "page": 0,
     "x": 140.0,
     "y": 164.5,
@@ -3842,7 +3842,7 @@
   {
     "name": "sold.1.hvac",
     "pdfName": "sold.1.hvac",
-    "label": "Sold comp 1 hvac",
+    "label": "Sold comp 1 Heating / cooling",
     "page": 0,
     "x": 236.0,
     "y": 164.5,
@@ -3862,7 +3862,7 @@
   {
     "name": "sold.1.adj_hvac",
     "pdfName": "sold.1.hvac_adjustment",
-    "label": "Sold comp 1 hvac adjustment ($)",
+    "label": "Sold comp 1 Heating / cooling adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 164.5,
@@ -3882,7 +3882,7 @@
   {
     "name": "sold.2.hvac",
     "pdfName": "sold.2.hvac",
-    "label": "Sold comp 2 hvac",
+    "label": "Sold comp 2 Heating / cooling",
     "page": 0,
     "x": 354.0,
     "y": 164.5,
@@ -3902,7 +3902,7 @@
   {
     "name": "sold.2.adj_hvac",
     "pdfName": "sold.2.hvac_adjustment",
-    "label": "Sold comp 2 hvac adjustment ($)",
+    "label": "Sold comp 2 Heating / cooling adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 164.5,
@@ -3922,7 +3922,7 @@
   {
     "name": "sold.3.hvac",
     "pdfName": "sold.3.hvac",
-    "label": "Sold comp 3 hvac",
+    "label": "Sold comp 3 Heating / cooling",
     "page": 0,
     "x": 472.0,
     "y": 164.5,
@@ -3942,7 +3942,7 @@
   {
     "name": "sold.3.adj_hvac",
     "pdfName": "sold.3.hvac_adjustment",
-    "label": "Sold comp 3 hvac adjustment ($)",
+    "label": "Sold comp 3 Heating / cooling adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 164.5,
@@ -3962,7 +3962,7 @@
   {
     "name": "sold.0.energy",
     "pdfName": "subject_shared.energy",
-    "label": "Subject energy",
+    "label": "Subject Energy efficient items",
     "page": 0,
     "x": 140.0,
     "y": 151.0,
@@ -3982,7 +3982,7 @@
   {
     "name": "sold.1.energy",
     "pdfName": "sold.1.energy",
-    "label": "Sold comp 1 energy",
+    "label": "Sold comp 1 Energy efficient items",
     "page": 0,
     "x": 236.0,
     "y": 151.0,
@@ -4002,7 +4002,7 @@
   {
     "name": "sold.1.adj_energy",
     "pdfName": "sold.1.energy_adjustment",
-    "label": "Sold comp 1 energy adjustment ($)",
+    "label": "Sold comp 1 Energy efficient items adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 151.0,
@@ -4022,7 +4022,7 @@
   {
     "name": "sold.2.energy",
     "pdfName": "sold.2.energy",
-    "label": "Sold comp 2 energy",
+    "label": "Sold comp 2 Energy efficient items",
     "page": 0,
     "x": 354.0,
     "y": 151.0,
@@ -4042,7 +4042,7 @@
   {
     "name": "sold.2.adj_energy",
     "pdfName": "sold.2.energy_adjustment",
-    "label": "Sold comp 2 energy adjustment ($)",
+    "label": "Sold comp 2 Energy efficient items adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 151.0,
@@ -4062,7 +4062,7 @@
   {
     "name": "sold.3.energy",
     "pdfName": "sold.3.energy",
-    "label": "Sold comp 3 energy",
+    "label": "Sold comp 3 Energy efficient items",
     "page": 0,
     "x": 472.0,
     "y": 151.0,
@@ -4082,7 +4082,7 @@
   {
     "name": "sold.3.adj_energy",
     "pdfName": "sold.3.energy_adjustment",
-    "label": "Sold comp 3 energy adjustment ($)",
+    "label": "Sold comp 3 Energy efficient items adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 151.0,
@@ -4102,7 +4102,7 @@
   {
     "name": "sold.0.garage",
     "pdfName": "subject_shared.garage",
-    "label": "Subject garage",
+    "label": "Subject Garage / carport",
     "page": 0,
     "x": 140.0,
     "y": 137.5,
@@ -4122,7 +4122,7 @@
   {
     "name": "sold.1.garage",
     "pdfName": "sold.1.garage",
-    "label": "Sold comp 1 garage",
+    "label": "Sold comp 1 Garage / carport",
     "page": 0,
     "x": 236.0,
     "y": 137.5,
@@ -4142,7 +4142,7 @@
   {
     "name": "sold.1.adj_garage",
     "pdfName": "sold.1.garage_adjustment",
-    "label": "Sold comp 1 garage adjustment ($)",
+    "label": "Sold comp 1 Garage / carport adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 137.5,
@@ -4162,7 +4162,7 @@
   {
     "name": "sold.2.garage",
     "pdfName": "sold.2.garage",
-    "label": "Sold comp 2 garage",
+    "label": "Sold comp 2 Garage / carport",
     "page": 0,
     "x": 354.0,
     "y": 137.5,
@@ -4182,7 +4182,7 @@
   {
     "name": "sold.2.adj_garage",
     "pdfName": "sold.2.garage_adjustment",
-    "label": "Sold comp 2 garage adjustment ($)",
+    "label": "Sold comp 2 Garage / carport adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 137.5,
@@ -4202,7 +4202,7 @@
   {
     "name": "sold.3.garage",
     "pdfName": "sold.3.garage",
-    "label": "Sold comp 3 garage",
+    "label": "Sold comp 3 Garage / carport",
     "page": 0,
     "x": 472.0,
     "y": 137.5,
@@ -4222,7 +4222,7 @@
   {
     "name": "sold.3.adj_garage",
     "pdfName": "sold.3.garage_adjustment",
-    "label": "Sold comp 3 garage adjustment ($)",
+    "label": "Sold comp 3 Garage / carport adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 137.5,
@@ -4242,7 +4242,7 @@
   {
     "name": "sold.0.porches",
     "pdfName": "subject_shared.porch",
-    "label": "Subject porches",
+    "label": "Subject Porch / patio / deck",
     "page": 0,
     "x": 140.0,
     "y": 124.0,
@@ -4262,7 +4262,7 @@
   {
     "name": "sold.1.porches",
     "pdfName": "sold.1.porch",
-    "label": "Sold comp 1 porches",
+    "label": "Sold comp 1 Porch / patio / deck",
     "page": 0,
     "x": 236.0,
     "y": 124.0,
@@ -4282,7 +4282,7 @@
   {
     "name": "sold.1.adj_porches",
     "pdfName": "sold.1.porch_adjustment",
-    "label": "Sold comp 1 porches adjustment ($)",
+    "label": "Sold comp 1 Porch / patio / deck adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 124.0,
@@ -4302,7 +4302,7 @@
   {
     "name": "sold.2.porches",
     "pdfName": "sold.2.porch",
-    "label": "Sold comp 2 porches",
+    "label": "Sold comp 2 Porch / patio / deck",
     "page": 0,
     "x": 354.0,
     "y": 124.0,
@@ -4322,7 +4322,7 @@
   {
     "name": "sold.2.adj_porches",
     "pdfName": "sold.2.porch_adjustment",
-    "label": "Sold comp 2 porches adjustment ($)",
+    "label": "Sold comp 2 Porch / patio / deck adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 124.0,
@@ -4342,7 +4342,7 @@
   {
     "name": "sold.3.porches",
     "pdfName": "sold.3.porch",
-    "label": "Sold comp 3 porches",
+    "label": "Sold comp 3 Porch / patio / deck",
     "page": 0,
     "x": 472.0,
     "y": 124.0,
@@ -4362,7 +4362,7 @@
   {
     "name": "sold.3.adj_porches",
     "pdfName": "sold.3.porch_adjustment",
-    "label": "Sold comp 3 porches adjustment ($)",
+    "label": "Sold comp 3 Porch / patio / deck adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 124.0,
@@ -4382,7 +4382,7 @@
   {
     "name": "sold.0.fireplace",
     "pdfName": "subject_shared.fireplace",
-    "label": "Subject fireplace",
+    "label": "Subject Fireplace",
     "page": 0,
     "x": 140.0,
     "y": 110.5,
@@ -4402,7 +4402,7 @@
   {
     "name": "sold.1.fireplace",
     "pdfName": "sold.1.fireplace",
-    "label": "Sold comp 1 fireplace",
+    "label": "Sold comp 1 Fireplace",
     "page": 0,
     "x": 236.0,
     "y": 110.5,
@@ -4422,7 +4422,7 @@
   {
     "name": "sold.1.adj_fireplace",
     "pdfName": "sold.1.fireplace_adjustment",
-    "label": "Sold comp 1 fireplace adjustment ($)",
+    "label": "Sold comp 1 Fireplace adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 110.5,
@@ -4442,7 +4442,7 @@
   {
     "name": "sold.2.fireplace",
     "pdfName": "sold.2.fireplace",
-    "label": "Sold comp 2 fireplace",
+    "label": "Sold comp 2 Fireplace",
     "page": 0,
     "x": 354.0,
     "y": 110.5,
@@ -4462,7 +4462,7 @@
   {
     "name": "sold.2.adj_fireplace",
     "pdfName": "sold.2.fireplace_adjustment",
-    "label": "Sold comp 2 fireplace adjustment ($)",
+    "label": "Sold comp 2 Fireplace adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 110.5,
@@ -4482,7 +4482,7 @@
   {
     "name": "sold.3.fireplace",
     "pdfName": "sold.3.fireplace",
-    "label": "Sold comp 3 fireplace",
+    "label": "Sold comp 3 Fireplace",
     "page": 0,
     "x": 472.0,
     "y": 110.5,
@@ -4502,7 +4502,7 @@
   {
     "name": "sold.3.adj_fireplace",
     "pdfName": "sold.3.fireplace_adjustment",
-    "label": "Sold comp 3 fireplace adjustment ($)",
+    "label": "Sold comp 3 Fireplace adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 110.5,
@@ -4522,7 +4522,7 @@
   {
     "name": "sold.0.fence",
     "pdfName": "subject_shared.fence",
-    "label": "Subject fence",
+    "label": "Subject Fence",
     "page": 0,
     "x": 140.0,
     "y": 97.0,
@@ -4542,7 +4542,7 @@
   {
     "name": "sold.1.fence",
     "pdfName": "sold.1.fence",
-    "label": "Sold comp 1 fence",
+    "label": "Sold comp 1 Fence",
     "page": 0,
     "x": 236.0,
     "y": 97.0,
@@ -4562,7 +4562,7 @@
   {
     "name": "sold.1.adj_fence",
     "pdfName": "sold.1.fence_adjustment",
-    "label": "Sold comp 1 fence adjustment ($)",
+    "label": "Sold comp 1 Fence adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 97.0,
@@ -4582,7 +4582,7 @@
   {
     "name": "sold.2.fence",
     "pdfName": "sold.2.fence",
-    "label": "Sold comp 2 fence",
+    "label": "Sold comp 2 Fence",
     "page": 0,
     "x": 354.0,
     "y": 97.0,
@@ -4602,7 +4602,7 @@
   {
     "name": "sold.2.adj_fence",
     "pdfName": "sold.2.fence_adjustment",
-    "label": "Sold comp 2 fence adjustment ($)",
+    "label": "Sold comp 2 Fence adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 97.0,
@@ -4622,7 +4622,7 @@
   {
     "name": "sold.3.fence",
     "pdfName": "sold.3.fence",
-    "label": "Sold comp 3 fence",
+    "label": "Sold comp 3 Fence",
     "page": 0,
     "x": 472.0,
     "y": 97.0,
@@ -4642,7 +4642,7 @@
   {
     "name": "sold.3.adj_fence",
     "pdfName": "sold.3.fence_adjustment",
-    "label": "Sold comp 3 fence adjustment ($)",
+    "label": "Sold comp 3 Fence adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 97.0,
@@ -4662,7 +4662,7 @@
   {
     "name": "sold.0.pool",
     "pdfName": "subject_shared.pool",
-    "label": "Subject pool",
+    "label": "Subject Pool",
     "page": 0,
     "x": 140.0,
     "y": 83.5,
@@ -4682,7 +4682,7 @@
   {
     "name": "sold.1.pool",
     "pdfName": "sold.1.pool",
-    "label": "Sold comp 1 pool",
+    "label": "Sold comp 1 Pool",
     "page": 0,
     "x": 236.0,
     "y": 83.5,
@@ -4702,7 +4702,7 @@
   {
     "name": "sold.1.adj_pool",
     "pdfName": "sold.1.pool_adjustment",
-    "label": "Sold comp 1 pool adjustment ($)",
+    "label": "Sold comp 1 Pool adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 83.5,
@@ -4722,7 +4722,7 @@
   {
     "name": "sold.2.pool",
     "pdfName": "sold.2.pool",
-    "label": "Sold comp 2 pool",
+    "label": "Sold comp 2 Pool",
     "page": 0,
     "x": 354.0,
     "y": 83.5,
@@ -4742,7 +4742,7 @@
   {
     "name": "sold.2.adj_pool",
     "pdfName": "sold.2.pool_adjustment",
-    "label": "Sold comp 2 pool adjustment ($)",
+    "label": "Sold comp 2 Pool adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 83.5,
@@ -4762,7 +4762,7 @@
   {
     "name": "sold.3.pool",
     "pdfName": "sold.3.pool",
-    "label": "Sold comp 3 pool",
+    "label": "Sold comp 3 Pool",
     "page": 0,
     "x": 472.0,
     "y": 83.5,
@@ -4782,7 +4782,7 @@
   {
     "name": "sold.3.adj_pool",
     "pdfName": "sold.3.pool_adjustment",
-    "label": "Sold comp 3 pool adjustment ($)",
+    "label": "Sold comp 3 Pool adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 83.5,
@@ -4802,7 +4802,7 @@
   {
     "name": "sold.0.other",
     "pdfName": "subject_shared.other",
-    "label": "Subject other",
+    "label": "Subject Other",
     "page": 0,
     "x": 140.0,
     "y": 70.0,
@@ -4822,7 +4822,7 @@
   {
     "name": "sold.1.other",
     "pdfName": "sold.1.other",
-    "label": "Sold comp 1 other",
+    "label": "Sold comp 1 Other",
     "page": 0,
     "x": 236.0,
     "y": 70.0,
@@ -4842,7 +4842,7 @@
   {
     "name": "sold.1.adj_other",
     "pdfName": "sold.1.other_adjustment",
-    "label": "Sold comp 1 other adjustment ($)",
+    "label": "Sold comp 1 Other adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 70.0,
@@ -4862,7 +4862,7 @@
   {
     "name": "sold.2.other",
     "pdfName": "sold.2.other",
-    "label": "Sold comp 2 other",
+    "label": "Sold comp 2 Other",
     "page": 0,
     "x": 354.0,
     "y": 70.0,
@@ -4882,7 +4882,7 @@
   {
     "name": "sold.2.adj_other",
     "pdfName": "sold.2.other_adjustment",
-    "label": "Sold comp 2 other adjustment ($)",
+    "label": "Sold comp 2 Other adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 70.0,
@@ -4902,7 +4902,7 @@
   {
     "name": "sold.3.other",
     "pdfName": "sold.3.other",
-    "label": "Sold comp 3 other",
+    "label": "Sold comp 3 Other",
     "page": 0,
     "x": 472.0,
     "y": 70.0,
@@ -4922,7 +4922,7 @@
   {
     "name": "sold.3.adj_other",
     "pdfName": "sold.3.other_adjustment",
-    "label": "Sold comp 3 other adjustment ($)",
+    "label": "Sold comp 3 Other adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 70.0,
@@ -4942,7 +4942,7 @@
   {
     "name": "sold.1.net",
     "pdfName": "sold.1.net_adjustment",
-    "label": "Sold comp 1 net",
+    "label": "Sold comp 1 Net adjustment ($)",
     "page": 0,
     "x": 301.0,
     "y": 56.5,
@@ -4962,7 +4962,7 @@
   {
     "name": "sold.2.net",
     "pdfName": "sold.2.net_adjustment",
-    "label": "Sold comp 2 net",
+    "label": "Sold comp 2 Net adjustment ($)",
     "page": 0,
     "x": 419.0,
     "y": 56.5,
@@ -4982,7 +4982,7 @@
   {
     "name": "sold.3.net",
     "pdfName": "sold.3.net_adjustment",
-    "label": "Sold comp 3 net",
+    "label": "Sold comp 3 Net adjustment ($)",
     "page": 0,
     "x": 537.0,
     "y": 56.5,
@@ -5002,7 +5002,7 @@
   {
     "name": "sold.1.adjusted",
     "pdfName": "sold.1.adjusted_price",
-    "label": "Sold comp 1 adjusted",
+    "label": "Sold comp 1 Adjusted price ($)",
     "page": 0,
     "x": 301.0,
     "y": 43.0,
@@ -5022,7 +5022,7 @@
   {
     "name": "sold.2.adjusted",
     "pdfName": "sold.2.adjusted_price",
-    "label": "Sold comp 2 adjusted",
+    "label": "Sold comp 2 Adjusted price ($)",
     "page": 0,
     "x": 419.0,
     "y": 43.0,
@@ -5042,7 +5042,7 @@
   {
     "name": "sold.3.adjusted",
     "pdfName": "sold.3.adjusted_price",
-    "label": "Sold comp 3 adjusted",
+    "label": "Sold comp 3 Adjusted price ($)",
     "page": 0,
     "x": 537.0,
     "y": 43.0,
@@ -5782,7 +5782,7 @@
   {
     "name": "active.0.address",
     "pdfName": "subject_shared.address",
-    "label": "Subject address",
+    "label": "Subject Address",
     "page": 1,
     "x": 140.0,
     "y": 711.0,
@@ -5802,7 +5802,7 @@
   {
     "name": "active.1.address",
     "pdfName": "active.1.address",
-    "label": "Active comp 1 address",
+    "label": "Active comp 1 Address",
     "page": 1,
     "x": 236.0,
     "y": 711.0,
@@ -5822,7 +5822,7 @@
   {
     "name": "active.2.address",
     "pdfName": "active.2.address",
-    "label": "Active comp 2 address",
+    "label": "Active comp 2 Address",
     "page": 1,
     "x": 354.0,
     "y": 711.0,
@@ -5842,7 +5842,7 @@
   {
     "name": "active.3.address",
     "pdfName": "active.3.address",
-    "label": "Active comp 3 address",
+    "label": "Active comp 3 Address",
     "page": 1,
     "x": 472.0,
     "y": 711.0,
@@ -5862,7 +5862,7 @@
   {
     "name": "active.0.city",
     "pdfName": "subject_shared.city",
-    "label": "Subject city",
+    "label": "Subject City",
     "page": 1,
     "x": 140.0,
     "y": 697.5,
@@ -5882,7 +5882,7 @@
   {
     "name": "active.1.city",
     "pdfName": "active.1.city",
-    "label": "Active comp 1 city",
+    "label": "Active comp 1 City",
     "page": 1,
     "x": 236.0,
     "y": 697.5,
@@ -5902,7 +5902,7 @@
   {
     "name": "active.2.city",
     "pdfName": "active.2.city",
-    "label": "Active comp 2 city",
+    "label": "Active comp 2 City",
     "page": 1,
     "x": 354.0,
     "y": 697.5,
@@ -5922,7 +5922,7 @@
   {
     "name": "active.3.city",
     "pdfName": "active.3.city",
-    "label": "Active comp 3 city",
+    "label": "Active comp 3 City",
     "page": 1,
     "x": 472.0,
     "y": 697.5,
@@ -5942,7 +5942,7 @@
   {
     "name": "active.0.state",
     "pdfName": "subject_shared.state",
-    "label": "Subject state",
+    "label": "Subject State",
     "page": 1,
     "x": 140.0,
     "y": 684.0,
@@ -5962,7 +5962,7 @@
   {
     "name": "active.0.zip",
     "pdfName": "subject_shared.zip",
-    "label": "Subject zip",
+    "label": "Subject ZIP code",
     "page": 1,
     "x": 170.0,
     "y": 684.0,
@@ -5982,7 +5982,7 @@
   {
     "name": "active.1.state",
     "pdfName": "active.1.state",
-    "label": "Active comp 1 state",
+    "label": "Active comp 1 State",
     "page": 1,
     "x": 236.0,
     "y": 684.0,
@@ -6002,7 +6002,7 @@
   {
     "name": "active.1.zip",
     "pdfName": "active.1.zip",
-    "label": "Active comp 1 zip",
+    "label": "Active comp 1 ZIP code",
     "page": 1,
     "x": 266.0,
     "y": 684.0,
@@ -6022,7 +6022,7 @@
   {
     "name": "active.2.state",
     "pdfName": "active.2.state",
-    "label": "Active comp 2 state",
+    "label": "Active comp 2 State",
     "page": 1,
     "x": 354.0,
     "y": 684.0,
@@ -6042,7 +6042,7 @@
   {
     "name": "active.2.zip",
     "pdfName": "active.2.zip",
-    "label": "Active comp 2 zip",
+    "label": "Active comp 2 ZIP code",
     "page": 1,
     "x": 384.0,
     "y": 684.0,
@@ -6062,7 +6062,7 @@
   {
     "name": "active.3.state",
     "pdfName": "active.3.state",
-    "label": "Active comp 3 state",
+    "label": "Active comp 3 State",
     "page": 1,
     "x": 472.0,
     "y": 684.0,
@@ -6082,7 +6082,7 @@
   {
     "name": "active.3.zip",
     "pdfName": "active.3.zip",
-    "label": "Active comp 3 zip",
+    "label": "Active comp 3 ZIP code",
     "page": 1,
     "x": 502.0,
     "y": 684.0,
@@ -6102,7 +6102,7 @@
   {
     "name": "active.0.distance",
     "pdfName": "active.0.proximity",
-    "label": "Subject distance",
+    "label": "Subject Proximity to subject",
     "page": 1,
     "x": 140.0,
     "y": 670.5,
@@ -6122,7 +6122,7 @@
   {
     "name": "active.1.distance",
     "pdfName": "active.1.proximity",
-    "label": "Active comp 1 distance",
+    "label": "Active comp 1 Proximity to subject",
     "page": 1,
     "x": 236.0,
     "y": 670.5,
@@ -6142,7 +6142,7 @@
   {
     "name": "active.2.distance",
     "pdfName": "active.2.proximity",
-    "label": "Active comp 2 distance",
+    "label": "Active comp 2 Proximity to subject",
     "page": 1,
     "x": 354.0,
     "y": 670.5,
@@ -6162,7 +6162,7 @@
   {
     "name": "active.3.distance",
     "pdfName": "active.3.proximity",
-    "label": "Active comp 3 distance",
+    "label": "Active comp 3 Proximity to subject",
     "page": 1,
     "x": 472.0,
     "y": 670.5,
@@ -6182,7 +6182,7 @@
   {
     "name": "active.0.price",
     "pdfName": "subject_shared.price",
-    "label": "Subject price",
+    "label": "Subject Price ($)",
     "page": 1,
     "x": 140.0,
     "y": 657.0,
@@ -6202,7 +6202,7 @@
   {
     "name": "active.1.price",
     "pdfName": "active.1.price",
-    "label": "Active comp 1 price",
+    "label": "Active comp 1 Price ($)",
     "page": 1,
     "x": 236.0,
     "y": 657.0,
@@ -6222,7 +6222,7 @@
   {
     "name": "active.2.price",
     "pdfName": "active.2.price",
-    "label": "Active comp 2 price",
+    "label": "Active comp 2 Price ($)",
     "page": 1,
     "x": 354.0,
     "y": 657.0,
@@ -6242,7 +6242,7 @@
   {
     "name": "active.3.price",
     "pdfName": "active.3.price",
-    "label": "Active comp 3 price",
+    "label": "Active comp 3 Price ($)",
     "page": 1,
     "x": 472.0,
     "y": 657.0,
@@ -6262,7 +6262,7 @@
   {
     "name": "active.0.ppsf",
     "pdfName": "subject_shared.ppsf",
-    "label": "Subject ppsf",
+    "label": "Subject Price per square foot ($)",
     "page": 1,
     "x": 140.0,
     "y": 643.5,
@@ -6282,7 +6282,7 @@
   {
     "name": "active.1.ppsf",
     "pdfName": "active.1.ppsf",
-    "label": "Active comp 1 ppsf",
+    "label": "Active comp 1 Price per square foot ($)",
     "page": 1,
     "x": 236.0,
     "y": 643.5,
@@ -6302,7 +6302,7 @@
   {
     "name": "active.2.ppsf",
     "pdfName": "active.2.ppsf",
-    "label": "Active comp 2 ppsf",
+    "label": "Active comp 2 Price per square foot ($)",
     "page": 1,
     "x": 354.0,
     "y": 643.5,
@@ -6322,7 +6322,7 @@
   {
     "name": "active.3.ppsf",
     "pdfName": "active.3.ppsf",
-    "label": "Active comp 3 ppsf",
+    "label": "Active comp 3 Price per square foot ($)",
     "page": 1,
     "x": 472.0,
     "y": 643.5,
@@ -6342,7 +6342,7 @@
   {
     "name": "active.0.source",
     "pdfName": "subject_shared.source",
-    "label": "Subject source",
+    "label": "Subject Source",
     "page": 1,
     "x": 140.0,
     "y": 630.0,
@@ -6362,7 +6362,7 @@
   {
     "name": "active.1.source",
     "pdfName": "active.1.source",
-    "label": "Active comp 1 source",
+    "label": "Active comp 1 Source",
     "page": 1,
     "x": 236.0,
     "y": 630.0,
@@ -6382,7 +6382,7 @@
   {
     "name": "active.2.source",
     "pdfName": "active.2.source",
-    "label": "Active comp 2 source",
+    "label": "Active comp 2 Source",
     "page": 1,
     "x": 354.0,
     "y": 630.0,
@@ -6402,7 +6402,7 @@
   {
     "name": "active.3.source",
     "pdfName": "active.3.source",
-    "label": "Active comp 3 source",
+    "label": "Active comp 3 Source",
     "page": 1,
     "x": 472.0,
     "y": 630.0,
@@ -6422,7 +6422,7 @@
   {
     "name": "active.0.dom",
     "pdfName": "subject_shared.dom",
-    "label": "Subject dom",
+    "label": "Subject Days on market",
     "page": 1,
     "x": 140.0,
     "y": 616.5,
@@ -6442,7 +6442,7 @@
   {
     "name": "active.1.dom",
     "pdfName": "active.1.dom",
-    "label": "Active comp 1 dom",
+    "label": "Active comp 1 Days on market",
     "page": 1,
     "x": 236.0,
     "y": 616.5,
@@ -6462,7 +6462,7 @@
   {
     "name": "active.2.dom",
     "pdfName": "active.2.dom",
-    "label": "Active comp 2 dom",
+    "label": "Active comp 2 Days on market",
     "page": 1,
     "x": 354.0,
     "y": 616.5,
@@ -6482,7 +6482,7 @@
   {
     "name": "active.3.dom",
     "pdfName": "active.3.dom",
-    "label": "Active comp 3 dom",
+    "label": "Active comp 3 Days on market",
     "page": 1,
     "x": 472.0,
     "y": 616.5,
@@ -6502,7 +6502,7 @@
   {
     "name": "active.0.reo",
     "pdfName": "subject_shared.reo",
-    "label": "Subject reo",
+    "label": "Subject REO / corporate owned",
     "page": 1,
     "x": 140.0,
     "y": 603.0,
@@ -6522,7 +6522,7 @@
   {
     "name": "active.1.reo",
     "pdfName": "active.1.reo",
-    "label": "Active comp 1 reo",
+    "label": "Active comp 1 REO / corporate owned",
     "page": 1,
     "x": 236.0,
     "y": 603.0,
@@ -6542,7 +6542,7 @@
   {
     "name": "active.2.reo",
     "pdfName": "active.2.reo",
-    "label": "Active comp 2 reo",
+    "label": "Active comp 2 REO / corporate owned",
     "page": 1,
     "x": 354.0,
     "y": 603.0,
@@ -6562,7 +6562,7 @@
   {
     "name": "active.3.reo",
     "pdfName": "active.3.reo",
-    "label": "Active comp 3 reo",
+    "label": "Active comp 3 REO / corporate owned",
     "page": 1,
     "x": 472.0,
     "y": 603.0,
@@ -6582,7 +6582,7 @@
   {
     "name": "active.0.financing",
     "pdfName": "active.0.concessions",
-    "label": "Subject financing",
+    "label": "Subject Seller concessions ($)",
     "page": 1,
     "x": 140.0,
     "y": 573.5,
@@ -6602,7 +6602,7 @@
   {
     "name": "active.1.financing",
     "pdfName": "active.1.concessions",
-    "label": "Active comp 1 financing",
+    "label": "Active comp 1 Seller concessions ($)",
     "page": 1,
     "x": 236.0,
     "y": 573.5,
@@ -6622,7 +6622,7 @@
   {
     "name": "active.1.adj_financing",
     "pdfName": "active.1.concessions_adjustment",
-    "label": "Active comp 1 financing adjustment ($)",
+    "label": "Active comp 1 Seller concessions ($) adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 573.5,
@@ -6642,7 +6642,7 @@
   {
     "name": "active.2.financing",
     "pdfName": "active.2.concessions",
-    "label": "Active comp 2 financing",
+    "label": "Active comp 2 Seller concessions ($)",
     "page": 1,
     "x": 354.0,
     "y": 573.5,
@@ -6662,7 +6662,7 @@
   {
     "name": "active.2.adj_financing",
     "pdfName": "active.2.concessions_adjustment",
-    "label": "Active comp 2 financing adjustment ($)",
+    "label": "Active comp 2 Seller concessions ($) adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 573.5,
@@ -6682,7 +6682,7 @@
   {
     "name": "active.3.financing",
     "pdfName": "active.3.concessions",
-    "label": "Active comp 3 financing",
+    "label": "Active comp 3 Seller concessions ($)",
     "page": 1,
     "x": 472.0,
     "y": 573.5,
@@ -6702,7 +6702,7 @@
   {
     "name": "active.3.adj_financing",
     "pdfName": "active.3.concessions_adjustment",
-    "label": "Active comp 3 financing adjustment ($)",
+    "label": "Active comp 3 Seller concessions ($) adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 573.5,
@@ -6722,7 +6722,7 @@
   {
     "name": "active.0.location",
     "pdfName": "subject_shared.location",
-    "label": "Subject location",
+    "label": "Subject Location",
     "page": 1,
     "x": 140.0,
     "y": 560.0,
@@ -6742,7 +6742,7 @@
   {
     "name": "active.1.location",
     "pdfName": "active.1.location",
-    "label": "Active comp 1 location",
+    "label": "Active comp 1 Location",
     "page": 1,
     "x": 236.0,
     "y": 560.0,
@@ -6762,7 +6762,7 @@
   {
     "name": "active.1.adj_location",
     "pdfName": "active.1.location_adjustment",
-    "label": "Active comp 1 location adjustment ($)",
+    "label": "Active comp 1 Location adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 560.0,
@@ -6782,7 +6782,7 @@
   {
     "name": "active.2.location",
     "pdfName": "active.2.location",
-    "label": "Active comp 2 location",
+    "label": "Active comp 2 Location",
     "page": 1,
     "x": 354.0,
     "y": 560.0,
@@ -6802,7 +6802,7 @@
   {
     "name": "active.2.adj_location",
     "pdfName": "active.2.location_adjustment",
-    "label": "Active comp 2 location adjustment ($)",
+    "label": "Active comp 2 Location adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 560.0,
@@ -6822,7 +6822,7 @@
   {
     "name": "active.3.location",
     "pdfName": "active.3.location",
-    "label": "Active comp 3 location",
+    "label": "Active comp 3 Location",
     "page": 1,
     "x": 472.0,
     "y": 560.0,
@@ -6842,7 +6842,7 @@
   {
     "name": "active.3.adj_location",
     "pdfName": "active.3.location_adjustment",
-    "label": "Active comp 3 location adjustment ($)",
+    "label": "Active comp 3 Location adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 560.0,
@@ -6862,7 +6862,7 @@
   {
     "name": "active.0.tenure",
     "pdfName": "subject_shared.tenure",
-    "label": "Subject tenure",
+    "label": "Subject Property Rights",
     "page": 1,
     "x": 140.0,
     "y": 546.5,
@@ -6882,7 +6882,7 @@
   {
     "name": "active.1.tenure",
     "pdfName": "active.1.tenure",
-    "label": "Active comp 1 tenure",
+    "label": "Active comp 1 Property Rights",
     "page": 1,
     "x": 236.0,
     "y": 546.5,
@@ -6902,7 +6902,7 @@
   {
     "name": "active.1.adj_tenure",
     "pdfName": "active.1.tenure_adjustment",
-    "label": "Active comp 1 tenure adjustment ($)",
+    "label": "Active comp 1 Property Rights adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 546.5,
@@ -6922,7 +6922,7 @@
   {
     "name": "active.2.tenure",
     "pdfName": "active.2.tenure",
-    "label": "Active comp 2 tenure",
+    "label": "Active comp 2 Property Rights",
     "page": 1,
     "x": 354.0,
     "y": 546.5,
@@ -6942,7 +6942,7 @@
   {
     "name": "active.2.adj_tenure",
     "pdfName": "active.2.tenure_adjustment",
-    "label": "Active comp 2 tenure adjustment ($)",
+    "label": "Active comp 2 Property Rights adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 546.5,
@@ -6962,7 +6962,7 @@
   {
     "name": "active.3.tenure",
     "pdfName": "active.3.tenure",
-    "label": "Active comp 3 tenure",
+    "label": "Active comp 3 Property Rights",
     "page": 1,
     "x": 472.0,
     "y": 546.5,
@@ -6982,7 +6982,7 @@
   {
     "name": "active.3.adj_tenure",
     "pdfName": "active.3.tenure_adjustment",
-    "label": "Active comp 3 tenure adjustment ($)",
+    "label": "Active comp 3 Property Rights adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 546.5,
@@ -7002,7 +7002,7 @@
   {
     "name": "active.0.site",
     "pdfName": "subject_shared.site",
-    "label": "Subject site",
+    "label": "Subject Site",
     "page": 1,
     "x": 140.0,
     "y": 533.0,
@@ -7022,7 +7022,7 @@
   {
     "name": "active.1.site",
     "pdfName": "active.1.site",
-    "label": "Active comp 1 site",
+    "label": "Active comp 1 Site",
     "page": 1,
     "x": 236.0,
     "y": 533.0,
@@ -7042,7 +7042,7 @@
   {
     "name": "active.1.adj_site",
     "pdfName": "active.1.site_adjustment",
-    "label": "Active comp 1 site adjustment ($)",
+    "label": "Active comp 1 Site adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 533.0,
@@ -7062,7 +7062,7 @@
   {
     "name": "active.2.site",
     "pdfName": "active.2.site",
-    "label": "Active comp 2 site",
+    "label": "Active comp 2 Site",
     "page": 1,
     "x": 354.0,
     "y": 533.0,
@@ -7082,7 +7082,7 @@
   {
     "name": "active.2.adj_site",
     "pdfName": "active.2.site_adjustment",
-    "label": "Active comp 2 site adjustment ($)",
+    "label": "Active comp 2 Site adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 533.0,
@@ -7102,7 +7102,7 @@
   {
     "name": "active.3.site",
     "pdfName": "active.3.site",
-    "label": "Active comp 3 site",
+    "label": "Active comp 3 Site",
     "page": 1,
     "x": 472.0,
     "y": 533.0,
@@ -7122,7 +7122,7 @@
   {
     "name": "active.3.adj_site",
     "pdfName": "active.3.site_adjustment",
-    "label": "Active comp 3 site adjustment ($)",
+    "label": "Active comp 3 Site adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 533.0,
@@ -7142,7 +7142,7 @@
   {
     "name": "active.0.view",
     "pdfName": "subject_shared.view",
-    "label": "Subject view",
+    "label": "Subject View",
     "page": 1,
     "x": 140.0,
     "y": 519.5,
@@ -7162,7 +7162,7 @@
   {
     "name": "active.1.view",
     "pdfName": "active.1.view",
-    "label": "Active comp 1 view",
+    "label": "Active comp 1 View",
     "page": 1,
     "x": 236.0,
     "y": 519.5,
@@ -7182,7 +7182,7 @@
   {
     "name": "active.1.adj_view",
     "pdfName": "active.1.view_adjustment",
-    "label": "Active comp 1 view adjustment ($)",
+    "label": "Active comp 1 View adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 519.5,
@@ -7202,7 +7202,7 @@
   {
     "name": "active.2.view",
     "pdfName": "active.2.view",
-    "label": "Active comp 2 view",
+    "label": "Active comp 2 View",
     "page": 1,
     "x": 354.0,
     "y": 519.5,
@@ -7222,7 +7222,7 @@
   {
     "name": "active.2.adj_view",
     "pdfName": "active.2.view_adjustment",
-    "label": "Active comp 2 view adjustment ($)",
+    "label": "Active comp 2 View adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 519.5,
@@ -7242,7 +7242,7 @@
   {
     "name": "active.3.view",
     "pdfName": "active.3.view",
-    "label": "Active comp 3 view",
+    "label": "Active comp 3 View",
     "page": 1,
     "x": 472.0,
     "y": 519.5,
@@ -7262,7 +7262,7 @@
   {
     "name": "active.3.adj_view",
     "pdfName": "active.3.view_adjustment",
-    "label": "Active comp 3 view adjustment ($)",
+    "label": "Active comp 3 View adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 519.5,
@@ -7282,7 +7282,7 @@
   {
     "name": "active.0.design",
     "pdfName": "subject_shared.design",
-    "label": "Subject design",
+    "label": "Subject Design",
     "page": 1,
     "x": 140.0,
     "y": 506.0,
@@ -7302,7 +7302,7 @@
   {
     "name": "active.1.design",
     "pdfName": "active.1.design",
-    "label": "Active comp 1 design",
+    "label": "Active comp 1 Design",
     "page": 1,
     "x": 236.0,
     "y": 506.0,
@@ -7322,7 +7322,7 @@
   {
     "name": "active.1.adj_design",
     "pdfName": "active.1.design_adjustment",
-    "label": "Active comp 1 design adjustment ($)",
+    "label": "Active comp 1 Design adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 506.0,
@@ -7342,7 +7342,7 @@
   {
     "name": "active.2.design",
     "pdfName": "active.2.design",
-    "label": "Active comp 2 design",
+    "label": "Active comp 2 Design",
     "page": 1,
     "x": 354.0,
     "y": 506.0,
@@ -7362,7 +7362,7 @@
   {
     "name": "active.2.adj_design",
     "pdfName": "active.2.design_adjustment",
-    "label": "Active comp 2 design adjustment ($)",
+    "label": "Active comp 2 Design adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 506.0,
@@ -7382,7 +7382,7 @@
   {
     "name": "active.3.design",
     "pdfName": "active.3.design",
-    "label": "Active comp 3 design",
+    "label": "Active comp 3 Design",
     "page": 1,
     "x": 472.0,
     "y": 506.0,
@@ -7402,7 +7402,7 @@
   {
     "name": "active.3.adj_design",
     "pdfName": "active.3.design_adjustment",
-    "label": "Active comp 3 design adjustment ($)",
+    "label": "Active comp 3 Design adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 506.0,
@@ -7422,7 +7422,7 @@
   {
     "name": "active.0.quality",
     "pdfName": "subject_shared.quality",
-    "label": "Subject quality",
+    "label": "Subject Quality",
     "page": 1,
     "x": 140.0,
     "y": 492.5,
@@ -7442,7 +7442,7 @@
   {
     "name": "active.1.quality",
     "pdfName": "active.1.quality",
-    "label": "Active comp 1 quality",
+    "label": "Active comp 1 Quality",
     "page": 1,
     "x": 236.0,
     "y": 492.5,
@@ -7462,7 +7462,7 @@
   {
     "name": "active.1.adj_quality",
     "pdfName": "active.1.quality_adjustment",
-    "label": "Active comp 1 quality adjustment ($)",
+    "label": "Active comp 1 Quality adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 492.5,
@@ -7482,7 +7482,7 @@
   {
     "name": "active.2.quality",
     "pdfName": "active.2.quality",
-    "label": "Active comp 2 quality",
+    "label": "Active comp 2 Quality",
     "page": 1,
     "x": 354.0,
     "y": 492.5,
@@ -7502,7 +7502,7 @@
   {
     "name": "active.2.adj_quality",
     "pdfName": "active.2.quality_adjustment",
-    "label": "Active comp 2 quality adjustment ($)",
+    "label": "Active comp 2 Quality adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 492.5,
@@ -7522,7 +7522,7 @@
   {
     "name": "active.3.quality",
     "pdfName": "active.3.quality",
-    "label": "Active comp 3 quality",
+    "label": "Active comp 3 Quality",
     "page": 1,
     "x": 472.0,
     "y": 492.5,
@@ -7542,7 +7542,7 @@
   {
     "name": "active.3.adj_quality",
     "pdfName": "active.3.quality_adjustment",
-    "label": "Active comp 3 quality adjustment ($)",
+    "label": "Active comp 3 Quality adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 492.5,
@@ -7562,7 +7562,7 @@
   {
     "name": "active.0.year",
     "pdfName": "subject_shared.year",
-    "label": "Subject year",
+    "label": "Subject Year built",
     "page": 1,
     "x": 140.0,
     "y": 479.0,
@@ -7582,7 +7582,7 @@
   {
     "name": "active.1.year",
     "pdfName": "active.1.year",
-    "label": "Active comp 1 year",
+    "label": "Active comp 1 Year built",
     "page": 1,
     "x": 236.0,
     "y": 479.0,
@@ -7602,7 +7602,7 @@
   {
     "name": "active.1.adj_year",
     "pdfName": "active.1.year_adjustment",
-    "label": "Active comp 1 year adjustment ($)",
+    "label": "Active comp 1 Year built adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 479.0,
@@ -7622,7 +7622,7 @@
   {
     "name": "active.2.year",
     "pdfName": "active.2.year",
-    "label": "Active comp 2 year",
+    "label": "Active comp 2 Year built",
     "page": 1,
     "x": 354.0,
     "y": 479.0,
@@ -7642,7 +7642,7 @@
   {
     "name": "active.2.adj_year",
     "pdfName": "active.2.year_adjustment",
-    "label": "Active comp 2 year adjustment ($)",
+    "label": "Active comp 2 Year built adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 479.0,
@@ -7662,7 +7662,7 @@
   {
     "name": "active.3.year",
     "pdfName": "active.3.year",
-    "label": "Active comp 3 year",
+    "label": "Active comp 3 Year built",
     "page": 1,
     "x": 472.0,
     "y": 479.0,
@@ -7682,7 +7682,7 @@
   {
     "name": "active.3.adj_year",
     "pdfName": "active.3.year_adjustment",
-    "label": "Active comp 3 year adjustment ($)",
+    "label": "Active comp 3 Year built adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 479.0,
@@ -7702,7 +7702,7 @@
   {
     "name": "active.0.condition",
     "pdfName": "subject_shared.condition",
-    "label": "Subject condition",
+    "label": "Subject Condition",
     "page": 1,
     "x": 140.0,
     "y": 465.5,
@@ -7722,7 +7722,7 @@
   {
     "name": "active.1.condition",
     "pdfName": "active.1.condition",
-    "label": "Active comp 1 condition",
+    "label": "Active comp 1 Condition",
     "page": 1,
     "x": 236.0,
     "y": 465.5,
@@ -7742,7 +7742,7 @@
   {
     "name": "active.1.adj_condition",
     "pdfName": "active.1.condition_adjustment",
-    "label": "Active comp 1 condition adjustment ($)",
+    "label": "Active comp 1 Condition adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 465.5,
@@ -7762,7 +7762,7 @@
   {
     "name": "active.2.condition",
     "pdfName": "active.2.condition",
-    "label": "Active comp 2 condition",
+    "label": "Active comp 2 Condition",
     "page": 1,
     "x": 354.0,
     "y": 465.5,
@@ -7782,7 +7782,7 @@
   {
     "name": "active.2.adj_condition",
     "pdfName": "active.2.condition_adjustment",
-    "label": "Active comp 2 condition adjustment ($)",
+    "label": "Active comp 2 Condition adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 465.5,
@@ -7802,7 +7802,7 @@
   {
     "name": "active.3.condition",
     "pdfName": "active.3.condition",
-    "label": "Active comp 3 condition",
+    "label": "Active comp 3 Condition",
     "page": 1,
     "x": 472.0,
     "y": 465.5,
@@ -7822,7 +7822,7 @@
   {
     "name": "active.3.adj_condition",
     "pdfName": "active.3.condition_adjustment",
-    "label": "Active comp 3 condition adjustment ($)",
+    "label": "Active comp 3 Condition adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 465.5,
@@ -7842,7 +7842,7 @@
   {
     "name": "active.0.rooms",
     "pdfName": "subject_shared.total",
-    "label": "Subject rooms",
+    "label": "Subject Total rooms",
     "page": 1,
     "x": 140.0,
     "y": 452.0,
@@ -7862,7 +7862,7 @@
   {
     "name": "active.0.beds",
     "pdfName": "subject_shared.beds",
-    "label": "Subject beds",
+    "label": "Subject Bedrooms",
     "page": 1,
     "x": 170.0,
     "y": 452.0,
@@ -7882,7 +7882,7 @@
   {
     "name": "active.0.baths",
     "pdfName": "subject_shared.baths",
-    "label": "Subject baths",
+    "label": "Subject Bathrooms",
     "page": 1,
     "x": 200.0,
     "y": 452.0,
@@ -7902,7 +7902,7 @@
   {
     "name": "active.1.rooms",
     "pdfName": "active.1.total",
-    "label": "Active comp 1 rooms",
+    "label": "Active comp 1 Total rooms",
     "page": 1,
     "x": 236.0,
     "y": 452.0,
@@ -7922,7 +7922,7 @@
   {
     "name": "active.1.beds",
     "pdfName": "active.1.beds",
-    "label": "Active comp 1 beds",
+    "label": "Active comp 1 Bedrooms",
     "page": 1,
     "x": 256.6667,
     "y": 452.0,
@@ -7942,7 +7942,7 @@
   {
     "name": "active.1.baths",
     "pdfName": "active.1.baths",
-    "label": "Active comp 1 baths",
+    "label": "Active comp 1 Bathrooms",
     "page": 1,
     "x": 277.3333,
     "y": 452.0,
@@ -7962,7 +7962,7 @@
   {
     "name": "active.1.adj_rooms",
     "pdfName": "active.1.rooms_adjustment",
-    "label": "Active comp 1 rooms adjustment ($)",
+    "label": "Active comp 1 Total rooms adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 452.0,
@@ -7982,7 +7982,7 @@
   {
     "name": "active.2.rooms",
     "pdfName": "active.2.total",
-    "label": "Active comp 2 rooms",
+    "label": "Active comp 2 Total rooms",
     "page": 1,
     "x": 354.0,
     "y": 452.0,
@@ -8002,7 +8002,7 @@
   {
     "name": "active.2.beds",
     "pdfName": "active.2.beds",
-    "label": "Active comp 2 beds",
+    "label": "Active comp 2 Bedrooms",
     "page": 1,
     "x": 374.6667,
     "y": 452.0,
@@ -8022,7 +8022,7 @@
   {
     "name": "active.2.baths",
     "pdfName": "active.2.baths",
-    "label": "Active comp 2 baths",
+    "label": "Active comp 2 Bathrooms",
     "page": 1,
     "x": 395.3333,
     "y": 452.0,
@@ -8042,7 +8042,7 @@
   {
     "name": "active.2.adj_rooms",
     "pdfName": "active.2.rooms_adjustment",
-    "label": "Active comp 2 rooms adjustment ($)",
+    "label": "Active comp 2 Total rooms adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 452.0,
@@ -8062,7 +8062,7 @@
   {
     "name": "active.3.rooms",
     "pdfName": "active.3.total",
-    "label": "Active comp 3 rooms",
+    "label": "Active comp 3 Total rooms",
     "page": 1,
     "x": 472.0,
     "y": 452.0,
@@ -8082,7 +8082,7 @@
   {
     "name": "active.3.beds",
     "pdfName": "active.3.beds",
-    "label": "Active comp 3 beds",
+    "label": "Active comp 3 Bedrooms",
     "page": 1,
     "x": 492.6667,
     "y": 452.0,
@@ -8102,7 +8102,7 @@
   {
     "name": "active.3.baths",
     "pdfName": "active.3.baths",
-    "label": "Active comp 3 baths",
+    "label": "Active comp 3 Bathrooms",
     "page": 1,
     "x": 513.3333,
     "y": 452.0,
@@ -8122,7 +8122,7 @@
   {
     "name": "active.3.adj_rooms",
     "pdfName": "active.3.rooms_adjustment",
-    "label": "Active comp 3 rooms adjustment ($)",
+    "label": "Active comp 3 Total rooms adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 452.0,
@@ -8142,7 +8142,7 @@
   {
     "name": "active.0.gla",
     "pdfName": "subject_shared.gla",
-    "label": "Subject gla",
+    "label": "Subject Heated living area (sq. ft.)",
     "page": 1,
     "x": 140.0,
     "y": 438.5,
@@ -8162,7 +8162,7 @@
   {
     "name": "active.1.gla",
     "pdfName": "active.1.gla",
-    "label": "Active comp 1 gla",
+    "label": "Active comp 1 Heated living area (sq. ft.)",
     "page": 1,
     "x": 236.0,
     "y": 438.5,
@@ -8182,7 +8182,7 @@
   {
     "name": "active.1.adj_gla",
     "pdfName": "active.1.gla_adjustment",
-    "label": "Active comp 1 gla adjustment ($)",
+    "label": "Active comp 1 Heated living area (sq. ft.) adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 438.5,
@@ -8202,7 +8202,7 @@
   {
     "name": "active.2.gla",
     "pdfName": "active.2.gla",
-    "label": "Active comp 2 gla",
+    "label": "Active comp 2 Heated living area (sq. ft.)",
     "page": 1,
     "x": 354.0,
     "y": 438.5,
@@ -8222,7 +8222,7 @@
   {
     "name": "active.2.adj_gla",
     "pdfName": "active.2.gla_adjustment",
-    "label": "Active comp 2 gla adjustment ($)",
+    "label": "Active comp 2 Heated living area (sq. ft.) adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 438.5,
@@ -8242,7 +8242,7 @@
   {
     "name": "active.3.gla",
     "pdfName": "active.3.gla",
-    "label": "Active comp 3 gla",
+    "label": "Active comp 3 Heated living area (sq. ft.)",
     "page": 1,
     "x": 472.0,
     "y": 438.5,
@@ -8262,7 +8262,7 @@
   {
     "name": "active.3.adj_gla",
     "pdfName": "active.3.gla_adjustment",
-    "label": "Active comp 3 gla adjustment ($)",
+    "label": "Active comp 3 Heated living area (sq. ft.) adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 438.5,
@@ -8282,7 +8282,7 @@
   {
     "name": "active.0.basement",
     "pdfName": "subject_shared.basement",
-    "label": "Subject basement",
+    "label": "Subject Basement",
     "page": 1,
     "x": 140.0,
     "y": 425.0,
@@ -8302,7 +8302,7 @@
   {
     "name": "active.1.basement",
     "pdfName": "active.1.basement",
-    "label": "Active comp 1 basement",
+    "label": "Active comp 1 Basement",
     "page": 1,
     "x": 236.0,
     "y": 425.0,
@@ -8322,7 +8322,7 @@
   {
     "name": "active.1.adj_basement",
     "pdfName": "active.1.basement_adjustment",
-    "label": "Active comp 1 basement adjustment ($)",
+    "label": "Active comp 1 Basement adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 425.0,
@@ -8342,7 +8342,7 @@
   {
     "name": "active.2.basement",
     "pdfName": "active.2.basement",
-    "label": "Active comp 2 basement",
+    "label": "Active comp 2 Basement",
     "page": 1,
     "x": 354.0,
     "y": 425.0,
@@ -8362,7 +8362,7 @@
   {
     "name": "active.2.adj_basement",
     "pdfName": "active.2.basement_adjustment",
-    "label": "Active comp 2 basement adjustment ($)",
+    "label": "Active comp 2 Basement adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 425.0,
@@ -8382,7 +8382,7 @@
   {
     "name": "active.3.basement",
     "pdfName": "active.3.basement",
-    "label": "Active comp 3 basement",
+    "label": "Active comp 3 Basement",
     "page": 1,
     "x": 472.0,
     "y": 425.0,
@@ -8402,7 +8402,7 @@
   {
     "name": "active.3.adj_basement",
     "pdfName": "active.3.basement_adjustment",
-    "label": "Active comp 3 basement adjustment ($)",
+    "label": "Active comp 3 Basement adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 425.0,
@@ -8422,7 +8422,7 @@
   {
     "name": "active.0.utility",
     "pdfName": "subject_shared.utility",
-    "label": "Subject utility",
+    "label": "Subject Functional utility",
     "page": 1,
     "x": 140.0,
     "y": 411.5,
@@ -8442,7 +8442,7 @@
   {
     "name": "active.1.utility",
     "pdfName": "active.1.utility",
-    "label": "Active comp 1 utility",
+    "label": "Active comp 1 Functional utility",
     "page": 1,
     "x": 236.0,
     "y": 411.5,
@@ -8462,7 +8462,7 @@
   {
     "name": "active.1.adj_utility",
     "pdfName": "active.1.utility_adjustment",
-    "label": "Active comp 1 utility adjustment ($)",
+    "label": "Active comp 1 Functional utility adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 411.5,
@@ -8482,7 +8482,7 @@
   {
     "name": "active.2.utility",
     "pdfName": "active.2.utility",
-    "label": "Active comp 2 utility",
+    "label": "Active comp 2 Functional utility",
     "page": 1,
     "x": 354.0,
     "y": 411.5,
@@ -8502,7 +8502,7 @@
   {
     "name": "active.2.adj_utility",
     "pdfName": "active.2.utility_adjustment",
-    "label": "Active comp 2 utility adjustment ($)",
+    "label": "Active comp 2 Functional utility adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 411.5,
@@ -8522,7 +8522,7 @@
   {
     "name": "active.3.utility",
     "pdfName": "active.3.utility",
-    "label": "Active comp 3 utility",
+    "label": "Active comp 3 Functional utility",
     "page": 1,
     "x": 472.0,
     "y": 411.5,
@@ -8542,7 +8542,7 @@
   {
     "name": "active.3.adj_utility",
     "pdfName": "active.3.utility_adjustment",
-    "label": "Active comp 3 utility adjustment ($)",
+    "label": "Active comp 3 Functional utility adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 411.5,
@@ -8562,7 +8562,7 @@
   {
     "name": "active.0.hvac",
     "pdfName": "subject_shared.hvac",
-    "label": "Subject hvac",
+    "label": "Subject Heating / cooling",
     "page": 1,
     "x": 140.0,
     "y": 398.0,
@@ -8582,7 +8582,7 @@
   {
     "name": "active.1.hvac",
     "pdfName": "active.1.hvac",
-    "label": "Active comp 1 hvac",
+    "label": "Active comp 1 Heating / cooling",
     "page": 1,
     "x": 236.0,
     "y": 398.0,
@@ -8602,7 +8602,7 @@
   {
     "name": "active.1.adj_hvac",
     "pdfName": "active.1.hvac_adjustment",
-    "label": "Active comp 1 hvac adjustment ($)",
+    "label": "Active comp 1 Heating / cooling adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 398.0,
@@ -8622,7 +8622,7 @@
   {
     "name": "active.2.hvac",
     "pdfName": "active.2.hvac",
-    "label": "Active comp 2 hvac",
+    "label": "Active comp 2 Heating / cooling",
     "page": 1,
     "x": 354.0,
     "y": 398.0,
@@ -8642,7 +8642,7 @@
   {
     "name": "active.2.adj_hvac",
     "pdfName": "active.2.hvac_adjustment",
-    "label": "Active comp 2 hvac adjustment ($)",
+    "label": "Active comp 2 Heating / cooling adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 398.0,
@@ -8662,7 +8662,7 @@
   {
     "name": "active.3.hvac",
     "pdfName": "active.3.hvac",
-    "label": "Active comp 3 hvac",
+    "label": "Active comp 3 Heating / cooling",
     "page": 1,
     "x": 472.0,
     "y": 398.0,
@@ -8682,7 +8682,7 @@
   {
     "name": "active.3.adj_hvac",
     "pdfName": "active.3.hvac_adjustment",
-    "label": "Active comp 3 hvac adjustment ($)",
+    "label": "Active comp 3 Heating / cooling adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 398.0,
@@ -8702,7 +8702,7 @@
   {
     "name": "active.0.energy",
     "pdfName": "subject_shared.energy",
-    "label": "Subject energy",
+    "label": "Subject Energy efficient items",
     "page": 1,
     "x": 140.0,
     "y": 384.5,
@@ -8722,7 +8722,7 @@
   {
     "name": "active.1.energy",
     "pdfName": "active.1.energy",
-    "label": "Active comp 1 energy",
+    "label": "Active comp 1 Energy efficient items",
     "page": 1,
     "x": 236.0,
     "y": 384.5,
@@ -8742,7 +8742,7 @@
   {
     "name": "active.1.adj_energy",
     "pdfName": "active.1.energy_adjustment",
-    "label": "Active comp 1 energy adjustment ($)",
+    "label": "Active comp 1 Energy efficient items adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 384.5,
@@ -8762,7 +8762,7 @@
   {
     "name": "active.2.energy",
     "pdfName": "active.2.energy",
-    "label": "Active comp 2 energy",
+    "label": "Active comp 2 Energy efficient items",
     "page": 1,
     "x": 354.0,
     "y": 384.5,
@@ -8782,7 +8782,7 @@
   {
     "name": "active.2.adj_energy",
     "pdfName": "active.2.energy_adjustment",
-    "label": "Active comp 2 energy adjustment ($)",
+    "label": "Active comp 2 Energy efficient items adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 384.5,
@@ -8802,7 +8802,7 @@
   {
     "name": "active.3.energy",
     "pdfName": "active.3.energy",
-    "label": "Active comp 3 energy",
+    "label": "Active comp 3 Energy efficient items",
     "page": 1,
     "x": 472.0,
     "y": 384.5,
@@ -8822,7 +8822,7 @@
   {
     "name": "active.3.adj_energy",
     "pdfName": "active.3.energy_adjustment",
-    "label": "Active comp 3 energy adjustment ($)",
+    "label": "Active comp 3 Energy efficient items adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 384.5,
@@ -8842,7 +8842,7 @@
   {
     "name": "active.0.garage",
     "pdfName": "subject_shared.garage",
-    "label": "Subject garage",
+    "label": "Subject Garage / carport",
     "page": 1,
     "x": 140.0,
     "y": 371.0,
@@ -8862,7 +8862,7 @@
   {
     "name": "active.1.garage",
     "pdfName": "active.1.garage",
-    "label": "Active comp 1 garage",
+    "label": "Active comp 1 Garage / carport",
     "page": 1,
     "x": 236.0,
     "y": 371.0,
@@ -8882,7 +8882,7 @@
   {
     "name": "active.1.adj_garage",
     "pdfName": "active.1.garage_adjustment",
-    "label": "Active comp 1 garage adjustment ($)",
+    "label": "Active comp 1 Garage / carport adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 371.0,
@@ -8902,7 +8902,7 @@
   {
     "name": "active.2.garage",
     "pdfName": "active.2.garage",
-    "label": "Active comp 2 garage",
+    "label": "Active comp 2 Garage / carport",
     "page": 1,
     "x": 354.0,
     "y": 371.0,
@@ -8922,7 +8922,7 @@
   {
     "name": "active.2.adj_garage",
     "pdfName": "active.2.garage_adjustment",
-    "label": "Active comp 2 garage adjustment ($)",
+    "label": "Active comp 2 Garage / carport adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 371.0,
@@ -8942,7 +8942,7 @@
   {
     "name": "active.3.garage",
     "pdfName": "active.3.garage",
-    "label": "Active comp 3 garage",
+    "label": "Active comp 3 Garage / carport",
     "page": 1,
     "x": 472.0,
     "y": 371.0,
@@ -8962,7 +8962,7 @@
   {
     "name": "active.3.adj_garage",
     "pdfName": "active.3.garage_adjustment",
-    "label": "Active comp 3 garage adjustment ($)",
+    "label": "Active comp 3 Garage / carport adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 371.0,
@@ -8982,7 +8982,7 @@
   {
     "name": "active.0.porches",
     "pdfName": "subject_shared.porch",
-    "label": "Subject porches",
+    "label": "Subject Porch / patio / deck",
     "page": 1,
     "x": 140.0,
     "y": 357.5,
@@ -9002,7 +9002,7 @@
   {
     "name": "active.1.porches",
     "pdfName": "active.1.porch",
-    "label": "Active comp 1 porches",
+    "label": "Active comp 1 Porch / patio / deck",
     "page": 1,
     "x": 236.0,
     "y": 357.5,
@@ -9022,7 +9022,7 @@
   {
     "name": "active.1.adj_porches",
     "pdfName": "active.1.porch_adjustment",
-    "label": "Active comp 1 porches adjustment ($)",
+    "label": "Active comp 1 Porch / patio / deck adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 357.5,
@@ -9042,7 +9042,7 @@
   {
     "name": "active.2.porches",
     "pdfName": "active.2.porch",
-    "label": "Active comp 2 porches",
+    "label": "Active comp 2 Porch / patio / deck",
     "page": 1,
     "x": 354.0,
     "y": 357.5,
@@ -9062,7 +9062,7 @@
   {
     "name": "active.2.adj_porches",
     "pdfName": "active.2.porch_adjustment",
-    "label": "Active comp 2 porches adjustment ($)",
+    "label": "Active comp 2 Porch / patio / deck adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 357.5,
@@ -9082,7 +9082,7 @@
   {
     "name": "active.3.porches",
     "pdfName": "active.3.porch",
-    "label": "Active comp 3 porches",
+    "label": "Active comp 3 Porch / patio / deck",
     "page": 1,
     "x": 472.0,
     "y": 357.5,
@@ -9102,7 +9102,7 @@
   {
     "name": "active.3.adj_porches",
     "pdfName": "active.3.porch_adjustment",
-    "label": "Active comp 3 porches adjustment ($)",
+    "label": "Active comp 3 Porch / patio / deck adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 357.5,
@@ -9122,7 +9122,7 @@
   {
     "name": "active.0.fireplace",
     "pdfName": "subject_shared.fireplace",
-    "label": "Subject fireplace",
+    "label": "Subject Fireplace",
     "page": 1,
     "x": 140.0,
     "y": 344.0,
@@ -9142,7 +9142,7 @@
   {
     "name": "active.1.fireplace",
     "pdfName": "active.1.fireplace",
-    "label": "Active comp 1 fireplace",
+    "label": "Active comp 1 Fireplace",
     "page": 1,
     "x": 236.0,
     "y": 344.0,
@@ -9162,7 +9162,7 @@
   {
     "name": "active.1.adj_fireplace",
     "pdfName": "active.1.fireplace_adjustment",
-    "label": "Active comp 1 fireplace adjustment ($)",
+    "label": "Active comp 1 Fireplace adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 344.0,
@@ -9182,7 +9182,7 @@
   {
     "name": "active.2.fireplace",
     "pdfName": "active.2.fireplace",
-    "label": "Active comp 2 fireplace",
+    "label": "Active comp 2 Fireplace",
     "page": 1,
     "x": 354.0,
     "y": 344.0,
@@ -9202,7 +9202,7 @@
   {
     "name": "active.2.adj_fireplace",
     "pdfName": "active.2.fireplace_adjustment",
-    "label": "Active comp 2 fireplace adjustment ($)",
+    "label": "Active comp 2 Fireplace adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 344.0,
@@ -9222,7 +9222,7 @@
   {
     "name": "active.3.fireplace",
     "pdfName": "active.3.fireplace",
-    "label": "Active comp 3 fireplace",
+    "label": "Active comp 3 Fireplace",
     "page": 1,
     "x": 472.0,
     "y": 344.0,
@@ -9242,7 +9242,7 @@
   {
     "name": "active.3.adj_fireplace",
     "pdfName": "active.3.fireplace_adjustment",
-    "label": "Active comp 3 fireplace adjustment ($)",
+    "label": "Active comp 3 Fireplace adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 344.0,
@@ -9262,7 +9262,7 @@
   {
     "name": "active.0.fence",
     "pdfName": "subject_shared.fence",
-    "label": "Subject fence",
+    "label": "Subject Fence",
     "page": 1,
     "x": 140.0,
     "y": 330.5,
@@ -9282,7 +9282,7 @@
   {
     "name": "active.1.fence",
     "pdfName": "active.1.fence",
-    "label": "Active comp 1 fence",
+    "label": "Active comp 1 Fence",
     "page": 1,
     "x": 236.0,
     "y": 330.5,
@@ -9302,7 +9302,7 @@
   {
     "name": "active.1.adj_fence",
     "pdfName": "active.1.fence_adjustment",
-    "label": "Active comp 1 fence adjustment ($)",
+    "label": "Active comp 1 Fence adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 330.5,
@@ -9322,7 +9322,7 @@
   {
     "name": "active.2.fence",
     "pdfName": "active.2.fence",
-    "label": "Active comp 2 fence",
+    "label": "Active comp 2 Fence",
     "page": 1,
     "x": 354.0,
     "y": 330.5,
@@ -9342,7 +9342,7 @@
   {
     "name": "active.2.adj_fence",
     "pdfName": "active.2.fence_adjustment",
-    "label": "Active comp 2 fence adjustment ($)",
+    "label": "Active comp 2 Fence adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 330.5,
@@ -9362,7 +9362,7 @@
   {
     "name": "active.3.fence",
     "pdfName": "active.3.fence",
-    "label": "Active comp 3 fence",
+    "label": "Active comp 3 Fence",
     "page": 1,
     "x": 472.0,
     "y": 330.5,
@@ -9382,7 +9382,7 @@
   {
     "name": "active.3.adj_fence",
     "pdfName": "active.3.fence_adjustment",
-    "label": "Active comp 3 fence adjustment ($)",
+    "label": "Active comp 3 Fence adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 330.5,
@@ -9402,7 +9402,7 @@
   {
     "name": "active.0.pool",
     "pdfName": "subject_shared.pool",
-    "label": "Subject pool",
+    "label": "Subject Pool",
     "page": 1,
     "x": 140.0,
     "y": 317.0,
@@ -9422,7 +9422,7 @@
   {
     "name": "active.1.pool",
     "pdfName": "active.1.pool",
-    "label": "Active comp 1 pool",
+    "label": "Active comp 1 Pool",
     "page": 1,
     "x": 236.0,
     "y": 317.0,
@@ -9442,7 +9442,7 @@
   {
     "name": "active.1.adj_pool",
     "pdfName": "active.1.pool_adjustment",
-    "label": "Active comp 1 pool adjustment ($)",
+    "label": "Active comp 1 Pool adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 317.0,
@@ -9462,7 +9462,7 @@
   {
     "name": "active.2.pool",
     "pdfName": "active.2.pool",
-    "label": "Active comp 2 pool",
+    "label": "Active comp 2 Pool",
     "page": 1,
     "x": 354.0,
     "y": 317.0,
@@ -9482,7 +9482,7 @@
   {
     "name": "active.2.adj_pool",
     "pdfName": "active.2.pool_adjustment",
-    "label": "Active comp 2 pool adjustment ($)",
+    "label": "Active comp 2 Pool adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 317.0,
@@ -9502,7 +9502,7 @@
   {
     "name": "active.3.pool",
     "pdfName": "active.3.pool",
-    "label": "Active comp 3 pool",
+    "label": "Active comp 3 Pool",
     "page": 1,
     "x": 472.0,
     "y": 317.0,
@@ -9522,7 +9522,7 @@
   {
     "name": "active.3.adj_pool",
     "pdfName": "active.3.pool_adjustment",
-    "label": "Active comp 3 pool adjustment ($)",
+    "label": "Active comp 3 Pool adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 317.0,
@@ -9542,7 +9542,7 @@
   {
     "name": "active.0.other",
     "pdfName": "subject_shared.other",
-    "label": "Subject other",
+    "label": "Subject Other",
     "page": 1,
     "x": 140.0,
     "y": 303.5,
@@ -9562,7 +9562,7 @@
   {
     "name": "active.1.other",
     "pdfName": "active.1.other",
-    "label": "Active comp 1 other",
+    "label": "Active comp 1 Other",
     "page": 1,
     "x": 236.0,
     "y": 303.5,
@@ -9582,7 +9582,7 @@
   {
     "name": "active.1.adj_other",
     "pdfName": "active.1.other_adjustment",
-    "label": "Active comp 1 other adjustment ($)",
+    "label": "Active comp 1 Other adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 303.5,
@@ -9602,7 +9602,7 @@
   {
     "name": "active.2.other",
     "pdfName": "active.2.other",
-    "label": "Active comp 2 other",
+    "label": "Active comp 2 Other",
     "page": 1,
     "x": 354.0,
     "y": 303.5,
@@ -9622,7 +9622,7 @@
   {
     "name": "active.2.adj_other",
     "pdfName": "active.2.other_adjustment",
-    "label": "Active comp 2 other adjustment ($)",
+    "label": "Active comp 2 Other adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 303.5,
@@ -9642,7 +9642,7 @@
   {
     "name": "active.3.other",
     "pdfName": "active.3.other",
-    "label": "Active comp 3 other",
+    "label": "Active comp 3 Other",
     "page": 1,
     "x": 472.0,
     "y": 303.5,
@@ -9662,7 +9662,7 @@
   {
     "name": "active.3.adj_other",
     "pdfName": "active.3.other_adjustment",
-    "label": "Active comp 3 other adjustment ($)",
+    "label": "Active comp 3 Other adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 303.5,
@@ -9682,7 +9682,7 @@
   {
     "name": "active.1.net",
     "pdfName": "active.1.net_adjustment",
-    "label": "Active comp 1 net",
+    "label": "Active comp 1 Net adjustment ($)",
     "page": 1,
     "x": 301.0,
     "y": 290.0,
@@ -9702,7 +9702,7 @@
   {
     "name": "active.2.net",
     "pdfName": "active.2.net_adjustment",
-    "label": "Active comp 2 net",
+    "label": "Active comp 2 Net adjustment ($)",
     "page": 1,
     "x": 419.0,
     "y": 290.0,
@@ -9722,7 +9722,7 @@
   {
     "name": "active.3.net",
     "pdfName": "active.3.net_adjustment",
-    "label": "Active comp 3 net",
+    "label": "Active comp 3 Net adjustment ($)",
     "page": 1,
     "x": 537.0,
     "y": 290.0,
@@ -9742,7 +9742,7 @@
   {
     "name": "active.1.adjusted",
     "pdfName": "active.1.adjusted_price",
-    "label": "Active comp 1 adjusted",
+    "label": "Active comp 1 Adjusted price ($)",
     "page": 1,
     "x": 301.0,
     "y": 276.5,
@@ -9762,7 +9762,7 @@
   {
     "name": "active.2.adjusted",
     "pdfName": "active.2.adjusted_price",
-    "label": "Active comp 2 adjusted",
+    "label": "Active comp 2 Adjusted price ($)",
     "page": 1,
     "x": 419.0,
     "y": 276.5,
@@ -9782,7 +9782,7 @@
   {
     "name": "active.3.adjusted",
     "pdfName": "active.3.adjusted_price",
-    "label": "Active comp 3 adjusted",
+    "label": "Active comp 3 Adjusted price ($)",
     "page": 1,
     "x": 537.0,
     "y": 276.5,

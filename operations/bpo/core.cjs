@@ -6,6 +6,7 @@ const {PDFDocument,StandardFonts,rgb,layoutMultilineText}=require('pdf-lib');
 const byName=new Map(schema.map(f=>[f.name,f]));
 function number(v){if(v===null||v===undefined||String(v).trim()==='')return null;const s=String(v).trim().replace(/[$,]/g,'');if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(s))return null;const n=Number(s);return Number.isFinite(n)?n:null;}
 function money(n){return Number(n).toLocaleString('en-US',{maximumFractionDigits:2});}
+function subjectAddress(input,address){const v={...input},parts=V14.splitAddress(address);v.field_0008=String(address??'');for(const prefix of ['sold','active'])for(const [key,value] of Object.entries(parts))v[prefix+'.0.'+key]=value;return v;}
 function subjectEdit(input,name,value){const v={...input},match=/^(sold|active)\.0\.(.+)$/.exec(name);if(!match||!byName.has(name)||calculated(name))return v;const other=(match[1]==='sold'?'active':'sold')+'.0.'+match[2];v[name]=value;if(byName.has(other))v[other]=value;if(['address','city','state','zip'].includes(match[2]))v.field_0008=[v['sold.0.address'],v['sold.0.city'],[v['sold.0.state'],v['sold.0.zip']].filter(Boolean).join(' ')].filter(Boolean).join(', ');return v;}
 function recalculate(input){const v=V14.normalize(input);for(const kind of ['sold','active'])for(let i=0;i<4;i++){
  const p=`${kind}.${i}.`,price=number(v[p+'price']),gla=number(v[p+'gla']);v[p+'ppsf']=price!==null&&gla>0?money(price/gla):'';
@@ -37,4 +38,4 @@ function applyAI(input,result){
  v._aiFields=sources;v._aiReview={at:new Date().toISOString(),warnings,applied};return {values:recalculate(v),applied,preserved,warnings};
 }
 function applyAdjustments(input,overwrite=false){const r=adjustments.apply(V14.normalize(input),number,money,overwrite);return {...r,values:recalculate(r.values)};}
-module.exports={formatValue:(name,value)=>V14.formatValue(byName.get(name)||{},value),normalize:V14.normalize,primaryOptions:V14.primaryOptions,subjectEdit,...require('./summary.cjs'),blanketFields:adjustments.blanketFields,applyAdjustments,adjustmentParts:adjustments.parts,concession:adjustments.concession,schema,byName,groups,number,money,recalculate,calculated,issues,applyRecord,listingRecord,parseMLS,exportPDF,applyAI};
+module.exports={subjectAddress,formatValue:(name,value)=>V14.formatValue(byName.get(name)||{},value),normalize:V14.normalize,primaryOptions:V14.primaryOptions,subjectEdit,...require('./summary.cjs'),blanketFields:adjustments.blanketFields,applyAdjustments,adjustmentParts:adjustments.parts,concession:adjustments.concession,schema,byName,groups,number,money,recalculate,calculated,issues,applyRecord,listingRecord,parseMLS,exportPDF,applyAI};
