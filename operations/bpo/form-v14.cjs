@@ -12,7 +12,7 @@ function normalize(input){const v={...input};
  return v;}
 function primaryOptions(v,p){return [{value:'',label:'None selected'},...[1,2,3].map(i=>({value:'Comp '+i,label:'Comp '+i+' - '+(v[p+'.'+i+'.address']||'address not entered')}))];}
 function currencyField(f){return /(?:_adjustment|adjusted_price|\.price|\.ppsf|\.concessions|\.cost)$/.test(f.pdfName)||/^(?:value_|list_)/.test(f.pdfName)||/median_(home_value|list_price)$/.test(f.pdfName)||['repairs_total','subject_value_low','subject_value_high','subject_previous_list_price'].includes(f.pdfName);}
-function formatValue(f,value){const text=String(value??'');const n=Number(text.replace(/[$,]/g,''));return text.trim()&&Number.isFinite(n)&&currencyField(f)?n.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):text;}
+function formatValue(f,value){if(f.kind==='check')return value===true;const text=String(value??'');const n=Number(text.replace(/[$,]/g,''));return text.trim()&&Number.isFinite(n)&&currencyField(f)?n.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):text;}
 async function exportPDF(template,input,schema,recalculate,issues,concession){
  const v=recalculate(normalize(input));const errors=issues(v);if(errors.length)throw Error(errors[0]);
  const doc=await PDFDocument.load(template),form=doc.getForm(),font=await doc.embedFont(StandardFonts.Helvetica);if(doc.getPageCount()!==2)throw Error('The approved BPO form must contain two pages.');
