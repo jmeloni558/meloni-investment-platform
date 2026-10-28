@@ -12,7 +12,8 @@ export function cleanExtraction(payload, schema, documents) {
     if(f.kind!=='check'&&/^(?:true|false)$/i.test(value)){warnings.push(`${f.label}: ambiguous yes/no value needs review.`);continue;}
     if(f.name.endsWith('.condition')&&!/^MLS:/i.test(value))value='MLS: '+value;
     if(f.kind==='check'){if(!['true','false'].includes(value))continue;value=value==='true';}
-    else if(/\.(price|gla|beds|baths|rooms|year|dom|financing)$/.test(f.name)||f.name.startsWith('market_')&&!['market_zip','market_county'].includes(f.name)){
+    else if(/\.(price|gla|beds|baths|rooms|year|dom|financing)$/.test(f.name)||['field_0038','field_0039'].includes(f.name)||f.name.startsWith('market_')&&!['market_zip','market_county'].includes(f.name)){
+      if(/\.(price|financing)$/.test(f.name)&&value.includes('%')){warnings.push(`${f.label}: a dollar amount is required; percentage not imported.`);continue;}
       const suffix=f.name.split('.').pop();
       const units=suffix==='gla'?/\s*(?:sq\.?\s*ft\.?|sf|square feet)$/i:suffix==='dom'?/\s*days?$/i:/\s*(?:bedrooms?|beds?|bathrooms?|baths?|rooms?)$/i;
       const numeric=value.replace(/[$,%]/g,'').replace(units,'').trim();
