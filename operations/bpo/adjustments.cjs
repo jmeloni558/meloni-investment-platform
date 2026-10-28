@@ -2,6 +2,7 @@
 // Explicit facts only: never turn an unknown concession into zero or infer a financing rate.
 function concession(text,price){
  const s=String(text??'').trim();
+ if(/^\$?\d[\d,]*$/.test(s)){const amount=Number(s.replace(/[$,]/g,''));return Number.isFinite(price)&&amount<=price?{amount}:{reason:'Review concession amount and price.'};}
  if(/^(?:none|no|0|\$0(?:\.00)?|no (?:seller )?(?:concessions|closing costs)(?: paid)?)\.?$/i.test(s))return {amount:0};
  if(!s)return {reason:'Concessions not reported. Review the source or enter a dollar adjustment.'};
  const nums=s.match(/\$\s*\d[\d,]*(?:\.\d+)?|\d+(?:\.\d+)?\s*%/g)||[];
@@ -14,9 +15,9 @@ function concession(text,price){
  if(!Number.isFinite(amount)||amount<0||!Number.isFinite(price)||price<=0||amount>price)return {reason:'Review the concession amount and sold price.'};
  return {amount:Math.round(amount*100)/100};
 }
-const parts={rooms:['beds','baths'],porches:['porch','patio','deck','fireplace'],pool:['fence','pool']};
+const parts={rooms:['beds','baths'],porches:['porch','patio','deck'],fireplace:['fireplace'],fence:['fence'],pool:['pool']};
 const blanketFields=[
- ['location','Location'],['site','Site'],['view','View'],['design','Design and appeal'],['quality','Quality of construction'],['year','Year built','difference'],['condition','Condition'],['beds','Bedrooms','difference','rooms'],['baths','Bathrooms','difference','rooms'],['basement','Basement'],['utility','Functional utility'],['hvac','Heating / cooling'],['energy','Energy efficient items'],['garage','Garage / carport'],['porch','Porches','flat','porches'],['patio','Patio','flat','porches'],['deck','Deck','flat','porches'],['fireplace','Fireplace','flat','porches'],['fence','Fence','flat','pool'],['pool','Pool'],['other','Other']
+ ['location','Location'],['site','Site'],['view','View'],['design','Design and appeal'],['quality','Quality of construction'],['year','Year built','difference'],['condition','Condition'],['beds','Bedrooms','difference','rooms'],['baths','Bathrooms','difference','rooms'],['basement','Basement'],['utility','Functional utility'],['hvac','Heating / cooling'],['energy','Energy efficient items'],['garage','Garage / carport'],['porch','Porches','flat','porches'],['patio','Patio','flat','porches'],['deck','Deck','flat','porches'],['fireplace','Fireplace'],['fence','Fence'],['pool','Pool'],['other','Other']
 ];
 function apply(input,number,money,overwrite=false){
  const v={...input},state=structuredClone(input._adjustments||{rate:'',generated:{},parts:{}});state.generated||={};state.parts||={};const warnings=[];let preserved=0;
