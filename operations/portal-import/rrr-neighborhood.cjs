@@ -25,10 +25,9 @@ function neighborhood(v){
  }
  }
  const own=n('field_0038'),rent=n('field_0039'),valid=x=>x!==null&&x>=0&&x<=100;
- if(valid(own)&&valid(rent)&&Math.abs(own+rent-100)<=1)out.push('The reported neighborhood housing mix is approximately '+fmt(own)+'% owner occupied and '+fmt(rent)+'% renter occupied.'+(own+rent!==100?' The reported percentages are rounded.':''));
+ if(valid(own)&&valid(rent)&&Math.abs(own+rent-100)<=1)out.push('The reported neighborhood housing mix is approximately '+fmt(own)+'% owner occupied and '+fmt(rent)+'% renter occupied.');
  else if(valid(own)&&rent===null)out.push('Owner-occupied homes represent '+fmt(own)+'% of the reported neighborhood housing mix.');
  else if(valid(rent)&&own===null)out.push('Renter-occupied homes represent '+fmt(rent)+'% of the reported neighborhood housing mix.');
- if(out.length)out.push('These area-wide figures provide context for the comparable sales; they do not establish the subject’s value or a change in its individual value.');
  return out.join(' ');
 }
 module.exports={neighborhood};
