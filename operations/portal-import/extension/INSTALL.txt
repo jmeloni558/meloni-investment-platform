@@ -1,0 +1,17 @@
+PropertyThesis RRR Importer pilot 0.1.0
+
+1. In Edge, open edge://extensions.
+2. Turn on Developer mode, choose Load unpacked, and select this extension folder (the folder containing manifest.json).
+3. Pin PropertyThesis RRR Importer if desired.
+4. In PropertyThesis open the BPO, choose Client form: Residential Real Estate Review (RRR), and save.
+5. Click Export for RRR to download the transfer JSON. Keep this file private; it contains property data.
+6. Sign into RRR yourself. Open the matching order and visit Comparable Information once so its subject fields load. Open either Subject Information or Comparable Information.
+7. Click the extension, select the transfer JSON, and click Preview current tab.
+8. Review field differences and warnings. Existing values are preserved by default. Replace existing values only after reviewing them and previewing again.
+9. Click Fill previewed fields. Inspect the form and RRR calculated values. Save using RRR yourself, then repeat for the other approved tab.
+
+No passwords are requested or stored. There are no external servers or telemetry in this extension. It uses activeTab and scripting permissions only when you activate it. It never clicks Save, Validate or Submit. RRR's own scripts may process field changes immediately.
+
+Pilot limitations: ambiguous bath breakdown, above-grade/basement area, pool presence, original listing history, unmatched dropdowns and valuation horizons require manual review. Only explicitly mapped fields are supported. This is not a complete RRR form validator. Other four tabs stay manual. Client-specific RRR form variants may need another mapping.
+
+To remove: Edge extensions > Remove. Remove private transfer files when no longer needed.
