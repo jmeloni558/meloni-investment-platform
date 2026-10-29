@@ -1,7 +1,7 @@
  'use strict';
-let payload,review,tabId,frameId,section,orderIdentity;const $=id=>document.getElementById(id),say=s=>$('status').textContent=s;
+let payload,review,orderIdentity;const $=id=>document.getElementById(id),say=s=>$('status').textContent=s;
 function reset(){review=null;$('fill').disabled=true;}
-$('file').onchange=async()=>{reset();payload=null;$('preview').disabled=true;try{const f=$('file').files[0];if(!f||f.size>200000)throw Error('Choose a PropertyThesis RRR JSON file under 200 KB.');const p=JSON.parse(await f.text());PTRRR.validate(p);payload=p;$('preview').disabled=false;say('Loaded '+p.subject.address+'. No data sent to RRR yet.');}catch(e){say(e.message);}};
+$('file').onchange=async()=>{reset();$('results').replaceChildren();payload=null;$('preview').disabled=true;try{const f=$('file').files[0];if(!f||f.size>200000)throw Error('Choose a PropertyThesis RRR JSON file under 200 KB.');const p=JSON.parse(await f.text());PTRRR.validate(p);payload=p;$('preview').disabled=false;say('Loaded '+p.subject.address+'. No data sent to RRR yet.');}catch(e){say(e.message);}};
 $('overwrite').onchange=()=>{reset();say(payload?'Preview again after changing overwrite preference.':'Load a valid transfer file before previewing.');};
 const sections=['subject','comparables'],titles={subject:'Subject Information',comparables:'Comparable Information'};
 let busy=false;
@@ -24,7 +24,7 @@ function render(){const box=$('results');box.replaceChildren();const warnings=do
  for(const part of review){const heading=document.createElement('h3');heading.textContent=titles[part.section];box.append(heading);const table=document.createElement('table');for(const row of [{label:'Field',before:'Current',value:'Proposed',status:'Status'},...part.rows]){const tr=document.createElement('tr');for(const k of ['label','before','value','status']){const td=document.createElement('td');td.textContent=row[k];tr.append(td);}table.append(tr);}box.append(table);}}
 $('preview').onclick=async()=>{if(busy)return;reset();controls(true);let info;try{if(!payload)throw Error('Load a transfer file.');info=await inspect();await activate(info,'comparables');const parts=[];
  for(const section of sections){say('Previewing '+titles[section]+'…');const frameId=await activate(info,section);const result=await chrome.scripting.executeScript({target:{tabId:info.tabId,frameIds:[frameId]},func:(p,s,o)=>PTRRR.plan(document,p,s,o),args:[payload,section,$('overwrite').checked]});parts.push({section,frameId,rows:result[0].result});}
- review=parts;orderIdentity=info;render();say(parts.map(x=>titles[x.section]+': '+x.rows.filter(r=>r.status==='ready').length+' ready').join('; ')+'. Review both sections, then fill once. Existing values are preserved unless replacement is checked.');
+ review=parts;orderIdentity=info;render();say(parts.map(x=>titles[x.section]+': '+x.rows.filter(r=>r.status==='ready').length+' ready').join('; ')+(parts.some(x=>x.rows.some(r=>r.status==='ready'))?'. Review both sections, then fill once.':'. No fields need filling. Already-matching or preserved entries are listed below.')+' Existing values are preserved unless replacement is checked.');
  }catch(e){reset();say(e.message);}finally{if(info)await restore(info);controls(false);}};
 $('fill').onclick=async()=>{if(busy||!review)return;controls(true);const info=orderIdentity,parts=review;let completed=[];try{await sameOrder(info);
  // Check both frame instances before the first write; stale previews require a new review.
