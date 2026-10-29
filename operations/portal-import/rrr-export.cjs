@@ -1,4 +1,5 @@
  'use strict';
+const facts=require('./rrr-facts.cjs');
 const clientOf=v=>v._clientTemplate==='rrr'?'rrr':'general';
 function exportRRR(v){
  if(clientOf(v)!=='rrr')throw Error('Choose RRR as the client before exporting.');
@@ -19,12 +20,23 @@ function exportRRR(v){
  if(!v[p+'address'])continue;
  for(const [key,id] of Object.entries({address:'txtAddress',city:'txtCity',state:'ddlState',zip:'txtZip',year:'txtYearBuilt',rooms:'txtRooms',beds:'txtBeds'}))if(i||!['address','city','state','zip'].includes(key))add('comparables',pre+id,v[p+key],label+' '+key);
  if(i){const price=num(v[p+'price']);if(price!==null)add('comparables',pre+(group==='sold'?'txtSalePrice':'txtCurrentListPrice'),price,label+' price');if(group==='sold')add('comparables',pre+'txtSaleDate',v[p+'date'],label+' sale date');}
- for(const [key,id] of [['view','ddlView'],['condition','ddlConditionType'],['garage','ddlGarageType']])add('comparables',pre+id,choice(key,v[p+key],label+' '+key),label+' '+key);
+ for(const [key,id] of [['view','ddlView'],['condition','ddlConditionType']])add('comparables',pre+id,choice(key,v[p+key],label+' '+key),label+' '+key);
  if(i)add('comparables',pre+'ddlStyle',choice('design',v[p+'design'],label+' style'),label+' style');
  if(/\bMLS\b/i.test(v[p+'source']||''))add('comparables',pre+'ddlDataSource','MLS',label+' source');else if(/tax records?/i.test(v[p+'source']||''))add('comparables',pre+'ddlDataSource','Tax Records',label+' source');
+ // Read explicit facts, never the old macros' fixed zero/default choices.
+ const mls=String(v[p+'source']||'').match(/\bMLS\s*(?:number|no\.?|#|:)?\s*([A-Z]{0,4}\d{5,12})\b/i);
+ if(mls)add('comparables',pre+'txtMLSNumber',mls[1].toUpperCase(),label+' MLS number');
+ const bath=facts.baths(v[p+'baths']);
+ if(bath){add('comparables',pre+'txtFullBaths',bath.full,label+' full baths');add('comparables',pre+'txtHalfBaths',bath.half,label+' half baths');}
+ const garage=facts.garage(v[p+'garage']);
+ if(garage){add('comparables',pre+'ddlGarageType',garage.type,label+' garage type');add('comparables',pre+'txtGarages',garage.count,label+' garage spaces');}
+ else if(v[p+'garage'])warnings.push(label+': verify garage type and count ('+v[p+'garage']+').');
+ const area=facts.area(v[p+'gla'],v[p+'basement']);
+ if(area){add('comparables',pre+'txtSqFtLiving',area.living,label+' above-grade living area');add('comparables',pre+'txtBasementSqFt',area.basement,label+' basement square feet');}
+ const dom=num(v[p+'dom']);if(dom!==null&&Number.isInteger(dom)&&dom>=0)add('comparables',pre+'txtDOM',dom,label+' days on market');
  const site=String(v[p+'site']||'').replace(/,/g,'').match(/^\s*(\d+(?:\.\d+)?)\s*(acres?|ac|sq\.?\s*ft|sf)\s*$/i);if(site)add('comparables',pre+'txtLotSizeAcres',Number((Number(site[1])/(site[2].toLowerCase().startsWith('ac')?1:43560)).toFixed(4)),label+' acres');else if(v[p+'site'])warnings.push(label+': verify lot area and units.');
- if(v[p+'gla'])warnings.push(label+': confirm above-grade versus basement area before entering '+v[p+'gla']+' square feet.');
- if(v[p+'baths'])warnings.push(label+': separate full and half baths from the source ('+v[p+'baths']+').');
+ if(v[p+'gla']&&!area)warnings.push(label+': confirm above-grade versus basement area before entering '+v[p+'gla']+' square feet.');
+ if(v[p+'baths']&&!bath)warnings.push(label+': separate full and half baths from the source ('+v[p+'baths']+').');
  if(v[p+'pool'])warnings.push(label+': review physical Pool/Spa presence; zero contributory value does not mean no pool.');
  if(i){const n=num(v[p+'net']);if(n!==null){add('comparables',pre+'ddlPositiveNegativeSign',n<0?'-':'+',label+' adjustment sign');add('comparables',pre+'txtAdjustment',Math.abs(n),label+' net adjustment');}
  if(v[p+'financing'])warnings.push(label+': enter concessions and financing separately and verify RRR does not deduct concessions twice.');
