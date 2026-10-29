@@ -23,3 +23,12 @@ test('standalone signed-in toolbar includes account controls and excludes inject
   assert.match(source,/setAttribute\('aria-current','page'\)/);
   assert.match(read('compliance-footer.js'),/if\(nav.dataset.accountToolbar\)return/);
 });
+
+test('BPO routing refreshes the toolbar after asynchronous workspace changes',()=>{
+ const route=read('bpo-workspace.js').match(/function route\(\)\{[^\n]+/)[0];let refreshed=0,replaced='';
+ const context={URL,location:{href:'https://propertythesis.com/'},history:{state:{},replaceState(_a,_b,url){replaced=String(url);}},window:{AppNavigationToolbar:{refresh(){refreshed++;}}},dialog:{classList:{contains:()=>false}},record:null,step:3};
+ vm.createContext(context);vm.runInContext(route,context);context.route();assert.equal(new URL(replaced).searchParams.get('bpo'),'new');assert.equal(refreshed,1);
+ context.record={id:'saved-test'};context.route();assert.equal(new URL(replaced).searchParams.get('bpo'),'saved-test');assert.equal(refreshed,2);
+ context.record=null;context.dialog.classList.contains=()=>true;context.route();assert.equal(new URL(replaced).searchParams.get('bpo'),'library');assert.equal(refreshed,3);
+ context.dialog=null;context.route();assert.equal(new URL(replaced).searchParams.has('bpo'),false);assert.equal(refreshed,4);
+});
