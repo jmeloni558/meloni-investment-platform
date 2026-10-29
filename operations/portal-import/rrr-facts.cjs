@@ -22,4 +22,12 @@ function area(gla,basement){
  if(m&&+m[1]>0&&(noBasement||/above[ -]grade/i.test(s)))return {living:+m[1],...(noBasement?{basement:0}:{})};
  return null;
 }
-module.exports={baths,garage,area};
+function mls(value){
+ const s=String(value??'');if(!/\bMLS\b/i.test(s))return null;
+ const ids=[...s.matchAll(/\b[A-Z]{1,4}\d{5,12}\b/gi)].map(m=>m[0].toUpperCase());
+ return new Set(ids).size===1?ids[0]:null;
+}
+function concession(value){const s=String(value??'').trim().replace(/[$,]/g,'');return /^\d+(?:\.0+)?$/.test(s)?Number(s):null;}
+function propertyType(value){return /^single family (?:residence|reside\.\.\.)$/i.test(String(value??'').trim())?'Single Family':null;}
+function airConditioning(value){return /\b(?:central air|air conditioning|a\/c)\b/i.test(String(value??''))&&!/\b(no|not|without|unknown)\b/i.test(String(value??''));}
+module.exports={baths,garage,area,mls,concession,propertyType,airConditioning};
