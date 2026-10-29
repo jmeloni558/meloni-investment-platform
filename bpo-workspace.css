@@ -57,8 +57,21 @@ body.pt-bpo-active main.shell > :not(#appNavShell):not(#ptBpoWorkspace):not(.foo
 
 /* RRR uses all four columns; subject sources precede address and reviewed facts. */
 .pt-bpo-workflow-shell .pt-bpo-workflow[data-step-count="4"]{grid-template-columns:repeat(4,minmax(0,1fr))}
-.pt-bpo-subject-uploads{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;margin:16px 0}
+.pt-bpo-subject-uploads{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch;margin:16px 0}
 .pt-bpo-subject-uploads .pt-bpo-upload{min-width:0;margin:0}
 .pt-bpo-subject-uploads input[type=file]{max-width:100%;box-sizing:border-box}
 @media(max-width:1100px){.pt-bpo-workflow-shell .pt-bpo-workflow[data-step-count="4"]{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.pt-bpo-workflow-shell .pt-bpo-workflow[data-step-count="4"]{grid-template-columns:1fr}.pt-bpo-subject-uploads{grid-template-columns:1fr}}
+
+.pt-bpo-subject-uploads .pt-bpo-upload{display:flex;flex-direction:column;box-sizing:border-box}
+.pt-bpo-subject-uploads [data-documents]{margin-top:auto}
+.pt-bpo-editor-heading{background:#fff;border:1px solid #c2d3dd;border-radius:12px;padding:20px;margin:0 0 20px}
+.pt-bpo-editor-heading .pt-bpo-subject-title{margin:0 0 16px;font-size:20px;line-height:1.4;overflow-wrap:anywhere}
+.pt-bpo-editor-toolbar,.pt-bpo-editor-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.pt-bpo-editor-toolbar{gap:16px}
+.pt-bpo-editor-heading .pt-bpo-editor-actions button,.pt-bpo-editor-heading .pt-bpo-importer-link{margin:0;min-height:44px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;font-size:14px;font-weight:600;line-height:1.4}
+.pt-bpo-editor-heading .pt-bpo-importer-link{border:1px solid #a6c4d6;border-radius:7px;background:#f2f7fa;color:#174d70;text-decoration:none;font-weight:600}
+.pt-bpo-client-choice{display:flex;align-items:center;gap:10px;font-size:14px;margin:0;min-width:0}
+.pt-bpo-client-choice select{min-height:44px;max-width:100%;padding:9px 12px;border:1px solid #a6c4d6;border-radius:7px;background:#fff;color:#17334b;font:inherit;box-sizing:border-box}
+.pt-bpo-editor-heading .pt-bpo-editor-guidance{border-top:1px solid #e1eaf0;margin:16px 0 0;padding-top:12px;font-size:14px;color:#40566a}
+@media(max-width:650px){.pt-bpo-editor-heading{padding:16px}.pt-bpo-client-choice{width:100%;flex-direction:column;align-items:stretch;gap:6px}.pt-bpo-editor-actions{width:100%}.pt-bpo-editor-actions>*{flex:1}.pt-bpo-client-choice select{width:100%}}
