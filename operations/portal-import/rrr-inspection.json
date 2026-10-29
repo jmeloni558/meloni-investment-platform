@@ -1,0 +1,91 @@
+{
+  "portal": "Residential RealEstate Review",
+  "host": "legacy.rrreview.com",
+  "inspected": "2026-10-29",
+  "status": "read-only inspection; importer not implemented or tested",
+  "scope": [
+    "Subject Information",
+    "Comparable Information"
+  ],
+  "frames": {
+    "subject": "iframeBPOBPOEntryFormTab2",
+    "comparables": "iframeBPOBPOEntryFormTab4"
+  },
+  "prefixes": {
+    "subject": "rrrSubject_",
+    "sold": "rrrSale{1..3}_",
+    "active": "rrrListing{1..3}_"
+  },
+  "candidateCompMappings": {
+    "address": "txtAddress",
+    "city": "txtCity",
+    "state": "ddlState",
+    "zip": "txtZip",
+    "source": "ddlDataSource",
+    "price_sold": "txtSalePrice",
+    "price_active": "txtCurrentListPrice",
+    "date_sold": "txtSaleDate",
+    "year": "txtYearBuilt",
+    "rooms": "txtRooms",
+    "beds": "txtBeds",
+    "view": "ddlView",
+    "condition": "ddlConditionType",
+    "design": "ddlStyle",
+    "garage": "ddlGarageType",
+    "primary": "chkBestSaleList"
+  },
+  "transformations": [
+    "Map dropdown labels only when meaning is established; ambiguous mappings require user review.",
+    "Convert known square-foot lot sizes to acres; never infer units from unlabeled numbers.",
+    "Separate full and half baths from explicit source data; combined bathroom notation is not always sufficient.",
+    "Transfer final net adjustment as sign and absolute magnitude; verify RRR resulting adjusted price matches PropertyThesis, including concession treatment, before enabling live fill.",
+    "Do not populate computed/read-only DOM, total GBA, adjusted price or price-per-area fields.",
+    "Never infer housing inventory trend from a single months-of-supply value or treat ZIP median as neighborhood predominant value.",
+    "Pool/Spa indicates physical presence. Above-ground pool zero contributory value must not become a false physical absence.",
+    "Keep subject sold price separate from current asking price; do not reuse current price as original list price.",
+    "Proximity is categorical; miles alone cannot establish across-the-street or block categories.",
+    "30-day and 90-120-day pricing needs matching explicit valuation horizons; do not invent discounts.",
+    "Do not infer overall Superior/Inferior/Similar rating solely from net adjustment sign."
+  ],
+  "subjectFields": {
+    "rights": "ddlOwnershipType",
+    "occupancy": "ddlOccupancyStatusType",
+    "propertyType": "ddlPropertyType",
+    "currentUse": "ddlCurrentUse",
+    "style": "ddlStyleType",
+    "water": "ddlWaterType",
+    "sewer": "ddlSewerType",
+    "location": "ddlLocationType",
+    "county": "txtCounty",
+    "parcel": "txtParcelNumber",
+    "assessedValue": "txtTaxAssessedValue",
+    "taxYear": "txtTaxAssessedDate",
+    "propertyTax": "txtPropertyTax",
+    "landValue": "txtLandValue",
+    "inspectionDate": "txtInspectionDate",
+    "listed": "ddlCurrentlyListed",
+    "originalListDate": "txtListingDate",
+    "originalListPrice": "txtOrigListPrice",
+    "currentListPrice": "txtCurrentListPrice",
+    "mls": "txtMLSNumber",
+    "inventoryTrend": "ddlSupplyAndDemand",
+    "valueTrend": "ddlPropertyValues",
+    "marketingDays": "txtMarketTimes",
+    "neighborhoodComments": "txtNeighborhoodComments"
+  },
+  "constraints": [
+    "Validate selected PropertyThesis subject against RRR order address before fill; address-correction fields are not normal address inputs.",
+    "Preserve existing portal values by default and preview conflicts.",
+    "Restrict to visible, enabled, editable fields in the two approved frames.",
+    "Do not click Save Progress, Save Tab Data, Validate BPO or Submit Order automatically.",
+    "Leave other four tabs manual.",
+    "Conditional controls and server postbacks require staged filling and fresh reads.",
+    "Prior 36-month listing history is a separate repeatable grid; initial version should leave it manual unless explicit history mapping is implemented."
+  ],
+  "remainingValidation": [
+    "Map source schema and add RRR-only missing fields where appropriate.",
+    "Build extension and export preview using synthetic records.",
+    "Verify conditional dropdowns, calculation events and persistence with an explicitly authorized test fill.",
+    "Confirm client-specific variations rather than assume all RRR orders use this exact template."
+  ]
+}
