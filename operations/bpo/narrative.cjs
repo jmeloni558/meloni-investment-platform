@@ -49,6 +49,6 @@ function sections(v){const notes=v._summaryNotes||{},subject=k=>t(v['sold.0.'+k]
  if(/^active\.[1-3]$/.test(notes.primaryActive||'')&&v[notes.primaryActive+'.address'])conclusion+=' The primary competitive listing is '+v[notes.primaryActive+'.address']+'. Its asking price provides competitive context, not a verified closed-sale value.';
  conclusion+=`\n\n${n(v.field_0477)!==null?'The concluded as-is market value is '+money(v.field_0477)+'.':'An as-is value opinion has not yet been finalized.'}${n(v.field_0478)!==null?' The suggested list price is '+money(v.field_0478)+'.':''}`;
  if(n(subject('price'))!==null&&n(v.field_0477)!==null){const d=n(subject('price'))-n(v.field_0477);conclusion+=d===0?' The reported asking price equals this opinion.':` The reported asking price is ${money(Math.abs(d))} ${d>0?'above':'below'} the concluded value.`;}
- out.push({title:'Value Conclusion',body:conclusion});return out;
+ out.push({title:'Value Conclusion',body:conclusion});return require('./summary-analysis.cjs').refine(v,out);
 }
 module.exports={sections};
