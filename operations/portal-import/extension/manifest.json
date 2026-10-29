@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PropertyThesis RRR Importer \u2014 Pilot",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Preview and fill the Subject and Comparable tabs of your RRR BPO. No automatic save or submission.",
   "permissions": [
     "activeTab",

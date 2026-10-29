@@ -40,7 +40,7 @@ test('default plus sign can change only with a new blank adjustment amount',()=>
 });
 test('explicit A/C checks an empty checkbox and concession dependencies preserve unrelated amounts',()=>{
  const {api,payload,nodes,doc}=fixture();
- const id='rrrSale1_lbAmenities_0';payload.fields.push({section:'comparables',id,value:'true',label:'A/C'});
+ const id='rrrSale1_lbAmenities_0';assert.equal(payload.fields.find(f=>f.id===id).value,'true');
  nodes[id]={id,tagName:'INPUT',type:'checkbox',checked:false,isConnected:true,getClientRects:()=>[{}],dispatchEvent(){}};
  const plan=api.plan(doc,payload,'comparables');assert.equal(plan.find(x=>x.id===id).status,'ready');api.apply(doc,payload,'comparables',plan,false);assert.equal(nodes[id].checked,true);
 });
@@ -49,4 +49,12 @@ test('net adjustments permit matching disclosed concessions but block unrelated 
  for(const [key,value] of [['txtSalePrice','350000'],['txtConcessionsAmount','5000'],['ddlPositiveNegativeSign','-'],['txtAdjustment','5000']]){const id='rrrSale1_'+key;payload.fields.push({section:'comparables',id,value,label:key});nodes[id]={id,tagName:'INPUT',type:'text',value:'',isConnected:true,getClientRects:()=>[{}]};}
  nodes.rrrSale1_txtConcessionsAmount.value='$5,000';assert.equal(api.plan(doc,payload,'comparables').find(x=>x.id==='rrrSale1_txtAdjustment').status,'ready');
  nodes.rrrSale1_txtConcessionsAmount.value='$6,000';assert.equal(api.plan(doc,payload,'comparables').find(x=>x.id==='rrrSale1_txtAdjustment').status,'adjustment dependency — review manually');
+});
+
+test('zero placeholders fill for original list price and owner unit default, real entries are preserved',()=>{
+ const {api,payload,nodes,doc}=fixture();
+ const price='rrrSale1_txtListPrice',units='rrrSale1_txtNoUnits';payload.fields.push({section:'comparables',id:price,value:'400000',label:'Original list'});
+ for(const id of [price,units])nodes[id]={id,tagName:'INPUT',type:'text',value:id===price?'$0':'0',isConnected:true,getClientRects:()=>[{}]};
+ let plan=api.plan(doc,payload,'comparables');assert.equal(plan.find(x=>x.id===price).status,'ready');assert.equal(plan.find(x=>x.id===units).status,'ready');
+ nodes[price].value='$399,000';nodes[units].value='2';plan=api.plan(doc,payload,'comparables');assert.equal(plan.find(x=>x.id===price).status,'existing entry — preserved');assert.equal(plan.find(x=>x.id===units).status,'existing entry — preserved');
 });
