@@ -6,7 +6,9 @@ export function cleanExtraction(payload, schema, documents) {
   for (const item of (Array.isArray(payload?.fields) ? payload.fields : []).slice(0,500)) {
     const f=allowed.get(item.name), doc=documents[item.document];
     if (!f || seen.has(item.name) || !doc || !Number.isInteger(item.page) || item.page<1 || item.page>40 || typeof item.evidence!=='string' || !item.evidence.trim()) continue;
+    if(doc.category==='subject'&&/^(sold|active)\.[1-3]\./.test(item.name)){warnings.push('Subject source excluded from comparable slots. Upload separate comparable documents.');continue;}
     let value=String(item.value??'').trim(); if(!value || value.length>1800) continue;
+    if((item.name==='field_0008'||/^(sold|active)\.0\.address$/.test(item.name))&&(value.length<8||!/[a-z]{2}/i.test(value)||!/\d/.test(value))){warnings.push('Incomplete subject address was not imported.');continue;}
     if(f.kind!=='check'&&/^(?:not (?:stated|provided|specified)|none stated|unknown|n\/?a)$/i.test(value))continue;
     if(f.name==='field_0053'&&!/typical|average|median|neighborhood|normal|exposure/i.test(item.evidence)){warnings.push('Normal marketing time: property-specific days on market are not a neighborhood estimate; not imported.');continue;}
     if(f.name.endsWith('.energy')&&/^false$/i.test(value)&&/generation\s*Y\/N:\s*No/i.test(item.evidence))value='No generation';
