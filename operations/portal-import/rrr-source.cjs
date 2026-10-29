@@ -13,6 +13,7 @@ function pool(value,features=''){
  return undefined;
 }
 function parse(text,category){
+ if(category==='tax')return require('./rrr-tax.cjs').parse(text);
  const t=String(text||'').replace(/\r/g,'');
  const headers=[...t.matchAll(/\b([A-Z]{1,4}\d{5,12})[ \t]+(\d[\d \t]*[A-Za-z][^\n]+?,[^\n]+?\b[A-Z]{2}[ \t]+\d{5}(?:-\d{4})?)/g)];
  return headers.map((h,i)=>{

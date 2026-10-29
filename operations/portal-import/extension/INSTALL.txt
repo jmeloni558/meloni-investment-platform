@@ -1,4 +1,4 @@
-PropertyThesis RRR Importer pilot 0.5.0
+PropertyThesis RRR Importer pilot 0.6.0
 
 1. In Edge, open edge://extensions.
 2. Turn on Developer mode, choose Load unpacked, and select this extension folder (the folder containing manifest.json).
@@ -20,4 +20,4 @@ To remove: Edge extensions > Remove. Remove private transfer files when no longe
 
 0.4.0 adds active MLS source formats, explicit A/C, numeric sold concessions, property type, pond/lake views, and qualified neighborhood context. Concessions are not deducted a second time from the BPO net adjustment. Current subject occupancy, inspection, utilities and listing status are never inferred from historical MLS records.
 
-0.5.0 reads uploaded subject/sold/active MLS PDFs in your browser during Export for RRR, matching each record by street/ZIP and MLS ID when present. It adds original list price/date, sale type and closed financing where unambiguous. One unit per comp and A/C are owner-requested defaults. One story maps to Ranch; two story maps to 2 Story. Pool Yes requires a private inground pool; community and above-ground pools map to No. Unknowns remain blank. Historical subject listing facts are not inserted as current listing facts. RRR derives DOM from its dates, which may differ from MLS active days. Confirm calculated prices, especially zero adjustments, before saving.
+0.6.0 reads uploaded subject/sold/active MLS PDFs in your browser during Export for RRR, matching each record by street/ZIP and MLS ID when present. It adds original list price/date, sale type and closed financing where unambiguous. One unit per comp and A/C are owner-requested defaults. One story maps to Ranch; two story maps to 2 Story. Pool Yes requires a private inground pool; community and above-ground pools map to No. Unknowns remain blank. Historical subject listing facts are not inserted as current listing facts. RRR derives DOM from its dates, which may differ from MLS active days. Confirm calculated prices, especially zero adjustments, before saving.
