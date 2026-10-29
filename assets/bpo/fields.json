@@ -1361,7 +1361,7 @@
   },
   {
     "name": "sold.0.price",
-    "pdfName": "subject_shared.price",
+    "pdfName": "sold.0.price",
     "label": "Subject Price ($)",
     "page": 0,
     "x": 140.0,
@@ -1441,7 +1441,7 @@
   },
   {
     "name": "sold.0.ppsf",
-    "pdfName": "subject_shared.ppsf",
+    "pdfName": "sold.0.ppsf",
     "label": "Subject Price per square foot ($)",
     "page": 0,
     "x": 140.0,
@@ -6181,7 +6181,7 @@
   },
   {
     "name": "active.0.price",
-    "pdfName": "subject_shared.price",
+    "pdfName": "active.0.price",
     "label": "Subject Price ($)",
     "page": 1,
     "x": 140.0,
@@ -6261,7 +6261,7 @@
   },
   {
     "name": "active.0.ppsf",
-    "pdfName": "subject_shared.ppsf",
+    "pdfName": "active.0.ppsf",
     "label": "Subject Price per square foot ($)",
     "page": 1,
     "x": 140.0,

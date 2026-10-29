@@ -1,7 +1,7 @@
 'use strict';
 const {PDFDocument,StandardFonts,layoutMultilineText}=require('pdf-lib');
 function splitAddress(raw){const s=String(raw||'').trim();const m=s.match(/^(.+?),\s*([^,]+),\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)(?:,?\s*(?:USA|US))?$/i);return m?{address:m[1],city:m[2],state:m[3].toUpperCase(),zip:m[4]}:{address:s};}
-function normalize(input){const v={...input};
+function normalize(input){const v={...input};if(v.field_0002!==undefined)v.field_0483=v.field_0002;else if(v.field_0483!==undefined)v.field_0002=v.field_0483;
  if(input._adjustments){v._adjustments=structuredClone(input._adjustments);const parts=v._adjustments.parts||{};for(const [key,obj] of Object.entries(parts)){if(key.endsWith('.porches')&&obj.fireplace!==undefined){parts[key.replace(/porches$/,'fireplace')]={fireplace:obj.fireplace};delete obj.fireplace;}if(key.endsWith('.pool')&&obj.fence!==undefined){parts[key.replace(/pool$/,'fence')]={fence:obj.fence};delete obj.fence;}}}
 
  for(const p of ['sold','active'])for(let i=0;i<=3;i++){const b=p+'.'+i+'.',a=splitAddress(v[b+'address']);for(const k of ['city','state','zip'])if(v[b+k]===undefined&&a[k])v[b+k]=a[k];if(a.city)v[b+'address']=a.address;}
@@ -13,6 +13,10 @@ function normalize(input){const v={...input};
 function primaryOptions(v,p){return [{value:'',label:'None selected'},...[1,2,3].map(i=>({value:'Comp '+i,label:'Comp '+i+' - '+(v[p+'.'+i+'.address']||'address not entered')}))];}
 function currencyField(f){return /(?:_adjustment|adjusted_price|\.price|\.ppsf|\.concessions|\.cost)$/.test(f.pdfName)||/^(?:value_|list_)/.test(f.pdfName)||/median_(home_value|list_price)$/.test(f.pdfName)||['repairs_total','subject_value_low','subject_value_high','subject_previous_list_price'].includes(f.pdfName);}
 function formatValue(f,value){if(f.kind==='check')return value===true;const text=String(value??'');const n=Number(text.replace(/[$,]/g,''));return text.trim()&&Number.isFinite(n)&&currencyField(f)?n.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):text;}
+let validationFont;
+async function prepareValidation(){if(!validationFont){const doc=await PDFDocument.create();validationFont=await doc.embedFont(StandardFonts.Helvetica);}return validationFont;}
+function textSize(f,text,font){let size=Math.min(8,f.h-2),min=f.kind==='textarea'?6:5.5;const fits=n=>f.kind==='textarea'?layoutMultilineText(text,{font,fontSize:n,bounds:{x:0,y:0,width:f.w-4,height:f.h-4}}).lines.length*n*1.2<=f.h-4:font.widthOfTextAtSize(text,n)<=f.w-4;while(size>min&&!fits(size))size-=.25;return fits(size)?size:null;}
+function fitIssues(values,schema,font=validationFont){if(!font)return [];const out=[];for(const f of schema){if(!['text','textarea'].includes(f.kind))continue;const text=String(formatValue(f,values[f.name])??'');try{if(textSize(f,text,font)===null)out.push({name:f.name,message:f.label+': shorten this entry to fit the printed form.'});}catch{out.push({name:f.name,message:f.label+': use standard text characters supported by the PDF.'});}}return out;}
 async function exportPDF(template,input,schema,recalculate,issues,concession){
  const v=recalculate(normalize(input));const errors=issues(v);if(errors.length)throw Error(errors[0]);
  const doc=await PDFDocument.load(template),form=doc.getForm(),font=await doc.embedFont(StandardFonts.Helvetica);if(doc.getPageCount()!==2)throw Error('The approved BPO form must contain two pages.');
@@ -25,7 +29,7 @@ async function exportPDF(template,input,schema,recalculate,issues,concession){
  if(!/\.0\./.test(f.name)&&/\.financing$/.test(f.name)&&String(value??'').trim()){
   const numeric=String(value).replace(/[$,\s]/g,'');if(!/^\d+$/.test(numeric)){const c=concession(value,Number(String(v[f.name.replace(/financing$/,'price')]||'').replace(/,/g,'')));value=c.amount===undefined?'':String(c.amount);}
  }
- value=formatValue(f,value);control.removeMaxLength();control.acroField.setDefaultAppearance('/Helv 8 Tf 0 g');control.setText(String(value??''));let size=Math.min(8,f.h-2);const text=String(value??'');if(f.kind==='textarea'){while(size>6&&layoutMultilineText(text,{font,fontSize:size,bounds:{x:0,y:0,width:f.w-4,height:f.h-4}}).lines.length*size*1.2>f.h-4)size-=.25;if(layoutMultilineText(text,{font,fontSize:size,bounds:{x:0,y:0,width:f.w-4,height:f.h-4}}).lines.length*size*1.2>f.h-4)throw Error(f.label+': shorten this entry before PDF export.');}else{while(size>6&&font.widthOfTextAtSize(text,size)>f.w-4)size-=.25;if(font.widthOfTextAtSize(text,size)>f.w-4)throw Error(f.label+': shorten this entry before PDF export.');}control.setFontSize(size);if(f.readonly)control.enableReadOnly();
+ value=formatValue(f,value);control.removeMaxLength();control.acroField.setDefaultAppearance('/Helv 8 Tf 0 g');control.setText(String(value??''));const text=String(value??''),size=textSize(f,text,font);if(size===null)throw Error(f.label+': shorten this entry to fit the printed form.');control.setFontSize(size);if(f.readonly)control.enableReadOnly();
  }
  form.updateFieldAppearances(font);
  // Restore stable export IDs after adding human-readable dropdown labels.
@@ -35,6 +39,6 @@ async function exportPDF(template,input,schema,recalculate,issues,concession){
   field.acroField.dict.set(PDFName.of('Opt'),doc.context.obj(opts.map(o=>[PDFString.of(o.value),PDFString.of(o.label)])));
   field.acroField.dict.set(PDFName.of('V'),PDFString.of(v[name]||''));
  }
- doc.setTitle('Residential Broker Price Opinion');doc.setProducer('PropertyThesis BPO v14');return doc.save({updateFieldAppearances:false});
+ doc.addJavaScript('RoomDefaults', 'var PTAutoRooms='+JSON.stringify(Object.fromEntries(Object.entries(v._roomDefaults||{}).map(([name,value])=>[schema.find(f=>f.name===name)?.pdfName,value]).filter(([name])=>name)))+';');doc.setTitle('Residential Broker Price Opinion');doc.setProducer('PropertyThesis BPO v14');return doc.save({updateFieldAppearances:false});
 }
-module.exports={formatValue,currencyField,normalize,splitAddress,primaryOptions,exportPDF};
+module.exports={prepareValidation,fitIssues,formatValue,currencyField,normalize,splitAddress,primaryOptions,exportPDF};

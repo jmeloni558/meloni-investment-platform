@@ -23,13 +23,14 @@ function storyClass(raw){
  const multi=/\b(two|three|four|five|multi|multiple|[2-9]|\d{2,}|1\.5)\s*(?:story|storey|stories|storeys|level|levels|floor|floors)\b|\b(second|third|fourth|[2-9](?:nd|rd|th)|upper) floor\b/.test(s);
  return single===multi?null:single?1:0;
 }
+function poolClass(raw){const s=String(raw??'').toLowerCase().replace(/[-–—]/g,' ');if(/above\s*ground|\b(no|none|community)\b/.test(s))return 0;if(/in\s*ground|\b(private|yes|gunite|concrete|fiberglass)\b/.test(s))return 1;return null;}
 const blanketFields=[
- ['location','Location'],['site','Site'],['view','View'],['design','Design and appeal','story'],['quality','Quality of construction'],['year','Year built','difference'],['condition','Condition'],['beds','Bedrooms','difference','rooms'],['baths','Bathrooms','difference','rooms'],['basement','Basement'],['utility','Functional utility'],['hvac','Heating / cooling'],['energy','Energy efficient items'],['garage','Garage / carport'],['porch','Porches','flat','porches'],['patio','Patio','flat','porches'],['deck','Deck','flat','porches'],['fireplace','Fireplace'],['fence','Fence'],['pool','Pool'],['other','Other']
+ ['location','Location'],['site','Site'],['view','View'],['design','Design and appeal','story'],['quality','Quality of construction'],['year','Year built','difference'],['condition','Condition'],['beds','Bedrooms','difference','rooms'],['baths','Bathrooms','difference','rooms'],['basement','Basement'],['utility','Functional utility'],['hvac','Heating / cooling'],['energy','Energy efficient items'],['garage','Garage / carport'],['porch','Porches','flat','porches'],['patio','Patio','flat','porches'],['deck','Deck','flat','porches'],['fireplace','Fireplace'],['fence','Fence'],['pool','Pool','pool'],['other','Other']
 ];
 function apply(input,number,money,overwrite=false){
- const v={...input},state=structuredClone(input._adjustments||{rate:'',generated:{},parts:{}});state.generated||={};state.parts||={};const warnings=[];let preserved=0;
+ const v={...input},state=structuredClone(input._adjustments||{rate:'',generated:{},parts:{}});state.generated||={};state.parts||={};state.manual||={};const warnings=[];let preserved=0;
  const same=(a,b)=>number(a)!==null&&number(a)===number(b);
- const put=(key,n,blanket=false)=>{const prior=state.generated[key],current=v[key];if(!(blanket&&overwrite)&&String(current??'').trim()&&(!prior||!same(current,prior.value))){if(blanket)preserved++;return false;}v[key]=money(n);state.generated[key]={value:v[key],...(blanket?{blanket:true}:{})};return true;};
+ const put=(key,n,blanket=false)=>{if(state.manual[key]){if(blanket&&overwrite)delete state.manual[key];else return false;}const prior=state.generated[key],current=v[key];if(!(blanket&&overwrite)&&String(current??'').trim()&&(!prior||!same(current,prior.value))){if(blanket)preserved++;return false;}v[key]=money(n);state.generated[key]={value:v[key],...(blanket?{blanket:true}:{})};return true;};
  for(const kind of ['sold','active'])for(let i=1;i<=3;i++){
   const p=kind+'.'+i+'.';if(!v[p+'address'])continue;
   if(kind==='sold'){
@@ -47,8 +48,9 @@ function apply(input,number,money,overwrite=false){
    const fields=blanketFields.filter(f=>(f[3]||f[0])===target),touched=fields.some(f=>Object.hasOwn(globals,f[0]));
    if(!touched)continue;managed.add(target);
    const key=p+'adj_'+target,entered=fields.filter(f=>String(globals[f[0]]??'').trim());let sum=0,valid=true;
-   for(const [name,label,mode] of entered){const factor=number(globals[name]);if(factor===null||(['difference','story'].includes(mode)&&factor<0)){valid=false;continue;}
+   for(const [name,label,mode] of entered){const factor=number(globals[name]);if(factor===null||(['difference','story','pool'].includes(mode)&&factor<0)){valid=false;continue;}
     if(mode==='story'){const sub=storyClass(v['sold.0.design']),comp=storyClass(v[p+'design']);if(sub===null||comp===null){valid=false;warnings.push({prefix:p,message:'Design and appeal needs an explicit single-story/ranch or multistory description for both properties. Review Step 5.'});}else sum+=(sub-comp)*factor;}
+    else if(mode==='pool'){const sub=poolClass(v['sold.0.pool']),comp=poolClass(v[p+'pool']);if(sub===null||comp===null){valid=false;warnings.push({prefix:p,message:'Pool adjustment needs known pool types for both properties. Above-ground and community pools receive no private-pool value.'});}else sum+=(sub-comp)*Math.abs(factor);}
     else if(mode==='difference'){const sub=number(v['sold.0.'+name]),comp=number(v[p+name]);if(sub===null||comp===null||sub<0||comp<0){valid=false;warnings.push({prefix:p,message:label+' difference needs numeric subject and comparable facts. Review Step 5.'});}else sum+=(sub-comp)*factor;}
     else sum+=factor;
    }
@@ -65,4 +67,4 @@ function apply(input,number,money,overwrite=false){
  }
  v._adjustments=state;return {values:v,warnings,preserved};
 }
-module.exports={concession,parts,blanketFields,apply,storyClass};
+module.exports={poolClass,concession,parts,blanketFields,apply,storyClass};
