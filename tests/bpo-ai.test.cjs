@@ -52,3 +52,21 @@ test('Marketing language does not establish quality and boolean facts retain the
  const r=cleanExtraction({fields:[fact('sold.1.quality','Renovated','Beautifully renovated'),fact('sold.1.energy','false','Green Energy Generation Y/N: No'),fact('sold.1.basement','None stated','No basement information'),fact('active.1.condition','Excellent','In excellent condition')],warnings:[]},C.schema,[{path:'a',name:'MLS.pdf'}]);
  assert.deepEqual(r.fields.map(f=>[f.name,f.value]),[['sold.1.energy','No generation'],['active.1.condition','MLS: Excellent']]);
 });
+
+test('Numeric subject fragments yield to a complete cited address; real manual addresses survive',()=>{
+ const full='2913 W CORDELIA ST, TAMPA, FL 33607';
+ const fields=[entry('field_0008',full),entry('sold.0.address','2913 W CORDELIA ST'),entry('active.0.address','2913 W CORDELIA ST')];
+ const r=C.applyAI({field_0008:'5','sold.0.address':'5','active.0.address':'5'}, {fields});
+ assert.equal(r.values.field_0008,full);assert.equal(r.values['sold.0.address'],'2913 W CORDELIA ST');
+ assert.equal(C.applyAI({field_0008:'100 Manual Street'}, {fields}).values.field_0008,'100 Manual Street');
+ assert.equal(C.applyAI({}, {fields:[entry('field_0008','5')]}).values.field_0008,undefined);
+ assert.equal(C.validAddress('5'),false);assert.equal(C.validAddress(full),true);
+});
+test('Subject uploads cannot create sold or active comparable slots, on client or server',async()=>{
+ const doc={path:'owner/report/source.pdf',name:'Subject.pdf',category:'subject'};
+ const fields=[entry('field_0008','2913 W CORDELIA ST, TAMPA, FL 33607'),entry('sold.1.address','2913 W CORDELIA ST'),entry('sold.1.price','570200'),entry('active.1.address','2913 W CORDELIA ST')];
+ const r=C.applyAI({_attachments:[doc]}, {fields});assert.equal(r.values['sold.1.address'],undefined);assert.equal(r.values['active.1.address'],undefined);assert.equal(r.values['sold.1.price'],undefined);
+ const {cleanExtraction}=await import('../supabase/functions/bpo-extract/contract.mjs');
+ const cleaned=cleanExtraction({fields:fields.map(f=>({...f,document:0}))},C.schema,[doc]);assert.deepEqual(cleaned.fields.map(f=>f.name),['field_0008']);
+ assert.equal(cleanExtraction({fields:[{...entry('field_0008','5'),document:0}]},C.schema,[doc]).fields.length,0);
+});

@@ -6,6 +6,7 @@ const {PDFDocument,StandardFonts,rgb,layoutMultilineText}=require('pdf-lib');
 const byName=new Map(schema.map(f=>[f.name,f]));
 function number(v){if(v===null||v===undefined||String(v).trim()==='')return null;const s=String(v).trim().replace(/[$,]/g,'');if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(s))return null;const n=Number(s);return Number.isFinite(n)?n:null;}
 function money(n){return Number(n).toLocaleString('en-US',{maximumFractionDigits:2});}
+function validAddress(value){const s=String(value??'').trim();return s.length>=8&&/\d/.test(s)&&/[a-z]{2}/i.test(s);}
 function subjectAddress(input,address){const v={...input},parts=V14.splitAddress(address);v.field_0008=String(address??'');for(const prefix of ['sold','active'])for(const [key,value] of Object.entries(parts))v[prefix+'.0.'+key]=value;return v;}
 function subjectEdit(input,name,value){const v={...input},match=/^(sold|active)\.0\.(.+)$/.exec(name);if(!match||!byName.has(name)||calculated(name))return v;const other=(match[1]==='sold'?'active':'sold')+'.0.'+match[2];v[name]=value;if(byName.has(other))v[other]=value;if(['address','city','state','zip'].includes(match[2]))v.field_0008=[v['sold.0.address'],v['sold.0.city'],[v['sold.0.state'],v['sold.0.zip']].filter(Boolean).join(' ')].filter(Boolean).join(', ');return v;}
 function recalculate(input){const v=V14.normalize(input);for(const kind of ['sold','active'])for(let i=0;i<4;i++){
@@ -26,8 +27,10 @@ function parseMLS(text){const t=String(text).replace(/\r/g,'');const headers=[..
 async function exportPDF(template,values){return V14.exportPDF(template,values,schema,recalculate,issues,adjustments.concession);}
 function applyAI(input,result){
  const v={...input},sources={...(input._aiFields||{})},warnings=[...(result.warnings||[])];let applied=0,preserved=0;
- const entries=Array.isArray(result.fields)?result.fields:[],addresses=new Map(entries.filter(e=>/^(sold|active)\.[1-3]\.address$/.test(e.name)).map(e=>[e.name.replace(/\.address$/,''),e.value]));
+ const entries=(Array.isArray(result.fields)?result.fields:[]).filter(e=>{const subjectAddress=e.name==='field_0008'||/^(sold|active)\.0\.address$/.test(e.name);if(subjectAddress&&!validAddress(e.value)){warnings.push('Subject address was incomplete; enter the full street address or retry extraction.');return false;}const doc=(input._attachments||[]).find(d=>d.path===e.path);return !(/^(sold|active)\.[1-3]\./.test(e.name)&&doc?.category==='subject');}),addresses=new Map(entries.filter(e=>/^(sold|active)\.[1-3]\.address$/.test(e.name)).map(e=>[e.name.replace(/\.address$/,''),e.value]));
  const normalize=x=>String(V14.splitAddress(x).address??'').toLowerCase().replace(/[^a-z0-9]/g,'');
+ // A numeric fragment is not a deliberate address; permit a sourced replacement.
+ for(const name of ['field_0008','sold.0.address','active.0.address'])if(v[name]&&!validAddress(v[name])){delete v[name];delete sources[name];}
  for(const e of entries){const f=byName.get(e.name);if(!f||e.name.startsWith('primary_')||calculated(e.name)||e.name.includes('.adj_')||e.name.startsWith('repair.')||['field_0477','field_0478','field_0479','field_0480','field_0483','field_0484'].includes(e.name))continue;
   const prefix=e.name.match(/^(sold|active)\.[1-3]/)?.[0];if(prefix){const old=input[prefix+'.address'],incoming=addresses.get(prefix);if(!incoming||(old&&normalize(old)!==normalize(incoming))){preserved++;continue;}}
   const subject=/^(sold|active)\.0\.(.+)$/.exec(e.name);const peer=subject?(subject[1]==='sold'?'active':'sold')+'.0.'+subject[2]:null;if(peer&&v[peer]!==undefined&&v[peer]!==''&&v[peer]!==e.value&&(!sources[peer]||sources[peer].value!==v[peer])){preserved++;continue;}const current=v[e.name],old=sources[e.name];if(current!==undefined&&current!==''&&current!==false&&current!==e.value&&(!old||old.value!==current)){preserved++;continue;}
@@ -38,4 +41,4 @@ function applyAI(input,result){
  v._aiFields=sources;v._aiReview={at:new Date().toISOString(),warnings,applied};return {values:recalculate(v),applied,preserved,warnings};
 }
 function applyAdjustments(input,overwrite=false){const r=adjustments.apply(V14.normalize(input),number,money,overwrite);return {...r,values:recalculate(r.values)};}
-module.exports={subjectAddress,formatValue:(name,value)=>V14.formatValue(byName.get(name)||{},value),normalize:V14.normalize,primaryOptions:V14.primaryOptions,subjectEdit,...require('./summary.cjs'),blanketFields:adjustments.blanketFields,applyAdjustments,adjustmentParts:adjustments.parts,concession:adjustments.concession,schema,byName,groups,number,money,recalculate,calculated,issues,applyRecord,listingRecord,parseMLS,exportPDF,applyAI};
+module.exports={validAddress,subjectAddress,formatValue:(name,value)=>V14.formatValue(byName.get(name)||{},value),normalize:V14.normalize,primaryOptions:V14.primaryOptions,subjectEdit,...require('./summary.cjs'),blanketFields:adjustments.blanketFields,applyAdjustments,adjustmentParts:adjustments.parts,concession:adjustments.concession,schema,byName,groups,number,money,recalculate,calculated,issues,applyRecord,listingRecord,parseMLS,exportPDF,applyAI};
