@@ -1,4 +1,4 @@
-PropertyThesis RRR Importer pilot 0.1.0
+PropertyThesis RRR Importer pilot 0.3.0
 
 1. In Edge, open edge://extensions.
 2. Turn on Developer mode, choose Load unpacked, and select this extension folder (the folder containing manifest.json).
@@ -15,3 +15,5 @@ No passwords are requested or stored. There are no external servers or telemetry
 Pilot limitations: ambiguous bath breakdown, above-grade/basement area, pool presence, original listing history, unmatched dropdowns and valuation horizons require manual review. Only explicitly mapped fields are supported. This is not a complete RRR form validator. Other four tabs stay manual. Client-specific RRR form variants may need another mapping.
 
 To remove: Edge extensions > Remove. Remove private transfer files when no longer needed.
+
+0.3.0 supports whole/half bathroom notation (3 = three full, zero half; 2.5 = two full, one half), attached/detached garage shorthand such as "2 attached", and living area when no basement is explicitly recorded or the area is labeled above-grade. Blank basement data is not assumed to mean no basement. MLS full.half shorthand such as 2.1 is not inferred. Preview all mappings before filling. Live testing on October 29 confirmed baths, area totals, garages, MLS IDs and signed adjustments for six comps. RRR locks DOM on this form; original listing dates remain manual.
