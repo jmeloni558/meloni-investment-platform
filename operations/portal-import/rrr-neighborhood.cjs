@@ -7,14 +7,22 @@ function neighborhood(v){
  const pct=n('market_price_change_percent'),months=n('market_price_change_months');
  if(trend.length===1){const verb=trend[0][1];if(verb==='stable')out.push('Home values in the reported market have remained stable'+(months>0?' over the past '+fmt(months)+' months':'')+'.');else if(pct!==null&&months>0)out.push('Home values in the reported market have '+verb+' '+fmt(Math.abs(pct))+'% over the past '+fmt(months)+' months.');}
  const supply=n('market_months_supply');if(supply!==null&&supply>=0)out.push('Available inventory represents '+fmt(supply)+' months of supply.');
- for(const area of ['zip','county']){
- const place=String(v['market_'+area]||'').trim();if(!place)continue;
- const label=area==='zip'?'ZIP code '+place:place.replace(/\s+County$/i,'')+' County';
- const value=n('market_'+area+'_median_home_value'),list=n('market_'+area+'_median_list_price'),change=n('market_'+area+'_list_price_12month_change'),age=n('market_'+area+'_median_home_age');
- if(value!==null&&list!==null)out.push('In '+label+', the median home value is '+money(value)+', compared with a median asking price of '+money(list)+'.');
- else if(value!==null)out.push('The median home value in '+label+' is '+money(value)+'.');else if(list!==null)out.push('The median asking price in '+label+' is '+money(list)+'.');
- if(change!==null)out.push('Asking prices in '+label+' have '+(change===0?'remained unchanged':(change>0?'risen ':'fallen ')+fmt(Math.abs(change))+'%')+' over the past 12 months.');
- if(age!==null&&age>=0)out.push('Homes in '+label+' have a median age of '+fmt(age)+' years.');
+ const zip=String(v.market_zip||'').trim(),county=String(v.market_county||'').trim().replace(/\s+County$/i,'');
+ if(zip&&county){
+ for(const [key,label,format] of [['median_home_value','median home value',money],['median_list_price','median asking price',money],['median_home_age','median home age',x=>fmt(x)+' years']]){
+ const z=n('market_zip_'+key),c=n('market_county_'+key);
+ if(z!==null&&c!==null)out.push('The '+label+' is '+format(z)+' in ZIP code '+zip+', compared with '+format(c)+' across '+county+' County.');
+ else if(z!==null)out.push('ZIP code '+zip+' has a '+label+' of '+format(z)+'.');else if(c!==null)out.push(county+' County has a '+label+' of '+format(c)+'.');
+ }
+ const z=n('market_zip_list_price_12month_change'),c=n('market_county_list_price_12month_change');
+ const movement=x=>x===0?'remained unchanged':(x>0?'risen ':'fallen ')+fmt(Math.abs(x))+'%';
+ if(z!==null&&c!==null)out.push('Over the past 12 months, asking prices have '+movement(z)+' in the ZIP area and '+movement(c)+' countywide.');
+ else if(z!==null)out.push('Asking prices in ZIP code '+zip+' have '+movement(z)+' over the past 12 months.');else if(c!==null)out.push('Asking prices in '+county+' County have '+movement(c)+' over the past 12 months.');
+ }else{
+ for(const area of ['zip','county']){const place=area==='zip'?zip:county;if(!place)continue;const label=area==='zip'?'ZIP code '+place:place+' County';
+ for(const [key,name,format] of [['median_home_value','median home value',money],['median_list_price','median asking price',money],['median_home_age','median home age',x=>fmt(x)+' years']]){const x=n('market_'+area+'_'+key);if(x!==null)out.push('The '+name+' in '+label+' is '+format(x)+'.');}
+ const change=n('market_'+area+'_list_price_12month_change');if(change!==null)out.push('Asking prices in '+label+' have '+(change===0?'remained unchanged':(change>0?'risen ':'fallen ')+fmt(Math.abs(change))+'%')+' over the past 12 months.');
+ }
  }
  const own=n('field_0038'),rent=n('field_0039'),valid=x=>x!==null&&x>=0&&x<=100;
  if(valid(own)&&valid(rent)&&Math.abs(own+rent-100)<=1)out.push('The reported neighborhood housing mix is approximately '+fmt(own)+'% owner occupied and '+fmt(rent)+'% renter occupied.'+(own+rent!==100?' The reported percentages are rounded.':''));
