@@ -17,7 +17,7 @@ test('address conflicts prevent expanded facts from filling the wrong comp',()=>
  const {api,payload,nodes,doc}=fixture();nodes.rrrSale1_txtAddress.value='999 Different Ave';const plan=api.plan(doc,payload,'comparables');api.apply(doc,payload,'comparables',plan,false);assert.equal(nodes.rrrSale1_txtMLSNumber.value,'');assert.equal(nodes.rrrSale1_txtFullBaths.value,'');
 });
 test('unapproved macro defaults and submit controls remain rejected',()=>{
- const {api,payload}=fixture();for(const id of ['submitorderbutton','rrrSale1_txtHOA','rrrSale1_txtConcessionsAmount'])assert.throws(()=>api.validate({...payload,fields:[{section:'comparables',id,value:'0'}]}));
+ const {api,payload}=fixture();for(const id of ['submitorderbutton','rrrSale1_txtHOA','rrrSale1_txtMarketRent'])assert.throws(()=>api.validate({...payload,fields:[{section:'comparables',id,value:'0'}]}));
 });
 
 test('RRR currency formatting is a successful fill and matches on a later preview',()=>{
@@ -37,4 +37,16 @@ test('default plus sign can change only with a new blank adjustment amount',()=>
  for(const [key,value] of [['txtSalePrice','379990'],['ddlPositiveNegativeSign','-'],['txtAdjustment','18895']]){const id='rrrSale1_'+key;payload.fields.push({section:'comparables',id,value,label:key});nodes[id]={id,tagName:key.startsWith('ddl')?'SELECT':'INPUT',type:'text',value:key.startsWith('ddl')?'0':'',selectedOptions:[{text:'+'}],options:[{text:'+',value:'0'},{text:'-',value:'1'}],isConnected:true,getClientRects:()=>[{}]};}
  assert.equal(api.plan(doc,payload,'comparables').find(x=>x.id==='rrrSale1_ddlPositiveNegativeSign').status,'ready');
  nodes.rrrSale1_txtAdjustment.value='$100';assert.equal(api.plan(doc,payload,'comparables').find(x=>x.id==='rrrSale1_ddlPositiveNegativeSign').status,'existing entry — preserved');
+});
+test('explicit A/C checks an empty checkbox and concession dependencies preserve unrelated amounts',()=>{
+ const {api,payload,nodes,doc}=fixture();
+ const id='rrrSale1_lbAmenities_0';payload.fields.push({section:'comparables',id,value:'true',label:'A/C'});
+ nodes[id]={id,tagName:'INPUT',type:'checkbox',checked:false,isConnected:true,getClientRects:()=>[{}],dispatchEvent(){}};
+ const plan=api.plan(doc,payload,'comparables');assert.equal(plan.find(x=>x.id===id).status,'ready');api.apply(doc,payload,'comparables',plan,false);assert.equal(nodes[id].checked,true);
+});
+test('net adjustments permit matching disclosed concessions but block unrelated existing concessions',()=>{
+ const {api,payload,nodes,doc}=fixture();
+ for(const [key,value] of [['txtSalePrice','350000'],['txtConcessionsAmount','5000'],['ddlPositiveNegativeSign','-'],['txtAdjustment','5000']]){const id='rrrSale1_'+key;payload.fields.push({section:'comparables',id,value,label:key});nodes[id]={id,tagName:'INPUT',type:'text',value:'',isConnected:true,getClientRects:()=>[{}]};}
+ nodes.rrrSale1_txtConcessionsAmount.value='$5,000';assert.equal(api.plan(doc,payload,'comparables').find(x=>x.id==='rrrSale1_txtAdjustment').status,'ready');
+ nodes.rrrSale1_txtConcessionsAmount.value='$6,000';assert.equal(api.plan(doc,payload,'comparables').find(x=>x.id==='rrrSale1_txtAdjustment').status,'adjustment dependency — review manually');
 });

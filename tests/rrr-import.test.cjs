@@ -5,7 +5,7 @@ test('macro-derived fields use explicit facts and preserve zero half baths',()=>
  const p=exportRRR({...base(),'sold.1.source':'Stellar MLS # TB1234567','sold.1.baths':'2 full / 0 half','sold.1.garage':'2 car attached garage'});
  const f=id=>p.fields.find(x=>x.id===id)?.value;
  assert.equal(f('rrrSale1_txtMLSNumber'),'TB1234567');assert.equal(f('rrrSale1_txtFullBaths'),'2');assert.equal(f('rrrSale1_txtHalfBaths'),'0');assert.equal(f('rrrSale1_txtGarages'),'2');
- assert.ok(!p.fields.some(x=>/txtHOA|txtConcessionsAmount|txtBasementSqFt|ddlPoolSpa|ddlZoning/.test(x.id)));
+ assert.ok(!p.fields.some(x=>/txtHOA|txtBasementSqFt|ddlPoolSpa|ddlZoning/.test(x.id)));
 });
 test('unlabeled sources, partial bath counts and carports are not invented',()=>{
  const p=exportRRR({...base(),'sold.1.source':'Uploaded PDF 1234567','sold.1.baths':'2 full','sold.1.garage':'2 car carport'});
@@ -13,4 +13,4 @@ test('unlabeled sources, partial bath counts and carports are not invented',()=>
 });
 test('identity required; no transfer of account metadata or attachments',()=>{assert.throws(()=>exportRRR({_clientTemplate:'rrr'}),/Complete/);const p=exportRRR({...base(),_attachments:[{path:'private'}],email:'secret'});assert.ok(!JSON.stringify(p).includes('private'));assert.equal(p.subject.address,'100 Test Ave');});
 test('signed adjustments and explicit acre conversion, separate sale and ask',()=>{const p=exportRRR(base()),f=id=>p.fields.find(x=>x.id===id)?.value;assert.equal(f('rrrSale1_txtSalePrice'),'350000');assert.equal(f('rrrSale1_txtAdjustment'),'5000');assert.equal(f('rrrSale1_ddlPositiveNegativeSign'),'-');assert.equal(f('rrrSale1_txtLotSizeAcres'),'0.1');assert.equal(f('rrrListing1_txtCurrentListPrice'),'400000');assert.equal(f('rrrListing1_txtListPrice'),undefined);});
-test('ambiguous baths/pool/area are flagged instead of invented, identity and calculated cells skipped',()=>{const p=exportRRR(base());assert.ok(p.warnings.some(s=>s.includes('full and half')));assert.ok(p.warnings.some(s=>s.includes('Pool/Spa')));assert.ok(!p.fields.some(f=>/txtFullBaths|txtHalfBaths|txtAdjustedValue|rrrSubject_txtAddress|txtConcessions/.test(f.id)));});
+test('ambiguous baths/pool/area are flagged instead of invented, identity and calculated cells skipped',()=>{const p=exportRRR(base());assert.ok(p.warnings.some(s=>s.includes('full and half')));assert.ok(p.warnings.some(s=>s.includes('Pool/Spa')));assert.ok(!p.fields.some(f=>/txtFullBaths|txtHalfBaths|txtAdjustedValue|rrrSubject_txtAddress/.test(f.id)));});
