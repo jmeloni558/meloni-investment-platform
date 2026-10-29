@@ -3,7 +3,7 @@ const {PDFDocument,StandardFonts,rgb}=require('pdf-lib');
 function fingerprint(v){return JSON.stringify([v._summaryNotes||{},Object.keys(v).filter(k=>!k.startsWith('_')).sort().map(k=>[k,v[k]])]);}
 const text=x=>String(x??'').trim();
 const cash=x=>text(x)?Number(String(x).replace(/[$,]/g,'')).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'not entered';
-function draft(v){return {source:fingerprint(v),sections:require('./narrative.cjs').sections(v)};}
+function draft(v){return {narrativeVersion:2,warnings:require('./summary-analysis.cjs').warnings(v),source:fingerprint(v),sections:require('./narrative.cjs').sections(v)};}
 function validate(v){if(!v._summary?.sections?.length)throw Error('Generate and review the BPO summary in Step 6 first.');if(v._summary.source!==fingerprint(v))throw Error('BPO facts changed after the summary was prepared. Review and confirm the summary against the current form in Step 6.');}
 async function summaryPDF(v){
  validate(v);const d=await PDFDocument.create(),font=await d.embedFont(StandardFonts.Helvetica),bold=await d.embedFont(StandardFonts.HelveticaBold);let page,y;
