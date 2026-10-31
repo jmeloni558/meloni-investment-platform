@@ -48,4 +48,9 @@ function editComparableAddress(input,prefix,address){
  for(const key of ['address','city','state','zip'])v[prefix+'.'+key]=parts[key]||'';
  return v;
 }
-module.exports={comparableAddress,editComparableAddress,generalComparableFields:comparableFields,generalSubjectDefaults:defaults,generalSubjectFields:fields,recentSubjectSale:recentSale};
+function rrrFields(v,schema){
+ const byName=new Map(schema.map(f=>[f.name,f]));
+ const rows=[['sold.0.condition','Condition'],['active.0.price','List / asking price'],['sold.0.price','Historical sale price'],['sold.0.date','Historical sale date'],['sold.0.source','Data source'],['sold.0.dom','Days on market'],...subjectRows.filter(([key])=>key!=='condition').map(([key,label])=>['sold.0.'+key,label])];
+ return rows.map(([name,label])=>({...byName.get(name),label}));
+}
+module.exports={rrrSubjectFields:rrrFields,comparableAddress,editComparableAddress,generalComparableFields:comparableFields,generalSubjectDefaults:defaults,generalSubjectFields:fields,recentSubjectSale:recentSale};
