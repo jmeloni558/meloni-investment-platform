@@ -7,7 +7,7 @@
   if(!allowed||!desktop())return false;
   let panel=document.getElementById('ptDesktopPhotos'),frame=panel?.querySelector('iframe');
   if(frame&&address&&frame.dataset.address!==address&&frame.contentWindow.PropertyThesisPhotos?.canNavigate?.()===false)return true;
-  if(!panel){panel=document.createElement('section');panel.id='ptDesktopPhotos';panel.setAttribute('aria-label','Property photos');frame=document.createElement('iframe');frame.title='PropertyThesis Photos';panel.append(frame);const shell=document.querySelector('main.shell')||document.querySelector('main');if(!shell)return false;shell.append(panel);}
+  if(!panel){panel=document.createElement('section');panel.id='ptDesktopPhotos';panel.setAttribute('aria-label','Property photos');frame=document.createElement('iframe');frame.title='PropertyThesis Photos';panel.append(frame);const shell=document.querySelector('main.shell')||document.querySelector('main');if(!shell)return false;shell.insertBefore(panel,shell.querySelector(':scope > .footer'));}
   if(!frame.getAttribute('src')||(address&&frame.dataset.address!==address)){frame.dataset.address=address;frame.src='photos.html?embedded=1'+(address?'&address='+encodeURIComponent(address):'');}
   document.body.classList.add('pt-photos-open');const q=new URL(location.href);q.searchParams.set('photos','1');q.searchParams.delete('address');history.replaceState(history.state,'',q);window.AppNavigationToolbar?.refresh?.();panel.scrollIntoView({block:'start'});return true;
  }
@@ -33,12 +33,12 @@
  function requestedPage(){if(requested||!allowed)return;const q=new URL(location.href);if(q.searchParams.get('photos')==='1'&&open(q.searchParams.get('address')||''))requested=true;}
  async function update(session){const id=session?.user?.id;if(id===account)return;const previous=account;account=id;allowed=false;if(!id&&previous){close();document.getElementById('ptDesktopPhotos')?.remove();}render();if(!id&&new URL(location.href).searchParams.get('photos')==='1')setTimeout(()=>window.PropertyThesisAuth?.open?.('signin','Sign in to open your property photos.'),0);if(id){const {data,error}=await window.__ptSharedSupabaseClient.rpc('photo_library_enabled');if(account!==id)return;allowed=!error&&data===true;render();requestedPage();}}
  function init(){
- window.addEventListener('click',e=>{if(!e.target.closest('#ptPhotoLibrary,[data-saved-photos]')&&e.target.closest('#appNavShell a,#appNavShell button,#ptBpoMenu button'))close();},true);
+ window.addEventListener('click',e=>{if(e.target.closest('#appNavExisting[aria-haspopup],#appNavNew[aria-haspopup]'))return;if(!e.target.closest('#ptPhotoLibrary,[data-saved-photos]')&&e.target.closest('#appNavShell a,#appNavShell button,#ptBpoMenu button'))close();},true);
  document.addEventListener('click',e=>{
   if(e.defaultPrevented)return;
   const link=e.target.closest('#ptPhotoLibrary,[data-saved-photos]');
   if(link&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&e.button===0){const address=new URL(link.href).searchParams.get('address')||'';if(open(address)){e.preventDefault();return;}}
-  if(!link&&e.target.closest('#appNavShell a,#appNavShell button'))close();
+  if(!link&&!e.target.closest('#appNavExisting[aria-haspopup],#appNavNew[aria-haspopup]')&&e.target.closest('#appNavShell a,#appNavShell button'))close();
  });
  addEventListener('resize',()=>{render();if(!desktop())close();});
  render();const client=window.__ptSharedSupabaseClient;if(!client)return;client.auth.getSession().then(({data})=>update(data.session));client.auth.onAuthStateChange((_event,session)=>setTimeout(()=>update(session),0));new MutationObserver(()=>{render();requestedPage();}).observe(document.body,{childList:true,subtree:true});}
