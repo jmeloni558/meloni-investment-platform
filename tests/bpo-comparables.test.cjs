@@ -18,11 +18,11 @@ test('general comparable extraction rejects unsupported ratings and wrong source
  assert.equal(C.recalculate({_clientTemplate:'rrr','sold.1.beds':'3'})['sold.1.rooms'],'6');
 });
 test('Step 2 renders editable fields for every slot and read-only calculated PPSF',()=>{
- const source=fs.readFileSync('bpo-workspace.js','utf8');const ctx={window:{PropertyThesisBPOCore:C},values:C.recalculate({}),esc:s=>String(s??'')};vm.createContext(ctx);
+ const source=fs.readFileSync('bpo-workspace.js','utf8');const ctx={window:{PropertyThesisBPOCore:C},values:C.recalculate({}),esc:s=>String(s??''),proximityNote:()=>''};vm.createContext(ctx);
  vm.runInContext(source.slice(source.indexOf('function fieldControl('),source.indexOf('function marketPanel('))+source.slice(source.indexOf('function generalCompEditor('),source.indexOf('function compSummary(')),ctx);
  const html=ctx.generalCompEditor();assert.equal((html.match(/pt-bpo-comp-editor/g)||[]).length,6);
  for(const kind of ['sold','active'])for(const i of [1,2,3])assert.ok(html.includes(`data-bpo-field="${kind}.${i}.pool"`));
- assert.match(html,/data-bpo-field="sold\.1\.ppsf"[^>]*readonly/);assert.ok(!html.includes('adj_'));assert.match(html,/data-bpo-field="sold\.1\.condition"[^>]*list="pt-bpo-condition-options"/);assert.match(html,/<input[^>]*data-comp-address="sold\.1"/);assert.ok(!html.includes('data-bpo-field="sold.1.city"'));
+ assert.match(html,/data-bpo-field="sold\.1\.ppsf"[^>]*readonly/);assert.match(html,/data-bpo-field="sold\.1\.distance"[^>]*readonly/);assert.ok(!html.includes('adj_'));assert.match(html,/data-bpo-field="sold\.1\.condition"[^>]*list="pt-bpo-condition-options"/);assert.match(html,/<input[^>]*data-comp-address="sold\.1"/);assert.ok(!html.includes('data-bpo-field="sold.1.city"'));
 });
 
 test('full comparable addresses retain PDF parts and clear stale locality on edits',()=>{
