@@ -1,13 +1,16 @@
-export const forbidden = name => name.startsWith('primary_') || /\.(adj_|net$|adjusted$|ppsf$|quality$|utility$)/.test(name) || name.startsWith('repair.') || ['field_0477','field_0478','field_0479','field_0480','field_0483','field_0484'].includes(name);
-export function cleanExtraction(payload, schema, documents) {
+export const forbidden = (name,general=false) => name.startsWith('primary_') || /\.(adj_|net$|adjusted$|ppsf$)/.test(name) || (/\.(quality|utility)$/.test(name)&&!(general&&/^(sold|active)\.0\./.test(name))) || name.startsWith('repair.') || ['field_0477','field_0478','field_0479','field_0480','field_0483','field_0484'].includes(name);
+export function cleanExtraction(payload, schema, documents, {general=false,now=new Date()}={}) {
   const fields = [], warnings = (Array.isArray(payload?.warnings) ? payload.warnings : []).slice(0,20).map(x=>String(x).slice(0,500));
-  const allowed = new Map(schema.filter(f=>!f.readonly&&!forbidden(f.name)).map(f=>[f.name,f]));
+  const allowed = new Map(schema.filter(f=>!f.readonly&&!forbidden(f.name,general)).map(f=>[f.name,f]));
   const seen = new Set();
   for (const item of (Array.isArray(payload?.fields) ? payload.fields : []).slice(0,500)) {
     const f=allowed.get(item.name), doc=documents[item.document];
     if (!f || seen.has(item.name) || !doc || !Number.isInteger(item.page) || item.page<1 || item.page>40 || typeof item.evidence!=='string' || !item.evidence.trim()) continue;
     if(doc.category==='subject'&&/^(sold|active)\.[1-3]\./.test(item.name)){warnings.push('Subject source excluded from comparable slots. Upload separate comparable documents.');continue;}
     let value=String(item.value??'').trim(); if(!value || value.length>1800) continue;
+    if(general&&/^(sold|active)\.0\.other$/.test(item.name))continue;
+    if(general&&/\.quality$/.test(item.name)&&!/construction quality|quality (?:grade|rating)|building grade/i.test(item.evidence))continue;
+    if(general&&/\.utility$/.test(item.name)&&!/functional utility|functional layout/i.test(item.evidence))continue;
     if((item.name==='field_0008'||/^(sold|active)\.0\.address$/.test(item.name))&&(value.length<8||!/[a-z]{2}/i.test(value)||!/\d/.test(value))){warnings.push('Incomplete subject address was not imported.');continue;}
     if(f.kind!=='check'&&/^(?:not (?:stated|provided|specified)|none stated|unknown|n\/?a)$/i.test(value))continue;
     if(f.name==='field_0053'&&!/typical|average|median|neighborhood|normal|exposure/i.test(item.evidence)){warnings.push('Normal marketing time: property-specific days on market are not a neighborhood estimate; not imported.');continue;}
@@ -15,7 +18,7 @@ export function cleanExtraction(payload, schema, documents) {
     if(f.kind!=='check'&&/^(?:true|false)$/i.test(value)){warnings.push(`${f.label}: ambiguous yes/no value needs review.`);continue;}
     if(f.name.endsWith('.condition')&&(!value.replace(/^MLS:\s*/i,'').replace(/[\s"']/g,'')||/not (stated|provided|specified)|unknown|n\/a/i.test(value)))continue;
     if(f.name.endsWith('.condition')&&!/condition|renovat|repair|damage|maintain|updated|remodel|deferred|deteriorat/i.test(item.evidence)){warnings.push(`${f.label}: no explicit condition evidence; not imported.`);continue;}
-    if(f.name.endsWith('.condition')&&!/^MLS:/i.test(value))value='MLS: '+value;
+    if(f.name.endsWith('.condition')&&!/^MLS:/i.test(value))value=(general&&(doc.sourceKind==='tax'||doc.packageRole==='tax')?'Tax: ':'MLS: ')+value;
     if(f.kind==='check'){if(!['true','false'].includes(value))continue;value=value==='true';}
     else if(/\.(price|gla|beds|baths|rooms|year|dom|financing)$/.test(f.name)||['field_0038','field_0039'].includes(f.name)||f.name.startsWith('market_')&&!['market_zip','market_county'].includes(f.name)){
       if(/\.(price|financing)$/.test(f.name)&&value.includes('%')){warnings.push(`${f.label}: a dollar amount is required; percentage not imported.`);continue;}
@@ -28,6 +31,18 @@ export function cleanExtraction(payload, schema, documents) {
     }
     seen.add(item.name);fields.push({name:item.name,value,path:doc.path,filename:doc.name,page:item.page,evidence:item.evidence.slice(0,400)});
   }
+  if(general){
+    const cutoff=new Date(now);cutoff.setUTCFullYear(cutoff.getUTCFullYear()-3);cutoff.setUTCHours(0,0,0,0);
+    const sale=fields.find(f=>f.name==='sold.0.date');
+    const doc=documents.find(d=>d.path===sale?.path);
+    const raw=String(sale?.value||'');
+    const parts=raw.includes('/')?raw.split('/').map(Number):raw.split('-').map(Number);
+    const [year,month,day]=raw.includes('/')?[parts[2],parts[0],parts[1]]:parts;
+    const date=new Date(Date.UTC(year,month-1,day));
+    const exact=/^(?:\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4})$/.test(raw)&&date.getUTCFullYear()===year&&date.getUTCMonth()===month-1&&date.getUTCDate()===day;
+    const valid=exact&&sale&&doc?.category==='subject'&&doc.sourceKind!=='tax'&&doc?.packageRole!=='tax'&&date>=cutoff&&date<=now&&/MLS|sold|closed|closing|sale/i.test(sale.evidence);
+    for(let i=fields.length-1;i>=0;i--)if(/^(sold\.0\.(price|date)|active\.0\.date)$/.test(fields[i].name)&&(!valid||fields[i].name==='active.0.date'||fields[i].path!==sale.path))fields.splice(i,1);
+  }
   const change=fields.find(f=>f.name==='market_price_change_percent');
   if(change){const amount=Number(change.value),options=['field_0033','field_0036','field_0037'];const selected=fields.find(f=>options.includes(f.name)&&f.value===true);const direction=selected?.name||(amount<0||/\b(decreased|declined|fell)\b/i.test(change.evidence)?'field_0033':/\b(increased|rose|grew)\b/i.test(change.evidence)?'field_0036':amount===0?'field_0037':null);change.value=String(Math.abs(amount));if(direction&&!selected){const existing=fields.find(f=>f.name===direction);if(existing)existing.value=true;else fields.push({...change,name:direction,value:true});}}
   for(const prefix of ['sold.0','sold.1','sold.2','sold.3','active.0','active.1','active.2','active.3']){
@@ -39,8 +54,8 @@ export function cleanExtraction(payload, schema, documents) {
   return {fields,warnings};
 }
 export const responseSchema={type:'object',additionalProperties:false,required:['fields','warnings'],properties:{fields:{type:'array',items:{type:'object',additionalProperties:false,required:['name','value','document','page','evidence'],properties:{name:{type:'string'},value:{type:'string'},document:{type:'integer'},page:{type:'integer'},evidence:{type:'string'}}}},warnings:{type:'array',items:{type:'string'}}}};
-export function extractionScopes(schema){
- const allowed=schema.filter(f=>!f.readonly&&!forbidden(f.name));
+export function extractionScopes(schema,general=false){
+ const allowed=schema.filter(f=>!f.readonly&&!forbidden(f.name,general));
  return [allowed.filter(f=>! /^(sold|active)\.[1-3]\./.test(f.name)),allowed.filter(f=>/^sold\.[1-3]\./.test(f.name)),allowed.filter(f=>/^active\.[1-3]\./.test(f.name))];
 }
 export function schemaFor(fields){
@@ -78,3 +93,5 @@ For sold comps use closed price and closed date, not list price; for active comp
 Never fill adjustment amounts, final market value, suggested price, signature or calculated totals. Leave unsupported fields blank by omitting them. Use short text suitable for the small form fields. For every field cite the zero-based document index, one-based page, and a brief supporting quote. Checkbox values must be strings true or false. Comments may briefly summarize factual conflicts requiring review, never conclude a value. The allowed field dictionary and current values are provided as data. Return only the requested JSON structure.`;
 
 export const v14Instructions=`The approved v14 form has ZIP and county columns. Map median HOME VALUE, median LIST PRICE, list-price 12-month percentage change and median HOME AGE to their corresponding geography and definition only. Median sale price is NOT median home value or median list price. Inventory must be months of supply (not listing count), at most one decimal. Preserve signed percentage changes. Do not substitute metro, state or national statistics. Property Rights means tenure (fee simple or leasehold). Financing concessions is only an explicitly stated dollar amount of actual seller concessions; not loan type, rate, available financing, or adjustment. Convert an explicit percentage of a known closed price to dollars; otherwise leave blank and warn. Keep fences, pools and fireplaces separate. field_0053 is NORMAL NEIGHBORHOOD marketing time, never the subject or a comp's days on market. Populate it only from explicit typical/average/median neighborhood marketing-time evidence. field_0047 and field_0048 are the neighborhood value RANGE, not an individual property value or ZIP/county median. Primary sold/active comp choices are analyst decisions and must never be inferred.`;
+
+export const generalSubjectInstructions=`GENERAL BPO SUBJECT OVERRIDES: Current list/asking price belongs ONLY in active.0.price, including active and pending listings. Never mirror it to sold.0.price. Only when a subject MLS documents a closed sale within the past three years, return its actual sale price in sold.0.price and sale date in sold.0.date; never use an asking price as a sale price. The current UTC date is supplied in context. Omit older, future or undated sales and tax-only sale history. Do not return active.0.date. Use subject MLS, iMapp and tax records for explicitly supported physical facts. Construction quality requires an explicit construction-quality grade/rating, not attractive marketing or construction material alone. Functional utility requires explicit evidence; do not infer a rating. The application provides Average only as a user-requested default. Omit subject Other fields always. Omit missing facts rather than writing unknown, N/A, average or none. Never invent missing features. Do not replace a reviewed fact merely because another document omits it.`;
