@@ -32,7 +32,7 @@
 <link rel="stylesheet" href="header-account-panel.css?v=2">
 <link rel="stylesheet" href="report-builder-workspace.css?v=2">
 <script src="page-refresh-top.js?v=16"></script>
-<link rel="stylesheet" href="public-navigation.css?v=2"><script defer src="public-navigation.js?v=6-centered-menu"></script></head>
+<link rel="stylesheet" href="public-navigation.css?v=2"><script defer src="public-navigation.js?v=7-photos"></script></head>
 <body>
 <div class="app">
 <header class="top pt-site-header"><div class="topin"><div class="brand pt-site-brand"><img class="pt-site-logo" src="assets/propertythesis-logo-make-the-offer-768.webp" width="768" height="768" alt="PropertyThesis — Know the Numbers. Make the Offer."></div><div class="topactions"><span class="pill">Workbook Fidelity Model</span><span class="pill stage-pill">Stage 5 Pro</span><div class="authbar"><span id="authUser" class="user">Not signed in</span><button class="btn ghost" id="authBtn" style="padding:6px 9px">Sign In</button><button class="btn ghost hidden" id="signOutBtn" style="padding:6px 9px">Sign Out</button></div><span id="saveStatus" class="status">Ready</span></div></div></header>
@@ -83,7 +83,8 @@
 <div id="authModal" class="modalback hidden" role="dialog" aria-modal="true" aria-labelledby="authTitle"><div class="modal"><div class="sectionhead"><div><h2 id="authTitle">Welcome to PropertyThesis</h2><p>Sign in to access your saved analyses, or create a free account.</p></div><button class="btn ghost" id="closeAuth" type="button">Close</button></div><form id="propertyThesisLoginForm" method="post" autocomplete="on"><div class="field"><label for="authEmail">Email</label><input id="authEmail" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false"></div><div class="field"><label for="authPassword">Password</label><input id="authPassword" name="password" type="password" autocomplete="current-password"></div><div class="actions"><button class="btn primary" id="signInAction" type="submit">Sign In</button><button class="btn secondary" id="signUpAction" type="button">Create Free Account</button><button class="btn ghost" id="forgotPasswordAction" type="button">Forgot Password?</button></div></form><div id="authMessage" class="note" style="margin-top:12px">Choose Sign In or Create Free Account above.</div></div></div>
 <script src="app.js"></script>
 <script src="website-auth-lifecycle.js"></script>
-<script src="cloud.js?v=2"></script>
+<script src="persistent-session.js?v=1"></script>
+<script src="cloud.js?v=3"></script>
 <script src="email-confirmation-handoff.js?v=2"></script>
 <script src="auth-experience-v1.js?v=10-onboarding"></script>
 <script src="stage5.js"></script>
@@ -103,10 +104,10 @@
 <script src="property-address-recognition-v7.js?v=2fa5876a7795ac46"></script>
 <script src="listing-address-autocomplete.js?v=d8aaac138ea38fe2"></script>
 <script src="propertythesis-branding-seo-20261003.js?v=10"></script>
-<script src="app-navigation-toolbar.navigation-13d9f230dced.js"></script>
+<script src="app-navigation-toolbar.photos-v1.js"></script>
 <link rel="stylesheet" href="bpo-workspace.css?v=14.10">
 <link rel="stylesheet" href="bpo-photo-report.css?v=1">
-<script src="bpo-photo-report.js?v=1"></script>
+<script src="bpo-photo-report.js?v=2"></script>
 <script src="bpo-workspace.photos-v1.js"></script>
 <script src="sample-property-card-nav.js?v=4"></script>
 <script src="toolbar-library-search.js?v=2"></script>
@@ -115,7 +116,8 @@
 <script src="guided-save-existing-workflow-v8.js?v=13"></script>
 <script src="unsaved-change-protection.js?v=4"></script>
 <script src="letter-of-intent-launcher.js?v=5"></script>
-<script src="photo-library-launcher.js?v=2"></script>
+<link rel="stylesheet" href="desktop-photos.css?v=1">
+<script src="photo-library-launcher.js?v=3"></script>
 <script src="compliance-footer.js?v=17-play"></script>
 </body></html>
 

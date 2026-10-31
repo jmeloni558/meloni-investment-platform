@@ -7,7 +7,7 @@ function node(text,href){const classes=new Set(),attrs={};if(href)attrs.href=hre
 test('guest route changes select only the current destination, not the green CTA',()=>{
  const links=[node('Start Free Analysis','index.html?home=1'),node('Search Listings','index.html?listing-search=1'),node('Pricing','pricing.html'),node('Guides','guides.html')];
  const nav={...node(''),dataset:{},querySelector:()=>links[3],querySelectorAll:()=>links};let listings=false,guide=false;
- const context={URL,location:{href:'https://propertythesis.com/pricing.html'},document:{readyState:'complete',documentElement:{},body:{classList:{contains:()=>listings}},querySelector:s=>s==='.guide-shell'?guide:s==='#ptListingsPanel.is-open'?listings:null,querySelectorAll:s=>s==='a,button'?links:[nav]},MutationObserver:class{observe(){}},addEventListener(){},requestAnimationFrame:fn=>fn()};
+ const context={URL,location:{href:'https://propertythesis.com/pricing.html'},document:{getElementById:()=>null,readyState:'complete',documentElement:{},body:{classList:{contains:()=>listings}},querySelector:s=>s==='.guide-shell'?guide:s==='#ptListingsPanel.is-open'?listings:null,querySelectorAll:s=>s==='a,button'?links:[nav]},MutationObserver:class{observe(){}},addEventListener(){},requestAnimationFrame:fn=>fn()};
  const run=()=>vm.runInNewContext(source,context),active=()=>links.filter(n=>n.classList.contains('active')).map(n=>n.textContent);
  run();assert.deepEqual(active(),['Pricing']);assert.equal(links[0].classList.contains('pt-free-analysis-cta'),true);
  context.location.href='https://propertythesis.com/index.html';listings=true;run();assert.deepEqual(active(),['Search Listings']);
