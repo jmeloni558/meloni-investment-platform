@@ -11,13 +11,13 @@ const PRODUCTION_TABLES=Object.freeze(TABLES.filter(t=>!['mobile_places_usage','
 // A reviewed optional migration table is checked when present. Unknown tables still block.
 function tablesForProject(project,inventory=[]){
  const base=project==='lmaiqpkogmmsldkziggy'?PRODUCTION_TABLES:TABLES;
- return [...base,...['property_income_comparables','property_sales_comparables','property_rental_comparables','bpo_access','bpo_reports'].filter(t=>inventory.some(r=>r.table_name===t))].sort();
+ return [...base,...['property_income_comparables','property_sales_comparables','property_rental_comparables','bpo_access','bpo_reports','photo_library_access','photo_properties'].filter(t=>inventory.some(r=>r.table_name===t))].sort();
 }
 function findingsSql(tables){return [
   `select 'auth.users' as source,count(*)::int as matches from auth.users where id=any($1::uuid[])`,
   ...tables.map(t=>`select 'public.${t}',count(*)::int from public.${t} where user_id=any($1::uuid[])`),
   `select 'storage.objects',count(*)::int from storage.objects where owner=any($1::uuid[])
-or owner_id=any($1::text[]) or (bucket_id in ('report-brand-assets','bpo-documents') and split_part(name,'/',1)=any($1::text[]))`
+or owner_id=any($1::text[]) or (bucket_id in ('report-brand-assets','bpo-documents','property-photos') and split_part(name,'/',1)=any($1::text[]))`
 ].join('\nunion all\n');}
 const FINDINGS_SQL=findingsSql(TABLES);
 function instant(v) {if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/.test(v)||!Number.isFinite(Date.parse(v))||new Date(v).toISOString().slice(0,19)!==v.slice(0,19))throw Error('UTC timestamp required');return Date.parse(v);}
