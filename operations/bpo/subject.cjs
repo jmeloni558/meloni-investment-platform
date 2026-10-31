@@ -29,4 +29,11 @@ function fields(v,schema,now){
  rows.push(['sold.0.source','Data source'],['sold.0.dom','Days on market'],...subjectRows.map(([key,label])=>['sold.0.'+key,label]));
  return rows.map(([name,label])=>({...byName.get(name),label}));
 }
-module.exports={generalSubjectDefaults:defaults,generalSubjectFields:fields,recentSubjectSale:recentSale};
+function comparableFields(kind,index,schema){
+ if(!['sold','active'].includes(kind)||![1,2,3].includes(index))throw Error('Invalid comparable slot');
+ const prefix=kind+'.'+index+'.',byName=new Map(schema.map(f=>[f.name,f]));
+ const rows=[['address','Street address'],['city','City'],['state','State'],['zip','ZIP code'],['distance','Proximity to subject'],['price',kind==='sold'?'Sale price ($)':'List / asking price ($)'],['ppsf','Price / sq. ft. ($)'],['source','Data source'],...(kind==='sold'?[['date','Sale date']]:[]),['dom','Days on market'],['reo','REO / corporate owned'],['financing','Financing concessions ($)']];
+ for(const row of subjectRows){rows.push(row);if(row[0]==='location')rows.push(['tenure','Property rights']);}
+ return rows.map(([key,label])=>({...byName.get(prefix+key),label}));
+}
+module.exports={generalComparableFields:comparableFields,generalSubjectDefaults:defaults,generalSubjectFields:fields,recentSubjectSale:recentSale};
