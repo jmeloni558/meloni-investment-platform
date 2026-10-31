@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),C=require('../operations/bpo/core.cjs');
-const all=v=>C.draftSummary(C.recalculate(v)).sections.map(s=>s.title+' '+s.body).join('\n');
+const all=v=>C.draftSummary(C.recalculate({...v,_clientTemplate:'rrr'})).sections.map(s=>s.title+' '+s.body).join('\n');
 test('analysis explains comp differences without repeating adjustment dollars',()=>{
  const v={'sold.0.gla':'1800','sold.0.baths':'4','sold.0.pool':'Private','sold.0.quality':'Good / Block','sold.1.address':'101 Test Ave','sold.1.price':'500000','sold.1.gla':'1400','sold.1.baths':'2','sold.1.pool':'Above-ground','sold.1.quality':'Average / Frame','sold.1.adj_pool':'50000','sold.1.adj_quality':'20000',field_0477:'600000'};
  const s=all(v);assert.match(s,/less living area and fewer bathrooms/);assert.match(s,/above-ground pool is treated as having no pool value/);assert.match(s,/newer age alone does not establish superior/);assert.doesNotMatch(s,/pool \(\+|quality \(\+|The BPO adjusts for/);assert.match(s,/falls outside that range/);
@@ -13,7 +13,7 @@ test('missing facts do not produce comparison claims, trends or a guessed value'
 });
 test('ambiguous quantities are flagged, numerical adjustment details remain available in analyst notes',()=>{
  const v={_summaryNotes:{subject:'Subject has a boat house with $70000 pound lift.','sold.1':'The unusual adjustment requires verification.'},'sold.1.address':'103 Test Ave'};
- const draft=C.draftSummary(v);assert.equal(draft.narrativeVersion,2);assert.ok(draft.warnings.length);assert.match(draft.sections[0].body,/capacity requires confirmation/);assert.doesNotMatch(draft.sections[0].body,/70000/);assert.match(draft.sections[2].body,/unusual adjustment requires verification/);
+ const draft=C.draftSummary({...v,_clientTemplate:'rrr'});assert.equal(draft.narrativeVersion,2);assert.ok(draft.warnings.length);assert.match(draft.sections[0].body,/capacity requires confirmation/);assert.doesNotMatch(draft.sections[0].body,/70000/);assert.match(draft.sections[2].body,/unusual adjustment requires verification/);
 });
 test('subject asking price comes from active section, never its prior sale price',()=>{
  const s=all({'sold.0.price':'100000','active.0.price':'300000',field_0477:'280000'});assert.match(s,/\$20,000 above/);assert.doesNotMatch(s,/\$180,000|\$100,000/);
