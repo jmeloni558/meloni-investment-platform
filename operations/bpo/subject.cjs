@@ -19,7 +19,7 @@ function defaults(input){
  const v={...input,_generalDefaults:{...(input._generalDefaults||{})}};
  for(const p of ['sold','active']){
   for(let i=0;i<4;i++)if(v[`${p}.${i}.tenure`]===undefined||v[`${p}.${i}.tenure`]===''){const key=`${p}.${i}.tenure`;v[key]='Fee Simple';v._generalDefaults[key]='Fee Simple';}
-  const key=p+'.0.utility';if(v[key]===undefined){v[key]='Average';v._generalDefaults[key]='Average';}
+  for(let i=0;i<4;i++)for(const [field,value] of [['basement','None'],['utility','Average']]){const key=p+'.'+i+'.'+field;if(v[key]===undefined){v[key]=value;v._generalDefaults[key]=value;}}
  }
  return v;
 }
