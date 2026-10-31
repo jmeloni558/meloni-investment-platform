@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
  let allowed=false,account=null,requested=false;
- const desktop=()=>matchMedia('(min-width: 761px) and (pointer: fine)').matches&&!matchMedia('(display-mode: standalone)').matches;
+ const desktop=()=>matchMedia('(min-width: 761px)').matches&&!matchMedia('(display-mode: standalone)').matches;
  function close(){document.body.classList.remove('pt-photos-open');const q=new URL(location.href);q.searchParams.delete('photos');history.replaceState(history.state,'',q);window.AppNavigationToolbar?.refresh?.();}
  function open(address=''){
   if(!allowed||!desktop())return false;

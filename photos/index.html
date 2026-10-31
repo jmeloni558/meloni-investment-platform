@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Photos | PropertyThesis</title></head><body><p>Opening Photos…</p><script>
 const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
-const desktop=matchMedia('(min-width: 761px) and (pointer: fine)').matches;
+const desktop=matchMedia('(min-width: 761px)').matches;
 const q=new URLSearchParams(location.search);q.delete('embedded');
 if(desktop&&!standalone){q.set('photos','1');location.replace('/index.html?'+q);}else location.replace('/photos.html'+(q.size?'?'+q:''));
 </script></body></html>
