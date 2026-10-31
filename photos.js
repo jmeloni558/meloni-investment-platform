@@ -211,8 +211,18 @@ $('downloadSelectedDated').onclick=()=>askDownloadDate(true);
 $('signout').onclick=()=>run(async()=>{const {error}=await client.auth.signOut({scope:'local'});if(error)throw error;});
 addEventListener('beforeunload',e=>{if(busy||queue.some(x=>x.state!=='Uploaded'&&!x.invalid)){e.preventDefault();e.returnValue='';}});
 addEventListener('offline',()=>status('You are offline. Keep this page open and retry remaining uploads when connected.',true));
-addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;$('install').hidden=false;});
-$('install').onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;$('install').hidden=true;}};
+const installedDisplay=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+$('install').hidden=installedDisplay();
+function showInstallHelp(){const help=$('installHelp');help.open=true;help.querySelector('summary').focus();help.scrollIntoView({block:'nearest'});}
+addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;$('install').hidden=installedDisplay();});
+addEventListener('appinstalled',()=>{installPrompt=null;$('install').hidden=true;$('installHelp').open=false;});
+$('install').onclick=async()=>{
+  if(!installPrompt){showInstallHelp();return;}
+  const prompt=installPrompt;installPrompt=null;$('install').disabled=true;
+  try{await prompt.prompt();const choice=await prompt.userChoice;if(choice?.outcome==='accepted')$('install').hidden=true;else showInstallHelp();}
+  catch{showInstallHelp();}
+  finally{$('install').disabled=false;}
+};
 async function sessionChanged(session){
   const next=session?.user;if(next?.id===user?.id&&user)return;
   clearCaptions();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
