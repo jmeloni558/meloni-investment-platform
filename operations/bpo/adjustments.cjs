@@ -33,8 +33,17 @@ function setViewComparison(input,p,choice){
  // An explicit new comparison replaces only this comp's view override.
  delete v._adjustments.manual?.[key];delete v._adjustments.generated?.[key];v[key]='';return v;
 }
+function qualityContext(v,p){return [v.field_0008||v['sold.0.address'],v['sold.0.quality'],v[p+'.address'],v[p+'.city'],v[p+'.state'],v[p+'.zip'],v[p+'.quality']].map(x=>String(x??'').trim().toLowerCase());}
+function qualityComparison(v,p){const entry=v._qualityComparisons?.[p];return entry&&['superior','similar','inferior'].includes(entry.choice)&&JSON.stringify(entry.context)===JSON.stringify(qualityContext(v,p))?entry.choice:'';}
+function setQualityComparison(input,p,choice){
+ if(!/^(sold|active)\.[1-3]$/.test(p)||!['','superior','similar','inferior'].includes(choice))return input;
+ const v={...input,_qualityComparisons:{...(input._qualityComparisons||{})},_adjustments:structuredClone(input._adjustments||{})},key=p+'.adj_quality';
+ if(choice)v._qualityComparisons[p]={choice,context:qualityContext(v,p)};else delete v._qualityComparisons[p];
+ // An explicit new comparison replaces only this comp's quality override.
+ delete v._adjustments.manual?.[key];delete v._adjustments.generated?.[key];v[key]='';return v;
+}
 const blanketFields=[
- ['location','Location'],['site','Site'],['view','View','view'],['design','Design and appeal','story'],['quality','Quality of construction'],['year','Year built','difference'],['condition','Condition','condition'],['beds','Bedrooms','difference','rooms'],['baths','Bathrooms','difference','rooms'],['basement','Basement'],['utility','Functional utility'],['hvac','Heating / cooling'],['energy','Energy efficient items'],['garage','Garage / carport'],['porch','Porches','flat','porches'],['patio','Patio','flat','porches'],['deck','Deck','flat','porches'],['fireplace','Fireplace'],['fence','Fence'],['pool','Pool','pool'],['other','Other']
+ ['location','Location'],['site','Site'],['view','View','view'],['design','Design and appeal','story'],['quality','Quality of construction','quality'],['year','Year built','difference'],['condition','Condition','condition'],['beds','Bedrooms','difference','rooms'],['baths','Bathrooms','difference','rooms'],['basement','Basement'],['utility','Functional utility'],['hvac','Heating / cooling'],['energy','Energy efficient items'],['garage','Garage / carport'],['porch','Porches','flat','porches'],['patio','Patio','flat','porches'],['deck','Deck','flat','porches'],['fireplace','Fireplace'],['fence','Fence'],['pool','Pool','pool'],['other','Other']
 ];
 function apply(input,number,money,overwrite=false){
  const v={...input},state=structuredClone(input._adjustments||{rate:'',generated:{},parts:{}});state.generated||={};state.parts||={};state.manual||={};const warnings=[];let preserved=0;
@@ -57,8 +66,9 @@ function apply(input,number,money,overwrite=false){
    const fields=blanketFields.filter(f=>(f[3]||f[0])===target),touched=fields.some(f=>Object.hasOwn(globals,f[0]));
    if(!touched)continue;managed.add(target);
    const key=p+'adj_'+target,entered=fields.filter(f=>String(globals[f[0]]??'').trim());let sum=0,valid=true;
-   for(const [name,label,mode] of entered){const factor=number(globals[name]);if(factor===null||(['difference','story','pool','condition','view'].includes(mode)&&factor<0)){valid=false;continue;}
+   for(const [name,label,mode] of entered){const factor=number(globals[name]);if(factor===null||(['difference','story','pool','condition','view','quality'].includes(mode)&&factor<0)){valid=false;continue;}
     if(mode==='view'){const choice=viewComparison(v,p.slice(0,-1));if(!choice){valid=false;warnings.push({prefix:p,message:'Choose Superior, Similar or Inferior beside this comparable’s view before applying the view factor.'});}else sum+=({superior:-1,similar:0,inferior:1}[choice])*factor;}
+    else if(mode==='quality'){const choice=qualityComparison(v,p.slice(0,-1));if(!choice){valid=false;warnings.push({prefix:p,message:'Choose Superior, Similar or Inferior beside this comparable’s construction quality before applying the quality factor.'});}else sum+=({superior:-1,similar:0,inferior:1}[choice])*factor;}
     else if(mode==='condition'){const grades=['poor','fair','average','good','excellent'],grade=x=>grades.indexOf(String(x??'').trim().toLowerCase()),sub=grade(v['sold.0.condition']),comp=grade(v[p+'condition']);if(sub<0||comp<0){valid=false;warnings.push({prefix:p,message:'Condition adjustment needs Poor, Fair, Average, Good or Excellent for both properties. Review custom descriptions and enter an individual adjustment.'});}else sum+=(sub-comp)*factor;}
     else if(mode==='story'){const sub=storyClass(v['sold.0.design']),comp=storyClass(v[p+'design']);if(sub===null||comp===null){valid=false;warnings.push({prefix:p,message:'Design and appeal needs an explicit single-story/ranch or multistory description for both properties. Review Step 5.'});}else sum+=(sub-comp)*factor;}
     else if(mode==='pool'){const sub=poolClass(v['sold.0.pool']),comp=poolClass(v[p+'pool']);if(sub===null||comp===null){valid=false;warnings.push({prefix:p,message:'Pool adjustment needs known pool types for both properties. Above-ground and community pools receive no private-pool value.'});}else sum+=(sub-comp)*Math.abs(factor);}
@@ -78,4 +88,4 @@ function apply(input,number,money,overwrite=false){
  }
  v._adjustments=state;return {values:v,warnings,preserved};
 }
-module.exports={viewComparison,setViewComparison,poolClass,concession,parts,blanketFields,apply,storyClass};
+module.exports={qualityComparison,setQualityComparison,viewComparison,setViewComparison,poolClass,concession,parts,blanketFields,apply,storyClass};
