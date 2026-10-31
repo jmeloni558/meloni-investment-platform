@@ -24,8 +24,17 @@ function storyClass(raw){
  return single===multi?null:single?1:0;
 }
 function poolClass(raw){const s=String(raw??'').toLowerCase().replace(/[-–—]/g,' ');if(/above\s*ground|\b(no|none|community)\b/.test(s))return 0;if(/in\s*ground|\b(private|yes|gunite|concrete|fiberglass)\b/.test(s))return 1;return null;}
+function viewContext(v,p){return [v.field_0008||v['sold.0.address'],v['sold.0.view'],v[p+'.address'],v[p+'.city'],v[p+'.state'],v[p+'.zip'],v[p+'.view']].map(x=>String(x??'').trim().toLowerCase());}
+function viewComparison(v,p){const entry=v._viewComparisons?.[p];return entry&&['superior','similar','inferior'].includes(entry.choice)&&JSON.stringify(entry.context)===JSON.stringify(viewContext(v,p))?entry.choice:'';}
+function setViewComparison(input,p,choice){
+ if(!/^(sold|active)\.[1-3]$/.test(p)||!['','superior','similar','inferior'].includes(choice))return input;
+ const v={...input,_viewComparisons:{...(input._viewComparisons||{})},_adjustments:structuredClone(input._adjustments||{})},key=p+'.adj_view';
+ if(choice)v._viewComparisons[p]={choice,context:viewContext(v,p)};else delete v._viewComparisons[p];
+ // An explicit new comparison replaces only this comp's view override.
+ delete v._adjustments.manual?.[key];delete v._adjustments.generated?.[key];v[key]='';return v;
+}
 const blanketFields=[
- ['location','Location'],['site','Site'],['view','View'],['design','Design and appeal','story'],['quality','Quality of construction'],['year','Year built','difference'],['condition','Condition','condition'],['beds','Bedrooms','difference','rooms'],['baths','Bathrooms','difference','rooms'],['basement','Basement'],['utility','Functional utility'],['hvac','Heating / cooling'],['energy','Energy efficient items'],['garage','Garage / carport'],['porch','Porches','flat','porches'],['patio','Patio','flat','porches'],['deck','Deck','flat','porches'],['fireplace','Fireplace'],['fence','Fence'],['pool','Pool','pool'],['other','Other']
+ ['location','Location'],['site','Site'],['view','View','view'],['design','Design and appeal','story'],['quality','Quality of construction'],['year','Year built','difference'],['condition','Condition','condition'],['beds','Bedrooms','difference','rooms'],['baths','Bathrooms','difference','rooms'],['basement','Basement'],['utility','Functional utility'],['hvac','Heating / cooling'],['energy','Energy efficient items'],['garage','Garage / carport'],['porch','Porches','flat','porches'],['patio','Patio','flat','porches'],['deck','Deck','flat','porches'],['fireplace','Fireplace'],['fence','Fence'],['pool','Pool','pool'],['other','Other']
 ];
 function apply(input,number,money,overwrite=false){
  const v={...input},state=structuredClone(input._adjustments||{rate:'',generated:{},parts:{}});state.generated||={};state.parts||={};state.manual||={};const warnings=[];let preserved=0;
@@ -48,15 +57,16 @@ function apply(input,number,money,overwrite=false){
    const fields=blanketFields.filter(f=>(f[3]||f[0])===target),touched=fields.some(f=>Object.hasOwn(globals,f[0]));
    if(!touched)continue;managed.add(target);
    const key=p+'adj_'+target,entered=fields.filter(f=>String(globals[f[0]]??'').trim());let sum=0,valid=true;
-   for(const [name,label,mode] of entered){const factor=number(globals[name]);if(factor===null||(['difference','story','pool','condition'].includes(mode)&&factor<0)){valid=false;continue;}
-    if(mode==='condition'){const grades=['poor','fair','average','good','excellent'],grade=x=>grades.indexOf(String(x??'').trim().toLowerCase()),sub=grade(v['sold.0.condition']),comp=grade(v[p+'condition']);if(sub<0||comp<0){valid=false;warnings.push({prefix:p,message:'Condition adjustment needs Poor, Fair, Average, Good or Excellent for both properties. Review custom descriptions and enter an individual adjustment.'});}else sum+=(sub-comp)*factor;}
+   for(const [name,label,mode] of entered){const factor=number(globals[name]);if(factor===null||(['difference','story','pool','condition','view'].includes(mode)&&factor<0)){valid=false;continue;}
+    if(mode==='view'){const choice=viewComparison(v,p.slice(0,-1));if(!choice){valid=false;warnings.push({prefix:p,message:'Choose Superior, Similar or Inferior beside this comparable’s view before applying the view factor.'});}else sum+=({superior:-1,similar:0,inferior:1}[choice])*factor;}
+    else if(mode==='condition'){const grades=['poor','fair','average','good','excellent'],grade=x=>grades.indexOf(String(x??'').trim().toLowerCase()),sub=grade(v['sold.0.condition']),comp=grade(v[p+'condition']);if(sub<0||comp<0){valid=false;warnings.push({prefix:p,message:'Condition adjustment needs Poor, Fair, Average, Good or Excellent for both properties. Review custom descriptions and enter an individual adjustment.'});}else sum+=(sub-comp)*factor;}
     else if(mode==='story'){const sub=storyClass(v['sold.0.design']),comp=storyClass(v[p+'design']);if(sub===null||comp===null){valid=false;warnings.push({prefix:p,message:'Design and appeal needs an explicit single-story/ranch or multistory description for both properties. Review Step 5.'});}else sum+=(sub-comp)*factor;}
     else if(mode==='pool'){const sub=poolClass(v['sold.0.pool']),comp=poolClass(v[p+'pool']);if(sub===null||comp===null){valid=false;warnings.push({prefix:p,message:'Pool adjustment needs known pool types for both properties. Above-ground and community pools receive no private-pool value.'});}else sum+=(sub-comp)*Math.abs(factor);}
     else if(mode==='difference'){const sub=number(v['sold.0.'+name]),comp=number(v[p+name]);if(sub===null||comp===null||sub<0||comp<0){valid=false;warnings.push({prefix:p,message:label+' difference needs numeric subject and comparable facts. Review Step 5.'});}else sum+=(sub-comp)*factor;}
     else sum+=factor;
    }
    if(entered.length&&valid)put(key,Math.round(sum*100)/100,true);
-   else {const old=state.generated[key];if(old?.blanket&&same(v[key],old.value)){v[key]='';delete state.generated[key];}}
+   else {const old=state.generated[key];if(old?.blanket&&!state.manual[key]&&same(v[key],old.value)){v[key]='';delete state.generated[key];}}
   }
   for(const [group,keys] of Object.entries(parts)){
    if(managed.has(group))continue;
@@ -68,4 +78,4 @@ function apply(input,number,money,overwrite=false){
  }
  v._adjustments=state;return {values:v,warnings,preserved};
 }
-module.exports={poolClass,concession,parts,blanketFields,apply,storyClass};
+module.exports={viewComparison,setViewComparison,poolClass,concession,parts,blanketFields,apply,storyClass};
