@@ -34,12 +34,12 @@ function renderQueue(){
 async function run(action){if(busy)return;setBusy(true);try{await action();}catch(error){status(error.message||'Something went wrong. Please try again.',true);}finally{setBusy(false);}}
 async function loadProperties(){
   const version=epoch,rows=[];
-  for(let offset=0;;offset+=500){const {data,error}=await client.from('photo_properties').select('id,address,created_at,completed_at').order('address').order('id').range(offset,offset+499);check(version);if(error)throw error;rows.push(...data);if(data.length<500)break;}
+  for(let offset=0;;offset+=500){const {data,error}=await client.from('photo_properties').select('id,address,created_at,completed_at,deleting_at').order('address').order('id').range(offset,offset+499);check(version);if(error)throw error;rows.push(...data);if(data.length<500)break;}
   properties=rows;renderProperties();
 }
 async function openProperty(p){
   if(queue.some(x=>x.state!=='Uploaded')&&!confirm('Leave the selected photos? Photos not uploaded will need to be selected again.'))return;
-  selectedPhotos.clear();selected=p;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();$('workspace').hidden=false;$('addressList').hidden=true;$('uploadControls').hidden=!!p.completed_at;$('complete').hidden=!!p.completed_at;$('reopen').hidden=!p.completed_at;$('completedNote').hidden=!p.completed_at;$('propertyTitle').textContent=p.address;renderProperties();await refreshPhotos();$('propertyTitle').focus();
+  selectedPhotos.clear();selected=p;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();$('workspace').hidden=false;$('addressList').hidden=true;$('uploadControls').hidden=!!p.completed_at||!!p.deleting_at;$('complete').hidden=!!p.completed_at||!!p.deleting_at;$('reopen').hidden=!p.completed_at||!!p.deleting_at;$('completedNote').hidden=!p.completed_at;$('propertyTitle').textContent=p.address;renderProperties();await refreshPhotos();$('propertyTitle').focus();
 }
 async function refreshPhotos(){
   const version=epoch,p=selected;if(!p)return;const prefix=user.id+'/'+p.id;
@@ -66,7 +66,7 @@ async function refreshPhotos(){
     $('photos').append(card);loadCaption(card,date,prefix+'/'+photo.name,version);
   }
   renderPhotoSelection();
-  status(photos.length?'Photos are up to date.':'This property is ready. Select photos to upload.');
+  status(p.deleting_at?'Property deletion is unfinished. Click Delete property again to finish.':photos.length?'Photos are up to date.':'This property is ready. Select photos to upload.');
 }
 
 function renderPhotoSelection(){
@@ -108,12 +108,37 @@ $('deleteSelectedPhotos').onclick=()=>run(async()=>{
   }
   status(deleted+' photo'+(deleted===1?'':'s')+' deleted.'+(failed?' '+failed+' could not be confirmed and remain selected. Retry or refresh photos.':''),!!failed);
 });
+$('deleteProperty').onclick=()=>run(async()=>{
+ const p=selected;if(!p)return;
+ if(!confirm('Permanently delete '+p.address+' and ALL its uploaded photos from the photo app? This cannot be undone. Photos on your phone or PC and your saved BPO are not deleted.'))return;
+ const version=epoch,prefix=user.id+'/'+p.id;status('Starting property deletion…');
+ const started=await client.rpc('delete_photo_property',{p_id:p.id,p_finish:false});check(version);
+ if(started.error||started.data!==true)throw Error(started.error?.message||'Could not start property deletion. No photos were removed.');
+ p.deleting_at=new Date().toISOString();queue=[];$('files').value='';renderQueue();$('uploadControls').hidden=true;$('complete').hidden=true;$('reopen').hidden=true;
+ try{
+  const remaining=await listPhotos(bucket,prefix);check(version);
+  for(let offset=0;offset<remaining.length;offset+=100){
+   const batch=remaining.slice(offset,offset+100),paths=batch.map(photo=>prefix+'/'+photo.name);
+   status('Deleting property photos… '+offset+' of '+remaining.length+' processed.');
+   const {data,error}=await bucket.remove(paths);check(version);if(error)throw error;
+   const confirmed=new Set((data||[]).map(item=>item.name));
+   const removed=batch.filter(photo=>confirmed.has(prefix+'/'+photo.name)||confirmed.has(photo.name)).map(photo=>photo.name);removeConfirmedPhotos(removed);
+   if(removed.length!==batch.length)throw Error('Some photo removals could not be confirmed.');
+  }
+  const finished=await client.rpc('delete_photo_property',{p_id:p.id,p_finish:true});check(version);
+  if(finished.error||finished.data!==true)throw Error(finished.error?.message||'Property removal could not be confirmed.');
+ }catch(error){
+  check(version);await refreshPhotos().catch(()=>{});
+  throw Error('Deletion is unfinished. '+error.message+' Click Delete property again to retry.');
+ }
+ await loadProperties();showList();status('Property and all uploaded photos deleted.');
+});
 async function getPhoto(photo,version){check(version);const {data,error}=await bucket.download(user.id+'/'+selected.id+'/'+photo.name);check(version);if(error)throw error;return data;}
 function save(blob,name){const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 $('newProperty').onsubmit=e=>{e.preventDefault();run(async()=>{
   const address=$('address').value.trim().replace(/\s+/g,' ');if(!address)throw Error('Enter a property address.');
   const existing=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());if(existing){status('This address already exists'+(existing.completed_at?' in Completed photos':' in Active properties')+'.');$('address').value='';return;}
-  const version=epoch;const {data,error}=await client.from('photo_properties').insert({user_id:user.id,address}).select('id,address,created_at,completed_at').single();check(version);
+  const version=epoch;const {data,error}=await client.from('photo_properties').insert({user_id:user.id,address}).select('id,address,created_at,completed_at,deleting_at').single();check(version);
   if(error){if(error.code==='23505'){await loadProperties();const p=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());if(p){status('This address already exists'+(p.completed_at?' in Completed photos':' in Active properties')+'.');$('address').value='';return;}}throw error;}
   await loadProperties();$('address').value='';$('search').value='';renderProperties();status('Property created. Enter another address or choose one from the list.');
 }).finally(()=>$('address').focus());};
@@ -133,7 +158,7 @@ async function changeCompletion(completed){
   if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid))throw Error('Upload or clear the selected photos before marking this set completed.');
   if(completed&&!photos.length)throw Error('Upload at least one photo before marking this set completed.');
   const version=epoch;
-  const {data,error}=await client.from('photo_properties').update({completed_at:completed?new Date().toISOString():null}).eq('id',selected.id).select('id,address,created_at,completed_at').single();
+  const {data,error}=await client.from('photo_properties').update({completed_at:completed?new Date().toISOString():null}).eq('id',selected.id).select('id,address,created_at,completed_at,deleting_at').single();
   check(version);if(error)throw error;
   selected=data;await loadProperties();
   if(completed){showList('active');status('Upload set completed. Find it in Completed photos.');}
