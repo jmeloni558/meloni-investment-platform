@@ -5,3 +5,5 @@
 @media(display-mode:standalone){.intro{display:none}}
 
 @media(max-width:760px),(display-mode:standalone){.desktop-download{display:none!important}}
+
+header{align-items:center}#updateApp{background:transparent;color:white;border-color:#8eb5b1;white-space:nowrap;font-size:13px;min-height:40px;padding:8px 12px}
