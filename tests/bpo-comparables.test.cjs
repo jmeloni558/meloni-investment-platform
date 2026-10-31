@@ -9,7 +9,7 @@ test('MLS imports comparable descriptions with requested room defaults and no in
  const docs=[{category:'sold',path:'sold.pdf'},{category:'active',path:'pending.pdf'}];
  const fields=[{name:'sold.1.address',value:'100 Test Lane',document:0,page:1,evidence:'100 Test Lane'},...['quality','utility','beds','price'].map((key,i)=>({name:'sold.1.'+key,value:['Good','Average','3','300000'][i],document:0,page:1,evidence:['Construction quality: Good','Functional utility: Average','3 bedrooms','Closed price $300000'][i]})),{name:'active.1.address',value:'200 Test Lane',document:1,page:1,evidence:'200 Test Lane'},{name:'active.1.beds',value:'4',document:1,page:1,evidence:'4 beds'},{name:'active.1.source',value:'MLS Pending',document:1,page:1,evidence:'MLS status Pending'}];
  const result=cleanExtraction({fields},C.schema,docs,{general:true});const v=C.applyAI({},result).values;
- assert.equal(v['sold.1.quality'],'Good');assert.equal(v['sold.1.utility'],'Average');assert.equal(v['sold.1.rooms'],'6');assert.equal(v['active.1.rooms'],'7');assert.equal(v['active.1.utility'],undefined);assert.equal(v['active.1.source'],undefined);
+ assert.equal(v['sold.1.quality'],'Good');assert.equal(v['sold.1.utility'],'Average');assert.equal(v['sold.1.rooms'],'6');assert.equal(v['active.1.rooms'],'7');assert.equal(v['active.1.utility'],'Average');assert.equal(v['active.1.source'],undefined);
  assert.equal(v['sold.1.pool'],undefined);assert.equal(v['sold.2.quality'],undefined);
  const manual=C.applyAI({...v,'sold.1.quality':'Fair'},result).values;assert.equal(manual['sold.1.quality'],'Fair');
 });
@@ -22,7 +22,7 @@ test('Step 2 renders editable fields for every slot and read-only calculated PPS
  vm.runInContext(source.slice(source.indexOf('function fieldControl('),source.indexOf('function marketPanel('))+source.slice(source.indexOf('function generalCompEditor('),source.indexOf('function compSummary(')),ctx);
  const html=ctx.generalCompEditor();assert.equal((html.match(/pt-bpo-comp-editor/g)||[]).length,6);
  for(const kind of ['sold','active'])for(const i of [1,2,3])assert.ok(html.includes(`data-bpo-field="${kind}.${i}.pool"`));
- assert.match(html,/data-bpo-field="sold\.1\.ppsf"[^>]*readonly/);assert.match(html,/data-bpo-field="sold\.1\.distance"[^>]*readonly/);assert.ok(!html.includes('adj_'));assert.match(html,/data-bpo-field="sold\.1\.condition"[^>]*list="pt-bpo-condition-options"/);assert.match(html,/<input[^>]*data-comp-address="sold\.1"/);assert.ok(!html.includes('data-bpo-field="sold.1.city"'));
+ assert.match(html,/data-bpo-field="sold\.1\.ppsf"[^>]*readonly/);assert.match(html,/data-bpo-field="sold\.1\.distance"[^>]*readonly/);assert.ok(!html.includes('adj_'));assert.match(html,/data-bpo-field="sold\.1\.condition"[^>]*type="text"/);assert.equal((html.match(/data-condition-picker/g)||[]).length,6);assert.match(html,/<input[^>]*data-comp-address="sold\.1"/);assert.ok(!html.includes('data-bpo-field="sold.1.city"'));
 });
 
 test('full comparable addresses retain PDF parts and clear stale locality on edits',()=>{

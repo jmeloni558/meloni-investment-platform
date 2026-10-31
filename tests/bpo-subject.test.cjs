@@ -10,7 +10,7 @@ test('General subject fields follow the form order without duplicate address or 
 test('only requested defaults apply and RRR stays unchanged',()=>{
  let v=C.recalculate({'sold.0.beds':'3','active.0.beds':'3'});
  assert.equal(v['sold.0.rooms'],'6');assert.equal(v['sold.0.utility'],'Average');assert.equal(v['active.3.tenure'],'Fee Simple');
- for(const key of ['quality','condition','view','other','pool','basement'])assert.equal(v['sold.0.'+key],undefined);
+ for(const key of ['quality','condition','view','other','pool'])assert.equal(v['sold.0.'+key],undefined);
  assert.equal(C.recalculate({_clientTemplate:'rrr'})['sold.0.utility'],undefined);
  assert.equal(C.recalculate({_clientTemplate:'rrr'})['sold.1.tenure'],undefined);
 });

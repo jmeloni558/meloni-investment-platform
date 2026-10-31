@@ -40,7 +40,33 @@ test('editable PDF preserves numbers, defaults and short sale dates in two pages
 });
 test('unit selector updates visible values before a focused input blurs during rerender',()=>{
  const vm=require('node:vm'),source=fs.readFileSync('bpo-workspace.js','utf8');let handler,display='10890';
- const ctx={C,values:C.recalculate({'sold.0.site':'10890','active.0.site':'10890'}),dialog:{querySelector:()=>({addEventListener:(event,fn)=>{handler=fn;}})},modified:()=>{},collect:()=>{ctx.values=C.recalculate({...ctx.values,'sold.0.site':display});},showValues:()=>{display=ctx.values['sold.0.site'];},editor:()=>ctx.collect()};vm.createContext(ctx);
- const start=source.indexOf("dialog.querySelector('[data-lot-unit]')"),end=source.indexOf('});showValues();',start);vm.runInContext(source.slice(start,end+3),ctx);
+ const ctx={C,values:C.recalculate({'sold.0.site':'10890','active.0.site':'10890'}),dialog:{querySelectorAll:()=>[{addEventListener:(event,fn)=>{handler=fn;}},{addEventListener:(event,fn)=>{handler=fn;}}]},modified:()=>{},collect:()=>{ctx.values=C.recalculate({...ctx.values,'sold.0.site':display});},showValues:()=>{display=ctx.values['sold.0.site'];},editor:()=>ctx.collect()};vm.createContext(ctx);
+ const start=source.indexOf("dialog.querySelectorAll('[data-lot-unit]')"),end=source.indexOf('}));showValues();',start);vm.runInContext(source.slice(start,end+4),ctx);
  handler({target:{value:'acres'}});assert.equal(display,'0.25');assert.equal(ctx.values['sold.0.site'],'0.25');handler({target:{value:'sqft'}});assert.equal(display,'10890');assert.equal(ctx.values['sold.0.site'],'10890');
+});
+
+test('basement and utility defaults cover both subjects and every comp and preserve edits and clearing',()=>{
+ let v=C.recalculate({});
+ for(const kind of ['sold','active'])for(let i=0;i<4;i++){
+ const p=kind+'.'+i;assert.equal(v[p+'.basement'],'None');assert.equal(v[p+'.utility'],'Average');
+ assert.equal(v._generalDefaults[p+'.basement'],'None');assert.equal(v._generalDefaults[p+'.utility'],'Average');
+ v[p+'.basement']='Finished';v[p+'.utility']='Limited';
+ }
+ v=C.recalculate(v);for(const kind of ['sold','active'])for(let i=0;i<4;i++){const p=kind+'.'+i;assert.equal(v[p+'.basement'],'Finished');assert.equal(v[p+'.utility'],'Limited');v[p+'.basement']='';v[p+'.utility']='';}
+ v=C.recalculate(v);assert.equal(v['sold.0.basement'],'');assert.equal(v['active.3.utility'],'');
+ assert.equal(C.recalculate({_clientTemplate:'rrr'})['sold.1.basement'],undefined);
+});
+test('explicit imported basement and utility replace defaults but preserve later manual entries',()=>{
+ const entry=(name,value)=>({name,value,path:'sold.pdf',filename:'Sold.pdf',page:1,evidence:'Explicit source fact'});
+ const fields=[entry('sold.1.address','100 Test Lane'),entry('sold.1.basement','Finished'),entry('sold.1.utility','Limited')];
+ let v=C.applyAI(C.recalculate({}),{fields}).values;assert.equal(v['sold.1.basement'],'Finished');assert.equal(v['sold.1.utility'],'Limited');
+ v['sold.1.basement']='Partially finished';v['sold.1.utility']='Custom';
+ v=C.applyAI(v,{fields}).values;assert.equal(v['sold.1.basement'],'Partially finished');assert.equal(v['sold.1.utility'],'Custom');
+});
+test('subject and comp site controls each include a shared unit selector beside the editable site input',()=>{
+ const vm=require('node:vm'),source=fs.readFileSync('bpo-workspace.defaults-v1.js','utf8'),ctx={values:{},window:{PropertyThesisBPOCore:C},esc:s=>s,fieldControl:(f,a)=>'<input '+a+'>'};vm.createContext(ctx);
+ vm.runInContext(source.slice(source.indexOf('function lotUnitControl('),source.indexOf('function marketPanel(')),ctx);
+ for(const name of ['sold.0.site','sold.1.site','active.3.site']){
+ const html=ctx.formFields([{name,label:'Site / lot size'}]);assert.match(html,/<span[^>]*>.*<input.*<select data-lot-unit.*<\/select><\/span>/);
+ }
 });
