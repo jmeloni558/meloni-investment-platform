@@ -1,6 +1,6 @@
 # PropertyThesis Photo Uploads
 
-Entry: `/photos.html`, or **Photo Uploads** in the signed-in website toolbar for enabled accounts.
+Entry: `/photos.html`, or **Photos** immediately before Delete Property on a saved-property card for enabled accounts.
 
 ## Jamie's workflow
 
@@ -50,3 +50,14 @@ There is no application-imposed photo-count limit per selection or property. The
 ## Delete multiple photos
 
 Use each photo checkbox, or Select all, then Delete selected. One confirmation names the property and selected count. Clear selection cancels the selection without deleting. This works in active and completed sets on phone and PC. Large selections are sent in requests of at most 100 objects, with no overall selection cap. Only server-confirmed removals leave the gallery; failed or unconfirmed photos stay selected for retry. Selecting a different property, returning to the list or signing out clears selection. Phone originals are unaffected.
+
+
+## Saved-property Photos and optional General BPO appendix
+
+The main toolbar no longer includes Photo Uploads. Enabled accounts get **Photos** immediately before **Delete Property** on saved BPO and income-property cards. The link opens the standalone photo library at that address. Matching is case-insensitive with normalized spaces; a missing address is created only when the user opens the link. Completed sets stay completed. No link back to the main website is added to the phone app.
+
+Only General BPO's Final PDF Package includes the optional **Include photos in final package** checkbox, off by default. **Choose photos** shows active and completed photo addresses and thumbnail selection. Upload / manage opens the subject address separately; Refresh photos reloads uploads. Selected filenames and album ID are saved with the BPO's existing field_values JSON. Saving the BPO retains the choice. Income reports and RRR exports do not include this feature.
+
+Selected JPG, PNG and WebP images are appended after the supporting PDFs, two per letter page with aspect ratio and orientation preserved. Report copies are reduced to at most 1800 pixels on the longest side; originals are untouched. HEIC/HEIF must be converted to JPG for report inclusion. Export with photos off never reads photo storage. Missing/deleted or unreadable selected images stop the export with instructions to reselect or omit them, rather than silently excluding evidence. An address change requires choosing photos again. The original BPO form fields remain editable.
+
+`node tests/bpo-photo-report-browser.cjs` tests the exact package-panel/export functions with a synthetic backend, including unchecked default, opt-out without storage reads, saved-card placement, selected appendices, editable BPO fields, missing-photo errors and sign-out. It renders a PDF proof into the OS temporary directory. The photo-browser regression also tests saved-address links, duplicate avoidance and preservation of completed state. No production records are modified.

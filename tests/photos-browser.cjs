@@ -68,5 +68,16 @@ const server=http.createServer((req,res)=>{let file=path.join(root,new URL(req.u
  office.once('dialog',d=>{assert.ok(d.message().includes('103 selected photos'));d.accept();});await office.click('#deleteSelectedPhotos');await office.waitForFunction(()=>document.querySelectorAll('.photo').length===0);
  assert.deepEqual(await office.evaluate(()=>window.deleteSizes),[100,3]);assert.equal(await office.locator('#deleteSelectedPhotos').isDisabled(),true);
  await office.click('#backToList');await office.locator('#properties button').filter({hasText:'123 Test'}).click();assert.equal(await office.locator('.photo input:checked').count(),0);
+ // Saved-property links open/create an address directly, with no duplicate albums.
+ await office.goto(base+'/photos.html?address='+encodeURIComponent('789 Linked Street'));
+ await office.waitForFunction(()=>document.querySelector('#propertyTitle').textContent==='789 Linked Street'&&!location.search.includes('address='));
+ const linkedCount=await office.evaluate(()=>JSON.parse(localStorage.getItem('photo-test')).rows.length);
+ await office.goto(base+'/photos.html?address='+encodeURIComponent('789 linked street'));
+ await office.waitForFunction(()=>document.querySelector('#propertyTitle').textContent==='789 Linked Street'&&!location.search.includes('address='));
+ assert.equal(await office.evaluate(()=>JSON.parse(localStorage.getItem('photo-test')).rows.length),linkedCount);
+ await office.setInputFiles('#files',[{name:'linked.jpg',mimeType:'image/jpeg',buffer:Buffer.from('linked photo')}]);await office.click('#upload');await office.waitForFunction(()=>document.querySelector('#status').textContent.includes('Uploads complete'));
+ await office.click('#complete');await office.locator('#addressList').waitFor({state:'visible'});
+ await office.goto(base+'/photos.html?address='+encodeURIComponent('789 Linked Street'));await office.locator('#workspace').waitFor({state:'visible'});
+ assert.equal(await office.locator('#reopen').isVisible(),true);assert.equal(await office.locator('#uploadControls').isHidden(),true);
  assert.deepEqual(errors,[]);console.log('PASS: mobile address-only creation, upload failure/retry, deduplication, office library, ZIP byte integrity, sign-out clearing, completion/reopen persistence, completed downloads, in-app sign-in, no website links, update/reload, canceled and offline updates preserve selections, delete cancel/failure/confirmation/replacement, completed deletion, 105-photo batch, bulk delete selection/cancel/partial failure/retry and 103-photo chunking, no overflow or JS errors');
 }finally{await browser.close();server.close();}})().catch(e=>{console.error(e);server.close();process.exitCode=1;});
