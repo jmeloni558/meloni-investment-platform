@@ -24,3 +24,11 @@ test('missing market quantities remain blank rather than becoming zero',async()=
  const {cleanExtraction}=await import('../supabase/functions/bpo-extract/contract.mjs');
  for(const value of ['—','unknown','N/A','not provided']){const r=cleanExtraction({fields:[{name:'market_months_supply',value,document:0,page:1,evidence:'Inventory '+value}],warnings:[]},C.schema,[{path:'market.pdf',name:'Other report.pdf'}]);assert.equal(r.fields.length,0);}
 });
+test('market age and supply accept stated units without converting or guessing missing values',async()=>{
+ const {cleanExtraction}=await import('../supabase/functions/bpo-extract/contract.mjs');
+ const data={market_zip_median_home_age:'16 years',market_county_median_home_age:'30 yrs',market_months_supply:'4.19 months',market_price_change_months:'12 mo'};
+ const fields=Object.entries(data).map(([name,value])=>({name,value,document:0,page:1,evidence:name+': '+value}));
+ const run=fields=>cleanExtraction({fields},C.schema,[{path:'market.pdf',name:'Market report.pdf',category:'market'}],{general:true}).fields;
+ assert.deepEqual(Object.fromEntries(run(fields).map(f=>[f.name,f.value])),{market_zip_median_home_age:'16',market_county_median_home_age:'30',market_months_supply:'4.2',market_price_change_months:'12'});
+ for(const value of ['not provided','unknown','16-20 years','16 months'])assert.equal(run([{...fields[0],value}]).length,0);
+});

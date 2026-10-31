@@ -26,7 +26,7 @@ export function cleanExtraction(payload, schema, documents, {general=false,now=n
     else if(/\.(price|gla|beds|baths|rooms|year|dom|financing)$/.test(f.name)||['field_0038','field_0039'].includes(f.name)||f.name.startsWith('market_')&&!['market_zip','market_county'].includes(f.name)){
       if(/\.(price|financing)$/.test(f.name)&&value.includes('%')){warnings.push(`${f.label}: a dollar amount is required; percentage not imported.`);continue;}
       const suffix=f.name.split('.').pop();
-      const units=suffix==='gla'?/\s*(?:sq\.?\s*ft\.?|sf|square feet)$/i:suffix==='dom'?/\s*days?$/i:/\s*(?:bedrooms?|beds?|bathrooms?|baths?|rooms?)$/i;
+      const units=/^market_(?:zip|county)_median_home_age$/.test(f.name)?/\s*(?:years?|yrs?)$/i:['market_months_supply','market_price_change_months'].includes(f.name)?/\s*(?:months?|mos?)$/i:suffix==='gla'?/\s*(?:sq\.?\s*ft\.?|sf|square feet)$/i:suffix==='dom'?/\s*days?$/i:/\s*(?:bedrooms?|beds?|bathrooms?|baths?|rooms?)$/i;
       let numeric=value.replace(/[$,%]/g,'').replace(units,'').trim();
       if(/median_(home_value|list_price)$/.test(f.name)&&/^\d+(?:\.\d+)?\s*[KM]$/i.test(numeric)){const m=numeric.match(/^([\d.]+)\s*([KM])$/i);numeric=String(Number(m[1])*(m[2].toUpperCase()==='K'?1000:1000000));}
       if(!/^[+-]?\d+(?:\.\d+)?$/.test(numeric)||(!f.name.includes('change')&&Number(numeric)<0)){warnings.push(`${f.label}: source value needs review; not imported.`);continue;}
