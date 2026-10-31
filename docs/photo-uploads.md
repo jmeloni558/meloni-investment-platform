@@ -28,3 +28,12 @@ Entry: `/photos.html`, or **Photo Uploads** in the signed-in website toolbar for
 `node tests/photos-browser.cjs` uses Playwright (or `PLAYWRIGHT_MODULE`) and desktop Edge (`BROWSER_PATH` can override). Its synthetic backend exercises mobile address-only creation, interrupted upload/retry, duplicate avoidance, office access, exact ZIP contents and session clearing. It never uploads test photos to production.
 
 `supabase/tests/photo_library_access.sql` runs production policy tests in a rolled-back transaction, including Storage access and revocation. Physical Android installation and a real account's phone-to-PC upload still require device verification.
+
+
+## Active and completed photo sets
+
+The photo app is self-contained: no main-website links, including at sign-in. Sign-in uses the same Supabase credentials and Cloudflare Turnstile verification directly on the photo page.
+
+The default screen is **Active properties**. Opening an address shows its upload screen with **Back to addresses**. After uploading, **Mark upload set completed** saves a completion timestamp and returns to the active list. The address moves to **Completed photos**, where originals remain available for viewing and desktop downloads. **Reopen for uploads** moves the set back to active. Existing addresses start active; completion never deletes files. One address represents one set in this version; reopening extends that same set.
+
+Phone-sized and installed app views hide download controls. Desktop browser views retain folder and ZIP downloads. Completion updates are restricted to the owning enabled account and only the completed_at column can be changed through this grant.
