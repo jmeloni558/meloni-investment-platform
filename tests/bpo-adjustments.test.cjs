@@ -3,10 +3,10 @@ const base={'sold.0.gla':'1756','sold.1.address':'1 Comp St','sold.1.price':'490
 test('single-story preference signs both grids, handles unknowns and preserves final overrides',async()=>{
  const b={'sold.0.design':'Ranch','sold.1.address':'A','sold.1.price':'300000','sold.1.design':'Two-story','active.1.address':'B','active.1.price':'310000','active.1.design':'3rd floor',_adjustments:{globals:{design:'5000'}}};
  let v=C.applyAdjustments(b).values;assert.equal(v['sold.1.adj_design'],'5,000');assert.equal(v['active.1.adj_design'],'5,000');assert.equal(v['sold.1.adjusted'],'305,000');
- assert.ok(C.draftSummary(v).sections.find(s=>s.title.startsWith('Sold Comparable')).body.includes('adds to the inferior'));
+ assert.ok(C.draftSummary(v).sections.find(s=>s.title.startsWith('Sold Comparable')).body.includes('$5,000 upward adjustment for design and appeal'));
  v['sold.1.adj_design']='$5,000';v['sold.1.design']='single level';v=C.applyAdjustments(v).values;assert.equal(v['sold.1.adj_design'],'0');
  v['sold.0.design']='2 level';v['sold.1.design']='single story';v=C.applyAdjustments(v).values;assert.equal(v['sold.1.adj_design'],'-5,000');assert.equal(v['active.1.adj_design'],'0');
- assert.ok(C.draftSummary(v).sections.find(s=>s.title.startsWith('Sold Comparable')).body.includes('deducts from the superior'));
+ assert.ok(C.draftSummary(v).sections.find(s=>s.title.startsWith('Sold Comparable')).body.includes('$5,000 downward adjustment for design and appeal'));
  const fs=require('fs'),{PDFDocument}=require('pdf-lib');const pdf=await PDFDocument.load(await C.exportPDF(fs.readFileSync('assets/bpo/template.pdf'),v));assert.equal(pdf.getForm().getTextField('sold.1.design_adjustment').getText(),'-$5,000');
  v['sold.1.adj_design']='-750';v['sold.0.design']='Single-level';v=C.applyAdjustments(v).values;assert.equal(v['sold.1.adj_design'],'-750');
  v['active.1.design']='split-level ranch';let r=C.applyAdjustments(v);assert.equal(r.values['active.1.adj_design'],'');assert.ok(r.warnings.some(w=>w.message.includes('Design and appeal')));
@@ -26,3 +26,18 @@ test('blanket bath factors follow subject differences across sold and active com
 test('flat factors and component sums apply to all comps exactly once',()=>{const b=structuredClone(base);b._adjustments.globals={location:'-1000',porch:'100',patio:'200',deck:'300',fireplace:'400',fence:'50',pool:'500'};b['sold.0.pool']='No pool';b['sold.1.pool']=b['active.1.pool']='In-ground';const v=C.applyAdjustments(b).values;for(const p of ['sold.1.','active.1.']){assert.equal(v[p+'adj_location'],'-1,000');assert.equal(v[p+'adj_porches'],'600');assert.equal(v[p+'adj_fireplace'],'400');assert.equal(v[p+'adj_fence'],'50');assert.equal(v[p+'adj_pool'],'-500');}assert.equal(v['sold.1.net'],'-1,350');});
 test('blanket changes preserve individual overrides unless explicitly reapplied',()=>{const b=structuredClone(base);b._adjustments.globals={location:'1000'};let v=C.applyAdjustments(b).values;v['sold.1.adj_location']='750';v['sold.1.adj_condition']='-500';v._adjustments.globals.location='2000';v=C.applyAdjustments(v).values;assert.equal(v['sold.1.adj_location'],'750');assert.equal(v['active.1.adj_location'],'2,000');v=C.applyAdjustments(v,true).values;assert.equal(v['sold.1.adj_location'],'2,000');assert.equal(v['sold.1.adj_condition'],'-500');v._adjustments.globals.location='';v=C.applyAdjustments(v).values;assert.equal(v['sold.1.adj_location'],'');});
 test('missing count facts are not zero, equal facts are zero, and invalid factors block save',()=>{const b=structuredClone(base);b['sold.0.baths']='1';b._adjustments.globals={baths:'5000'};let r=C.applyAdjustments(b);assert.equal(r.values['sold.1.adj_rooms'],undefined);assert.ok(r.warnings.some(w=>w.message.includes('Bathrooms')));b['sold.1.baths']='1';r=C.applyAdjustments(b);assert.equal(r.values['sold.1.adj_rooms'],'0');for(const x of ['invalid','-500']){b._adjustments.globals.baths=x;assert.ok(C.issues(C.applyAdjustments(b).values).length);}});
+
+test('condition factors use signed grade differences and recalculate after edits',()=>{
+ const grades=['Poor','Fair','Average','Good','Excellent'];
+ for(let s=0;s<5;s++)for(let c=0;c<5;c++){
+ const v=C.applyAdjustments({'sold.0.condition':grades[s],'sold.1.address':'A','sold.1.condition':grades[c].toLowerCase(),'active.1.address':'B','active.1.condition':grades[c],_adjustments:{globals:{condition:'15000'}}}).values;
+ assert.equal(C.number(v['sold.1.adj_condition']),(s-c)*15000);assert.equal(C.number(v['active.1.adj_condition']),(s-c)*15000);
+ const next=C.applyAdjustments({...v,'sold.1.condition':grades[s]}).values;assert.equal(next['sold.1.adj_condition'],'0');
+ }
+});
+test('unknown conditions clear generated adjustments without guessing or replacing manual exceptions',()=>{
+ let v=C.applyAdjustments({'sold.0.condition':'Good','sold.1.address':'A','sold.1.condition':'Average',_adjustments:{globals:{condition:'15000'}}}).values;
+ v['sold.1.condition']='Renovated';let r=C.applyAdjustments(v);assert.equal(r.values['sold.1.adj_condition'],'');assert.ok(r.warnings.some(w=>/Condition/.test(w.message)));
+ v['sold.1.adj_condition']='7500';v._adjustments.manual={'sold.1.adj_condition':true};r=C.applyAdjustments(v);assert.equal(r.values['sold.1.adj_condition'],'7500');
+ v._adjustments.globals.condition='-15000';assert.ok(C.issues(v).some(x=>/Condition.*nonnegative/.test(x)));
+});
