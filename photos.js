@@ -5,7 +5,7 @@ let user=null,properties=[],selected=null,photos=[],queue=[],busy=false,epoch=0,
 const bucket=client?.storage.from(BUCKET);
 const status=(message,error=false)=>{$('status').textContent=message;$('status').classList.toggle('error',error);};
 function check(version){if(version!==epoch || !user)throw Error('Your session changed. Sign in again to continue.');}
-function setBusy(value){busy=value;document.querySelectorAll('#library button,#library input').forEach(el=>el.disabled=value);$('upload').disabled=value||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);}
+function setBusy(value){busy=value;$('updateApp').disabled=value;document.querySelectorAll('#library button,#library input').forEach(el=>el.disabled=value);$('upload').disabled=value||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);}
 function node(tag,text,className){const el=document.createElement(tag);if(text)el.textContent=text;if(className)el.className=className;return el;}
 function renderProperties(){
   const search=$('search').value.trim().toLowerCase();$('properties').replaceChildren();
@@ -129,3 +129,23 @@ $('photoSignIn').onsubmit=async event=>{
 };
 if(!client)status('Unable to load sign-in. Check your connection and refresh.',true);
 else {client.auth.onAuthStateChange((_event,session)=>setTimeout(()=>sessionChanged(session),0));client.auth.getSession().then(({data,error})=>{if(error)status(error.message,true);else sessionChanged(data.session);});}
+
+// Check the live entry page before reloading, so offline updates preserve selections.
+$('updateApp').onclick=async()=>{
+  if(busy)return;
+  if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Updating will clear photos you selected but have not uploaded. Your uploaded photos are safe. Update now?'))return;
+  setBusy(true);status('Checking for the latest app…');
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
+  try{
+    const url=new URL(location.href);url.searchParams.set('app-update',String(Date.now()));
+    const response=await fetch(url.href,{cache:'no-store',signal:controller.signal});
+    if(!response.ok)throw Error('Update unavailable. Please try again shortly.');
+    const html=await response.text();
+    if(!html.includes('id="updateApp"')||!html.includes('photos.js'))throw Error('Update unavailable. Please try again shortly.');
+    queue=[];setBusy(false);status('Opening the latest app…');
+    location.replace(url.href);
+  }catch(error){
+    status(error.name==='AbortError'?'Update timed out. Your selected photos are still here. Try again when connected.':'Could not update the app. Your selected photos are still here. Check your connection and try again.',true);
+    setBusy(false);
+  }finally{clearTimeout(timeout);}
+};

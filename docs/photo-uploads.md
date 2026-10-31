@@ -37,3 +37,10 @@ The photo app is self-contained: no main-website links, including at sign-in. Si
 The default screen is **Active properties**. Opening an address shows its upload screen with **Back to addresses**. After uploading, **Mark upload set completed** saves a completion timestamp and returns to the active list. The address moves to **Completed photos**, where originals remain available for viewing and desktop downloads. **Reopen for uploads** moves the set back to active. Existing addresses start active; completion never deletes files. One address represents one set in this version; reopening extends that same set.
 
 Phone-sized and installed app views hide download controls. Desktop browser views retain folder and ZIP downloads. Completion updates are restricted to the owning enabled account and only the completed_at column can be changed through this grant.
+
+
+## Updating the installed app
+
+Tap **Update app** in the header. It checks the live photo page without using the browser cache, then reopens it using a fresh URL. It stays inside Photo Uploads, preserves the signed-in session and cloud photos, and returns to the address list. The button is disabled while uploads/downloads or other library operations run. Pending selected photos require confirmation; canceling or a failed/offline update keeps the selection. Keep versioned CSS/JS entry URLs current with every release; bump imported module URLs too when their contents change.
+
+To receive this button the first time, open the photo page once with a fresh query string (for example photos.html?refresh=update-button), then reopen the installed app. No reinstall is required.

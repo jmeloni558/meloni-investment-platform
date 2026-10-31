@@ -33,5 +33,16 @@ const server=http.createServer((req,res)=>{let file=path.join(root,new URL(req.u
  await office.click('#backToList');assert.equal(await office.locator('#listTitle').innerText(),'Active properties');assert.equal(await office.locator('#properties button').count(),1);
  await office.click('#signout');await office.locator('#signedOut').waitFor({state:'visible'});assert.equal(await office.locator('.photo').count(),0);assert.equal(await office.locator('#properties button').count(),0);
  await office.fill('#email','jamie@melonirealty.com');await office.fill('#password','synthetic-test');await office.click('#signin');await office.locator('#library').waitFor({state:'visible'});assert.ok(office.url().endsWith('/photos.html'));assert.equal(await office.locator('a').count(),0);
- assert.deepEqual(errors,[]);console.log('PASS: mobile address-only creation, upload failure/retry, deduplication, office library, ZIP byte integrity, sign-out clearing, completion/reopen persistence, completed downloads, in-app sign-in, no website links, no overflow or JS errors');
+
+ // Updating never leaves Photos and protects pending file selections.
+ await office.click('#properties button');await office.setInputFiles('#files',[{name:'pending.jpg',mimeType:'image/jpeg',buffer:Buffer.from('pending')}]);
+ office.once('dialog',d=>d.dismiss());await office.click('#updateApp');assert.equal(await office.locator('#files').evaluate(el=>el.files.length),1);
+ await office.route('**/photos.html?app-update=*',route=>route.abort());
+ office.once('dialog',d=>d.accept());await office.click('#updateApp');await office.waitForFunction(()=>document.querySelector('#status').textContent.includes('Could not update'));
+ assert.equal(await office.locator('#files').evaluate(el=>el.files.length),1);
+ await office.unroute('**/photos.html?app-update=*');
+ office.once('dialog',d=>d.accept());await office.click('#updateApp');await office.waitForURL(/app-update=/);await office.locator('#library').waitFor({state:'visible'});
+ assert.equal(await office.locator('#properties button').count(),1);assert.equal(await office.locator('#workspace').isVisible(),false);
+ assert.ok(new URL(office.url()).pathname==='/photos.html');
+ assert.deepEqual(errors,[]);console.log('PASS: mobile address-only creation, upload failure/retry, deduplication, office library, ZIP byte integrity, sign-out clearing, completion/reopen persistence, completed downloads, in-app sign-in, no website links, update/reload, canceled and offline updates preserve selections, no overflow or JS errors');
 }finally{await browser.close();server.close();}})().catch(e=>{console.error(e);server.close();process.exitCode=1;});
