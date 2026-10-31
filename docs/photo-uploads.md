@@ -8,7 +8,7 @@ Entry: `/photos.html`, or **Photos** immediately before Delete Property on a sav
 2. Enter the full property address. No BPO, RRR, client, analysis, subscription or valuation is required.
 3. Select existing photos, then tap **Upload photos**. Keep the page open and connected until complete. Retry failed photos without reselecting the successful ones.
 4. At the office, sign into the same account, open Photo Uploads, choose the address, and refresh if necessary.
-5. In desktop Chrome/Edge, **Save to PC folder** asks for a destination and creates a subfolder named for the address. Otherwise **Download ZIP**, then extract the address-named folder. Individual downloads are also available.
+5. On your PC, choose **Download All** or **Download Selected**, then extract the address-named ZIP folder. Choose a Dated option to enter a custom stamp date for JPG copies.
 
 ## Implementation
 
@@ -16,7 +16,7 @@ Entry: `/photos.html`, or **Photos** immediately before Delete Property on a sav
 - Access is server-managed in `photo_library_access`; only Jamie's confirmed Meloni Realty account is enrolled initially. RLS enforces both enrollment and account/property ownership. The client does not authorize by email. New accounts have no access until explicitly enrolled.
 - Original photo bytes are retained, including EXIF. Supported JPG, PNG, WebP, HEIC/HEIF; 25 MB per file. HEIC/HEIF originals download normally but browser previews are not guaranteed.
 - SHA-256 plus a sanitized filename gives deterministic object names. Retries check for a completed object after an error, without overwriting an original. Same-name photos with different bytes remain distinct; download names add a hash suffix.
-- Folder export writes one photo at a time. ZIP export is limited to 250 MB total to bound browser memory; use desktop folder export for larger libraries. A failed folder export may leave completed files; retry uses the same filenames.
+- ZIP exports are split into numbered archives at approximately 128 MiB of image bytes. There is no total photo-count cap. Allow multiple downloads in your browser for large sets. A failed export may leave completed archives; retry uses the same filenames.
 - Online foreground uploads only. No background/offline upload promise or service-worker cache of private content. Navigating away loses unuploaded selections, with a browser leave warning where supported.
 - Individual uploaded photos can be permanently deleted after confirmation, in active or completed sets. Original phone files are unaffected. Operational account deletion must remove objects via Storage API before deleting account identity. Recovery/retention inventories include both tables and the bucket. Database backups do not back up photo bytes; keep the field originals and office copies.
 - Manifest and independent authenticated web route leave room for a future Android Trusted Web Activity or native wrapper. Store packaging/review is a separate future release.
@@ -36,7 +36,7 @@ The photo app is self-contained: no main-website links, including at sign-in. Si
 
 The default screen is **Active properties**. Opening an address shows its upload screen with **Back to addresses**. After uploading, **Mark upload set completed** saves a completion timestamp and returns to the active list. The address moves to **Completed photos**, where originals remain available for viewing and desktop downloads. **Reopen for uploads** moves the set back to active. Existing addresses start active; completion never deletes files. One address represents one set in this version; reopening extends that same set.
 
-Phone-sized and installed app views hide download controls. Desktop browser views retain folder and ZIP downloads. Completion updates are restricted to the owning enabled account and only the completed_at column can be changed through this grant.
+Phone-sized and installed app views hide download controls. Desktop browser views offer original and dated ZIP downloads for all or selected photos. Completion updates are restricted to the owning enabled account and only the completed_at column can be changed through this grant.
 
 
 ## Updating the installed app
@@ -61,3 +61,18 @@ Only General BPO's Final PDF Package includes the optional **Include photos in f
 Selected JPG, PNG and WebP images are appended after the supporting PDFs, two per letter page with aspect ratio and orientation preserved. Report copies are reduced to at most 1800 pixels on the longest side; originals are untouched. HEIC/HEIF must be converted to JPG for report inclusion. Export with photos off never reads photo storage. Missing/deleted or unreadable selected images stop the export with instructions to reselect or omit them, rather than silently excluding evidence. An address change requires choosing photos again. The original BPO form fields remain editable.
 
 `node tests/bpo-photo-report-browser.cjs` tests the exact package-panel/export functions with a synthetic backend, including unchecked default, opt-out without storage reads, saved-card placement, selected appendices, editable BPO fields, missing-photo errors and sign-out. It renders a PDF proof into the OS temporary directory. The photo-browser regression also tests saved-address links, duplicate avoidance and preservation of completed state. No production records are modified.
+
+
+## Create without opening, capture dates and dated downloads
+
+**Create** adds the address, clears/refocuses the address input, and stays on the active address list for consecutive entry. Duplicate addresses report their existing active/completed location without opening them. Saved-property Photos links still intentionally open the requested address.
+
+Each caption shows **Taken: MM/DD/YY**, read lazily from the uploaded file's EXIF original/digitized date. Missing metadata displays **Not recorded**, never the upload timestamp. Camera calendar dates are not shifted by browser timezone. JPEG, PNG, HEIF and TIFF metadata use vendored exifr 7.1.3; WebP EXIF is unwrapped from its RIFF chunk.
+
+PC download controls are **Download All**, **Download Selected**, **Download All Dated**, and **Download Selected Dated**. Both selected controls use the same checkboxes as bulk deletion. Folder saving and individual download buttons are removed. Ordinary ZIP entries preserve uploaded bytes exactly. There is no total photo-count/download-size cap; archives are split at approximately 128 MiB of image bytes to bound memory (allow multiple downloads when the browser asks). Extract each archive into the same address folder.
+
+Dated downloads open an initially blank required date input each time. Cancel changes nothing. The entered date stamps the bottom right as MM/DD/YY, white with a dark outline, scaled to image dimensions. Copies are orientation-corrected JPGs at original dimensions, JPEG quality .95. HEIC conversion uses lazy-loaded heic2any 0.0.4 when native decoding is unavailable; unsupported/corrupt files fail visibly.
+
+Canvas re-encoding removes old EXIF/XMP/IPTC dates, thumbnails and other source metadata from the dated copies. Piexifjs 1.0.6 inserts DateTime, DateTimeOriginal and DateTimeDigitized with the entered date at 00:00:00, and Orientation=1. The ZIP entry date also uses the chosen date (clamped to ZIP's 1980–2107 timestamp range only). Uploaded originals, their metadata and caption dates remain unchanged. Original filename extensions are retained in the dated JPG filename to avoid collisions between same-stem inputs of different formats.
+
+`node tests/photo-dates-browser.cjs` checks consecutive creation, duplicate handling, real capture dates, unknown dates, timezone handling, blank required date/cancel, selected/all downloads, JPEG/PNG/WebP output, original-byte preservation, independent EXIF reads, orientation and corrupt-input failure. Set HEIC_FIXTURE to a local HEIC file for real HEIC conversion coverage. Visual stamp and gallery proofs go to the OS temporary directory. Runtime libraries and upstream license files are vendored under assets/vendor.
