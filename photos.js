@@ -1,7 +1,11 @@
 import {takenDate,stampPhoto,dateParts} from './photo-dates.mjs?v=1';
 import {BUCKET,safeName,validateFile,originalName,downloadName,listPhotos,uploadPhoto} from './photo-library.mjs';
 const $=id=>document.getElementById(id);
-const client=window.supabase?.createClient('https://lmaiqpkogmmsldkziggy.supabase.co','sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7');
+let embedded=false;try{embedded=parent!==window&&parent.location.origin===location.origin&&!!parent.PropertyThesisDesktopPhotos;}catch(_){}
+if(embedded)document.documentElement.classList.add('photos-embedded');
+window.PropertyThesisPhotos={canNavigate:()=>{if(busy){status('Wait for the current photo operation to finish.');return false;}if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Leave the selected photos? Photos not uploaded will need to be selected again.'))return false;return true;}};
+
+const client=window.PropertyThesisSession?.getClient()||window.supabase?.createClient('https://lmaiqpkogmmsldkziggy.supabase.co','sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7');
 let user=null,properties=[],selected=null,photos=[],queue=[],busy=false,epoch=0,installPrompt,listMode='active';
 const bucket=client?.storage.from(BUCKET);
 const selectedPhotos=new Set();
@@ -204,7 +208,7 @@ $('downloadAll').onclick=()=>run(()=>downloadPhotos([...photos]));
 $('downloadSelected').onclick=()=>run(()=>downloadPhotos(photos.filter(p=>selectedPhotos.has(p.name))));
 $('downloadAllDated').onclick=()=>askDownloadDate(false);
 $('downloadSelectedDated').onclick=()=>askDownloadDate(true);
-$('signout').onclick=()=>run(async()=>{const {error}=await client.auth.signOut();if(error)throw error;});
+$('signout').onclick=()=>run(async()=>{const {error}=await client.auth.signOut({scope:'local'});if(error)throw error;});
 addEventListener('beforeunload',e=>{if(busy||queue.some(x=>x.state!=='Uploaded'&&!x.invalid)){e.preventDefault();e.returnValue='';}});
 addEventListener('offline',()=>status('You are offline. Keep this page open and retry remaining uploads when connected.',true));
 addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;$('install').hidden=false;});

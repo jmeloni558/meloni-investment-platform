@@ -12,7 +12,7 @@
     const modal=document.createElement('dialog');modal.className='pt-photo-picker';modal.setAttribute('aria-label','Choose optional report photos');
     modal.innerHTML='<header><h2>Photos for the final BPO package</h2><button type="button" data-cancel>Cancel</button></header><p>Select the photos to append after the supporting documents. Photos are optional. JPG, PNG and WebP can be included; convert HEIC/HEIF to JPG first.</p><label>Property photo address<select data-album></select></label><div><a data-upload target="_blank" rel="noopener">Upload / manage photos</a> <button data-refresh type="button">Refresh photos</button></div><p role="status" aria-live="polite"></p><div class="pt-photo-picker-grid"></div><footer><span data-count>0 selected</span><button type="button" data-use>Use selected photos</button></footer>';
     const select=modal.querySelector('select'),grid=modal.querySelector('.pt-photo-picker-grid'),message=modal.querySelector('[role=status]'),use=modal.querySelector('[data-use]');
-    modal.querySelector('[data-upload]').href='photos.html?address='+encodeURIComponent(address);
+    modal.querySelector('[data-upload]').href='/photos?address='+encodeURIComponent(address);
     let rows=[],chosen=new Set(),albumId='',generation=0,closed=false;const observers=[];
     const disconnect=()=>observers.splice(0).forEach(o=>o.disconnect());
     const count=()=>modal.querySelector('[data-count]').textContent=chosen.size+' selected';
