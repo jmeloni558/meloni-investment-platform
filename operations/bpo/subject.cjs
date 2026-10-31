@@ -3,9 +3,10 @@
 const subjectRows=[['location','Location'],['site','Site / lot size'],['view','View'],['design','Design and appeal'],['quality','Construction quality'],['year','Year built'],['condition','Condition'],['rooms','Total rooms'],['beds','Bedrooms'],['baths','Bathrooms'],['gla','Gross living area (sq. ft.)'],['basement','Basement / finished area'],['utility','Functional utility'],['hvac','Heating / cooling'],['energy','Energy efficient items'],['garage','Garage / carport'],['porches','Porch / patio / deck'],['fireplace','Fireplace'],['fence','Fence'],['pool','Pool'],['other','Other']];
 function recentSale(v,now=new Date()) {
  const raw=String(v['sold.0.date']||'').trim();
- if(!/^(?:\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4})$/.test(raw))return false;
+ if(!/^(?:\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/(?:\d{2}|\d{4}))$/.test(raw))return false;
  const parts=raw.includes('/')?raw.split('/').map(Number):raw.split('-').map(Number);
- const [year,month,day]=raw.includes('/')?[parts[2],parts[0],parts[1]]:parts;
+ let [year,month,day]=raw.includes('/')?[parts[2],parts[0],parts[1]]:parts;
+ if(year<100)year+=year<70?2000:1900;
  const sale=new Date(Date.UTC(year,month-1,day));
  if(sale.getUTCFullYear()!==year||sale.getUTCMonth()!==month-1||sale.getUTCDate()!==day)return false;
  const cutoff=new Date(now);cutoff.setUTCFullYear(cutoff.getUTCFullYear()-3);cutoff.setUTCHours(0,0,0,0);

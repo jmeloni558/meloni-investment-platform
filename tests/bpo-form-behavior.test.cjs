@@ -18,8 +18,8 @@ test('subject price edits, source imports and PPSF remain independent',()=>{
 });
 test('room defaults follow beds but preserve source and manual counts',()=>{
  let v=C.recalculate({'sold.0.beds':'3','active.0.beds':'3','sold.1.beds':'2','sold.2.beds':'2','sold.2.rooms':'9'});
- assert.equal(v['sold.0.rooms'],'6');assert.equal(v['sold.1.rooms'],undefined);assert.equal(v['sold.2.rooms'],'9');
- v=C.recalculate({...v,'sold.1.beds':'4'});assert.equal(v['sold.1.rooms'],undefined);
+ assert.equal(v['sold.0.rooms'],'6');assert.equal(v['sold.1.rooms'],'5');assert.equal(v['sold.2.rooms'],'9');
+ v=C.recalculate({...v,'sold.1.beds':'4'});assert.equal(v['sold.1.rooms'],'7');
  v=C.recalculate({...v,'sold.1.rooms':'10','sold.1.beds':'5'});assert.equal(v['sold.1.rooms'],'10');
  v=C.applyAI(v,{fields:[{name:'sold.0.rooms',value:'8',path:'source',page:1,evidence:'8 rooms'}]}).values;assert.equal(v['sold.0.rooms'],'8');assert.equal(v['active.0.rooms'],'8');
 });
