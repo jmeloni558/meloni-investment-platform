@@ -20,6 +20,7 @@ function fitIssues(values,schema,font=validationFont){if(!font)return [];const o
 async function exportPDF(template,input,schema,recalculate,issues,concession){
  const v=recalculate(normalize(input));const errors=issues(v);if(errors.length)throw Error(errors[0]);
  const doc=await PDFDocument.load(template),form=doc.getForm(),font=await doc.embedFont(StandardFonts.Helvetica);if(doc.getPageCount()!==2)throw Error('The approved BPO form must contain two pages.');
+ if(v._clientTemplate!=='rrr')for(const f of schema.filter(f=>/^(sold|active)\.0\.site$/.test(f.name)))doc.getPage(f.page).drawText(v._lotUnit==='acres'?'(acres)':'(sq. ft.)',{x:48,y:f.y+4,size:7.5,font});
  const filled=new Set();
  for(const f of schema){const n=f.pdfName;if(filled.has(n))continue;filled.add(n);let value=v[f.name];const control=form.getField(n);
  if(f.option){const selected=schema.filter(x=>x.pdfName===n&&v[x.name]===true);if(selected.length)control.select(selected[0].option);else control.clear();form.markFieldAsClean(control.ref);continue;}
