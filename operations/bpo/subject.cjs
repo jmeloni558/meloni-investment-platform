@@ -18,7 +18,7 @@ function defaults(input){
  if(input._clientTemplate==='rrr')return {...input};
  const v={...input,_generalDefaults:{...(input._generalDefaults||{})}};
  for(const p of ['sold','active']){
-  for(let i=0;i<4;i++)if(v[`${p}.${i}.tenure`]===undefined||v[`${p}.${i}.tenure`]==='')v[`${p}.${i}.tenure`]='Fee Simple';
+  for(let i=0;i<4;i++)if(v[`${p}.${i}.tenure`]===undefined||v[`${p}.${i}.tenure`]===''){const key=`${p}.${i}.tenure`;v[key]='Fee Simple';v._generalDefaults[key]='Fee Simple';}
   const key=p+'.0.utility';if(v[key]===undefined){v[key]='Average';v._generalDefaults[key]='Average';}
  }
  return v;

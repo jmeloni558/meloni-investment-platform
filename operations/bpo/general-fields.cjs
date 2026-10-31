@@ -17,6 +17,7 @@ function saleDate(value){
 }
 function storyDesign(value,evidence=''){
  const s=String(value??'').trim();
+ if(/^condo(?:minium)?$/i.test(s))return 'Condo';
  const text=s+' '+evidence;
  const one=/\b(?:one|1|single)[ -]?(?:stor(?:y|ies)|level)\b|\b(?:stories|levels|floors)\s*:\s*(?:1|one)\b/i.test(text);
  const two=/\b(?:two|2)[ -]?(?:stor(?:y|ies)|level)\b|\b(?:stories|levels|floors)\s*:\s*(?:2|two)\b/i.test(text);
