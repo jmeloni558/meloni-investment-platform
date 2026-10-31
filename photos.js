@@ -1,9 +1,22 @@
-import {BUCKET,MAX_BYTES,safeName,validateFile,originalName,downloadName,listPhotos,uploadPhoto} from './photo-library.mjs';
+import {takenDate,stampPhoto,dateParts} from './photo-dates.mjs?v=1';
+import {BUCKET,safeName,validateFile,originalName,downloadName,listPhotos,uploadPhoto} from './photo-library.mjs';
 const $=id=>document.getElementById(id);
 const client=window.supabase?.createClient('https://lmaiqpkogmmsldkziggy.supabase.co','sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7');
 let user=null,properties=[],selected=null,photos=[],queue=[],busy=false,epoch=0,installPrompt,listMode='active';
 const bucket=client?.storage.from(BUCKET);
 const selectedPhotos=new Set();
+const captureDates=new Map();let captionQueue=[],captionRunning=0,captionObservers=[];
+function clearCaptions(){captionObservers.forEach(o=>o.disconnect());captionObservers=[];captionQueue=[];}
+function loadCaption(card,caption,path,version){
+ const observer=new IntersectionObserver(entries=>{if(!entries.some(e=>e.isIntersecting))return;observer.disconnect();captionQueue.push(async()=>{
+  if(version!==epoch||!card.isConnected)return;
+  try{let date=captureDates.get(path);if(!captureDates.has(path)){const {data,error}=await bucket.download(path);if(error)throw error;date=await takenDate(data);if(version!==epoch)return;captureDates.set(path,date);}
+   if(card.isConnected)caption.textContent='Taken: '+(date||'Not recorded');
+  }catch(_){if(version===epoch&&card.isConnected)caption.textContent='Taken: Could not read date — refresh to retry';}
+ });drainCaptions();});captionObservers.push(observer);observer.observe(card);
+}
+function drainCaptions(){while(captionRunning<2&&captionQueue.length){const job=captionQueue.shift();captionRunning++;job().finally(()=>{captionRunning--;drainCaptions();});}}
+
 const status=(message,error=false)=>{$('status').textContent=message;$('status').classList.toggle('error',error);};
 function check(version){if(version!==epoch || !user)throw Error('Your session changed. Sign in again to continue.');}
 function setBusy(value){busy=value;$('updateApp').disabled=value;document.querySelectorAll('#library button,#library input').forEach(el=>el.disabled=value);$('upload').disabled=value||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);renderPhotoSelection();}
@@ -31,13 +44,13 @@ async function openProperty(p){
 async function refreshPhotos(){
   const version=epoch,p=selected;if(!p)return;const prefix=user.id+'/'+p.id;
   status('Loading photos…');const rows=await listPhotos(bucket,user.id+'/'+p.id);check(version);if(p.id!==selected?.id)return;photos=rows;for(const name of selectedPhotos){if(!photos.some(p=>p.name===name))selectedPhotos.delete(name);}
-  $('photos').replaceChildren();$('count').textContent=photos.length+' photo'+(photos.length===1?'':'s');
+  clearCaptions();$('photos').replaceChildren();$('count').textContent=photos.length+' photo'+(photos.length===1?'':'s');
   for(const photo of photos){
     const card=node('article',null,'photo');card.dataset.photoName=photo.name;
     const label=node('label',null,'photo-select'),checkbox=node('input');checkbox.type='checkbox';checkbox.checked=selectedPhotos.has(photo.name);checkbox.disabled=busy;checkbox.setAttribute('aria-label','Select '+originalName(photo.name));checkbox.onchange=()=>{if(checkbox.checked)selectedPhotos.add(photo.name);else selectedPhotos.delete(photo.name);renderPhotoSelection();};label.append(checkbox,node('span','Select photo'));card.append(label);
     if(/\.(heic|heif)$/i.test(photo.name)){card.append(node('div','HEIC / HEIF photo','placeholder'));}
     else {const img=node('img');img.alt=originalName(photo.name);img.loading='lazy';card.append(img);const observer=new IntersectionObserver(entries=>{if(!entries.some(e=>e.isIntersecting))return;observer.disconnect();if(version!==epoch)return;bucket.createSignedUrl(prefix+'/'+photo.name,300).then(({data,error})=>{if(version!==epoch)return;if(error){img.replaceWith(node('div','Preview unavailable','placeholder'));return;}img.src=data.signedUrl;}).catch(()=>{img.replaceWith(node('div','Preview unavailable','placeholder'));});});observer.observe(img);}
-    card.append(node('p',originalName(photo.name)));
+    const caption=node('div',null,'photo-caption'),date=node('p','Taken: Reading date…','taken-date');caption.append(node('p',originalName(photo.name)),date);card.append(caption);
     const remove=node('button','Delete photo','delete-photo');
     remove.setAttribute('aria-label','Delete '+originalName(photo.name));
     remove.onclick=()=>run(async()=>{
@@ -50,7 +63,7 @@ async function refreshPhotos(){
       status('Photo deleted. You can select and upload a replacement.');
     });
     card.append(remove);
-    const download=node('button','Download','secondary desktop-download');download.onclick=()=>run(async()=>{const blob=await getPhoto(photo,epoch);save(blob,downloadName(photo.name));status('Photo downloaded.');});card.append(download);$('photos').append(card);
+    $('photos').append(card);loadCaption(card,date,prefix+'/'+photo.name,version);
   }
   renderPhotoSelection();
   status(photos.length?'Photos are up to date.':'This property is ready. Select photos to upload.');
@@ -62,6 +75,8 @@ function renderPhotoSelection(){
   $('deleteSelectedPhotos').disabled=busy||!selectedPhotos.size;
   $('clearPhotoSelection').disabled=busy||!selectedPhotos.size;
   $('selectAllPhotos').disabled=busy||!photos.length;
+  for(const id of ['downloadAll','downloadAllDated'])$(id).disabled=busy||!photos.length;
+  for(const id of ['downloadSelected','downloadSelectedDated'])$(id).disabled=busy||!selectedPhotos.size;
   document.querySelectorAll('.photo').forEach(card=>{card.querySelector('input[type=checkbox]').checked=selectedPhotos.has(card.dataset.photoName);});
 }
 function removeConfirmedPhotos(names){
@@ -97,15 +112,15 @@ async function getPhoto(photo,version){check(version);const {data,error}=await b
 function save(blob,name){const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 $('newProperty').onsubmit=e=>{e.preventDefault();run(async()=>{
   const address=$('address').value.trim().replace(/\s+/g,' ');if(!address)throw Error('Enter a property address.');
-  const existing=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());if(existing){await openProperty(existing);return;}
+  const existing=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());if(existing){status('This address already exists'+(existing.completed_at?' in Completed photos':' in Active properties')+'.');$('address').value='';return;}
   const version=epoch;const {data,error}=await client.from('photo_properties').insert({user_id:user.id,address}).select('id,address,created_at,completed_at').single();check(version);
-  if(error){if(error.code==='23505'){await loadProperties();const p=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());if(p){await openProperty(p);return;}}throw error;}
-  await loadProperties();await openProperty(data);$('address').value='';
-});};
+  if(error){if(error.code==='23505'){await loadProperties();const p=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());if(p){status('This address already exists'+(p.completed_at?' in Completed photos':' in Active properties')+'.');$('address').value='';return;}}throw error;}
+  await loadProperties();$('address').value='';$('search').value='';renderProperties();status('Property created. Enter another address or choose one from the list.');
+}).finally(()=>$('address').focus());};
 
 function showList(mode=listMode){
   if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Return to addresses without uploading the selected photos?'))return;
-  selectedPhotos.clear();listMode=mode;selected=null;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();
+  clearCaptions();selectedPhotos.clear();listMode=mode;selected=null;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();
   $('workspace').hidden=true;$('addressList').hidden=false;$('newProperty').hidden=mode==='completed';
   $('listTitle').textContent=mode==='completed'?'Completed photos':'Active properties';
   $('activeTab').setAttribute('aria-pressed',String(mode==='active'));$('completedTab').setAttribute('aria-pressed',String(mode==='completed'));
@@ -137,22 +152,33 @@ $('upload').onclick=()=>run(async()=>{
   await refreshPhotos();status(uploaded+' uploaded. '+(failures?failures+' failed. Tap Retry remaining photos.':'Uploads complete.'),!!failures);renderQueue();
 });
 $('refresh').onclick=()=>run(refreshPhotos);
-$('folder').hidden=!('showDirectoryPicker' in window);
-$('folder').onclick=()=>run(async()=>{
-  if(!photos.length)throw Error('There are no photos to download yet.');
-  let root;try{root=await window.showDirectoryPicker({mode:'readwrite'});}catch(e){if(e.name==='AbortError')return;throw e;}
-  const version=epoch,folder=await root.getDirectoryHandle(safeName(selected.address),{create:true});let done=0;
-  for(const photo of photos){status('Saving photo '+(done+1)+' of '+photos.length+'…');const blob=await getPhoto(photo,version);const handle=await folder.getFileHandle(downloadName(photo.name),{create:true});const writer=await handle.createWritable();try{await writer.write(blob);await writer.close();}catch(e){await writer.abort().catch(()=>{});throw e;}done++;}
-  status(done+' photos saved in '+safeName(selected.address)+'.');
-});
-$('zip').onclick=()=>run(async()=>{
-  if(!photos.length)throw Error('There are no photos to download yet.');
-  if(photos.reduce((sum,p)=>sum+Number(p.metadata?.size||MAX_BYTES),0)>250*1024*1024)throw Error('This library is too large for one ZIP. Use Save to PC folder in Chrome or Edge, or download photos individually.');
-  if(!window.JSZip)throw Error('The ZIP tool did not load. Refresh the page and try again.');
-  const version=epoch,zip=new window.JSZip(),name=safeName(selected.address),folder=zip.folder(name);let done=0;
-  for(const photo of photos){status('Preparing photo '+(++done)+' of '+photos.length+'…');folder.file(downloadName(photo.name),await getPhoto(photo,version));}
-  const blob=await zip.generateAsync({type:'blob',compression:'STORE'});check(version);save(blob,name+'.zip');status('ZIP downloaded. Extract it to access the '+name+' folder.');
-});
+let datedRequest=null;
+function askDownloadDate(onlySelected){
+ const items=photos.filter(photo=>!onlySelected||selectedPhotos.has(photo.name));if(busy||!items.length)return;
+ datedRequest={items,version:epoch,property:selected.id};$('stampDate').value='';$('dateDownloadCount').textContent=items.length+' photo'+(items.length===1?'':'s')+' selected. Enter the date you want; no date is preselected.';$('dateDownloadDialog').showModal();$('stampDate').focus();
+}
+$('cancelDateDownload').onclick=()=>{datedRequest=null;$('dateDownloadDialog').close();};
+$('dateDownloadDialog').addEventListener('cancel',()=>datedRequest=null);
+$('dateDownloadForm').onsubmit=e=>{e.preventDefault();const request=datedRequest,date=$('stampDate').value;if(!request)return;try{dateParts(date);check(request.version);if(selected?.id!==request.property)throw Error('Reopen the property and try again.');}catch(error){status(error.message,true);return;}$('dateDownloadDialog').close();datedRequest=null;run(()=>downloadPhotos(request.items,date));};
+async function downloadPhotos(items,date=''){
+ if(!items.length)throw Error('Select photos to download.');
+ if(!window.JSZip)throw Error('The ZIP tool did not load. Refresh the page and try again.');
+ const version=epoch,name=safeName(selected.address),limit=128*1024*1024;let zip=new window.JSZip(),bytes=0,part=1,done=0;
+ const flush=async(final)=>{const blob=await zip.generateAsync({type:'blob',compression:'STORE'});check(version);save(blob,name+(date?'-dated-'+date:'')+(part>1||!final?'-part-'+part:'')+'.zip');part++;zip=new window.JSZip();bytes=0;};
+ for(const photo of items){
+  check(version);status('Preparing '+(date?'dated ':'')+'photo '+(done+1)+' of '+items.length+'…');
+  let blob=await getPhoto(photo,version),filename=downloadName(photo.name);
+  if(date){blob=await stampPhoto(blob,date,originalName(photo.name));check(version);filename=filename+'-dated-'+date+'.jpg';}
+  if(bytes&&bytes+blob.size>limit)await flush(false);
+  const options={};if(date){const d=dateParts(date);options.date=new Date(Date.UTC(Math.min(2107,Math.max(1980,d.year)),d.month-1,d.day));}
+  zip.folder(name).file(filename,blob,options);bytes+=blob.size;done++;
+ }
+ await flush(true);status(done+' '+(date?'dated JPG copies':'original photos')+' downloaded. Extract the ZIP'+(part>2?' files':' file')+' to access your photos.');
+}
+$('downloadAll').onclick=()=>run(()=>downloadPhotos([...photos]));
+$('downloadSelected').onclick=()=>run(()=>downloadPhotos(photos.filter(p=>selectedPhotos.has(p.name))));
+$('downloadAllDated').onclick=()=>askDownloadDate(false);
+$('downloadSelectedDated').onclick=()=>askDownloadDate(true);
 $('signout').onclick=()=>run(async()=>{const {error}=await client.auth.signOut();if(error)throw error;});
 addEventListener('beforeunload',e=>{if(busy||queue.some(x=>x.state!=='Uploaded'&&!x.invalid)){e.preventDefault();e.returnValue='';}});
 addEventListener('offline',()=>status('You are offline. Keep this page open and retry remaining uploads when connected.',true));
@@ -160,7 +186,7 @@ addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPro
 $('install').onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;$('install').hidden=true;}};
 async function sessionChanged(session){
   const next=session?.user;if(next?.id===user?.id&&user)return;
-  selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
+  clearCaptions();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
   $('files').value='';$('photos').replaceChildren();$('properties').replaceChildren();$('queue').replaceChildren();$('account').textContent='';$('library').hidden=true;$('workspace').hidden=true;$('addressList').hidden=false;$('signedOut').hidden=!!user;
   if(!user){initPhotoCaptcha();status('Sign in to upload and download your property photos.');return;}
   try{const {data,error}=await client.rpc('photo_library_enabled');check(version);if(error)throw error;if(!data){$('signedOut').hidden=false;initPhotoCaptcha();status('Photo Uploads is currently available only to the pilot account.',true);return;}$('library').hidden=false;$('password').value='';$('account').textContent=user.email;await loadProperties();showList('active');await openRequestedAddress();}catch(e){if(version===epoch)status(e.message,true);}
