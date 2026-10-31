@@ -89,3 +89,9 @@ body.pt-bpo-active main.shell > :not(#appNavShell):not(#ptBpoWorkspace):not(.foo
 #ptBpoWorkspace .pt-bpo-compact .pt-bpo-comp-editor{margin:8px 0}
 #ptBpoWorkspace .pt-bpo-compact .pt-bpo-comp-editor summary{padding:6px 0;font-weight:600}
 @media(max-width:700px){#ptBpoWorkspace .pt-bpo-compact input:not([type=checkbox]):not([type=file]),#ptBpoWorkspace .pt-bpo-compact select{height:40px;min-height:40px;font-size:16px}}
+
+/* General BPO: two balanced rows of four, with readable mobile layouts. */
+.pt-bpo-workflow-shell .pt-bpo-workflow[data-step-count="8"]{grid-template-columns:repeat(4,minmax(0,1fr));width:100%;max-width:1240px;box-sizing:border-box;margin:0 auto}
+.pt-bpo-client-choice [data-client-form-name]{display:block;padding:9px 0;color:#123b56}
+@media(max-width:900px){.pt-bpo-workflow-shell .pt-bpo-workflow[data-step-count="8"]{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.pt-bpo-workflow-shell .pt-bpo-workflow[data-step-count="8"]{grid-template-columns:1fr}}
