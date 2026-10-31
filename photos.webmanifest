@@ -1,1 +1,26 @@
-{"id":"/photos.html","name":"PropertyThesis Photos","short_name":"PT Photos","description":"Upload property photos in the field and download them at the office.","start_url":"/photos.html","scope":"/","display":"standalone","background_color":"#f3f6f5","theme_color":"#123c42","prefer_related_applications":false,"icons":[{"src":"/assets/photo-icon-192.png","sizes":"192x192","type":"image/png"},{"src":"/assets/photo-icon-512.png","sizes":"512x512","type":"image/png"}]}
+{
+  "id": "/photos.html",
+  "name": "PT Photos",
+  "short_name": "PT Photos",
+  "description": "Upload property photos in the field and download them at the office.",
+  "start_url": "/photos.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f6f5",
+  "theme_color": "#062c4d",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable",
+      "src": "/assets/pt-photos-brand-192.png"
+    },
+    {
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable",
+      "src": "/assets/pt-photos-brand-512.png"
+    }
+  ]
+}
