@@ -7,6 +7,16 @@ do $$ begin
 end $$;
 insert into public.photo_properties(id,user_id,address) values('00000000-0000-4000-8000-000000000001',auth.uid(),'Photo library transactional test');
 insert into storage.objects(bucket_id,name,owner) values('property-photos',auth.uid()::text||'/00000000-0000-4000-8000-000000000001/test.jpg',auth.uid());
+update public.photo_properties set completed_at=now() where id='00000000-0000-4000-8000-000000000001';
+do $$ begin
+ if not exists(select 1 from public.photo_properties where id='00000000-0000-4000-8000-000000000001' and completed_at is not null) then raise exception 'Completion not saved';end if;
+ if not exists(select 1 from storage.objects where bucket_id='property-photos' and name like '%00000000-0000-4000-8000-000000000001%') then raise exception 'Completed photos not readable';end if;
+ begin
+  update public.photo_properties set user_id='00000000-0000-4000-8000-000000000002' where id='00000000-0000-4000-8000-000000000001';
+  raise exception 'Ownership update allowed';
+ exception when insufficient_privilege then null;end;
+end $$;
+update public.photo_properties set completed_at=null where id='00000000-0000-4000-8000-000000000001';
 do $$ begin
  if not exists(select 1 from public.photo_properties where id='00000000-0000-4000-8000-000000000001') then raise exception 'Owner cannot read property';end if;
  begin
@@ -19,6 +29,8 @@ select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000
 set local role authenticated;
 do $$ begin
  if public.photo_library_enabled() then raise exception 'Non-pilot access allowed';end if;
+ update public.photo_properties set completed_at=now() where id='00000000-0000-4000-8000-000000000001';
+ if found then raise exception 'Cross-account completion allowed';end if;
  if exists(select 1 from public.photo_properties where id='00000000-0000-4000-8000-000000000001') then raise exception 'Cross-account read allowed';end if;
  if exists(select 1 from storage.objects where bucket_id='property-photos') then raise exception 'Cross-account photos visible';end if;
  begin
