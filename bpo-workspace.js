@@ -5,7 +5,7 @@ let allowed=false,checkedUser=null,checking=false,lastCheck=0,dialog=null,record
 const user=()=>{try{return cloudUser?.id||null;}catch(_){return null;}};
 const client=()=>{try{return cloudClient;}catch(_){return null;}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function core(){return corePromise||(corePromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='bpo-core.rrr-216fae4d7a32.js?release=summary-qa';s.onload=async()=>{try{await window.PropertyThesisBPOCore.prepareValidation();resolve(window.PropertyThesisBPOCore);}catch(e){corePromise=null;reject(e);}};s.onerror=()=>{corePromise=null;reject(Error('Could not load the BPO editor.'));};document.head.append(s);}));}
+function core(){return corePromise||(corePromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='bpo-core.condo-v1.js';s.onload=async()=>{try{await window.PropertyThesisBPOCore.prepareValidation();resolve(window.PropertyThesisBPOCore);}catch(e){corePromise=null;reject(e);}};s.onerror=()=>{corePromise=null;reject(Error('Could not load the BPO editor.'));};document.head.append(s);}));}
 async function access(){if(!user())return false;const id=user();const {data,error}=await client().rpc('bpo_enabled');return !error&&data===true&&id===user();}
 function status(message){dialog?.querySelectorAll('[data-status],[data-subject-status]').forEach(n=>n.textContent=message);}
 function modified(){dirty=true;status('Unsaved changes');}
@@ -163,7 +163,7 @@ async function refreshProximity(token=epoch){
   if(token!==epoch||id!==user())throw Error('Cancelled');
   status('Calculating straight-line comparable distances...');
   const {data,error}=await client().functions.invoke('rentcast-property-lookup',{body:{address}});
-  if(error||data?.error)throw Error('Address lookup unavailable');return data;
+  if(error||data?.error){const failure=Error('Address lookup unavailable');failure.status=data?.status||error?.context?.status;throw failure;}return data;
  });
  if(token!==epoch||id!==user()||!dialog)return false;
  values=result.values;if(JSON.stringify(values)!==before)dirty=true;showValues();renderAI();

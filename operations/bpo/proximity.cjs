@@ -6,6 +6,9 @@ function words(s){return String(s||'').toLowerCase().replace(/#/g,' unit ').repl
 function addressKey(address){const p=splitAddress(address);if(!p.city||!p.state||!p.zip||!/^\d+[a-z]?\s/i.test(p.address||''))return '';return [words(p.address),words(p.city),p.state.toUpperCase(),p.zip.slice(0,5)].join('|');}
 function fullAddress(v,p){const street=v[p+'.address']||'';if(splitAddress(street).city)return street;return [street,v[p+'.city'],[v[p+'.state'],v[p+'.zip']].filter(Boolean).join(' ')].filter(Boolean).join(', ');}
 function subjectAddress(v){return v.field_0008||fullAddress(v,'sold.0');}
+// Some condo MLS records repeat the street number as the unit number. Providers
+// may index that same property without the redundant unit. Never strip other units.
+function redundantUnitAddress(address){const p=splitAddress(address),m=words(p.address).match(/^(\d+[a-z]?)\s+(.+?)\s+unit\s+([a-z0-9]+)$/);return addressKey(address)&&m&&m[1]===m[3]?[m[1]+' '+m[2],p.city,p.state+' '+p.zip].join(', '):null;}
 function coordinate(value,min,max){if(value===null||value===undefined||typeof value==='boolean'||String(value).trim()==='')return null;const n=Number(value);return Number.isFinite(n)&&n>=min&&n<=max?n:null;}
 function point(p){if(!p)return null;const latitude=coordinate(p.latitude,-90,90),longitude=coordinate(p.longitude,-180,180);return latitude===null||longitude===null?null:{latitude,longitude};}
 function matchedPoint(address,response){
@@ -29,10 +32,17 @@ async function resolveProximity(input,lookup){
  if(!prefixes.some(p=>input[p+'.address']))return {values:applyProximity({...input,_proximity:{coordinates}}),warnings};
  const seen=new Set();
  for(const address of addresses){const key=addressKey(address);if(!key){warnings.push('Enter a full street address, city, state and ZIP to calculate proximity: '+(address||'subject'));continue;}if(seen.has(key))continue;seen.add(key);if(point(coordinates[key]))continue;
-  try{const response=await lookup(address),p=matchedPoint(address,response);if(p)coordinates[key]=p;else warnings.push('Proximity left blank: no unique matching coordinates for '+address+'.');}catch{warnings.push('Proximity left blank: address lookup unavailable for '+address+'.');}
+  let p=null,failure=null;
+  try{p=matchedPoint(address,await lookup(address));}catch(e){failure=e;}
+  const fallback=redundantUnitAddress(address);
+  if(!p&&fallback&&(!failure||Number(failure.status)===404)){
+   try{p=matchedPoint(fallback,await lookup(fallback));if(p)p={...p,lookupAddress:fallback,matchMethod:'duplicate-unit-number'};failure=null;}catch(e){failure=e;}
+  }
+  if(p)coordinates[key]=p;
+  else warnings.push('Proximity left blank: '+(failure?(Number(failure.status)===404?'address not found for ':'address lookup unavailable for '):'no unique matching coordinates for ')+address+'.');
  }
  // Retain only coordinates for the current subject and comparable addresses.
  const current=Object.fromEntries(Object.entries(coordinates).filter(([key])=>seen.has(key)));
  return {values:applyProximity({...input,_proximity:{method:'straight-line',units:'miles',coordinates:current,warnings}}),warnings};
 }
-module.exports={addressKey,matchedPoint,straightLineMiles,formatMiles,applyProximity,resolveProximity};
+module.exports={addressKey,matchedPoint,straightLineMiles,formatMiles,applyProximity,resolveProximity,redundantUnitAddress};
