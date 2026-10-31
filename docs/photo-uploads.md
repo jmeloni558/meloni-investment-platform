@@ -18,7 +18,7 @@ Entry: `/photos.html`, or **Photo Uploads** in the signed-in website toolbar for
 - SHA-256 plus a sanitized filename gives deterministic object names. Retries check for a completed object after an error, without overwriting an original. Same-name photos with different bytes remain distinct; download names add a hash suffix.
 - Folder export writes one photo at a time. ZIP export is limited to 250 MB total to bound browser memory; use desktop folder export for larger libraries. A failed folder export may leave completed files; retry uses the same filenames.
 - Online foreground uploads only. No background/offline upload promise or service-worker cache of private content. Navigating away loses unuploaded selections, with a browser leave warning where supported.
-- No deletion UI in this first version. Operational account deletion must remove objects via Storage API before deleting account identity. Recovery/retention inventories include both tables and the bucket. Database backups do not back up photo bytes; keep the field originals and office copies.
+- Individual uploaded photos can be permanently deleted after confirmation, in active or completed sets. Original phone files are unaffected. Operational account deletion must remove objects via Storage API before deleting account identity. Recovery/retention inventories include both tables and the bucket. Database backups do not back up photo bytes; keep the field originals and office copies.
 - Manifest and independent authenticated web route leave room for a future Android Trusted Web Activity or native wrapper. Store packaging/review is a separate future release.
 
 ## Verification
@@ -44,3 +44,5 @@ Phone-sized and installed app views hide download controls. Desktop browser view
 Tap **Update app** in the header. It checks the live photo page without using the browser cache, then reopens it using a fresh URL. It stays inside Photo Uploads, preserves the signed-in session and cloud photos, and returns to the address list. The button is disabled while uploads/downloads or other library operations run. Pending selected photos require confirmation; canceling or a failed/offline update keeps the selection. Keep versioned CSS/JS entry URLs current with every release; bump imported module URLs too when their contents change.
 
 To receive this button the first time, open the photo page once with a fresh query string (for example photos.html?refresh=update-button), then reopen the installed app. No reinstall is required.
+
+There is no application-imposed photo-count limit per selection or property. The queue processes every selected valid file sequentially; object listing is paginated until exhausted. Device resources, connectivity and available backend storage still apply. Delete photo removes only the chosen object through the authenticated Storage API; failed/unconfirmed deletes retain the card, and RLS enforces account and property ownership.
