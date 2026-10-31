@@ -9,3 +9,6 @@
 header{align-items:center}#updateApp{background:transparent;color:white;border-color:#8eb5b1;white-space:nowrap;font-size:13px;min-height:40px;padding:8px 12px}
 
 .delete-photo{background:white;color:#9c3025;border-color:#c88178}
+
+.photo-select{display:flex;align-items:center;gap:9px;padding:10px;min-height:44px;cursor:pointer}.photo-select input{width:22px;height:22px;margin:0;accent-color:#145d54}.photo:has(input:checked){outline:2px solid #145d54;background:#edf6f1}#photoSelection{margin-bottom:18px;align-items:center}#photoSelectionCount{font-size:14px}
+.bulk-delete{background:white;color:#9c3025;border-color:#c88178}

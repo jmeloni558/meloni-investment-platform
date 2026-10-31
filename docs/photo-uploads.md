@@ -46,3 +46,7 @@ Tap **Update app** in the header. It checks the live photo page without using th
 To receive this button the first time, open the photo page once with a fresh query string (for example photos.html?refresh=update-button), then reopen the installed app. No reinstall is required.
 
 There is no application-imposed photo-count limit per selection or property. The queue processes every selected valid file sequentially; object listing is paginated until exhausted. Device resources, connectivity and available backend storage still apply. Delete photo removes only the chosen object through the authenticated Storage API; failed/unconfirmed deletes retain the card, and RLS enforces account and property ownership.
+
+## Delete multiple photos
+
+Use each photo checkbox, or Select all, then Delete selected. One confirmation names the property and selected count. Clear selection cancels the selection without deleting. This works in active and completed sets on phone and PC. Large selections are sent in requests of at most 100 objects, with no overall selection cap. Only server-confirmed removals leave the gallery; failed or unconfirmed photos stay selected for retry. Selecting a different property, returning to the list or signing out clears selection. Phone originals are unaffected.

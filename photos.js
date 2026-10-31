@@ -3,9 +3,10 @@ const $=id=>document.getElementById(id);
 const client=window.supabase?.createClient('https://lmaiqpkogmmsldkziggy.supabase.co','sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7');
 let user=null,properties=[],selected=null,photos=[],queue=[],busy=false,epoch=0,installPrompt,listMode='active';
 const bucket=client?.storage.from(BUCKET);
+const selectedPhotos=new Set();
 const status=(message,error=false)=>{$('status').textContent=message;$('status').classList.toggle('error',error);};
 function check(version){if(version!==epoch || !user)throw Error('Your session changed. Sign in again to continue.');}
-function setBusy(value){busy=value;$('updateApp').disabled=value;document.querySelectorAll('#library button,#library input').forEach(el=>el.disabled=value);$('upload').disabled=value||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);}
+function setBusy(value){busy=value;$('updateApp').disabled=value;document.querySelectorAll('#library button,#library input').forEach(el=>el.disabled=value);$('upload').disabled=value||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);renderPhotoSelection();}
 function node(tag,text,className){const el=document.createElement(tag);if(text)el.textContent=text;if(className)el.className=className;return el;}
 function renderProperties(){
   const search=$('search').value.trim().toLowerCase();$('properties').replaceChildren();
@@ -25,14 +26,15 @@ async function loadProperties(){
 }
 async function openProperty(p){
   if(queue.some(x=>x.state!=='Uploaded')&&!confirm('Leave the selected photos? Photos not uploaded will need to be selected again.'))return;
-  selected=p;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();$('workspace').hidden=false;$('addressList').hidden=true;$('uploadControls').hidden=!!p.completed_at;$('complete').hidden=!!p.completed_at;$('reopen').hidden=!p.completed_at;$('completedNote').hidden=!p.completed_at;$('propertyTitle').textContent=p.address;renderProperties();await refreshPhotos();$('propertyTitle').focus();
+  selectedPhotos.clear();selected=p;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();$('workspace').hidden=false;$('addressList').hidden=true;$('uploadControls').hidden=!!p.completed_at;$('complete').hidden=!!p.completed_at;$('reopen').hidden=!p.completed_at;$('completedNote').hidden=!p.completed_at;$('propertyTitle').textContent=p.address;renderProperties();await refreshPhotos();$('propertyTitle').focus();
 }
 async function refreshPhotos(){
   const version=epoch,p=selected;if(!p)return;const prefix=user.id+'/'+p.id;
-  status('Loading photos…');const rows=await listPhotos(bucket,user.id+'/'+p.id);check(version);if(p.id!==selected?.id)return;photos=rows;
+  status('Loading photos…');const rows=await listPhotos(bucket,user.id+'/'+p.id);check(version);if(p.id!==selected?.id)return;photos=rows;for(const name of selectedPhotos){if(!photos.some(p=>p.name===name))selectedPhotos.delete(name);}
   $('photos').replaceChildren();$('count').textContent=photos.length+' photo'+(photos.length===1?'':'s');
   for(const photo of photos){
-    const card=node('article',null,'photo');
+    const card=node('article',null,'photo');card.dataset.photoName=photo.name;
+    const label=node('label',null,'photo-select'),checkbox=node('input');checkbox.type='checkbox';checkbox.checked=selectedPhotos.has(photo.name);checkbox.disabled=busy;checkbox.setAttribute('aria-label','Select '+originalName(photo.name));checkbox.onchange=()=>{if(checkbox.checked)selectedPhotos.add(photo.name);else selectedPhotos.delete(photo.name);renderPhotoSelection();};label.append(checkbox,node('span','Select photo'));card.append(label);
     if(/\.(heic|heif)$/i.test(photo.name)){card.append(node('div','HEIC / HEIF photo','placeholder'));}
     else {const img=node('img');img.alt=originalName(photo.name);img.loading='lazy';card.append(img);const observer=new IntersectionObserver(entries=>{if(!entries.some(e=>e.isIntersecting))return;observer.disconnect();if(version!==epoch)return;bucket.createSignedUrl(prefix+'/'+photo.name,300).then(({data,error})=>{if(version!==epoch)return;if(error){img.replaceWith(node('div','Preview unavailable','placeholder'));return;}img.src=data.signedUrl;}).catch(()=>{img.replaceWith(node('div','Preview unavailable','placeholder'));});});observer.observe(img);}
     card.append(node('p',originalName(photo.name)));
@@ -44,16 +46,53 @@ async function refreshPhotos(){
       const {data,error}=await bucket.remove([prefix+'/'+photo.name]);check(version);
       if(error)throw Error('Photo could not be deleted: '+error.message);
       if(!data?.length)throw Error('Deletion could not be confirmed. Refresh photos and try again.');
-      photos=photos.filter(item=>item.name!==photo.name);card.remove();
-      if(!queue.some(item=>item.state!=='Uploaded'&&!item.invalid)){queue=[];$('files').value='';renderQueue();}
-      $('count').textContent=photos.length+' photo'+(photos.length===1?'':'s');
+      removeConfirmedPhotos([photo.name]);
       status('Photo deleted. You can select and upload a replacement.');
     });
     card.append(remove);
     const download=node('button','Download','secondary desktop-download');download.onclick=()=>run(async()=>{const blob=await getPhoto(photo,epoch);save(blob,downloadName(photo.name));status('Photo downloaded.');});card.append(download);$('photos').append(card);
   }
+  renderPhotoSelection();
   status(photos.length?'Photos are up to date.':'This property is ready. Select photos to upload.');
 }
+
+function renderPhotoSelection(){
+  $('photoSelectionCount').textContent=selectedPhotos.size+' selected';
+  $('deleteSelectedPhotos').textContent=selectedPhotos.size?'Delete selected ('+selectedPhotos.size+')':'Delete selected';
+  $('deleteSelectedPhotos').disabled=busy||!selectedPhotos.size;
+  $('clearPhotoSelection').disabled=busy||!selectedPhotos.size;
+  $('selectAllPhotos').disabled=busy||!photos.length;
+  document.querySelectorAll('.photo').forEach(card=>{card.querySelector('input[type=checkbox]').checked=selectedPhotos.has(card.dataset.photoName);});
+}
+function removeConfirmedPhotos(names){
+  const removed=new Set(names);
+  photos=photos.filter(photo=>!removed.has(photo.name));
+  for(const name of removed)selectedPhotos.delete(name);
+  document.querySelectorAll('.photo').forEach(card=>{if(removed.has(card.dataset.photoName))card.remove();});
+  if(!queue.some(item=>item.state!=='Uploaded'&&!item.invalid)){queue=[];$('files').value='';renderQueue();}
+  $('count').textContent=photos.length+' photo'+(photos.length===1?'':'s');renderPhotoSelection();
+}
+$('selectAllPhotos').onclick=()=>{if(busy)return;photos.forEach(photo=>selectedPhotos.add(photo.name));renderPhotoSelection();};
+$('clearPhotoSelection').onclick=()=>{if(busy)return;selectedPhotos.clear();renderPhotoSelection();};
+$('deleteSelectedPhotos').onclick=()=>run(async()=>{
+  const names=photos.filter(photo=>selectedPhotos.has(photo.name)).map(photo=>photo.name);
+  if(!names.length)return;
+  if(!confirm('Permanently delete '+names.length+' selected photo'+(names.length===1?'':'s')+' from '+selected.address+'? Original photos on your phone are not changed.'))return;
+  const version=epoch,prefix=user.id+'/'+selected.id+'/';let deleted=0,failed=0;
+  // Bounded requests accommodate large selections without imposing a selection limit.
+  for(let offset=0;offset<names.length;offset+=100){
+    check(version);const batch=names.slice(offset,offset+100);
+    status('Deleting selected photos… '+offset+' of '+names.length+' processed.');
+    let result;
+    try{result=await bucket.remove(batch.map(name=>prefix+name));}catch(error){check(version);failed+=batch.length;continue;}
+    check(version);
+    if(result.error){failed+=batch.length;continue;}
+    const confirmed=new Set((result.data||[]).map(item=>item.name));
+    const removed=batch.filter(name=>confirmed.has(prefix+name)||confirmed.has(name));
+    deleted+=removed.length;failed+=batch.length-removed.length;removeConfirmedPhotos(removed);
+  }
+  status(deleted+' photo'+(deleted===1?'':'s')+' deleted.'+(failed?' '+failed+' could not be confirmed and remain selected. Retry or refresh photos.':''),!!failed);
+});
 async function getPhoto(photo,version){check(version);const {data,error}=await bucket.download(user.id+'/'+selected.id+'/'+photo.name);check(version);if(error)throw error;return data;}
 function save(blob,name){const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 $('newProperty').onsubmit=e=>{e.preventDefault();run(async()=>{
@@ -66,7 +105,7 @@ $('newProperty').onsubmit=e=>{e.preventDefault();run(async()=>{
 
 function showList(mode=listMode){
   if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Return to addresses without uploading the selected photos?'))return;
-  listMode=mode;selected=null;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();
+  selectedPhotos.clear();listMode=mode;selected=null;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();
   $('workspace').hidden=true;$('addressList').hidden=false;$('newProperty').hidden=mode==='completed';
   $('listTitle').textContent=mode==='completed'?'Completed photos':'Active properties';
   $('activeTab').setAttribute('aria-pressed',String(mode==='active'));$('completedTab').setAttribute('aria-pressed',String(mode==='completed'));
@@ -121,7 +160,7 @@ addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPro
 $('install').onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;$('install').hidden=true;}};
 async function sessionChanged(session){
   const next=session?.user;if(next?.id===user?.id&&user)return;
-  epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
+  selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
   $('files').value='';$('photos').replaceChildren();$('properties').replaceChildren();$('queue').replaceChildren();$('account').textContent='';$('library').hidden=true;$('workspace').hidden=true;$('addressList').hidden=false;$('signedOut').hidden=!!user;
   if(!user){initPhotoCaptcha();status('Sign in to upload and download your property photos.');return;}
   try{const {data,error}=await client.rpc('photo_library_enabled');check(version);if(error)throw error;if(!data){$('signedOut').hidden=false;initPhotoCaptcha();status('Photo Uploads is currently available only to the pilot account.',true);return;}$('library').hidden=false;$('password').value='';$('account').textContent=user.email;await loadProperties();showList('active');}catch(e){if(version===epoch)status(e.message,true);}
