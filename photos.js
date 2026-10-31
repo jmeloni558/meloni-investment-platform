@@ -163,7 +163,21 @@ async function sessionChanged(session){
   selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
   $('files').value='';$('photos').replaceChildren();$('properties').replaceChildren();$('queue').replaceChildren();$('account').textContent='';$('library').hidden=true;$('workspace').hidden=true;$('addressList').hidden=false;$('signedOut').hidden=!!user;
   if(!user){initPhotoCaptcha();status('Sign in to upload and download your property photos.');return;}
-  try{const {data,error}=await client.rpc('photo_library_enabled');check(version);if(error)throw error;if(!data){$('signedOut').hidden=false;initPhotoCaptcha();status('Photo Uploads is currently available only to the pilot account.',true);return;}$('library').hidden=false;$('password').value='';$('account').textContent=user.email;await loadProperties();showList('active');}catch(e){if(version===epoch)status(e.message,true);}
+  try{const {data,error}=await client.rpc('photo_library_enabled');check(version);if(error)throw error;if(!data){$('signedOut').hidden=false;initPhotoCaptcha();status('Photo Uploads is currently available only to the pilot account.',true);return;}$('library').hidden=false;$('password').value='';$('account').textContent=user.email;await loadProperties();showList('active');await openRequestedAddress();}catch(e){if(version===epoch)status(e.message,true);}
+}
+let requestedAddressHandled=false;
+async function openRequestedAddress(){
+ const url=new URL(location.href),raw=url.searchParams.get('address');if(requestedAddressHandled||!raw)return;
+ const address=raw.trim().replace(/\s+/g,' ');if(!address||address.length>500){status('Enter a valid property address of 500 characters or fewer.',true);return;}
+ await run(async()=>{
+  const version=epoch;let property=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());
+  if(!property){const {data,error}=await client.from('photo_properties').insert({user_id:user.id,address}).select('id,address,created_at,completed_at').single();check(version);
+   if(error&&error.code!=='23505')throw error;
+   await loadProperties();property=data||properties.find(p=>p.address.toLowerCase()===address.toLowerCase());
+   if(!property)throw Error('Could not open this property. Refresh and try again.');
+  }
+  check(version);await openProperty(property);requestedAddressHandled=true;url.searchParams.delete('address');history.replaceState(history.state,'',url);
+ });
 }
 let captchaToken='',captchaWidget=null,captchaLoading=false;
 function initPhotoCaptcha(){
