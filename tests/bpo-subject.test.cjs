@@ -4,7 +4,7 @@ const doc={path:'subject.pdf',name:'Subject MLS.pdf',category:'subject'};
 const fact=(name,value,evidence)=>({name,value,document:0,page:1,evidence});
 test('General subject fields follow the form order without duplicate address or rights',()=>{
  const rows=C.generalSubjectFields({},C.schema,now);
- assert.deepEqual(rows.map(f=>f.name),['active.0.price','sold.0.source','sold.0.dom',...['location','site','view','design','quality','year','condition','rooms','beds','baths','gla','basement','utility','hvac','energy','garage','porches','fireplace','fence','pool','other'].map(k=>'sold.0.'+k)]);
+ assert.deepEqual(rows.map(f=>f.name),['sold.0.condition','active.0.price','sold.0.source','sold.0.dom',...['location','site','view','design','quality','year','rooms','beds','baths','gla','basement','utility','hvac','energy','garage','porches','fireplace','fence','pool','other'].map(k=>'sold.0.'+k)]);
  assert.ok(rows.every(f=>f.pdfName));assert.equal(rows.find(f=>f.name==='sold.0.design').label,'Design and appeal');
 });
 test('only requested defaults apply and RRR stays unchanged',()=>{

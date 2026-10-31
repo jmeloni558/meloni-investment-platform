@@ -75,3 +75,17 @@ body.pt-bpo-active main.shell > :not(#appNavShell):not(#ptBpoWorkspace):not(.foo
 .pt-bpo-client-choice select{min-height:44px;max-width:100%;padding:9px 12px;border:1px solid #a6c4d6;border-radius:7px;background:#fff;color:#17334b;font:inherit;box-sizing:border-box}
 .pt-bpo-editor-heading .pt-bpo-editor-guidance{border-top:1px solid #e1eaf0;margin:16px 0 0;padding-top:12px;font-size:14px;color:#40566a}
 @media(max-width:650px){.pt-bpo-editor-heading{padding:16px}.pt-bpo-client-choice{width:100%;flex-direction:column;align-items:stretch;gap:6px}.pt-bpo-editor-actions{width:100%}.pt-bpo-editor-actions>*{flex:1}.pt-bpo-client-choice select{width:100%}}
+
+/* Compact entry controls for Steps 1–4; PDF and narrative layouts retain their spacing. */
+#ptBpoWorkspace .pt-bpo-compact{padding:14px}
+#ptBpoWorkspace .pt-bpo-compact .pt-bpo-entry-grid{gap:6px 12px}
+#ptBpoWorkspace .pt-bpo-compact label{margin:3px 0;font-size:14px;line-height:1.3}
+#ptBpoWorkspace .pt-bpo-compact input:not([type=checkbox]):not([type=file]),#ptBpoWorkspace .pt-bpo-compact select{height:34px;min-height:34px;padding:5px 8px;font-size:14px;line-height:1.3;margin-top:3px}
+#ptBpoWorkspace .pt-bpo-compact textarea{min-height:56px;padding:5px 8px;font-family:inherit;font-size:14px;line-height:1.35}
+#ptBpoWorkspace .pt-bpo-compact .pt-bpo-market-table th,#ptBpoWorkspace .pt-bpo-compact .pt-bpo-market-table td{padding:5px 8px}
+#ptBpoWorkspace .pt-bpo-compact .pt-bpo-upload{padding:12px;margin:10px 0}
+#ptBpoWorkspace .pt-bpo-compact .pt-bpo-adjustment-parts{padding:10px;margin:10px 0}
+#ptBpoWorkspace .pt-bpo-compact h3{margin:12px 0 8px}
+#ptBpoWorkspace .pt-bpo-compact .pt-bpo-comp-editor{margin:8px 0}
+#ptBpoWorkspace .pt-bpo-compact .pt-bpo-comp-editor summary{padding:6px 0;font-weight:600}
+@media(max-width:700px){#ptBpoWorkspace .pt-bpo-compact input:not([type=checkbox]):not([type=file]),#ptBpoWorkspace .pt-bpo-compact select{height:40px;min-height:40px;font-size:16px}}
