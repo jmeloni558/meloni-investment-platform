@@ -2,7 +2,7 @@ import { withSupabase } from 'npm:@supabase/server@1.4.1';
 import schema from './fields.json' with { type: 'json' };
 import { extractText } from 'npm:unpdf@1.9.1';
 import { PDFDocument, StandardFonts } from 'npm:pdf-lib@1.17.1';
-import { cleanExtraction, instructions, v14Instructions, marketInstructions, extractionScopes, schemaFor, fitExtraction } from './contract.mjs';
+import { cleanExtraction, generalSubjectInstructions, instructions, v14Instructions, marketInstructions, extractionScopes, schemaFor, fitExtraction } from './contract.mjs';
 
 export default { fetch: withSupabase({auth:'user'}, async(req,ctx)=>{
   const origin=req.headers.get('origin');
@@ -45,13 +45,14 @@ export default { fetch: withSupabase({auth:'user'}, async(req,ctx)=>{
         content.push({type:'input_text',text:JSON.stringify({document:i,untrustedPageTranscripts:pages.slice(0,40).map((text,page)=>({page:page+1,text:text.slice(0,18000)}))})});
       }catch{ /* Scanned/unreadable text layers still have the original visual PDF input. */ }
     }
-    const results=await Promise.all(extractionScopes(schema).map(async allowed=>{
-    const context={type:'input_text',text:JSON.stringify({task:'Complete only this assigned section. Review every field against all source pages; include every supported fact. Other sections are handled separately.',subject:report.field_values?._subjectPending?null:report.address,fields:allowed.map(f=>({name:f.name,label:f.label,type:f.kind})),existing:Object.fromEntries(allowed.filter(f=>!(report.field_values?._subjectPending&&['field_0008','sold.0.address','active.0.address'].includes(f.name))&&report.field_values[f.name]!==undefined&&report.field_values[f.name]!==''&&report.field_values[f.name]!==false).map(f=>[f.name,report.field_values[f.name]]))})};
-    const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(140000),body:JSON.stringify({model:Deno.env.get('BPO_EXTRACT_MODEL')||'gpt-5-mini',store:false,instructions:instructions+'\n'+v14Instructions+'\n'+marketInstructions,input:[{role:'user',content:[context,...content]}],reasoning:{effort:'low'},max_output_tokens:14000,text:{format:{type:'json_schema',name:'bpo_source_facts',strict:true,schema:schemaFor(allowed)}}})});
+    const general=report.field_values?._clientTemplate!=='rrr';
+    const results=await Promise.all(extractionScopes(schema,general).map(async allowed=>{
+    const context={type:'input_text',text:JSON.stringify({task:'Complete only this assigned section. Review every field against all source pages; include every supported fact. Other sections are handled separately.',currentDate:new Date().toISOString().slice(0,10),subject:report.field_values?._subjectPending?null:report.address,fields:allowed.map(f=>({name:f.name,label:f.label,type:f.kind})),existing:Object.fromEntries(allowed.filter(f=>!(report.field_values?._subjectPending&&['field_0008','sold.0.address','active.0.address'].includes(f.name))&&report.field_values[f.name]!==undefined&&report.field_values[f.name]!==''&&report.field_values[f.name]!==false).map(f=>[f.name,report.field_values[f.name]]))})};
+    const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(140000),body:JSON.stringify({model:Deno.env.get('BPO_EXTRACT_MODEL')||'gpt-5-mini',store:false,instructions:instructions+'\n'+v14Instructions+'\n'+marketInstructions+(general?'\n'+generalSubjectInstructions:''),input:[{role:'user',content:[context,...content]}],reasoning:{effort:'low'},max_output_tokens:14000,text:{format:{type:'json_schema',name:'bpo_source_facts',strict:true,schema:schemaFor(allowed)}}})});
     const payload=await response.json();
     if(!response.ok||payload.status!=='completed'){console.error('BPO extraction failed',{status:response.status,code:payload.error?.code,state:payload.status});throw Error('Section extraction incomplete');}
     const text=payload.output?.flatMap((x:any)=>x.content||[]).filter((x:any)=>x.type==='output_text').map((x:any)=>x.text).join('')||'';
-    return cleanExtraction(JSON.parse(text),allowed,documents);
+    return cleanExtraction(JSON.parse(text),allowed,documents,{general});
     }));
     const fontDoc=await PDFDocument.create(),font=await fontDoc.embedFont(StandardFonts.Helvetica);
     const result=fitExtraction({fields:results.flatMap(r=>r.fields),warnings:[...new Set(results.flatMap(r=>r.warnings))]},schema,(text:string)=>font.widthOfTextAtSize(text,5.5));
