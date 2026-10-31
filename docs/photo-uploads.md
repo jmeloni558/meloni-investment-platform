@@ -54,7 +54,7 @@ Use each photo checkbox, or Select all, then Delete selected. One confirmation n
 
 ## Saved-property Photos and optional General BPO appendix
 
-The main toolbar no longer includes Photo Uploads. Enabled accounts get **Photos** immediately before **Delete Property** on saved BPO and income-property cards. The link opens the standalone photo library at that address. Matching is case-insensitive with normalized spaces; a missing address is created only when the user opens the link. Completed sets stay completed. No link back to the main website is added to the phone app.
+The main toolbar no longer includes Photo Uploads. Enabled accounts get **Photos** immediately before **Delete Property** on saved BPO and income-property cards. The link opens an existing matching photo address, or the active list if no match exists. Matching is case-insensitive with normalized spaces; a missing address is only prefilled on the active list. The user must click Create to create a photo record; opening Photos never creates one. Completed sets stay completed. No link back to the main website is added to the phone app.
 
 Only General BPO's Final PDF Package includes the optional **Include photos in final package** checkbox, off by default. **Choose photos** shows active and completed photo addresses and thumbnail selection. Upload / manage opens the subject address separately; Refresh photos reloads uploads. Selected filenames and album ID are saved with the BPO's existing field_values JSON. Saving the BPO retains the choice. Income reports and RRR exports do not include this feature.
 

@@ -197,12 +197,10 @@ async function openRequestedAddress(){
  const address=raw.trim().replace(/\s+/g,' ');if(!address||address.length>500){status('Enter a valid property address of 500 characters or fewer.',true);return;}
  await run(async()=>{
   const version=epoch;let property=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());
-  if(!property){const {data,error}=await client.from('photo_properties').insert({user_id:user.id,address}).select('id,address,created_at,completed_at').single();check(version);
-   if(error&&error.code!=='23505')throw error;
-   await loadProperties();property=data||properties.find(p=>p.address.toLowerCase()===address.toLowerCase());
-   if(!property)throw Error('Could not open this property. Refresh and try again.');
-  }
-  check(version);await openProperty(property);requestedAddressHandled=true;url.searchParams.delete('address');history.replaceState(history.state,'',url);
+  if(!property){
+   $('address').value=address;status('No photo address exists for this property. Click Create only when you are ready to add photos.');$('address').focus();
+  }else{check(version);await openProperty(property);}
+  requestedAddressHandled=true;url.searchParams.delete('address');history.replaceState(history.state,'',url);
  });
 }
 let captchaToken='',captchaWidget=null,captchaLoading=false;

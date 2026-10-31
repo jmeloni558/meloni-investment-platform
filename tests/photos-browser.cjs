@@ -67,10 +67,16 @@ const server=http.createServer((req,res)=>{let file=path.join(root,new URL(req.u
  office.once('dialog',d=>{assert.ok(d.message().includes('103 selected photos'));d.accept();});await office.click('#deleteSelectedPhotos');await office.waitForFunction(()=>document.querySelectorAll('.photo').length===0);
  assert.deepEqual(await office.evaluate(()=>window.deleteSizes),[100,3]);assert.equal(await office.locator('#deleteSelectedPhotos').isDisabled(),true);
  await office.click('#backToList');await office.locator('#properties button').filter({hasText:'123 Test'}).click();assert.equal(await office.locator('.photo input:checked').count(),0);
- // Saved-property links open/create an address directly, with no duplicate albums.
+ // A saved-property link never creates a photo record; Create is a separate action.
+ const beforeLink=await office.evaluate(()=>JSON.parse(localStorage.getItem('photo-test')).rows.length);
  await office.goto(base+'/photos.html?address='+encodeURIComponent('789 Linked Street'));
- await office.waitForFunction(()=>document.querySelector('#propertyTitle').textContent==='789 Linked Street'&&!location.search.includes('address='));
- const linkedCount=await office.evaluate(()=>JSON.parse(localStorage.getItem('photo-test')).rows.length);
+ await office.waitForFunction(()=>document.querySelector('#status').textContent.includes('No photo address exists')&&!location.search.includes('address='));
+ assert.equal(await office.locator('#addressList').isVisible(),true);assert.equal(await office.locator('#workspace').isHidden(),true);
+ assert.equal(await office.locator('#address').inputValue(),'789 Linked Street');
+ assert.equal(await office.evaluate(()=>JSON.parse(localStorage.getItem('photo-test')).rows.length),beforeLink);
+ await office.click('#newProperty button');await office.waitForFunction(()=>document.querySelector('#status').textContent.startsWith('Property created'));
+ assert.equal(await office.locator('#addressList').isVisible(),true);
+ const linkedCount=await office.evaluate(()=>JSON.parse(localStorage.getItem('photo-test')).rows.length);assert.equal(linkedCount,beforeLink+1);
  await office.goto(base+'/photos.html?address='+encodeURIComponent('789 linked street'));
  await office.waitForFunction(()=>document.querySelector('#propertyTitle').textContent==='789 Linked Street'&&!location.search.includes('address='));
  assert.equal(await office.evaluate(()=>JSON.parse(localStorage.getItem('photo-test')).rows.length),linkedCount);
