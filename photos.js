@@ -36,6 +36,20 @@ async function refreshPhotos(){
     if(/\.(heic|heif)$/i.test(photo.name)){card.append(node('div','HEIC / HEIF photo','placeholder'));}
     else {const img=node('img');img.alt=originalName(photo.name);img.loading='lazy';card.append(img);const observer=new IntersectionObserver(entries=>{if(!entries.some(e=>e.isIntersecting))return;observer.disconnect();if(version!==epoch)return;bucket.createSignedUrl(prefix+'/'+photo.name,300).then(({data,error})=>{if(version!==epoch)return;if(error){img.replaceWith(node('div','Preview unavailable','placeholder'));return;}img.src=data.signedUrl;}).catch(()=>{img.replaceWith(node('div','Preview unavailable','placeholder'));});});observer.observe(img);}
     card.append(node('p',originalName(photo.name)));
+    const remove=node('button','Delete photo','delete-photo');
+    remove.setAttribute('aria-label','Delete '+originalName(photo.name));
+    remove.onclick=()=>run(async()=>{
+      if(!confirm('Delete '+originalName(photo.name)+' from '+p.address+'? This permanently removes the uploaded copy from your photo library. The original on your phone is not changed.'))return;
+      check(version);status('Deleting photo…');
+      const {data,error}=await bucket.remove([prefix+'/'+photo.name]);check(version);
+      if(error)throw Error('Photo could not be deleted: '+error.message);
+      if(!data?.length)throw Error('Deletion could not be confirmed. Refresh photos and try again.');
+      photos=photos.filter(item=>item.name!==photo.name);card.remove();
+      if(!queue.some(item=>item.state!=='Uploaded'&&!item.invalid)){queue=[];$('files').value='';renderQueue();}
+      $('count').textContent=photos.length+' photo'+(photos.length===1?'':'s');
+      status('Photo deleted. You can select and upload a replacement.');
+    });
+    card.append(remove);
     const download=node('button','Download','secondary desktop-download');download.onclick=()=>run(async()=>{const blob=await getPhoto(photo,epoch);save(blob,downloadName(photo.name));status('Photo downloaded.');});card.append(download);$('photos').append(card);
   }
   status(photos.length?'Photos are up to date.':'This property is ready. Select photos to upload.');

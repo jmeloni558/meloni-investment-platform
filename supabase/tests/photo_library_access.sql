@@ -1,5 +1,7 @@
 -- Transactional checks: no test properties or access changes persist.
 begin;
+-- Test storage metadata only, within this rolled-back transaction; app deletes use Storage API.
+set local storage.allow_delete_query='true';
 select set_config('request.jwt.claims','{"sub":"8c3d1560-0eb7-4814-8f27-f24694b788a3","role":"authenticated"}',true);
 set local role authenticated;
 do $$ begin
@@ -7,6 +9,11 @@ do $$ begin
 end $$;
 insert into public.photo_properties(id,user_id,address) values('00000000-0000-4000-8000-000000000001',auth.uid(),'Photo library transactional test');
 insert into storage.objects(bucket_id,name,owner) values('property-photos',auth.uid()::text||'/00000000-0000-4000-8000-000000000001/test.jpg',auth.uid());
+insert into storage.objects(bucket_id,name,owner) values('property-photos',auth.uid()::text||'/00000000-0000-4000-8000-000000000001/delete-test.jpg',auth.uid());
+do $$ begin
+ delete from storage.objects where bucket_id='property-photos' and name=auth.uid()::text||'/00000000-0000-4000-8000-000000000001/delete-test.jpg';
+ if not found then raise exception 'Owner deletion denied';end if;
+end $$;
 update public.photo_properties set completed_at=now() where id='00000000-0000-4000-8000-000000000001';
 do $$ begin
  if not exists(select 1 from public.photo_properties where id='00000000-0000-4000-8000-000000000001' and completed_at is not null) then raise exception 'Completion not saved';end if;
@@ -29,6 +36,8 @@ select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000
 set local role authenticated;
 do $$ begin
  if public.photo_library_enabled() then raise exception 'Non-pilot access allowed';end if;
+ delete from storage.objects where bucket_id='property-photos' and name='8c3d1560-0eb7-4814-8f27-f24694b788a3/00000000-0000-4000-8000-000000000001/test.jpg';
+ if found then raise exception 'Cross-account deletion allowed';end if;
  update public.photo_properties set completed_at=now() where id='00000000-0000-4000-8000-000000000001';
  if found then raise exception 'Cross-account completion allowed';end if;
  if exists(select 1 from public.photo_properties where id='00000000-0000-4000-8000-000000000001') then raise exception 'Cross-account read allowed';end if;
@@ -47,6 +56,8 @@ select set_config('request.jwt.claims','{"sub":"8c3d1560-0eb7-4814-8f27-f24694b7
 set local role authenticated;
 do $$ begin
  if public.photo_library_enabled() or exists(select 1 from public.photo_properties) then raise exception 'Revoked account retains access';end if;
+ delete from storage.objects where bucket_id='property-photos' and name=auth.uid()::text||'/00000000-0000-4000-8000-000000000001/test.jpg';
+ if found then raise exception 'Revoked account deletion allowed';end if;
  if exists(select 1 from storage.objects where bucket_id='property-photos') then raise exception 'Revoked photo access';end if;
 end $$;
 reset role;
