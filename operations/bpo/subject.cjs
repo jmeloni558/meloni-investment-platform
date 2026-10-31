@@ -32,8 +32,20 @@ function fields(v,schema,now){
 function comparableFields(kind,index,schema){
  if(!['sold','active'].includes(kind)||![1,2,3].includes(index))throw Error('Invalid comparable slot');
  const prefix=kind+'.'+index+'.',byName=new Map(schema.map(f=>[f.name,f]));
- const rows=[['address','Street address'],['condition','Condition'],['city','City'],['state','State'],['zip','ZIP code'],['distance','Proximity to subject'],['price',kind==='sold'?'Sale price ($)':'List / asking price ($)'],['ppsf','Price / sq. ft. ($)'],['source','Data source'],...(kind==='sold'?[['date','Sale date']]:[]),['dom','Days on market'],['reo','REO / corporate owned'],['financing','Financing concessions ($)']];
+ const rows=[['condition','Condition'],['distance','Proximity to subject'],['price',kind==='sold'?'Sale price ($)':'List / asking price ($)'],['ppsf','Price / sq. ft. ($)'],['source','Data source'],...(kind==='sold'?[['date','Sale date']]:[]),['dom','Days on market'],['reo','REO / corporate owned'],['financing','Financing concessions ($)']];
  for(const row of subjectRows.filter(([key])=>key!=='condition')){rows.push(row);if(row[0]==='location')rows.push(['tenure','Property rights']);}
  return rows.map(([key,label])=>({...byName.get(prefix+key),label}));
 }
-module.exports={generalComparableFields:comparableFields,generalSubjectDefaults:defaults,generalSubjectFields:fields,recentSubjectSale:recentSale};
+function comparableAddress(v,prefix){
+ if(!/^(sold|active)\.[1-3]$/.test(prefix))throw Error('Invalid comparable slot');
+ const street=String(v[prefix+'.address']||'').trim();
+ if(require('./form-v14.cjs').splitAddress(street).city)return street;
+ return [street,v[prefix+'.city'],[v[prefix+'.state'],v[prefix+'.zip']].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+}
+function editComparableAddress(input,prefix,address){
+ if(!/^(sold|active)\.[1-3]$/.test(prefix))throw Error('Invalid comparable slot');
+ const v={...input},parts=require('./form-v14.cjs').splitAddress(address);
+ for(const key of ['address','city','state','zip'])v[prefix+'.'+key]=parts[key]||'';
+ return v;
+}
+module.exports={comparableAddress,editComparableAddress,generalComparableFields:comparableFields,generalSubjectDefaults:defaults,generalSubjectFields:fields,recentSubjectSale:recentSale};

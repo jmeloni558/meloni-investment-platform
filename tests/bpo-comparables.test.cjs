@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),C=require('../operations/bpo/core.cjs'),fs=require('node:fs'),vm=require('node:vm');
 const descriptors=['location','tenure','site','view','design','quality','year','rooms','beds','baths','gla','basement','utility','hvac','energy','garage','porches','fireplace','fence','pool','other'];
 for(const kind of ['sold','active'])for(const i of [1,2,3])test(`${kind} comparable ${i} follows PDF row order`,()=>{
- const rows=C.generalComparableFields(kind,i,C.schema),keys=['address','condition','city','state','zip','distance','price','ppsf','source',...(kind==='sold'?['date']:[]),'dom','reo','financing',...descriptors];
+ const rows=C.generalComparableFields(kind,i,C.schema),keys=['condition','distance','price','ppsf','source',...(kind==='sold'?['date']:[]),'dom','reo','financing',...descriptors];
  assert.deepEqual(rows.map(f=>f.name),keys.map(k=>`${kind}.${i}.${k}`));assert.ok(rows.every(f=>f.pdfName));assert.equal(rows.find(f=>f.name.endsWith('.price')).label,kind==='sold'?'Sale price ($)':'List / asking price ($)');
 });
 test('MLS imports comparable descriptions without inventing missing rooms or utility',async()=>{
@@ -22,5 +22,15 @@ test('Step 2 renders editable fields for every slot and read-only calculated PPS
  vm.runInContext(source.slice(source.indexOf('function fieldControl('),source.indexOf('function marketPanel('))+source.slice(source.indexOf('function generalCompEditor('),source.indexOf('function compSummary(')),ctx);
  const html=ctx.generalCompEditor();assert.equal((html.match(/pt-bpo-comp-editor/g)||[]).length,6);
  for(const kind of ['sold','active'])for(const i of [1,2,3])assert.ok(html.includes(`data-bpo-field="${kind}.${i}.pool"`));
- assert.match(html,/data-bpo-field="sold\.1\.ppsf"[^>]*readonly/);assert.ok(!html.includes('adj_'));assert.match(html,/data-bpo-field="sold\.1\.condition"[^>]*list="pt-bpo-condition-options"/);assert.match(html,/<input[^>]*data-bpo-field="sold\.1\.address"/);
+ assert.match(html,/data-bpo-field="sold\.1\.ppsf"[^>]*readonly/);assert.ok(!html.includes('adj_'));assert.match(html,/data-bpo-field="sold\.1\.condition"[^>]*list="pt-bpo-condition-options"/);assert.match(html,/<input[^>]*data-comp-address="sold\.1"/);assert.ok(!html.includes('data-bpo-field="sold.1.city"'));
+});
+
+test('full comparable addresses retain PDF parts and clear stale locality on edits',()=>{
+ const original={'sold.1.address':'100 Test Lane','sold.1.city':'Tampa','sold.1.state':'FL','sold.1.zip':'33603','sold.2.city':'Lutz'};
+ assert.equal(C.comparableAddress(original,'sold.1'),'100 Test Lane, Tampa, FL 33603');
+ const v=C.editComparableAddress(original,'sold.1','200 Main St, Lutz, FL 33548-1234');
+ assert.equal(v['sold.1.address'],'200 Main St');assert.equal(v['sold.1.city'],'Lutz');assert.equal(v['sold.1.zip'],'33548-1234');assert.equal(v['sold.2.city'],'Lutz');
+ assert.equal(C.comparableAddress(v,'sold.1'),'200 Main St, Lutz, FL 33548-1234');
+ const partial=C.editComparableAddress(v,'sold.1','300 New St');assert.equal(partial['sold.1.city'],'');assert.equal(partial['sold.1.zip'],'');assert.equal(C.comparableAddress(C.editComparableAddress(v,'sold.1',''),'sold.1'),'');
+ assert.equal(C.comparableAddress({'active.1.address':'400 Test Ave, Tampa, FL 33603','active.1.city':'Tampa'},'active.1'),'400 Test Ave, Tampa, FL 33603');
 });
