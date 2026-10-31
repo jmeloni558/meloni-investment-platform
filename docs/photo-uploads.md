@@ -90,7 +90,7 @@ Verification: photo-browser tests cover canceled/denied deletion, a completed 10
 
 ## Desktop site wrapper and remembered sessions
 
-The desktop /photos route opens the main site with the Photos workspace selected. Phone-sized and standalone-app requests open photos.html directly. The installed photo app retains its original start URL, separate screen and lack of main-site links. The desktop toolbar shows Photos immediately before Sign out (after Google Play App). Saved-property Photos links open the same embedded workspace without automatically creating addresses. The BPO picker upload/manage link uses /photos too.
+Both desktop /photos and /photos.html routes open the main site with the Photos workspace selected. Phone-sized and standalone-app requests open photos.html directly. The installed photo app retains its original start URL, separate screen and lack of main-site links. The desktop toolbar shows Photos immediately before Sign out (after Google Play App). Saved-property Photos links open the same embedded workspace without automatically creating addresses. The BPO picker upload/manage link uses /photos too.
 
 The desktop workspace embeds photos.html inside the real site shell and hides the duplicated photo-page header, installation help, account controls and footer. The parent retains its normal navigation. Changing site sections hides rather than destroys the photo frame, preserving pending selections. Switching to another photo address checks for active operations and unuploaded selections first. Sign-out removes the embedded frame.
 
