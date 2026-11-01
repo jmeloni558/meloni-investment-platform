@@ -29,16 +29,16 @@ export function createHandler({schema,env,fetchImpl=fetch}){
   if(quotaError||!quota?.allowed)return json({error:'AI BPO usage limit reached or unavailable. Your notes and existing AI BPO remain saved.'},quotaError?503:429);
   try{
    const documents=await sourceContent(db,report.field_values||{},userId,body.reportId);
-   let result,feedback='';
+   let result,feedback='';const deadline=Date.now()+130000;
    for(let attempt=0;attempt<2;attempt++){
-    const response=await fetchImpl('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(65000),body:JSON.stringify({model:env('BPO_GENERATE_MODEL')||'gpt-5-mini',store:false,instructions:instructions+(feedback?'\nRevise the writing to satisfy this validation requirement: '+feedback:''),input:[{role:'user',content:[{type:'input_text',text:JSON.stringify(input)},...documents]}],reasoning:{effort:'low'},max_output_tokens:12000,text:{format:{type:'json_schema',name:'ai_bpo',strict:true,schema:responseSchema(input)}}})});
-    const payload=await response.json();if(!response.ok||payload.status!=='completed')throw Error('AI BPO generation incomplete');
+    const response=await fetchImpl('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(Math.max(1000,Math.min(115000,deadline-Date.now()))),body:JSON.stringify({model:env('BPO_GENERATE_MODEL')||'gpt-5-mini',store:false,instructions:instructions+(feedback?'\nRevise the writing to satisfy this validation requirement: '+feedback:''),input:[{role:'user',content:[{type:'input_text',text:JSON.stringify(input)},...documents]}],reasoning:{effort:'low'},max_output_tokens:12000,text:{format:{type:'json_schema',name:'ai_bpo',strict:true,schema:responseSchema(input)}}})});
+    const payload=await response.json();if(!response.ok||payload.status!=='completed')throw Error('AI BPO provider status '+response.status+' / '+(payload.error?.code||payload.incomplete_details?.reason||payload.status||'unknown'));
     const output=payload.output?.flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('')||'';
     try{result=validateOutput(JSON.parse(output),input);break;}catch(e){feedback=e instanceof SyntaxError?'Return valid structured JSON.':e.message;if(attempt===1)throw e;}
    }
    const latest=await read();if(latest.error||latest.data?.revision!==report.revision)return json({error:'This BPO changed while the AI BPO was being written. Reopen it and generate again.'},409);
    // Return a draft only. The existing report is never overwritten by the server.
    return json({...result,revision:report.revision});
-  }catch{return json({error:'The AI BPO could not be completed. Your notes and previous narrative are safe. Please retry.'},502);}
+  }catch(e){console.error('bpo-generate failed:',e?.name,e?.message);return json({error:'The AI BPO could not be completed. Your notes and previous narrative are safe. Please retry.'},502);}
  };
 }
