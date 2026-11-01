@@ -28,5 +28,5 @@ export function validateOutput(result,input){
  if(!Array.isArray(result.adjustments)||result.adjustments.length>input.adjustmentKeys.length)throw Error('Invalid adjustments.');
  const seen=new Set();for(const a of result.adjustments){if(!input.adjustmentKeys.includes(a.name)||seen.has(a.name)||typeof a.amount!=='number'||!Number.isFinite(a.amount)||Math.abs(a.amount)>1e9||typeof a.reason!=='string'||!a.reason.trim()||a.reason.length>1500)throw Error('Each adjustment needs a unique allowed field, finite amount and evidence-based explanation.');seen.add(a.name);}
  const summary=validateSummary(result,input);
- return {...summary,...validateCompletion(result,input.completion),aiBpoVersion:2,asIs:result.asIs,listPrice:result.listPrice,primarySold:result.primarySold,adjustments:result.adjustments};
+ return {...summary,...validateCompletion(result,input.completion),aiBpoVersion:3,asIs:result.asIs,listPrice:result.listPrice,primarySold:result.primarySold,adjustments:result.adjustments};
 }

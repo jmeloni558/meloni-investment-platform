@@ -153,7 +153,7 @@ function bindSummaryPackage(){const C=window.PropertyThesisBPOCore;
  dialog.querySelector('[data-package-pdf]')?.addEventListener('click',()=>run(t=>exportSummary(t,true)));
 }
 
-function aiBpoCurrent(){const C=window.PropertyThesisBPOCore;return values._aiBpo?.version===2&&values._aiBpo.source===C.aiBpoFingerprint(values,C);}
+function aiBpoCurrent(){const C=window.PropertyThesisBPOCore;return values._aiBpo?.version===3&&values._aiBpo.source===C.aiBpoFingerprint(values,C);}
 async function generateAiBpo(token=epoch){
  const C=window.PropertyThesisBPOCore;collect();if(pendingCompUploads()||!C.aiBpoReady(values,C))throw Error('Upload and analyze subject and sold-comparable sources first.');
  if(!(await save(token)))return;
