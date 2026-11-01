@@ -28,5 +28,9 @@ test('partial form, injected fields, wrong choices and unsupported repair costs 
   const r=output(input);mutate(r);assert.throws(()=>contract.validateOutput(r,input));assert.throws(()=>C.acceptAiBpo(v,{...r,aiBpoVersion:2},C));
  }
 });
+test('extraction annotations do not turn generic defaults into supported source facts',async()=>{
+ const [contract]=await modules,v=fixture();v['sold.0.rooms']='6';v._aiFields['sold.0.rooms']={value:'6',evidence:'Total rooms not explicit; rooms=beds+3 default convention'};v._aiFields['sold.0.basement']={value:'None',evidence:'Basement not listed'};
+ const names=contract.prepare(v,C.schema).completion.fields.map(f=>f.name);assert.ok(names.includes('sold.0.rooms'));assert.ok(names.includes('sold.0.basement'));
+});
 
 test('original source PDFs accompany evidence; tax exclusions and ownership boundaries hold',async()=>{const {sourceContent}=await import('../supabase/functions/bpo-generate/sources.mjs');const paths=[],db={storage:{from:()=>({download:async p=>{paths.push(p);return {data:new Blob(['%PDF-1.7 fixture'])};}})}};const v=fixture();v._attachments.push({path:'private-tax.pdf',sourceKind:'tax'});const content=await sourceContent(db,v,'owner','11111111-1111-4111-8111-111111111111');assert.equal(paths.length,1);assert.equal(content.filter(c=>c.type==='input_file').length,1);assert.ok(content[1].file_data.startsWith('data:application/pdf;base64,'));await assert.rejects(sourceContent(db,v,'different-owner','11111111-1111-4111-8111-111111111111'),/Invalid document reference/);});
