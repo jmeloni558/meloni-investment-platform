@@ -27,3 +27,8 @@ entrypoint = "./functions/propertythesis-assistant/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/letter-of-intent/index.ts"
+
+[functions.bpo-summary]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/bpo-summary/index.ts"
