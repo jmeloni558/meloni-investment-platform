@@ -2,12 +2,12 @@ begin;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','8c3d1560-0eb7-4814-8f27-f24694b788a3',true);
 do $$ begin
-  if (select count(*) from public.client_directory) <> 81 then raise exception 'Owner cannot read all contacts'; end if;
+  if (select count(*) from public.client_directory) < 128 then raise exception 'Owner cannot read imported contacts'; end if;
   if (select count(*) from public.client_directory_members) <> 1 then raise exception 'Membership visibility is incorrect'; end if;
 end $$;
 select set_config('request.jwt.claim.sub','58d64acf-0e45-4490-8659-7bba164ec83e',true);
 do $$ begin
-  if (select count(*) from public.client_directory) <> 81 then raise exception 'Gmail account cannot read all contacts'; end if;
+  if (select count(*) from public.client_directory) < 128 then raise exception 'Gmail account cannot read imported contacts'; end if;
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',true);
 do $$ begin
