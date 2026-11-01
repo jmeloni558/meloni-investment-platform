@@ -32,3 +32,8 @@ entrypoint = "./functions/letter-of-intent/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/bpo-summary/index.ts"
+
+[functions.bpo-generate]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/bpo-generate/index.ts"
