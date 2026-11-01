@@ -31,6 +31,7 @@ function accept(v,result,C){
 function displayValue(v,f,value){
  const c=v._aiCompletion;if(c?.version!==3||f.kind==='check'||f.kind==='select')return value;
  if(c.unused.some(p=>f.name.startsWith(p+'.')))return f.name.endsWith('.address')?'Not supplied':'N/A';
+ if(/not (?:explicit|listed|provided)|\bdefault\b|no total rooms/i.test(v._aiFields?.[f.name]?.evidence||''))return 'N/P';
  if(c.missing.includes(f.name))return 'N/P';if(c.notApplicable.includes(f.name))return 'N/A';
  if(f.name==='repair.total'&&c.unpricedRepairs)return 'N/P';
  const repair=f.name.match(/^repair\.(\d)\.(description|cost)$/);if(repair&&+repair[1]>=c.repairCount)return +repair[1]===0&&repair[2]==='description'?(c.repairStatus==='none_reported'?'No repairs reported':'Repairs not documented'):'N/A';
