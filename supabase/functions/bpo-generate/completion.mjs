@@ -3,6 +3,8 @@
 const protectedNames=new Set(['field_0002','field_0008','field_0015','field_0018','field_0019','field_0021','field_0477','field_0478','field_0483','field_0484']);
 const numericField=name=>/\.(price|gla)$/.test(name)||['field_0479','field_0480','market_months_supply'].includes(name);
 const metricField=name=>name.startsWith('market_')&&!['market_zip','market_county'].includes(name)||['field_0038','field_0039'].includes(name);
+const evidenceField=name=>metricField(name)||name==='sold.0.price'||/\.(rooms|basement|energy|utility|tenure|condition|quality|hvac|porches|fireplace|fence)$/.test(name);
+export const evidenceNames=plan=>plan.fields.filter(f=>evidenceField(f.name)).map(f=>f.name);
 export function completionPlan(values,schema){
  const active=['active.1','active.2','active.3'].filter(p=>values[p+'.address']);
  const fields=schema.filter(f=>{
@@ -17,7 +19,7 @@ export function completionPlan(values,schema){
  return {fields,choices,active};
 }
 export function completionSchema(plan){return {
- metricEvidence:{type:'object',additionalProperties:false,required:plan.fields.filter(f=>metricField(f.name)).map(f=>f.name),properties:Object.fromEntries(plan.fields.filter(f=>metricField(f.name)).map(f=>[f.name,{type:['string','null'],maxLength:500}]))},
+ formEvidence:{type:'object',additionalProperties:false,required:evidenceNames(plan),properties:Object.fromEntries(evidenceNames(plan).map(name=>[name,{type:['string','null'],maxLength:500}]))},
  formFields:{type:'object',additionalProperties:false,required:plan.fields.map(f=>f.name),properties:Object.fromEntries(plan.fields.map(f=>[f.name,f.kind==='check'?{type:['boolean','null']}:{type:['string','null'],minLength:1,maxLength:f.maxChars,pattern:numericField(f.name)?'^(?:N/A|[0-9]+(?:\\.[0-9]+)?)$':'^[ -~\\n]+$'}]))},
  choices:{type:'object',additionalProperties:false,required:plan.choices.map(g=>g.group),properties:Object.fromEntries(plan.choices.map(g=>[g.group,{type:['string','null'],enum:[...g.options.map(o=>o.name),null]}]))},
  primaryActive:{type:'string',enum:plan.active.length?plan.active:['']},
@@ -28,13 +30,15 @@ export function validateCompletion(result,plan){
  for(const [key,entries] of [['formFields',plan.fields.map(f=>f.name)],['choices',plan.choices.map(g=>g.group)]]){
   const obj=result[key];if(!obj||typeof obj!=='object'||Array.isArray(obj)||Object.keys(obj).length!==entries.length||entries.some(n=>!Object.hasOwn(obj,n)))throw Error('Complete every requested '+key+' entry; use null only when the sources do not supply it.');
  }
- const metrics=plan.fields.filter(f=>metricField(f.name));
- if(!result.metricEvidence||typeof result.metricEvidence!=='object'||Array.isArray(result.metricEvidence)||Object.keys(result.metricEvidence).length!==metrics.length||metrics.some(f=>!Object.hasOwn(result.metricEvidence,f.name)))throw Error('Account for each market statistic with an exact source quote or null.');
- for(const f of metrics){const quote=result.metricEvidence[f.name];if(quote!==null&&(typeof quote!=='string'||quote.length>500))throw Error('Invalid market source quote.');
+ for(const name of ['field_0014','header_client_phone'])if(Object.hasOwn(result.formFields,name))result.formFields[name]=null; // Missing client identity cannot be borrowed from brokerage branding.
+ const metrics=plan.fields.filter(f=>evidenceField(f.name));
+ if(!result.formEvidence||typeof result.formEvidence!=='object'||Array.isArray(result.formEvidence)||Object.keys(result.formEvidence).length!==metrics.length||metrics.some(f=>!Object.hasOwn(result.formEvidence,f.name)))throw Error('Account for each requested fact with an exact source quote or null.');
+ for(const f of metrics){const quote=result.formEvidence[f.name];if(quote!==null&&(typeof quote!=='string'||quote.length>500))throw Error('Invalid form source quote.');
   const value=result.formFields[f.name],number=Number(String(value??'').replace(/[$,%]/g,''));
   const numbers=typeof quote==='string'?(quote.replace(/,/g,'').match(/-?\d+(?:\.\d+)?/g)||[]).map(Number):[];
-  const labels=f.name==='market_months_supply'?/months?\s+(?:of\s+)?(?:supply|inventory)|(?:supply|inventory).{0,25}months?/i:f.name.includes('median_home_value')?/median.{0,25}(?:home|property).{0,15}value/i:f.name.includes('median_list_price')?/median.{0,25}(?:list|asking).{0,15}price/i:f.name.includes('median_home_age')?/median.{0,25}(?:home|property).{0,15}age|median\s+age/i:f.name==='field_0038'?/owner.{0,15}occup/i:f.name==='field_0039'?/rent(?:er|al).{0,15}occup/i:/price.{0,35}chang|chang.{0,35}price/i;
-  if(value!==null&&(!quote||!labels.test(quote)||!numbers.includes(number)))result.formFields[f.name]=null;
+  const propertyLabels={rooms:/\btotal\s+rooms|\brooms\s*[:=]/i,basement:/basement/i,energy:/energy|efficient|solar|insulat|green feature/i,utility:/functional|utility|layout|floor plan/i,tenure:/tenure|fee simple|leasehold|property rights/i,condition:/condition/i,quality:/quality|construction/i,hvac:/heating|cooling|hvac|air condition/i,porches:/porch|patio|deck/i,fireplace:/fireplace/i,fence:/fence|fencing/i};
+  const labels=f.name==='sold.0.price'?/\b(?:sold|sale|closed|closing)\s+price/i:propertyLabels[f.name.split('.').pop()]|| (f.name==='market_months_supply'?/months?\s+(?:of\s+)?(?:supply|inventory)|(?:supply|inventory).{0,25}months?/i:f.name.includes('median_home_value')?/median.{0,25}(?:home|property).{0,15}value/i:f.name.includes('median_list_price')?/median.{0,25}(?:list|asking).{0,15}price/i:f.name.includes('median_home_age')?/median.{0,25}(?:home|property).{0,15}age|median\s+age/i:f.name==='field_0038'?/owner.{0,15}occup/i:f.name==='field_0039'?/rent(?:er|al).{0,15}occup/i:/price.{0,35}chang|chang.{0,35}price/i);
+  if(value!==null&&(!quote||!labels.test(quote)||((metricField(f.name)||f.name==='sold.0.price'||f.name.endsWith('.rooms'))&&!numbers.includes(number))))result.formFields[f.name]=null;
  }
  for(const f of plan.fields){let v=result.formFields[f.name];if(typeof v==='string'){
    v=v.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[\u2010-\u2015\u2212]/g,'-').replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"').replace(/\u2026/g,'...').replace(/\r\n?/g,'\n').trim();if(!v||/^(?:N\/P|unknown|not (?:provided|supplied|reported|documented|available|stated|specified))$/i.test(v))v=null;
@@ -46,5 +50,5 @@ export function validateCompletion(result,plan){
  if(!(plan.active.length?plan.active:['']).includes(result.primaryActive))throw Error('Select an existing primary active comparable.');
  if(!['none_reported','documented','unknown'].includes(result.repairStatus)||!Array.isArray(result.repairs)||result.repairs.length>10||result.repairs.some(r=>typeof r.description!=='string'||!r.description.trim()||r.description.length>35||/[^\x20-\x7e]/.test(r.description)||(r.cost!==null&&(!Number.isFinite(r.cost)||r.cost<0||r.cost>1e9)))||(result.repairStatus==='documented')!==!!result.repairs.length)throw Error('Return the documented repair items, or an explicit no-report/unknown repair status.');
  if(!result.formFields.field_0482||result.formFields.field_0482==='N/A')throw Error('Complete the form Comments with a concise valuation rationale.');
- return {formFields:result.formFields,metricEvidence:result.metricEvidence,choices:result.choices,primaryActive:result.primaryActive,repairs:result.repairs,repairStatus:result.repairStatus};
+ return {formFields:result.formFields,formEvidence:result.formEvidence,choices:result.choices,primaryActive:result.primaryActive,repairs:result.repairs,repairStatus:result.repairStatus};
 }
