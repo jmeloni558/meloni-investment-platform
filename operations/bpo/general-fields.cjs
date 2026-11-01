@@ -29,7 +29,7 @@ function lotSquareFeet(value,unit='sqft'){
  if(explicit.length){const amounts=explicit.map(m=>+m[1]*(/^ac/i.test(m[2])?43560:1));if(amounts.some(n=>Math.abs(n-amounts[0])>Math.max(1,amounts[0]*.01)))return null;return amounts.find((n,i)=>!/^ac/i.test(explicit[i][2]))??amounts[0];}
  return /^\d+(?:\.\d+)?$/.test(s)?Number(s)*(unit==='acres'?43560:1):null;
 }
-function lotDisplay(sqft,unit){return sqft===null?'':String(Number((unit==='acres'?sqft/43560:sqft).toFixed(unit==='acres'?6:2)));}
+function lotDisplay(sqft,unit){return sqft===null?'':String(Number((unit==='acres'?sqft/43560:sqft).toFixed(2)));}
 function generalFields(input){
  if(input._clientTemplate==='rrr')return {...input};
  const v={...input,_aiFields:{...(input._aiFields||{})},_generalDefaults:{...(input._generalDefaults||{})},_lotAreas:{...(input._lotAreas||{})},_lotUnit:input._lotUnit==='acres'?'acres':'sqft'};
@@ -51,7 +51,9 @@ function generalFields(input){
 }
 function setLotUnit(input,unit){
  if(input._clientTemplate==='rrr')return {...input};
- const v=generalFields(input);v._lotUnit=unit==='acres'?'acres':'sqft';
+ const v=generalFields(input),previousUnit=v._lotUnit;v._lotUnit=unit==='acres'?'acres':'sqft';
+ const rate=String(v._adjustments?.globals?.siteRate??'').trim(),n=Number(rate.replace(/[$,]/g,''));
+ if(previousUnit!==v._lotUnit&&rate&&Number.isFinite(n)&&n>=0){v._adjustments=structuredClone(v._adjustments);v._adjustments.globals.siteRate=String(v._lotUnit==='acres'?n*43560:n/43560);}
  for(const p of prefixes){const key=p+'site',area=v._lotAreas[key];if(v[key]!==undefined){const old=v[key];v[key]=lotDisplay(area.sqft,v._lotUnit);if(v._aiFields[key]&&v._aiFields[key].value===old)v._aiFields[key]={...v._aiFields[key],value:v[key]};}v._lotAreas[key]={...area,display:lotDisplay(area.sqft,v._lotUnit)};}
  return v;
 }

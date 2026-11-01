@@ -2,13 +2,14 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const C=require('../operations/bpo/core.cjs');
 test('Step 3 quantities reach both the editable form and market narrative without cross-mapping',async()=>{
  const v={field_0008:'Synthetic market test',field_0033:true,market_price_change_percent:'7',market_price_change_months:'12',market_months_supply:'4.2',market_zip:'33543',market_county:'Pasco County',market_zip_median_home_value:'406000',market_county_median_home_value:'339000',market_zip_median_list_price:'449000',market_county_median_list_price:'345000',market_zip_list_price_12month_change:'2.2',market_county_list_price_12month_change:'4.6',market_zip_median_home_age:'16',market_county_median_home_age:'30',field_0038:'85',field_0039:'15'};
- const body=C.draftSummary(v).sections.find(s=>s.title==='Neighborhood and Market Conditions').body;
+ const body=C.draftSummary({...v,_clientTemplate:'rrr'}).sections.find(s=>s.title==='Neighborhood and Market Conditions').body;
  for(const text of ['decreased 7%','12 months','4.2 months','not the subject','does not establish a time adjustment','single reading'])assert.ok(body.includes(text),text);
+ const general=C.draftSummary(v).sections.find(s=>s.title==='Market Information').body;for(const fact of ['decreased approximately 7%','12 months','4.2 months'])assert.ok(general.includes(fact),fact);assert.ok(!general.includes('$406,000'));
  assert.ok(!body.includes('$406,000')); // The detailed geography values stay in the form, not a repeated narrative table.
  const fs=require('fs'),{PDFDocument}=require('pdf-lib');const pdf=await PDFDocument.load(await C.exportPDF(fs.readFileSync('assets/bpo/template.pdf'),v));const f=pdf.getForm();
  for(const key of Object.keys(v).filter(k=>k.startsWith('market_')))assert.equal(f.getTextField(key).getText().replace(/[$,]/g,''),v[key],key);
  assert.equal(f.getTextField('market_owner_percent').getText(),'85');assert.equal(f.getTextField('market_renter_percent').getText(),'15');
- const empty=C.draftSummary({field_0037:true}).sections.find(s=>s.title==='Neighborhood and Market Conditions').body;assert.ok(empty.includes('stable'));assert.ok(!empty.includes('median home value of'));assert.ok(!empty.includes('0%'));
+ const empty=C.draftSummary({_clientTemplate:'rrr',field_0037:true}).sections.find(s=>s.title==='Neighborhood and Market Conditions').body;assert.ok(empty.includes('stable'));assert.ok(!empty.includes('median home value of'));assert.ok(!empty.includes('0%'));
 });
 test('neighborhood report quantities preserve geography, signed changes and source precision',async()=>{
  const {cleanExtraction}=await import('../supabase/functions/bpo-extract/contract.mjs');

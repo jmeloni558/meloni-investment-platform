@@ -23,7 +23,7 @@ function storyClass(raw){
  const multi=/\b(two|three|four|five|multi|multiple|[2-9]|\d{2,}|1\.5)\s*(?:story|storey|stories|storeys|level|levels|floor|floors)\b|\b(second|third|fourth|[2-9](?:nd|rd|th)|upper) floor\b/.test(s);
  return single===multi?null:single?1:0;
 }
-function poolClass(raw){const s=String(raw??'').toLowerCase().replace(/[-–—]/g,' ');if(/above\s*ground|\b(no|none|community)\b/.test(s))return 0;if(/in\s*ground|\b(private|yes|gunite|concrete|fiberglass)\b/.test(s))return 1;return null;}
+function poolClass(raw){const s=String(raw??'').toLowerCase().replace(/[-–—]/g,' ');if(/above\s*ground|\b(no|none|community)\b/.test(s))return 0;if(/^(?:swimming\s+)?pool$/.test(s.trim())||/in\s*ground|\b(private|yes|gunite|concrete|fiberglass)\b/.test(s))return 1;return null;}
 function viewContext(v,p){return [v.field_0008||v['sold.0.address'],v['sold.0.view'],v[p+'.address'],v[p+'.city'],v[p+'.state'],v[p+'.zip'],v[p+'.view']].map(x=>String(x??'').trim().toLowerCase());}
 function viewComparison(v,p){const entry=v._viewComparisons?.[p];return entry&&['superior','similar','inferior'].includes(entry.choice)&&JSON.stringify(entry.context)===JSON.stringify(viewContext(v,p))?entry.choice:'';}
 function setViewComparison(input,p,choice){
@@ -43,8 +43,13 @@ function setQualityComparison(input,p,choice){
  delete v._adjustments.manual?.[key];delete v._adjustments.generated?.[key];v[key]='';return v;
 }
 const blanketFields=[
- ['location','Location'],['site','Site'],['view','View','view'],['design','Design and appeal','story'],['quality','Quality of construction','quality'],['year','Year built','difference'],['condition','Condition','condition'],['beds','Bedrooms','difference','rooms'],['baths','Bathrooms','difference','rooms'],['basement','Basement'],['utility','Functional utility'],['hvac','Heating / cooling'],['energy','Energy efficient items'],['garage','Garage / carport'],['porch','Porches','flat','porches'],['patio','Patio','flat','porches'],['deck','Deck','flat','porches'],['fireplace','Fireplace'],['fence','Fence'],['pool','Pool','pool'],['other','Other']
+ ['location','Location'],['site','Site'],['siteRate','Site','site','site'],['view','View','view'],['design','Design and appeal','story'],['quality','Quality of construction','quality'],['year','Year built','difference'],['condition','Condition','condition'],['beds','Bedrooms','difference','rooms'],['baths','Bathrooms','difference','rooms'],['basement','Basement'],['utility','Functional utility'],['hvac','Heating / cooling'],['energy','Energy efficient items'],['garage','Garage / carport'],['garageBayRate','Attached garage','parking','garage'],['detachedGarageBayRate','Detached garage','parking','garage'],['carportBayRate','Carport','parking','garage'],['porch','Porches','flat','porches'],['patio','Patio','flat','porches'],['deck','Deck','flat','porches'],['fireplace','Fireplace'],['fence','Fence'],['pool','Pool','pool'],['other','Other']
 ];
+function setAdjustmentFactor(input,key,value){
+ const v={...input,_adjustments:structuredClone(input._adjustments||{})};v._adjustments.globals||={};v._adjustments.globals[key]=value;
+ if(v._clientTemplate!=='rrr'){if(key==='siteRate')delete v._adjustments.globals.site;if(require('./parking.cjs').rateKeys.includes(key))delete v._adjustments.globals.garage;}
+ return v;
+}
 function apply(input,number,money,overwrite=false){
  const v={...input},state=structuredClone(input._adjustments||{rate:'',generated:{},parts:{}});state.generated||={};state.parts||={};state.manual||={};const warnings=[];let preserved=0;
  const same=(a,b)=>number(a)!==null&&number(a)===number(b);
@@ -63,11 +68,14 @@ function apply(input,number,money,overwrite=false){
   }else {const k=p+'adj_gla',old=state.generated[k];if(old&&same(v[k],old.value)){v[k]='';delete state.generated[k];}}
   const globals=state.globals||{},managed=new Set();
   for(const target of new Set(blanketFields.map(f=>f[3]||f[0]))){
-   const fields=blanketFields.filter(f=>(f[3]||f[0])===target),touched=fields.some(f=>Object.hasOwn(globals,f[0]));
+   const newSite=v._clientTemplate!=='rrr'&&Object.hasOwn(globals,'siteRate'),newParking=v._clientTemplate!=='rrr'&&require('./parking.cjs').rateKeys.some(k=>Object.hasOwn(globals,k));
+   const fields=blanketFields.filter(f=>(f[3]||f[0])===target).filter(f=>v._clientTemplate==='rrr'?!['site','parking'].includes(f[2]):!(f[0]==='site'&&newSite||f[0]==='garage'&&newParking)),touched=fields.some(f=>Object.hasOwn(globals,f[0]));
    if(!touched)continue;managed.add(target);
    const key=p+'adj_'+target,entered=fields.filter(f=>String(globals[f[0]]??'').trim());let sum=0,valid=true;
-   for(const [name,label,mode] of entered){const factor=number(globals[name]);if(factor===null||(['difference','story','pool','condition','view','quality'].includes(mode)&&factor<0)){valid=false;continue;}
-    if(mode==='view'){const choice=viewComparison(v,p.slice(0,-1));if(!choice){valid=false;warnings.push({prefix:p,message:'Choose Superior, Similar or Inferior beside this comparable’s view before applying the view factor.'});}else sum+=({superior:-1,similar:0,inferior:1}[choice])*factor;}
+   if(target==='garage'&&newParking&&entered.length){const result=require('./parking.cjs').adjustment(v['sold.0.garage'],v[p+'garage'],globals,number);if(result.reason){valid=false;warnings.push({prefix:p,message:result.reason});}else sum=result.amount;}
+   for(const [name,label,mode] of entered){if(mode==='parking')continue;const factor=number(globals[name]);if(factor===null||(['difference','story','pool','condition','view','quality','site','parking'].includes(mode)&&factor<0)){valid=false;continue;}
+    if(mode==='site'){const sub=number(v['sold.0.site']),comp=number(v[p+'site']);if(sub===null||comp===null||sub<0||comp<0){valid=false;warnings.push({prefix:p,message:'Site adjustment needs both lot sizes in the selected unit.'});}else sum+=(sub-comp)*factor;}
+    else if(mode==='view'){const choice=viewComparison(v,p.slice(0,-1));if(!choice){valid=false;warnings.push({prefix:p,message:'Choose Superior, Similar or Inferior beside this comparable’s view before applying the view factor.'});}else sum+=({superior:-1,similar:0,inferior:1}[choice])*factor;}
     else if(mode==='quality'){const choice=qualityComparison(v,p.slice(0,-1));if(!choice){valid=false;warnings.push({prefix:p,message:'Choose Superior, Similar or Inferior beside this comparable’s construction quality before applying the quality factor.'});}else sum+=({superior:-1,similar:0,inferior:1}[choice])*factor;}
     else if(mode==='condition'){const grades=['poor','fair','average','good','excellent'],grade=x=>grades.indexOf(String(x??'').trim().toLowerCase()),sub=grade(v['sold.0.condition']),comp=grade(v[p+'condition']);if(sub<0||comp<0){valid=false;warnings.push({prefix:p,message:'Condition adjustment needs Poor, Fair, Average, Good or Excellent for both properties. Review custom descriptions and enter an individual adjustment.'});}else sum+=(sub-comp)*factor;}
     else if(mode==='story'){const sub=storyClass(v['sold.0.design']),comp=storyClass(v[p+'design']);if(sub===null||comp===null){valid=false;warnings.push({prefix:p,message:'Design and appeal needs an explicit single-story/ranch or multistory description for both properties. Review Step 5.'});}else sum+=(sub-comp)*factor;}
@@ -88,4 +96,4 @@ function apply(input,number,money,overwrite=false){
  }
  v._adjustments=state;return {values:v,warnings,preserved};
 }
-module.exports={qualityComparison,setQualityComparison,viewComparison,setViewComparison,poolClass,concession,parts,blanketFields,apply,storyClass};
+module.exports={setAdjustmentFactor,qualityComparison,setQualityComparison,viewComparison,setViewComparison,poolClass,concession,parts,blanketFields,apply,storyClass};
