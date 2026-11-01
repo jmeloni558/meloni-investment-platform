@@ -30,6 +30,7 @@ async function exportPDF(template,input,schema,recalculate,issues,concession){
  if(!/\.0\./.test(f.name)&&/\.financing$/.test(f.name)&&String(value??'').trim()){
   const numeric=String(value).replace(/[$,\s]/g,'');if(!/^\d+$/.test(numeric)){const c=concession(value,Number(String(v[f.name.replace(/financing$/,'price')]||'').replace(/,/g,'')));value=c.amount===undefined?'':String(c.amount);}
  }
+ value=require('./ai-bpo.cjs').aiBpoDisplayValue(v,f,value);
  value=formatValue(f,value);control.removeMaxLength();control.acroField.setDefaultAppearance('/Helv 8 Tf 0 g');control.setText(String(value??''));const text=String(value??''),size=textSize(f,text,font);if(size===null)throw Error(f.label+': shorten this entry to fit the printed form.');control.setFontSize(size);if(f.readonly)control.enableReadOnly();
  }
  form.updateFieldAppearances(font);
