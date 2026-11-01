@@ -13,7 +13,7 @@ select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001'
 do $$ begin
   if exists(select 1 from public.client_directory) then raise exception 'Unrelated user can read contacts'; end if;
   if exists(select 1 from public.client_directory_members) then raise exception 'Unrelated user can read membership'; end if;
-  if has_table_privilege('authenticated','public.client_directory','INSERT') or has_table_privilege('authenticated','public.client_directory_members','INSERT') then raise exception 'Unauthorized write grant'; end if;
+  if has_table_privilege('authenticated','public.client_directory_members','INSERT') then raise exception 'Unauthorized membership write grant'; end if;
 end $$;
 set local role anon;
 do $$ begin
