@@ -95,3 +95,5 @@ body.pt-bpo-active main.shell > :not(#appNavShell):not(#ptBpoWorkspace):not(.foo
 .pt-bpo-client-choice [data-client-form-name]{display:block;padding:9px 0;color:#123b56}
 @media(max-width:900px){.pt-bpo-workflow-shell .pt-bpo-workflow[data-step-count="8"]{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.pt-bpo-workflow-shell .pt-bpo-workflow[data-step-count="8"]{grid-template-columns:1fr}}
+
+.pt-bpo-summary-section .pt-bpo-note-address{display:block;margin-top:4px;font-weight:400;letter-spacing:0;color:#526879}

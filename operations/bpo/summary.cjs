@@ -18,4 +18,4 @@ async function summaryPDF(v){
  d.getPages().forEach((p,i)=>p.drawText(`BPO Summary  |  ${i+1} / ${d.getPageCount()}`,{x:48,y:30,size:9,font,color:rgb(.35,.4,.45)}));return d.save();
 }
 async function mergePackage(bpo,summary,attachments){const d=await PDFDocument.load(bpo);for(const a of [{name:'BPO Summary',bytes:summary},...attachments]){let src;try{src=await PDFDocument.load(a.bytes);}catch(_){throw Error(`Cannot read ${a.name}. Supply an unencrypted, valid PDF.`);}if(src.getForm().getFields().length)throw Error(`${a.name} contains interactive fields. Supply a separate static copy for the supporting-document package; the original remains unchanged.`);for(const p of await d.copyPages(src,src.getPageIndices()))d.addPage(p);}return d.save();}
-module.exports={summaryFingerprint:fingerprint,draftSummary:draft,validateSummary:validate,summaryPDF,mergePackage};
+module.exports={...require('./summary-notes.cjs'),summaryFingerprint:fingerprint,draftSummary:draft,validateSummary:validate,summaryPDF,mergePackage};
