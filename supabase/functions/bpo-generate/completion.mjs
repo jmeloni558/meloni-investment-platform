@@ -13,7 +13,7 @@ export function completionPlan(values,schema){
   if(m&&((m[2]!=='0'&&!values[m[1]+'.'+m[2]+'.address'])||(m[1]==='active'&&m[2]==='0'&&m[3]!=='price')))return false;
   if(['field_0479','field_0480','field_0482'].includes(f.name))return true;
   const value=values[f.name],sourced=values._aiFields?.[f.name];
-  return value===undefined||value===null||value===''||(!sourced&&f.kind==='check')||values._generalDefaults?.[f.name]===value||values._roomDefaults?.[f.name]===value||/not (?:explicit|listed|provided)|default convention/i.test(sourced?.evidence||'');
+  return value===undefined||value===null||value===''||(!sourced&&f.kind==='check')||values._generalDefaults?.[f.name]===value||values._roomDefaults?.[f.name]===value||/not (?:explicit|listed|provided)|\bdefault\b|no total rooms/i.test(sourced?.evidence||'');
  }).map(f=>({name:f.name,label:f.label,kind:f.kind,maxChars:f.kind==='textarea'?420:Math.max(2,Math.floor((f.w-4)/3))}));
  const choices=[...new Set(schema.map(f=>f.group).filter(g=>g&&g!=='header_bpo_type'))].map(group=>({group,options:schema.filter(f=>f.group===group).map(f=>({name:f.name,label:f.option||f.label}))}));
  return {fields,choices,active};
