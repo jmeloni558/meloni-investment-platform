@@ -4,7 +4,7 @@ export const instructions=`Write the General BPO summary as an experienced resid
 
 The analyst's notes are working observations, not finished report language. Interpret their meaning, paraphrase them, and weave them into the same paragraphs as the relevant BPO evidence and analysis. Do not paste a note paragraph, append a block of notes, quote the notes, label text 'user notes', or merely add an introductory phrase to copied text. Preserve all material observations, qualifications and uncertainty. Short factual phrases and exact figures may recur where necessary. Connect observations to similarities and differences, buyer appeal, marketability, comparable relevance and the entered conclusion. Explain why a difference matters; do not assert an unsupported dollar premium or causal explanation. If notes conflict with form facts, flag the conflict in warnings and qualify the discussion rather than silently picking a version. Notes about a comparable must stay attached to that comparable, not become subject facts.
 
-Keep the established conversational, calm, professional tone: readable connected prose, natural transitions and varied sentences. Avoid robotic disclaimers in every paragraph, canned stock phrases and repetitive recitations of the grid. Mention figures and adjustments only to support an analytical point. Do not say 'according to your notes' or discuss the writing process. Attribute uncertain observations when needed, without presenting them as verified facts.
+Keep the established conversational, calm, professional tone: readable connected prose, natural transitions and varied sentences. Avoid robotic disclaimers in every paragraph, canned stock phrases and repetitive recitations of the grid. Mention figures and adjustments only to support an analytical point. Do not say 'according to your notes', 'the analyst notes', 'the analyst emphasizes', or discuss the writing process. Do not use labels such as 'Relationship to the subject:' inside paragraphs; make that comparison naturally in the prose. Attribute uncertain observations when needed, without presenting them as verified facts.
 
 The header is rendered separately from the saved BPO. Return the exact supplied section IDs in order: Subject Information; Market Information; each sold comp separately, then each active/pending comp separately; Conclusion. No new headings inside section bodies, markdown, tables or bullet lists. Use paragraphs separated by blank lines. Discuss each comp's relationship to the subject and its evidentiary role. Closed sales support achieved prices; active and pending asking prices describe competition, not verified sale or contract prices. Honor explicitly supplied primary-comp selections and reasoning; do not invent weights, a new value or an average-based valuation. In the Conclusion, synthesize the most consequential observations and comparisons into support for the entered opinion, and explain any unresolved limitation or departure from the sold range without manufacturing support. If the opinion is blank, say it is not finalized.
 
@@ -38,12 +38,21 @@ export function prepare(values,schema){
 }
 export function responseSchema(input){return {type:'object',additionalProperties:false,required:['sections','warnings','incorporatedNotes'],properties:{sections:{type:'array',items:{type:'object',additionalProperties:false,required:['id','body'],properties:{id:{type:'string',enum:input.plan.map(x=>x.id)},body:{type:'string'}}}},warnings:{type:'array',items:{type:'string'}},incorporatedNotes:{type:'array',items:{type:'string',enum:input.plan.map(x=>x.id)}}}};}
 const words=x=>clean(x).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().split(/\s+/).filter(Boolean);
+// Normalize model typography before PDF export; section headings are rendered separately.
+const pdfText=x=>x.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[\u00ad\u200b\ufeff]/g,'').replace(/[\u2010-\u2015\u2212]/g,'-').replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"').replace(/\u2026/g,'...').replace(/[\u00a0\u2000-\u200a\u202f]/g,' ').replace(/[\u2028\u2029]/g,'\n');
 export function validateOutput(result,input){
  if(!Array.isArray(result?.sections)||result.sections.length!==input.plan.length)throw Error('Return every required section in the supplied order.');
+ result={...result,sections:result.sections.map((section,i)=>{
+  if(typeof section?.body!=='string')return section;
+  const lines=pdfText(section.body).trim().split('\n'),heading=pdfText(input.plan[i].title).toLowerCase();
+  if(lines[0].trim().replace(/:$/,'').toLowerCase()===heading)lines.shift();
+  return {...section,body:lines.join('\n').trim()};
+ })};
  let total=0;
  for(const [i,section] of result.sections.entries()){
   if(section.id!==input.plan[i].id||typeof section.body!=='string'||!section.body.trim()||section.body.length>20000)throw Error('Return every required section with a complete prose body.');
   if(/(?:^|\n)\s*(?:#{1,6}\s|[-*]\s|\d+\.\s)/.test(section.body))throw Error('Use connected prose paragraphs, without headings or lists inside the sections.');
+  if(/[^\x09\x0a\x0d\x20-\x7e\xa0-\xff]/.test(section.body))throw Error('Use PDF-compatible plain text and ordinary punctuation.');
   total+=section.body.length;
  }
  if(total>65000)throw Error('The narrative is too long. Remove repetition while retaining material analysis.');
