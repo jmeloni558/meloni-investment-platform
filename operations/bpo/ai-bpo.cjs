@@ -37,4 +37,11 @@ function displayValue(v,f,value){
  if(/\.ppsf$/.test(f.name)&&!String(value??'').trim())return c.notApplicable.includes(f.name.replace(/ppsf$/,'price'))?'N/A':'N/P';
  return value;
 }
-module.exports={aiBpoDisplayValue:displayValue,aiBpoSourceKey:sourceKey,aiBpoFingerprint:fingerprint,aiBpoReady:ready,acceptAiBpo:accept};
+function readableText(text,v,C){
+ const docs=(v._attachments||[]).filter(d=>d.extract!==false&&d.sourceKind!=='tax');
+ return String(text).replace(/\bDoc(?:ument)?\s*(\d+)\s*p(?:age)?\.?\s*(\d+)/gi,(_,i,page)=>(docs[+i]?.name||'Source document '+(+i+1))+', page '+page)
+ .replace(/\b(sold|active)\.([1-3])\.adj_([a-z_]+|\*)/g,(_,kind,i,key)=>(kind==='sold'?'Sold':'Active')+' comparable '+i+' '+(key==='gla'?'living-area adjustment':'adjustment'))
+ .replace(/\b(sold|active)\.([0-3])\b/g,(_,kind,i)=>i==='0'?'subject':(kind==='sold'?'Sold':'Active')+' comparable '+i)
+ .replace(/\bfield_\d{4}\b/g,name=>C.byName.get(name)?.label||'form value').replace(/\bnone_reported\b/g,'no repairs reported');
+}
+module.exports={aiBpoReadableText:readableText,aiBpoDisplayValue:displayValue,aiBpoSourceKey:sourceKey,aiBpoFingerprint:fingerprint,aiBpoReady:ready,acceptAiBpo:accept};
