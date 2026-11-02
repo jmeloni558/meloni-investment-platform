@@ -14,3 +14,17 @@ test('deep OneDrive downloads have short flat paths and distinct names for simil
  await f.context.downloadPhotos([{name:prefix+'3.png',size:20}],'2026-11-02');
  assert.match(f.saved[1].files[0].name,/-2026-11-02\.jpg$/);
 });
+test('downloads overlap at most four reads and keep ZIP order even when later photos finish first',async()=>{
+ const f=fixture(),photos=Array.from({length:9},(_,i)=>({name:i+'.jpg',size:100}));let active=0,peak=0;
+ f.context.getPhoto=async photo=>{active++;peak=Math.max(active,peak);await new Promise(resolve=>setTimeout(resolve,10-Number.parseInt(photo.name)));active--;return photo;};
+ await f.context.downloadPhotos(photos);
+ assert.equal(peak,4);assert.deepEqual(f.saved[0].files.map(entry=>entry.blob),photos);
+});
+test('preview and ZIP reads share one request; just-uploaded files are read locally',async()=>{
+ const remote=new Blob(['original']),local=new Blob(['local']);let calls=0;
+ const ctx={user:{id:'owner'},selected:{id:'property'},queue:[],check(){},bucket:{download:async()=>{calls++;await Promise.resolve();return {data:remote};}}};
+ vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('const recentBlobs='),source.indexOf('function save(')),ctx);
+ const photo={name:'sample.jpg'};const both=await Promise.all([ctx.getPhoto(photo,1),ctx.getPhoto(photo,1)]);assert.equal(calls,1);assert.ok(both.every(b=>b===remote));
+ assert.equal(await ctx.getPhoto(photo,1),remote);assert.equal(calls,1);
+ ctx.clearTransferCache();ctx.queue=[{name:photo.name,state:'Uploaded',file:local}];assert.equal(await ctx.getPhoto(photo,1),local);assert.equal(calls,1);
+});

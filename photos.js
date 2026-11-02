@@ -16,20 +16,41 @@ let user=null,properties=[],selected=null,photos=[],queue=[],busy=false,epoch=0,
 const bucket=client?.storage.from(BUCKET);
 const selectedPhotos=new Set();
 const captureDates=new Map();let captionQueue=[],captionRunning=0,captionObservers=[];
-function clearCaptions(){captionObservers.forEach(o=>o.disconnect());captionObservers=[];captionQueue=[];}
-function loadCaption(card,caption,path,version){
- const observer=new IntersectionObserver(entries=>{if(!entries.some(e=>e.isIntersecting))return;observer.disconnect();captionQueue.push(async()=>{
-  if(version!==epoch||!card.isConnected)return;
-  try{let date=captureDates.get(path);if(!captureDates.has(path)){const {data,error}=await bucket.download(path);if(error)throw error;date=await takenDate(data);if(version!==epoch)return;captureDates.set(path,date);}
-   if(card.isConnected)caption.textContent='Taken: '+(date||'Not recorded');
-  }catch(_){if(version===epoch&&card.isConnected)caption.textContent='Taken: Could not read date — refresh to retry';}
- });drainCaptions();});captionObservers.push(observer);observer.observe(card);
+function clearCaptions(){captionObservers.forEach(o=>o.disconnect());captionObservers=[];captionQueue=[];for(const url of previewURLs)URL.revokeObjectURL(url);previewURLs.clear();}
+const previewURLs=new Set();
+function loadPreview(card,caption,img,photo,version){
+  const path=user.id+'/'+selected.id+'/'+photo.name;
+  const observer=new IntersectionObserver(entries=>{
+    if(!entries.some(entry=>entry.isIntersecting))return;
+    observer.disconnect();
+    captionQueue.push(async()=>{
+      if(version!==epoch||!card.isConnected)return;
+      try{
+        const blob=await getPhoto(photo,version);
+        if(version!==epoch||!card.isConnected)return;
+        if(img){
+          const url=URL.createObjectURL(blob);
+          previewURLs.add(url);
+          img.onload=img.onerror=()=>{URL.revokeObjectURL(url);previewURLs.delete(url);};
+          img.src=url;
+        }
+        if(!captureDates.has(path)){
+          const date=await takenDate(blob);
+          if(version!==epoch||!card.isConnected)return;
+          captureDates.set(path,date);
+        }
+        caption.textContent='Taken: '+(captureDates.get(path)||'Not recorded');
+      }catch(_){if(version===epoch&&card.isConnected)caption.textContent='Taken: Could not read date — refresh to retry';}
+    });
+    drainCaptions();
+  });
+  captionObservers.push(observer);observer.observe(card);
 }
-function drainCaptions(){while(captionRunning<2&&captionQueue.length){const job=captionQueue.shift();captionRunning++;job().finally(()=>{captionRunning--;drainCaptions();});}}
+function drainCaptions(){while(!busy&&captionRunning<2&&captionQueue.length){const job=captionQueue.shift();captionRunning++;job().finally(()=>{captionRunning--;drainCaptions();});}}
 
 const status=(message,error=false)=>{$('status').textContent=message;$('status').classList.toggle('error',error);};
 function check(version){if(version!==epoch || !user)throw Error('Your session changed. Sign in again to continue.');}
-function setBusy(value){busy=value;$('updateApp').disabled=value;document.querySelectorAll('#library button,#library input').forEach(el=>el.disabled=value);$('upload').disabled=value||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);renderPhotoSelection();}
+function setBusy(value){busy=value;if(!busy)drainCaptions();$('updateApp').disabled=value;document.querySelectorAll('#library button,#library input').forEach(el=>el.disabled=value);$('upload').disabled=value||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);renderPhotoSelection();}
 function node(tag,text,className){const el=document.createElement(tag);if(text)el.textContent=text;if(className)el.className=className;return el;}
 const listTitles={active:'Active properties',completed:'Completed photos',archive:'Archive'};
 function propertyList(p){
@@ -83,13 +104,13 @@ async function openProperty(p){
 }
 async function refreshPhotos(){
   const version=epoch,p=selected;if(!p)return;const prefix=user.id+'/'+p.id;
-  status('Loading photos…');const rows=await listPhotos(bucket,user.id+'/'+p.id);check(version);if(p.id!==selected?.id)return;photos=rows;for(const name of selectedPhotos){if(!photos.some(p=>p.name===name))selectedPhotos.delete(name);}
+  status('Loading photos…');const rows=await listPhotos(bucket,prefix);check(version);if(p.id!==selected?.id)return;photos=rows;for(const name of selectedPhotos){if(!photos.some(p=>p.name===name))selectedPhotos.delete(name);}
   clearCaptions();$('photos').replaceChildren();$('count').textContent=photos.length+' photo'+(photos.length===1?'':'s');
   for(const photo of photos){
     const card=node('article',null,'photo');card.dataset.photoName=photo.name;
     const label=node('label',null,'photo-select'),checkbox=node('input');checkbox.type='checkbox';checkbox.checked=selectedPhotos.has(photo.name);checkbox.disabled=busy;checkbox.setAttribute('aria-label','Select '+originalName(photo.name));checkbox.onchange=()=>{if(checkbox.checked)selectedPhotos.add(photo.name);else selectedPhotos.delete(photo.name);renderPhotoSelection();};label.append(checkbox,node('span','Select photo'));card.append(label);
     if(/\.(heic|heif)$/i.test(photo.name)){card.append(node('div','HEIC / HEIF photo','placeholder'));}
-    else {const img=node('img');img.alt=originalName(photo.name);img.loading='lazy';card.append(img);const observer=new IntersectionObserver(entries=>{if(!entries.some(e=>e.isIntersecting))return;observer.disconnect();if(version!==epoch)return;bucket.createSignedUrl(prefix+'/'+photo.name,300).then(({data,error})=>{if(version!==epoch)return;if(error){img.replaceWith(node('div','Preview unavailable','placeholder'));return;}img.src=data.signedUrl;}).catch(()=>{img.replaceWith(node('div','Preview unavailable','placeholder'));});});observer.observe(img);}
+    else {const img=node('img');img.alt=originalName(photo.name);card.append(img);}
     const caption=node('div',null,'photo-caption'),date=node('p','Taken: Reading date…','taken-date');caption.append(node('p',originalName(photo.name)),date);card.append(caption);
     const remove=node('button','Delete photo','delete-photo');
     remove.setAttribute('aria-label','Delete '+originalName(photo.name));
@@ -103,7 +124,7 @@ async function refreshPhotos(){
       status('Photo deleted. You can select and upload a replacement.');
     });
     card.append(remove);
-    $('photos').append(card);loadCaption(card,date,prefix+'/'+photo.name,version);
+    $('photos').append(card);loadPreview(card,date,card.querySelector('img'),photo,version);
   }
   renderPhotoSelection();
   status(p.deleting_at?'Property deletion is unfinished. Click Delete property again to finish.':photos.length?'Photos are up to date.':'This property is ready. Select photos to upload.');
@@ -173,7 +194,33 @@ $('deleteProperty').onclick=()=>run(async()=>{
  }
  await loadProperties();showList();status('Property and all uploaded photos deleted.');
 });
-async function getPhoto(photo,version){check(version);const {data,error}=await bucket.download(user.id+'/'+selected.id+'/'+photo.name);check(version);if(error)throw error;return data;}
+// Bound retained original bytes independently of the number of photos in a property.
+const recentBlobs=new Map(),pendingReads=new Map();
+let retainedBytes=0;
+function clearTransferCache(){recentBlobs.clear();pendingReads.clear();retainedBytes=0;}
+async function getPhoto(photo,version){
+  check(version);
+  const property=selected.id,path=user.id+'/'+property+'/'+photo.name;
+  const local=queue.find(item=>item.name===photo.name&&item.state==='Uploaded');
+  if(local)return local.file;
+  if(recentBlobs.has(path))return recentBlobs.get(path);
+  if(pendingReads.has(path))return pendingReads.get(path);
+  const read=(async()=>{
+    const {data,error}=await bucket.download(path);
+    check(version);if(error)throw error;
+    if(selected?.id===property&&pendingReads.get(path)===read){
+      while(retainedBytes+data.size>32*1024*1024&&recentBlobs.size){
+        const oldest=recentBlobs.keys().next().value;
+        retainedBytes-=recentBlobs.get(oldest).size;recentBlobs.delete(oldest);
+      }
+      recentBlobs.set(path,data);retainedBytes+=data.size;
+    }
+    return data;
+  })();
+  pendingReads.set(path,read);
+  try{return await read;}finally{if(pendingReads.get(path)===read)pendingReads.delete(path);}
+}
+
 function save(blob,name){const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 $('newProperty').onsubmit=e=>{e.preventDefault();run(async()=>{
   const address=$('address').value.trim().replace(/\s+/g,' ');if(!address)throw Error('Enter a property address.');
@@ -185,7 +232,7 @@ $('newProperty').onsubmit=e=>{e.preventDefault();run(async()=>{
 
 function showList(mode=listMode){
   if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Return to addresses without uploading the selected photos?'))return;
-  clearCaptions();selectedPhotos.clear();listMode=mode;selected=null;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();
+  clearCaptions();clearTransferCache();selectedPhotos.clear();listMode=mode;selected=null;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();
   $('workspace').hidden=true;$('addressList').hidden=false;$('newProperty').hidden=mode!=='active';
   $('listTitle').textContent=listTitles[mode];
   $('activeTab').setAttribute('aria-pressed',String(mode==='active'));$('completedTab').setAttribute('aria-pressed',String(mode==='completed'));$('archiveTab').setAttribute('aria-pressed',String(mode==='archive'));
@@ -212,9 +259,23 @@ $('files').onchange=()=>{queue=Array.from($('files').files).map(file=>{try{valid
 $('upload').onclick=()=>run(async()=>{
   if(selected.completed_at)throw Error('Reopen this completed set before uploading.');
   const version=epoch,prefix=user.id+'/'+selected.id;let failures=0,uploaded=0;
-  for(const item of queue){if(item.invalid||item.state==='Uploaded')continue;check(version);item.state='Uploading…';renderQueue();status('Uploading '+item.file.name+'…');
-    try{await uploadPhoto(bucket,prefix,item.file);check(version);item.state='Uploaded';uploaded++;}catch(e){check(version);item.state='Failed: '+(e.message||'Connection lost');failures++;}renderQueue();
+  const waiting=queue.filter(item=>!item.invalid&&item.state!=='Uploaded');
+  let next=0;
+  async function worker(){
+    while(next<waiting.length){
+      check(version);
+      const item=waiting[next++];
+      item.state='Uploading…';renderQueue();
+      try{
+        item.name=await uploadPhoto(bucket,prefix,item.file);
+        check(version);item.state='Uploaded';uploaded++;
+      }catch(error){
+        check(version);item.state='Failed: '+(error.message||'Connection lost');failures++;
+      }
+      status('Uploaded '+uploaded+' of '+waiting.length+' photos…');renderQueue();
+    }
   }
+  await Promise.all(Array.from({length:Math.min(3,waiting.length)},worker));
   await refreshPhotos();status(uploaded+' uploaded. '+(failures?failures+' failed. Tap Retry remaining photos.':'Uploads complete.'),!!failures);renderQueue();
 });
 $('refresh').onclick=()=>run(refreshPhotos);
@@ -231,17 +292,23 @@ async function downloadPhotos(items,date=''){
  if(!window.JSZip)throw Error('The ZIP tool did not load. Refresh the page and try again.');
  const version=epoch,name=safeName(selected.address.split(',')[0].slice(0,24)),limit=128*1024*1024;let zip=new window.JSZip(),bytes=0,part=1,done=0;
  const flush=async(final)=>{const blob=await zip.generateAsync({type:'blob',compression:'STORE'});check(version);save(blob,name+(date?'-dated-'+date:'')+(part>1||!final?'-part-'+part:'')+'.zip');part++;zip=new window.JSZip();bytes=0;};
- for(const photo of items){
-  check(version);status('Preparing '+(date?'dated ':'')+'photo '+(done+1)+' of '+items.length+'…');
-  let blob=await getPhoto(photo,version);
-  const original=originalName(photo.name),dot=original.lastIndexOf('.');
-  const stem=safeName(original.slice(0,dot)).slice(0,18);
-  const suffix=date?'-'+date+'.jpg':original.slice(dot);
-  const filename=String(done+1).padStart(3,'0')+'-'+stem+suffix;
-  if(date){blob=await stampPhoto(blob,date,originalName(photo.name));check(version);}
-  if(bytes&&bytes+blob.size>limit)await flush(false);
-  const options={};if(date){const d=dateParts(date);options.date=new Date(Date.UTC(Math.min(2107,Math.max(1980,d.year)),d.month-1,d.day));}
-  zip.file(filename,blob,options);bytes+=blob.size;done++;
+ for(let offset=0;offset<items.length;offset+=4){
+  check(version);
+  const batch=items.slice(offset,offset+4);
+  const blobs=await Promise.all(batch.map(photo=>getPhoto(photo,version)));
+  check(version);
+  for(const [index,photo] of batch.entries()){
+    check(version);status('Preparing '+(date?'dated ':'')+'photo '+(done+1)+' of '+items.length+'…');
+    let blob=blobs[index];
+    const original=originalName(photo.name),dot=original.lastIndexOf('.');
+    const stem=safeName(original.slice(0,dot)).slice(0,18);
+    const suffix=date?'-'+date+'.jpg':original.slice(dot);
+    const filename=String(done+1).padStart(3,'0')+'-'+stem+suffix;
+    if(date){blob=await stampPhoto(blob,date,originalName(photo.name));check(version);}
+    if(bytes&&bytes+blob.size>limit)await flush(false);
+    const options={};if(date){const d=dateParts(date);options.date=new Date(Date.UTC(Math.min(2107,Math.max(1980,d.year)),d.month-1,d.day));}
+    zip.file(filename,blob,options);bytes+=blob.size;done++;
+  }
  }
  await flush(true);status(done+' '+(date?'dated JPG copies':'original photos')+' downloaded. Extract the ZIP'+(part>2?' files':' file')+' to access your photos.');
 }
@@ -266,7 +333,7 @@ $('install').onclick=async()=>{
 };
 async function sessionChanged(session){
   const next=session?.user;if(next?.id===user?.id&&user)return;
-  clearCaptions();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
+  clearCaptions();clearTransferCache();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
   $('files').value='';$('photos').replaceChildren();$('properties').replaceChildren();$('queue').replaceChildren();$('account').textContent='';$('library').hidden=true;$('workspace').hidden=true;$('addressList').hidden=false;$('signedOut').hidden=!!user;
   if(!user){initPhotoCaptcha();status('Sign in to upload and download your property photos.');return;}
   try{const {data,error}=await client.rpc('photo_library_enabled');check(version);if(error)throw error;if(!data){$('signedOut').hidden=false;initPhotoCaptcha();status('Photo Uploads is currently available only to the pilot account.',true);return;}$('library').hidden=false;$('password').value='';$('account').textContent=user.email;await loadProperties();showList('active');await openRequestedAddress();}catch(e){if(version===epoch)status(e.message,true);}
