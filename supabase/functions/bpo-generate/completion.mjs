@@ -1,18 +1,21 @@
 // Shared by the endpoint and browser: every applicable unfilled form control
 // must be considered, independently of the manual extraction restrictions.
 const protectedNames=new Set(['field_0002','field_0008','field_0015','field_0018','field_0019','field_0021','field_0477','field_0478','field_0483','field_0484']);
+export const conditionChoices=['Poor','Fair','Average','Good','Excellent'];
+export const selectedCondition=values=>conditionChoices.includes(values._aiSubjectCondition)?values._aiSubjectCondition:null;
 const numericField=name=>/\.(price|gla)$/.test(name)||['field_0479','field_0480','market_months_supply'].includes(name);
 const metricField=name=>name.startsWith('market_')&&!['market_zip','market_county'].includes(name)||['field_0038','field_0039'].includes(name);
 const evidenceField=name=>metricField(name)||name==='market_county'||name==='sold.0.price'||/\.(rooms|basement|energy|utility|tenure|condition|quality|hvac|porches|fireplace|fence)$/.test(name);
 export const evidenceNames=plan=>plan.fields.filter(f=>evidenceField(f.name)).map(f=>f.name);
 export function completionPlan(values,schema){
  const active=['active.1','active.2','active.3'].filter(p=>values[p+'.address']);
- const assumedRenovated=values._aiValuationContext?.basis==='assumed-renovated'&&values._aiValuationContext.address===values.field_0008;
+ const condition=selectedCondition(values),assumedRenovated=!condition&&values._aiValuationContext?.basis==='assumed-renovated'&&values._aiValuationContext.address===values.field_0008;
  const fields=schema.filter(f=>{
   if(protectedNames.has(f.name)||f.readonly||f.group||f.kind==='select'||f.name.includes('.adj_')||/\.(ppsf|net|adjusted)$/.test(f.name)||f.name.startsWith('repair.'))return false;
   const m=f.name.match(/^(sold|active)\.(\d)\.(.+)$/);
   if(m&&((m[2]!=='0'&&!values[m[1]+'.'+m[2]+'.address'])||(m[1]==='active'&&m[2]==='0'&&m[3]!=='price')))return false;
   if(['field_0479','field_0480','field_0482'].includes(f.name))return true;
+  if(condition&&f.name==='sold.0.condition')return true;
   if(assumedRenovated&&['sold.0.condition','sold.0.hvac'].includes(f.name))return true;
   const value=values[f.name],sourced=values._aiFields?.[f.name];
   return value===undefined||value===null||value===''||(!sourced&&f.kind==='check')||values._generalDefaults?.[f.name]===value||values._roomDefaults?.[f.name]===value||/not (?:explicit|listed|provided)|\bdefault\b|no total rooms/i.test(sourced?.evidence||'');

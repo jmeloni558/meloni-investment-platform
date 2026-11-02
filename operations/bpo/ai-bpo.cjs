@@ -1,8 +1,9 @@
 'use strict';
-const {completionPlan,validateCompletion}=require('../../supabase/functions/bpo-generate/completion.mjs');
+const {completionPlan,validateCompletion,conditionChoices,selectedCondition}=require('../../supabase/functions/bpo-generate/completion.mjs');
 function sourceKey(v){return JSON.stringify((v._attachments||[]).map(d=>[d.path,d.category,d.sourceKind,d.extract]));}
-function fingerprint(v,C){return JSON.stringify([C.summaryFingerprint(v),sourceKey(v),v._lotUnit,v._aiReview?.at]);}
-function ready(v,C){return v._clientTemplate!=='rrr'&&C.validAddress(v.field_0008)&&C.number(v['sold.0.gla'])>0&&[1,2,3].some(i=>v['sold.'+i+'.address']&&C.number(v['sold.'+i+'.price'])>0&&C.number(v['sold.'+i+'.gla'])>0)&&!!v._aiReview?.at&&(v._aiSourceKey===sourceKey(v)||(!v._aiSourceKey&&(v._attachments||[]).filter(d=>d.extract!==false&&d.sourceKind!=='tax').length>0&&(v._attachments||[]).filter(d=>d.extract!==false&&d.sourceKind!=='tax').every(d=>Object.values(v._aiFields||{}).some(s=>!s.removed&&s.path===d.path))));}
+function fingerprint(v,C){const parts=[C.summaryFingerprint(v),sourceKey(v),v._lotUnit,v._aiReview?.at];if(selectedCondition(v))parts.push(selectedCondition(v));return JSON.stringify(parts);}
+function sourcesAnalyzed(v){const docs=(v._attachments||[]).filter(d=>d.extract!==false&&(v._clientTemplate==='rrr'||d.sourceKind!=='tax'));return docs.length>0&&!!v._aiReview?.at&&(v._aiSourceKey===sourceKey(v)||(!v._aiSourceKey&&docs.every(d=>Object.values(v._aiFields||{}).some(s=>!s.removed&&s.path===d.path))));}
+function ready(v,C){return v._clientTemplate!=='rrr'&&sourcesAnalyzed(v)&&C.validAddress(v.field_0008)&&C.number(v['sold.0.gla'])>0&&[1,2,3].some(i=>v['sold.'+i+'.address']&&C.number(v['sold.'+i+'.price'])>0&&C.number(v['sold.'+i+'.gla'])>0);}
 function accept(v,result,C){
  if(result?.aiBpoVersion!==5||![result.asIs,result.listPrice].every(n=>typeof n==='number'&&Number.isFinite(n)&&n>0&&n<1e10)||!/^sold\.[1-3]$/.test(result.primarySold)||!v[result.primarySold+'.address']||!Array.isArray(result.adjustments))throw Error('The AI BPO response was incomplete. Please refresh and generate again.');
  const plan=completionPlan(v,C.schema);validateCompletion(result,plan);
@@ -45,4 +46,4 @@ function readableText(text,v,C){
  .replace(/\b(sold|active)\.([0-3])\b/g,(_,kind,i)=>i==='0'?'subject':(kind==='sold'?'Sold':'Active')+' comparable '+i)
  .replace(/\bfield_\d{4}\b/g,name=>C.byName.get(name)?.label||'form value').replace(/\bnone_reported\b/g,'no repairs reported');
 }
-module.exports={aiBpoReadableText:readableText,aiBpoDisplayValue:displayValue,aiBpoSourceKey:sourceKey,aiBpoFingerprint:fingerprint,aiBpoReady:ready,acceptAiBpo:accept};
+module.exports={aiBpoConditionChoices:conditionChoices,bpoSourcesAnalyzed:sourcesAnalyzed,aiBpoReadableText:readableText,aiBpoDisplayValue:displayValue,aiBpoSourceKey:sourceKey,aiBpoFingerprint:fingerprint,aiBpoReady:ready,acceptAiBpo:accept};
