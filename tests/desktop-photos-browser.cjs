@@ -9,6 +9,20 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  await page.goto(base+'/photos');await page.waitForURL(/index.html\?photos=1/);await page.goto(base+'/photos.html');await page.waitForURL(/index.html\?photos=1/);await page.locator('#ptDesktopPhotos iframe').waitFor();const frame=page.frameLocator('#ptDesktopPhotos iframe');await frame.locator('#library').waitFor({state:'visible'});
  assert.equal(await page.locator('#siteHeader').isVisible(),true);assert.equal(await page.locator('#propertyhub').isVisible(),false);assert.equal(await page.locator('#ptPhotoLibrary').evaluate(e=>e.nextElementSibling.id),'signOutBtn');assert.equal(await page.locator('#ptSignedInPlayApp').evaluate(e=>e.nextElementSibling.id),'ptPhotoLibrary');assert.equal(await frame.locator('header').isVisible(),false);assert.equal(await frame.locator('#signout').isVisible(),false);assert.equal(await frame.locator('a').count(),0);
  assert.equal(await page.locator('iframe').evaluate(e=>e.contentWindow.__ptSharedSupabaseClient===window.__ptSharedSupabaseClient),true);
+
+ // A long list must expand the desktop page; switching to Archive must shrink it.
+ const sampleRows=Array.from({length:24},(_,i)=>({id:'layout-'+i,address:'Layout Street '+i,completed_at:null}));
+ sampleRows.push({id:'archive-me',address:'Archive sample',completed_at:'2026-11-01T12:00:00Z'});
+ await page.evaluate(rows=>localStorage.setItem('photo-test',JSON.stringify({rows,files:{'owner/archive-me/sample.jpg':'YQ=='}})),sampleRows);
+ await page.reload();await frame.locator('#properties button').first().waitFor();
+ await page.waitForFunction(()=>{const f=document.querySelector('#ptDesktopPhotos iframe');return f.clientHeight>1000&&f.contentDocument.documentElement.scrollHeight<=f.clientHeight+1;});
+ await frame.locator('#completedTab').click();await frame.getByRole('button',{name:'Archive Archive sample',exact:true}).click();
+ await frame.getByText('No completed photo sets.',{exact:true}).waitFor();await frame.locator('#archiveTab').click();
+ await frame.getByRole('button',{name:'Archive sample',exact:true}).click();await frame.getByText('1 photo',{exact:true}).waitFor();
+ await frame.locator('#backToList').click();await page.waitForFunction(()=>{const f=document.querySelector('#ptDesktopPhotos iframe');return f.clientHeight<800&&f.contentDocument.documentElement.scrollHeight<=f.clientHeight+1;});
+ await page.reload();await frame.locator('#archiveTab').click();await frame.getByRole('button',{name:'Restore Archive sample',exact:true}).click();await frame.getByText('No archived photo sets.',{exact:true}).waitFor();
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('photo-test')).rows.find(r=>r.id==='archive-me').archived_at),null);
+ await page.evaluate(()=>localStorage.removeItem('photo-test'));await page.reload();await frame.locator('#library').waitFor({state:'visible'});
  await page.click('#appNavExisting');assert.equal(await page.locator('#propertyhub').isVisible(),true);assert.equal(await page.locator('#ptDesktopPhotos').isVisible(),false);
  await page.click('[data-saved-photos]');await frame.locator('#address').waitFor({state:'visible'});await page.waitForFunction(()=>document.querySelector('iframe').contentDocument.querySelector('#address').value==='123 Site Street');assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('photo-test')||'{"rows":[]}').rows.length),0);
  await frame.locator('#newProperty button').click();await frame.locator('#properties button').click();await frame.locator('#files').setInputFiles({name:'pending.jpg',mimeType:'image/jpeg',buffer:Buffer.from('pending')});await page.click('#appNavExisting');await page.click('#ptPhotoLibrary');assert.equal(await frame.locator('#files').evaluate(e=>e.files.length),1);
