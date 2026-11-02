@@ -18,7 +18,7 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  await page.waitForFunction(()=>{const f=document.querySelector('#ptDesktopPhotos iframe');return f.clientHeight>1000&&f.contentDocument.documentElement.scrollHeight<=f.clientHeight+1;});
  await frame.locator('#completedTab').click();await frame.getByRole('button',{name:'Archive Archive sample',exact:true}).click();
  await frame.getByText('No completed photo sets.',{exact:true}).waitFor();await frame.locator('#archiveTab').click();
- await frame.getByRole('button',{name:'Archive sample',exact:true}).click();await frame.getByText('1 photo',{exact:true}).waitFor();
+ await frame.getByRole('button',{name:'Archive sample · 1 photo',exact:true}).click();await frame.locator('#count').getByText('1 photo',{exact:true}).waitFor();
  await frame.locator('#backToList').click();await page.waitForFunction(()=>{const f=document.querySelector('#ptDesktopPhotos iframe');return f.clientHeight<800&&f.contentDocument.documentElement.scrollHeight<=f.clientHeight+1;});
  await page.reload();await frame.locator('#archiveTab').click();await frame.getByRole('button',{name:'Restore Archive sample',exact:true}).click();await frame.getByText('No archived photo sets.',{exact:true}).waitFor();
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('photo-test')).rows.find(r=>r.id==='archive-me').archived_at),null);

@@ -68,11 +68,17 @@ async function moveArchive(p,archive){
   await loadProperties();
   status(data?(archive?'Moved to Archive.':'Restored to Completed photos.'):'The property changed. The list has been refreshed.');
 }
+function photoLabel(n){return n+' photo'+(n===1?'':'s');}
+function syncPhotoCount(){
+  const row=properties.find(p=>p.id===selected?.id);
+  if(row)row.photo_count=photos.length;
+  $('count').textContent=photoLabel(photos.length);
+}
 function renderProperties(){
   const search=$('search').value.trim().toLowerCase(),list=$('properties');
   list.replaceChildren();
   for(const p of properties.filter(p=>propertyList(p)===listMode&&p.address.toLowerCase().includes(search))){
-    const address=node('button',p.address);
+    const address=node('button',p.photo_count>0?p.address+' · '+photoLabel(p.photo_count):p.address);
     address.disabled=busy;
     if(p.id===selected?.id)address.setAttribute('aria-current','true');
     address.onclick=()=>run(()=>openProperty(p));
@@ -95,7 +101,7 @@ function renderQueue(){
 async function run(action){if(busy)return;setBusy(true);try{await action();}catch(error){status(error.message||'Something went wrong. Please try again.',true);}finally{setBusy(false);}}
 async function loadProperties(){
   const version=epoch,rows=[];
-  for(let offset=0;;offset+=500){const {data,error}=await client.from('photo_properties').select('id,address,created_at,completed_at,archived_at,deleting_at').order('address').order('id').range(offset,offset+499);check(version);if(error)throw error;rows.push(...data);if(data.length<500)break;}
+  for(let offset=0;;offset+=500){const {data,error}=await client.from('photo_property_counts').select('id,address,created_at,completed_at,archived_at,deleting_at,photo_count').order('address').order('id').range(offset,offset+499);check(version);if(error)throw error;rows.push(...data);if(data.length<500)break;}
   properties=rows;renderProperties();
 }
 async function openProperty(p){
@@ -105,7 +111,7 @@ async function openProperty(p){
 async function refreshPhotos(){
   const version=epoch,p=selected;if(!p)return;const prefix=user.id+'/'+p.id;
   status('Loading photos…');const rows=await listPhotos(bucket,prefix);check(version);if(p.id!==selected?.id)return;photos=rows;for(const name of selectedPhotos){if(!photos.some(p=>p.name===name))selectedPhotos.delete(name);}
-  clearCaptions();$('photos').replaceChildren();$('count').textContent=photos.length+' photo'+(photos.length===1?'':'s');
+  clearCaptions();$('photos').replaceChildren();syncPhotoCount();
   for(const photo of photos){
     const card=node('article',null,'photo');card.dataset.photoName=photo.name;
     const label=node('label',null,'photo-select'),checkbox=node('input');checkbox.type='checkbox';checkbox.checked=selectedPhotos.has(photo.name);checkbox.disabled=busy;checkbox.setAttribute('aria-label','Select '+originalName(photo.name));checkbox.onchange=()=>{if(checkbox.checked)selectedPhotos.add(photo.name);else selectedPhotos.delete(photo.name);renderPhotoSelection();};label.append(checkbox,node('span','Select photo'));card.append(label);
@@ -146,7 +152,7 @@ function removeConfirmedPhotos(names){
   for(const name of removed)selectedPhotos.delete(name);
   document.querySelectorAll('.photo').forEach(card=>{if(removed.has(card.dataset.photoName))card.remove();});
   if(!queue.some(item=>item.state!=='Uploaded'&&!item.invalid)){queue=[];$('files').value='';renderQueue();}
-  $('count').textContent=photos.length+' photo'+(photos.length===1?'':'s');renderPhotoSelection();
+  syncPhotoCount();renderPhotoSelection();
 }
 $('selectAllPhotos').onclick=()=>{if(busy)return;photos.forEach(photo=>selectedPhotos.add(photo.name));renderPhotoSelection();};
 $('clearPhotoSelection').onclick=()=>{if(busy)return;selectedPhotos.clear();renderPhotoSelection();};
