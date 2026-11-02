@@ -34,6 +34,7 @@ async function exportPDF(template,input,schema,recalculate,issues,concession){
  value=formatValue(f,value);control.removeMaxLength();control.acroField.setDefaultAppearance('/Helv 8 Tf 0 g');control.setText(String(value??''));const text=String(value??''),size=textSize(f,text,font);if(size===null)throw Error(f.label+': shorten this entry to fit the printed form.');control.setFontSize(size);if(f.readonly)control.enableReadOnly();
  }
  form.updateFieldAppearances(font);
+ if(v._aiCompletion)require('./ai-pdf-scripts.cjs').adaptAiPdfScripts(doc);
  // Restore stable export IDs after adding human-readable dropdown labels.
  const {PDFName,PDFString}=require('pdf-lib');
  for(const [name,p] of [['primary_sold_comp','sold'],['primary_active_comp','active']]){
