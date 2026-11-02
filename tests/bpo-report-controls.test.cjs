@@ -24,5 +24,5 @@ test('subject and comparable data entry retain editable condition pickers and lo
 });
 test('published workspace uses the same corrected source',()=>{
  assert.equal(fs.readFileSync('bpo-workspace.ai-bpo-v1.js','utf8'),source);
- assert.match(fs.readFileSync('app-core.html','utf8'),/bpo-workspace\.ai-bpo-v1\.js\?release=20261101-ai-bpo-condition11/);
+ assert.match(fs.readFileSync('app-core.html','utf8'),/bpo-workspace\.ai-bpo-v1\.js\?release=20261101-ai-bpo-condition12/);
 });
