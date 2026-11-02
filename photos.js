@@ -1,5 +1,5 @@
 import {takenDate,stampPhoto,dateParts} from './photo-dates.mjs?v=1';
-import {BUCKET,safeName,validateFile,originalName,downloadName,listPhotos,uploadPhoto} from './photo-library.mjs';
+import {BUCKET,safeName,validateFile,originalName,listPhotos,uploadPhoto} from './photo-library.mjs';
 const $=id=>document.getElementById(id);
 let embedded=false;try{embedded=parent!==window&&parent.location.origin===location.origin&&!!parent.PropertyThesisDesktopPhotos;}catch(_){}
 if(embedded)document.documentElement.classList.add('photos-embedded');
@@ -192,15 +192,19 @@ $('dateDownloadForm').onsubmit=e=>{e.preventDefault();const request=datedRequest
 async function downloadPhotos(items,date=''){
  if(!items.length)throw Error('Select photos to download.');
  if(!window.JSZip)throw Error('The ZIP tool did not load. Refresh the page and try again.');
- const version=epoch,name=safeName(selected.address),limit=128*1024*1024;let zip=new window.JSZip(),bytes=0,part=1,done=0;
+ const version=epoch,name=safeName(selected.address.split(',')[0].slice(0,24)),limit=128*1024*1024;let zip=new window.JSZip(),bytes=0,part=1,done=0;
  const flush=async(final)=>{const blob=await zip.generateAsync({type:'blob',compression:'STORE'});check(version);save(blob,name+(date?'-dated-'+date:'')+(part>1||!final?'-part-'+part:'')+'.zip');part++;zip=new window.JSZip();bytes=0;};
  for(const photo of items){
   check(version);status('Preparing '+(date?'dated ':'')+'photo '+(done+1)+' of '+items.length+'…');
-  let blob=await getPhoto(photo,version),filename=downloadName(photo.name);
-  if(date){blob=await stampPhoto(blob,date,originalName(photo.name));check(version);filename=filename+'-dated-'+date+'.jpg';}
+  let blob=await getPhoto(photo,version);
+  const original=originalName(photo.name),dot=original.lastIndexOf('.');
+  const stem=safeName(original.slice(0,dot)).slice(0,18);
+  const suffix=date?'-'+date+'.jpg':original.slice(dot);
+  const filename=String(done+1).padStart(3,'0')+'-'+stem+suffix;
+  if(date){blob=await stampPhoto(blob,date,originalName(photo.name));check(version);}
   if(bytes&&bytes+blob.size>limit)await flush(false);
   const options={};if(date){const d=dateParts(date);options.date=new Date(Date.UTC(Math.min(2107,Math.max(1980,d.year)),d.month-1,d.day));}
-  zip.folder(name).file(filename,blob,options);bytes+=blob.size;done++;
+  zip.file(filename,blob,options);bytes+=blob.size;done++;
  }
  await flush(true);status(done+' '+(date?'dated JPG copies':'original photos')+' downloaded. Extract the ZIP'+(part>2?' files':' file')+' to access your photos.');
 }
