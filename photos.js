@@ -1,5 +1,5 @@
-import {takenDate,stampPhoto,dateParts} from './photo-dates.mjs?v=1';
-import {BUCKET,safeName,validateFile,originalName,listPhotos,uploadPhoto} from './photo-library.mjs';
+import {takenDate,stampPhoto,dateParts} from './photo-dates.mjs?v=2';
+import {BUCKET,safeName,validateFile,originalName,listPhotos,uploadPhoto} from './photo-library.mjs?v=2';
 const $=id=>document.getElementById(id);
 let embedded=false;try{embedded=parent!==window&&parent.location.origin===location.origin&&!!parent.PropertyThesisDesktopPhotos;}catch(_){}
 if(embedded){
@@ -39,8 +39,21 @@ function loadPreview(card,caption,img,photo,version){
           if(version!==epoch||!card.isConnected)return;
           captureDates.set(path,date);
         }
-        caption.textContent='Taken: '+(captureDates.get(path)||'Not recorded');
-      }catch(_){if(version===epoch&&card.isConnected)caption.textContent='Taken: Could not read date — refresh to retry';}
+        const known=captureDates.get(path);
+        caption.textContent='Taken: '+(known||'Not recorded');
+        if(!known){
+          const add=node('button','Add date taken','secondary');
+          add.onclick=()=>run(async()=>{
+            const input=prompt('Enter the date this photo was taken (YYYY-MM-DD).');
+            if(!input)return;
+            const label=dateParts(input).label;
+            const {error}=await client.from('photo_capture_dates').insert({object_id:photo.id,property_id:selected.id,taken_on:input});
+            check(version);if(error)throw error;
+            captureDates.set(path,label);caption.textContent='Taken: '+label;add.remove();
+          });
+          caption.after(add);
+        }
+      }catch(_){if(version===epoch&&card.isConnected&&!captureDates.get(path))caption.textContent='Taken: Could not read date — refresh to retry';}
     });
     drainCaptions();
   });
@@ -113,14 +126,21 @@ async function openProperty(p){
 }
 async function refreshPhotos(){
   const version=epoch,p=selected;if(!p)return;const prefix=user.id+'/'+p.id;
-  status('Loading photos…');const rows=await listPhotos(bucket,prefix);check(version);if(p.id!==selected?.id)return;photos=rows;for(const name of selectedPhotos){if(!photos.some(p=>p.name===name))selectedPhotos.delete(name);}
+  status('Loading photos…');const [rows,dateResult]=await Promise.all([
+    listPhotos(bucket,prefix),
+    client.rpc('photo_dates_for_property',{p_property:p.id}).then(result=>result.data,()=>null)
+  ]);check(version);if(p.id!==selected?.id)return;photos=rows;for(const name of selectedPhotos){if(!photos.some(p=>p.name===name))selectedPhotos.delete(name);}
   clearCaptions();$('photos').replaceChildren();syncPhotoCount();
   for(const photo of photos){
     const card=node('article',null,'photo');card.dataset.photoName=photo.name;
     const label=node('label',null,'photo-select'),checkbox=node('input');checkbox.type='checkbox';checkbox.checked=selectedPhotos.has(photo.name);checkbox.disabled=busy;checkbox.setAttribute('aria-label','Select '+originalName(photo.name));checkbox.onchange=()=>{if(checkbox.checked)selectedPhotos.add(photo.name);else selectedPhotos.delete(photo.name);renderPhotoSelection();};label.append(checkbox,node('span','Select photo'));card.append(label);
     if(/\.(heic|heif)$/i.test(photo.name)){card.append(node('div','HEIC / HEIF photo','placeholder'));}
     else {const img=node('img');img.alt=originalName(photo.name);card.append(img);}
-    const caption=node('div',null,'photo-caption'),date=node('p','Taken: Reading date…','taken-date');caption.append(node('p',originalName(photo.name)),date);card.append(caption);
+    const path=prefix+'/'+photo.name;
+    const stored=dateResult?.[photo.id];
+    if(stored){try{captureDates.set(path,dateParts(stored).label);}catch{/* Read the original if metadata is invalid. */}}
+    const known=captureDates.get(path);
+    const caption=node('div',null,'photo-caption'),date=node('p',known?'Taken: '+known:'Taken: Reading date…','taken-date');caption.append(node('p',originalName(photo.name)),date);card.append(caption);
     const remove=node('button','Delete photo','delete-photo');
     remove.setAttribute('aria-label','Delete '+originalName(photo.name));
     remove.onclick=()=>run(async()=>{
@@ -301,7 +321,8 @@ $('upload').onclick=()=>run(async()=>{
       const item=waiting[next++];
       item.state='Uploading…';renderQueue();
       try{
-        item.name=await uploadPhoto(bucket,prefix,item.file);
+        const takenOn=await takenDate(item.file,true).catch(()=>null);
+        check(version);item.name=await uploadPhoto(bucket,prefix,item.file,takenOn);
         check(version);item.state='Uploaded';uploaded++;
       }catch(error){
         check(version);item.state='Failed: '+(error.message||'Connection lost');failures++;

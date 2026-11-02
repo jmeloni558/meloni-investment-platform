@@ -23,9 +23,9 @@ export async function listPhotos(bucket,prefix) {
   const rows=[];
   for(let offset=0;;offset+=100){const {data,error}=await bucket.list(prefix,{limit:100,offset,sortBy:{column:'name',order:'asc'}});if(error)throw error;rows.push(...data.filter(x=>x.id));if(data.length<100)return rows;}
 }
-export async function uploadPhoto(bucket,prefix,file) {
+export async function uploadPhoto(bucket,prefix,file,takenOn=null) {
   const contentType=validateFile(file),name=await objectName(file);
-  const {error}=await bucket.upload(prefix+'/'+name,file,{contentType,upsert:false});
+  const {error}=await bucket.upload(prefix+'/'+name,file,{contentType,upsert:false,...(takenOn?{metadata:{taken_on:takenOn}}:{})});
   if(error){
     // A prior request may have succeeded before the connection dropped. Never overwrite it.
     const {data,error:lookupError}=await bucket.list(prefix,{search:name,limit:100});
