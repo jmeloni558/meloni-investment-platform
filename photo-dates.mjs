@@ -11,7 +11,7 @@ export function dateParts(value){
   if(+year<1||date.getUTCFullYear()!==+year||date.getUTCMonth()!==+month-1||date.getUTCDate()!==+day)throw Error('Enter a valid photo date.');
   return {label:month+'/'+day+'/'+year.slice(-2),exif:year+':'+month+':'+day+' 00:00:00',year:+year,month:+month,day:+day};
 }
-export async function takenDate(blob){
+export async function takenDate(blob,iso=false){
   const exifr=await dependency('exifr','assets/vendor/exifr-7.1.3.js');
   // exifr handles JPEG/PNG/HEIF/TIFF; unwrap the TIFF metadata in WebP's RIFF container.
   const header=new Uint8Array(await blob.slice(0,12).arrayBuffer());
@@ -29,7 +29,7 @@ export async function takenDate(blob){
   // Keep the camera's calendar date; do not shift it through a browser timezone.
   const raw=tags?.DateTimeOriginal||tags?.CreateDate,match=typeof raw==='string'&&/^(\d{4})[:-](\d{2})[:-](\d{2})/.exec(raw);
   if(!match)return null;
-  try{return dateParts(match.slice(1).join('-')).label;}catch(_){return null;}
+  try{const value=match.slice(1).join('-'),parts=dateParts(value);return iso?value:parts.label;}catch(_){return null;}
 }
 export async function stampPhoto(blob,date,name='photo'){
   const parts=dateParts(date),piexif=await dependency('piexif','assets/vendor/piexif-1.0.6.js');
