@@ -2,7 +2,13 @@ import {takenDate,stampPhoto,dateParts} from './photo-dates.mjs?v=1';
 import {BUCKET,safeName,validateFile,originalName,listPhotos,uploadPhoto} from './photo-library.mjs';
 const $=id=>document.getElementById(id);
 let embedded=false;try{embedded=parent!==window&&parent.location.origin===location.origin&&!!parent.PropertyThesisDesktopPhotos;}catch(_){}
-if(embedded)document.documentElement.classList.add('photos-embedded');
+if(embedded){
+  document.documentElement.classList.add('photos-embedded');
+  const frame=window.frameElement;
+  const resize=()=>{frame.style.height=Math.ceil(document.body.getBoundingClientRect().height)+'px';};
+  new ResizeObserver(resize).observe(document.body);
+  resize();
+}
 window.PropertyThesisPhotos={canNavigate:()=>{if(busy){status('Wait for the current photo operation to finish.');return false;}if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Leave the selected photos? Photos not uploaded will need to be selected again.'))return false;return true;}};
 
 const client=window.PropertyThesisSession?.getClient()||window.supabase?.createClient('https://lmaiqpkogmmsldkziggy.supabase.co','sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7');
@@ -25,10 +31,40 @@ const status=(message,error=false)=>{$('status').textContent=message;$('status')
 function check(version){if(version!==epoch || !user)throw Error('Your session changed. Sign in again to continue.');}
 function setBusy(value){busy=value;$('updateApp').disabled=value;document.querySelectorAll('#library button,#library input').forEach(el=>el.disabled=value);$('upload').disabled=value||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);renderPhotoSelection();}
 function node(tag,text,className){const el=document.createElement(tag);if(text)el.textContent=text;if(className)el.className=className;return el;}
+const listTitles={active:'Active properties',completed:'Completed photos',archive:'Archive'};
+function propertyList(p){
+  if(p.archived_at)return 'archive';
+  return p.completed_at?'completed':'active';
+}
+async function moveArchive(p,archive){
+  const version=epoch;
+  let query=client.from('photo_properties').update({archived_at:archive?new Date().toISOString():null})
+    .eq('id',p.id).eq('completed_at',p.completed_at).is('deleting_at',null);
+  query=archive?query.is('archived_at',null):query.eq('archived_at',p.archived_at);
+  const {error,data}=await query.select('id').maybeSingle();
+  check(version);
+  if(error)throw error;
+  await loadProperties();
+  status(data?(archive?'Moved to Archive.':'Restored to Completed photos.'):'The property changed. The list has been refreshed.');
+}
 function renderProperties(){
-  const search=$('search').value.trim().toLowerCase();$('properties').replaceChildren();
-  for(const p of properties.filter(p=>(listMode==='completed'?!!p.completed_at:!p.completed_at)&&p.address.toLowerCase().includes(search))){const b=node('button',p.address);b.disabled=busy;if(p.id===selected?.id)b.setAttribute('aria-current','true');b.onclick=()=>run(()=>openProperty(p));$('properties').append(b);}
-  if(!$('properties').children.length)$('properties').append(node('p',listMode==='completed'?'No completed photo sets.':'No active properties. Enter an address to begin.','hint'));
+  const search=$('search').value.trim().toLowerCase(),list=$('properties');
+  list.replaceChildren();
+  for(const p of properties.filter(p=>propertyList(p)===listMode&&p.address.toLowerCase().includes(search))){
+    const address=node('button',p.address);
+    address.disabled=busy;
+    if(p.id===selected?.id)address.setAttribute('aria-current','true');
+    address.onclick=()=>run(()=>openProperty(p));
+    if(listMode==='active'||p.deleting_at){list.append(address);continue;}
+    const row=node('div',null,'property-action-row'),archive=listMode==='completed';
+    const action=node('button',archive?'Archive':'Restore','secondary archive-action');
+    action.setAttribute('aria-label',(archive?'Archive ':'Restore ')+p.address);
+    action.disabled=busy;
+    action.onclick=()=>run(()=>moveArchive(p,archive));
+    row.append(address,action);list.append(row);
+  }
+  const empty={active:'No active properties. Enter an address to begin.',completed:'No completed photo sets.',archive:'No archived photo sets.'};
+  if(!list.children.length)list.append(node('p',empty[listMode],'hint'));
 }
 function renderQueue(){
   $('queue').replaceChildren(...queue.map(x=>node('div',x.file.name+' — '+x.state,'queue-row')));
@@ -38,12 +74,12 @@ function renderQueue(){
 async function run(action){if(busy)return;setBusy(true);try{await action();}catch(error){status(error.message||'Something went wrong. Please try again.',true);}finally{setBusy(false);}}
 async function loadProperties(){
   const version=epoch,rows=[];
-  for(let offset=0;;offset+=500){const {data,error}=await client.from('photo_properties').select('id,address,created_at,completed_at,deleting_at').order('address').order('id').range(offset,offset+499);check(version);if(error)throw error;rows.push(...data);if(data.length<500)break;}
+  for(let offset=0;;offset+=500){const {data,error}=await client.from('photo_properties').select('id,address,created_at,completed_at,archived_at,deleting_at').order('address').order('id').range(offset,offset+499);check(version);if(error)throw error;rows.push(...data);if(data.length<500)break;}
   properties=rows;renderProperties();
 }
 async function openProperty(p){
   if(queue.some(x=>x.state!=='Uploaded')&&!confirm('Leave the selected photos? Photos not uploaded will need to be selected again.'))return;
-  selectedPhotos.clear();selected=p;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();$('workspace').hidden=false;$('addressList').hidden=true;$('uploadControls').hidden=!!p.completed_at||!!p.deleting_at;$('complete').hidden=!!p.completed_at||!!p.deleting_at;$('reopen').hidden=!p.completed_at||!!p.deleting_at;$('completedNote').hidden=!p.completed_at;$('propertyTitle').textContent=p.address;renderProperties();await refreshPhotos();$('propertyTitle').focus();
+  selectedPhotos.clear();selected=p;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();$('workspace').hidden=false;$('addressList').hidden=true;$('uploadControls').hidden=!!p.completed_at||!!p.deleting_at;$('complete').hidden=!!p.completed_at||!!p.deleting_at;$('reopen').hidden=!p.completed_at||!!p.deleting_at;$('completedNote').hidden=!p.completed_at;$('completedNote').textContent=p.archived_at?'This photo set is archived.':'This upload set is completed.';$('propertyTitle').textContent=p.address;renderProperties();await refreshPhotos();$('propertyTitle').focus();
 }
 async function refreshPhotos(){
   const version=epoch,p=selected;if(!p)return;const prefix=user.id+'/'+p.id;
@@ -141,28 +177,29 @@ async function getPhoto(photo,version){check(version);const {data,error}=await b
 function save(blob,name){const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 $('newProperty').onsubmit=e=>{e.preventDefault();run(async()=>{
   const address=$('address').value.trim().replace(/\s+/g,' ');if(!address)throw Error('Enter a property address.');
-  const existing=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());if(existing){status('This address already exists'+(existing.completed_at?' in Completed photos':' in Active properties')+'.');$('address').value='';return;}
-  const version=epoch;const {data,error}=await client.from('photo_properties').insert({user_id:user.id,address}).select('id,address,created_at,completed_at,deleting_at').single();check(version);
-  if(error){if(error.code==='23505'){await loadProperties();const p=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());if(p){status('This address already exists'+(p.completed_at?' in Completed photos':' in Active properties')+'.');$('address').value='';return;}}throw error;}
+  const existing=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());if(existing){status('This address already exists'+(' in '+listTitles[propertyList(existing)])+'.');$('address').value='';return;}
+  const version=epoch;const {data,error}=await client.from('photo_properties').insert({user_id:user.id,address}).select('id,address,created_at,completed_at,archived_at,deleting_at').single();check(version);
+  if(error){if(error.code==='23505'){await loadProperties();const p=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());if(p){status('This address already exists'+(' in '+listTitles[propertyList(p)])+'.');$('address').value='';return;}}throw error;}
   await loadProperties();$('address').value='';$('search').value='';renderProperties();status('Property created. Enter another address or choose one from the list.');
 }).finally(()=>$('address').focus());};
 
 function showList(mode=listMode){
   if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Return to addresses without uploading the selected photos?'))return;
   clearCaptions();selectedPhotos.clear();listMode=mode;selected=null;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();
-  $('workspace').hidden=true;$('addressList').hidden=false;$('newProperty').hidden=mode==='completed';
-  $('listTitle').textContent=mode==='completed'?'Completed photos':'Active properties';
-  $('activeTab').setAttribute('aria-pressed',String(mode==='active'));$('completedTab').setAttribute('aria-pressed',String(mode==='completed'));
-  renderProperties();$('listTitle').focus();status(mode==='completed'?'Completed photo sets are saved here.':'Choose a property or enter an address.');
+  $('workspace').hidden=true;$('addressList').hidden=false;$('newProperty').hidden=mode!=='active';
+  $('listTitle').textContent=listTitles[mode];
+  $('activeTab').setAttribute('aria-pressed',String(mode==='active'));$('completedTab').setAttribute('aria-pressed',String(mode==='completed'));$('archiveTab').setAttribute('aria-pressed',String(mode==='archive'));
+  renderProperties();$('listTitle').focus();status(mode==='archive'?'Archived photo sets are available here.':mode==='completed'?'Completed photo sets are saved here.':'Choose a property or enter an address.');
 }
 $('backToList').onclick=()=>showList();
 $('activeTab').onclick=()=>showList('active');
+$('archiveTab').onclick=()=>showList('archive');
 $('completedTab').onclick=()=>showList('completed');
 async function changeCompletion(completed){
   if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid))throw Error('Upload or clear the selected photos before marking this set completed.');
   if(completed&&!photos.length)throw Error('Upload at least one photo before marking this set completed.');
   const version=epoch;
-  const {data,error}=await client.from('photo_properties').update({completed_at:completed?new Date().toISOString():null}).eq('id',selected.id).select('id,address,created_at,completed_at,deleting_at').single();
+  const {data,error}=await client.from('photo_properties').update({completed_at:completed?new Date().toISOString():null,archived_at:null}).eq('id',selected.id).select('id,address,created_at,completed_at,archived_at,deleting_at').single();
   check(version);if(error)throw error;
   selected=data;await loadProperties();
   if(completed){showList('active');status('Upload set completed. Find it in Completed photos.');}
@@ -242,7 +279,7 @@ async function openRequestedAddress(){
   const version=epoch;let property=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());
   if(!property){
    $('address').value=address;status('No photo address exists for this property. Click Create only when you are ready to add photos.');$('address').focus();
-  }else{check(version);await openProperty(property);}
+  }else{check(version);listMode=propertyList(property);await openProperty(property);}
   requestedAddressHandled=true;url.searchParams.delete('address');history.replaceState(history.state,'',url);
  });
 }
