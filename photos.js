@@ -239,10 +239,35 @@ $('newProperty').onsubmit=e=>{e.preventDefault();run(async()=>{
   await loadProperties();$('address').value='';$('search').value='';renderProperties();status('Property created. Enter another address or choose one from the list.');
 }).finally(()=>$('address').focus());};
 
+let storageRequest=0;
+function formatStorage(bytes){
+  if(bytes>=1e9)return (bytes/1e9).toLocaleString(undefined,{maximumFractionDigits:2})+' GB';
+  if(bytes>=1e6)return (bytes/1e6).toLocaleString(undefined,{maximumFractionDigits:1})+' MB';
+  if(bytes>=1000)return (bytes/1000).toLocaleString(undefined,{maximumFractionDigits:1})+' KB';
+  return bytes+' B';
+}
+async function refreshStorage(){
+  const version=epoch,request=++storageRequest;
+  const label=$('storageUsage'),meter=$('storageMeter');
+  try{
+    const {data,error}=await client.from('photo_storage_usage').select('photo_bytes,project_bytes,included_bytes').single();
+    if(version!==epoch||request!==storageRequest)return;
+    if(error||!data)throw Error('Storage unavailable');
+    const {photo_bytes,project_bytes,included_bytes}=data;
+    if(![photo_bytes,project_bytes,included_bytes].every(Number.isSafeInteger)||included_bytes<=0)throw Error('Invalid storage totals');
+    const left=Math.max(0,included_bytes-project_bytes);
+    label.textContent=formatStorage(photo_bytes)+' in your photos · '+formatStorage(left)+' left of '+formatStorage(included_bytes);
+    meter.max=included_bytes;meter.value=Math.min(project_bytes,included_bytes);meter.hidden=false;
+  }catch{
+    if(version!==epoch||request!==storageRequest)return;
+    label.textContent='Storage usage is unavailable.';meter.hidden=true;
+  }
+}
 function showList(mode=listMode){
   if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Return to addresses without uploading the selected photos?'))return;
   clearCaptions();clearTransferCache();selectedPhotos.clear();listMode=mode;selected=null;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();
   $('workspace').hidden=true;$('addressList').hidden=false;$('newProperty').hidden=mode!=='active';
+  refreshStorage();
   $('listTitle').textContent=listTitles[mode];
   $('activeTab').setAttribute('aria-pressed',String(mode==='active'));$('completedTab').setAttribute('aria-pressed',String(mode==='completed'));$('archiveTab').setAttribute('aria-pressed',String(mode==='archive'));
   renderProperties();$('listTitle').focus();status(mode==='archive'?'Archived photo sets are available here.':mode==='completed'?'Completed photo sets are saved here.':'Choose a property or enter an address.');
@@ -342,6 +367,7 @@ $('install').onclick=async()=>{
 };
 async function sessionChanged(session){
   const next=session?.user;if(next?.id===user?.id&&user)return;
+  $('storageUsage').textContent='Checking storage…';$('storageMeter').hidden=true;
   clearCaptions();clearTransferCache();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
   $('files').value='';$('photos').replaceChildren();$('properties').replaceChildren();$('queue').replaceChildren();$('account').textContent='';$('library').hidden=true;$('workspace').hidden=true;$('addressList').hidden=false;$('signedOut').hidden=!!user;
   if(!user){initPhotoCaptcha();status('Sign in to upload and download your property photos.');return;}
