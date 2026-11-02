@@ -7,11 +7,13 @@ const evidenceField=name=>metricField(name)||name==='market_county'||name==='sol
 export const evidenceNames=plan=>plan.fields.filter(f=>evidenceField(f.name)).map(f=>f.name);
 export function completionPlan(values,schema){
  const active=['active.1','active.2','active.3'].filter(p=>values[p+'.address']);
+ const assumedRenovated=values._aiValuationContext?.basis==='assumed-renovated'&&values._aiValuationContext.address===values.field_0008;
  const fields=schema.filter(f=>{
   if(protectedNames.has(f.name)||f.readonly||f.group||f.kind==='select'||f.name.includes('.adj_')||/\.(ppsf|net|adjusted)$/.test(f.name)||f.name.startsWith('repair.'))return false;
   const m=f.name.match(/^(sold|active)\.(\d)\.(.+)$/);
   if(m&&((m[2]!=='0'&&!values[m[1]+'.'+m[2]+'.address'])||(m[1]==='active'&&m[2]==='0'&&m[3]!=='price')))return false;
   if(['field_0479','field_0480','field_0482'].includes(f.name))return true;
+  if(assumedRenovated&&['sold.0.condition','sold.0.hvac'].includes(f.name))return true;
   const value=values[f.name],sourced=values._aiFields?.[f.name];
   return value===undefined||value===null||value===''||(!sourced&&f.kind==='check')||values._generalDefaults?.[f.name]===value||values._roomDefaults?.[f.name]===value||/not (?:explicit|listed|provided)|\bdefault\b|no total rooms/i.test(sourced?.evidence||'');
  }).map(f=>({name:f.name,label:f.label,kind:f.kind,maxChars:f.kind==='textarea'?420:Math.max(2,Math.floor((f.w-4)/3))}));
