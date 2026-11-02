@@ -16,7 +16,11 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  await page.evaluate(rows=>localStorage.setItem('photo-test',JSON.stringify({rows,files:{'owner/archive-me/sample.jpg':'YQ=='}})),sampleRows);
  await page.reload();await frame.locator('#properties button').first().waitFor();
  await page.waitForFunction(()=>{const f=document.querySelector('#ptDesktopPhotos iframe');return f.clientHeight>1000&&f.contentDocument.documentElement.scrollHeight<=f.clientHeight+1;});
- await frame.locator('#completedTab').click();await frame.getByRole('button',{name:'Archive Archive sample',exact:true}).click();
+ await frame.locator('#completedTab').click();
+ const countLabel=frame.locator('#properties .address-photo-count');
+ assert.equal(await countLabel.innerText(),'1 photo');
+ assert.equal(await countLabel.evaluate(label=>getComputedStyle(label).color),'rgb(128, 255, 132)');
+ await frame.getByRole('button',{name:'Archive Archive sample',exact:true}).click();
  await frame.getByText('No completed photo sets.',{exact:true}).waitFor();await frame.locator('#archiveTab').click();
  await frame.getByRole('button',{name:'Archive sample · 1 photo',exact:true}).click();await frame.locator('#count').getByText('1 photo',{exact:true}).waitFor();
  await frame.locator('#backToList').click();await page.waitForFunction(()=>{const f=document.querySelector('#ptDesktopPhotos iframe');return f.clientHeight<800&&f.contentDocument.documentElement.scrollHeight<=f.clientHeight+1;});
