@@ -78,7 +78,10 @@ function renderProperties(){
   const search=$('search').value.trim().toLowerCase(),list=$('properties');
   list.replaceChildren();
   for(const p of properties.filter(p=>propertyList(p)===listMode&&p.address.toLowerCase().includes(search))){
-    const address=node('button',p.photo_count>0?p.address+' · '+photoLabel(p.photo_count):p.address);
+    const address=node('button',p.address);
+    if(p.photo_count>0){
+      address.append(' · ',node('span',photoLabel(p.photo_count),'address-photo-count'));
+    }
     address.disabled=busy;
     if(p.id===selected?.id)address.setAttribute('aria-current','true');
     address.onclick=()=>run(()=>openProperty(p));
