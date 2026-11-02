@@ -8,7 +8,7 @@
   let panel=document.getElementById('ptDesktopPhotos'),frame=panel?.querySelector('iframe');
   if(frame&&address&&frame.dataset.address!==address&&frame.contentWindow.PropertyThesisPhotos?.canNavigate?.()===false)return true;
   if(!panel){panel=document.createElement('section');panel.id='ptDesktopPhotos';panel.setAttribute('aria-label','Property photos');frame=document.createElement('iframe');frame.title='PropertyThesis Photos';panel.append(frame);const shell=document.querySelector('main.shell')||document.querySelector('main');if(!shell)return false;shell.insertBefore(panel,shell.querySelector(':scope > .footer'));}
-  if(!frame.getAttribute('src')||(address&&frame.dataset.address!==address)){frame.dataset.address=address;frame.src='photos.html?embedded=1'+(address?'&address='+encodeURIComponent(address):'');}
+  if(!frame.getAttribute('src')||(address&&frame.dataset.address!==address)){frame.dataset.address=address;frame.src='photos.html?embedded=1&cb='+Date.now()+(address?'&address='+encodeURIComponent(address):'');}
   document.body.classList.add('pt-photos-open');const q=new URL(location.href);q.searchParams.set('photos','1');q.searchParams.delete('address');history.replaceState(history.state,'',q);window.AppNavigationToolbar?.refresh?.();panel.scrollIntoView({block:'start'});return true;
  }
  window.PropertyThesisDesktopPhotos={open,close};
