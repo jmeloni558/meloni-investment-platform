@@ -18,12 +18,7 @@ export function prepare(values,schema){
  if(!comps.some(p=>p.startsWith('sold.')&&num(values[p+'.price'])>0&&num(values[p+'.gla'])>0))throw Error('Analyze at least one sold comparable with a sale price and living area.');
  const clean={...values,_summaryNotes:{}};
  for(const f of schema)if(f.readonly||f.name.includes('.adj_')||/^field_047[7-9]$|^field_048[0234]$|^primary_/.test(f.name))delete clean[f.name];
- const policy=valuationInput(values),completionValues={...values};
- if(policy.assignment){
-  // Reconsider old pre-renovation descriptors for this explicitly assigned scenario.
-  delete completionValues['sold.0.condition'];delete completionValues['sold.0.hvac'];
- }
- const completion=completionPlan(completionValues,schema),input=prepareSummary(clean,schema);
+ const completion=completionPlan(values,schema),input=prepareSummary(clean,schema);
  input.facts=input.facts.filter(f=>!completion.fields.some(c=>c.name===f.key));
  return {...input,valuationPolicy:valuationInput(values),completion,adjustmentKeys:schema.filter(f=>comps.some(p=>f.name.startsWith(p+'.adj_'))).map(f=>f.name),sold:comps.filter(p=>p.startsWith('sold.')),sourceEvidence:sources.map(s=>({filename:s.filename,page:s.page,evidence:s.evidence})).slice(0,500)};
 }
