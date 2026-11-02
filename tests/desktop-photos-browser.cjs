@@ -16,6 +16,7 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  await page.evaluate(rows=>localStorage.setItem('photo-test',JSON.stringify({rows,files:{'owner/archive-me/sample.jpg':'YQ=='}})),sampleRows);
  await page.reload();await frame.locator('#properties button').first().waitFor();
  await page.waitForFunction(()=>{const f=document.querySelector('#ptDesktopPhotos iframe');return f.clientHeight>1000&&f.contentDocument.documentElement.scrollHeight<=f.clientHeight+1;});
+ await frame.getByText('1 B in your photos · 99.75 GB left of 100 GB',{exact:true}).waitFor();
  await frame.locator('#completedTab').click();
  const countLabel=frame.locator('#properties .address-photo-count');
  assert.equal(await countLabel.innerText(),'1 photo');
