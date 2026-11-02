@@ -28,6 +28,11 @@ export function validateOutput(result,input){
  if(![result.asIs,result.listPrice].every(n=>typeof n==='number'&&Number.isFinite(n)&&n>0&&n<1e10)||!input.sold.includes(result.primarySold))throw Error('Return positive supported values and an existing primary sold comparable.');
  if(!Array.isArray(result.adjustments)||result.adjustments.length>input.adjustmentKeys.length)throw Error('Invalid adjustments.');
  const seen=new Set();for(const a of result.adjustments){if(!input.adjustmentKeys.includes(a.name)||seen.has(a.name)||typeof a.amount!=='number'||!Number.isFinite(a.amount)||Math.abs(a.amount)>1e9||typeof a.reason!=='string'||!a.reason.trim()||a.reason.length>1500)throw Error('Each adjustment needs a unique allowed field, finite amount and evidence-based explanation.');seen.add(a.name);}
+ if(input.valuationPolicy.subjectCondition){
+  if(!result.formFields||!result.formEvidence)throw Error('Complete the condition fields.');
+  if(result.formFields['sold.0.condition']!==input.valuationPolicy.subjectCondition)throw Error('Use the user-selected subject condition '+input.valuationPolicy.subjectCondition+' consistently in the form and valuation.');
+  result.formEvidence['sold.0.condition']='User-selected subject condition: '+input.valuationPolicy.subjectCondition+'.';
+ }
  const completed=validateCompletion(result,input.completion);
  const valuation=validateValuation({...result,...completed},input);
  const summary=validateSummary(result,input);

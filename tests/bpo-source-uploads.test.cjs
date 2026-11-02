@@ -12,7 +12,7 @@ test('general AI input excludes optional and legacy tax records but retains iMap
 });
 function queue(groups,failAt=0,client="general"){
  let reads=0,uploaded=[],calls=0;const elements=Object.fromEntries(Object.entries(groups).map(([category,n])=>[category,{_queuedFiles:Array.from({length:n},(_,i)=>({name:category+i+'.pdf',size:10})),value:'selected'}]));
- const ctx={values:{_clientTemplate:client,_attachments:[]},epoch:1,dialog:{querySelector:selector=>elements[selector.match(/data-upload="([^"]+)"/)?.[1]]||null},status:()=>{},upload:async(files,token,category,extract)=>{calls++;if(calls===failAt)throw Error('Upload failed');uploaded.push({category,extract});ctx.values._attachments.push({sourceKind:category==='tax'?'tax':category});return true;},extractAI:async()=>{reads++}};
+ const ctx={step:1,values:{_clientTemplate:client,_attachments:[]},epoch:1,dialog:{querySelector:selector=>elements[selector.match(/data-upload="([^"]+)"/)?.[1]]||null},status:()=>{},upload:async(files,token,category,extract)=>{calls++;if(calls===failAt)throw Error('Upload failed');uploaded.push({category,extract});ctx.values._attachments.push({sourceKind:category==='tax'?'tax':category});return true;},extractAI:async()=>{reads++}};
  vm.createContext(ctx);vm.runInContext(src.slice(src.indexOf('function sourceUploadGroups('),src.indexOf('async function upload(')),ctx);return {ctx,elements,uploaded,reads:()=>reads};
 }
 test('one batch uploads all six source groups and extracts once',async()=>{const q=queue({subject:1,imapp:1,tax:1,sold:3,active:3,market:1});await q.ctx.uploadSelectedComps();assert.equal(q.uploaded.length,10);assert.ok(q.uploaded.every(x=>x.extract===false));assert.equal(q.reads(),1);assert.ok(Object.values(q.elements).every(e=>!e._queuedFiles.length));});
@@ -32,3 +32,11 @@ test('new subject uploads persist distinct MLS, iMapp and attachment-only tax me
 
 for(const failAt of [0,3])test('RRR centralized sources retain tax eligibility and retry remaining files '+failAt,async()=>{const q=queue({subject:1,imapp:1,tax:1,sold:1,active:1,market:1},failAt,'rrr');if(failAt){await assert.rejects(q.ctx.uploadSelectedComps(),/Upload failed/);assert.equal(q.reads(),0);assert.equal(q.elements.tax._queuedFiles.length,1);}await q.ctx.uploadSelectedComps();assert.equal(q.uploaded.length,6);assert.equal(q.reads(),1);assert.ok(q.uploaded.every(x=>x.extract===false));});
 test('RRR tax-only batch is not excluded by the General attachment rule',async()=>{const q=queue({tax:1},0,'rrr');await q.ctx.uploadSelectedComps();assert.equal(q.reads(),1);});
+
+test('Step 1 buttons unlock after analysis and lock again for queued or changed sources',()=>{
+ const q=queue({subject:0}),manual={},ai={},source={path:'processed.pdf',category:'subject'};q.ctx.window={PropertyThesisBPOCore:C};const original=q.ctx.dialog.querySelector;q.ctx.dialog.querySelector=s=>s==='[data-next]'?manual:s==='[data-generate-ai-bpo]'?ai:original(s);
+ q.ctx.values={_clientTemplate:'general',field_0008:'100 Synthetic Subject Ave','sold.0.gla':'1000','sold.1.address':'101 Comp Ave','sold.1.price':'200000','sold.1.gla':'1100',_attachments:[source]};q.ctx.updateCompQueue();assert.equal(manual.disabled,true);assert.equal(ai.disabled,true);
+ q.ctx.values._aiReview={at:'2026-11-01'};q.ctx.values._aiSourceKey=C.aiBpoSourceKey(q.ctx.values);q.ctx.updateCompQueue();assert.equal(manual.disabled,false);assert.equal(ai.disabled,false);
+ q.elements.subject._queuedFiles=[{name:'new.pdf'}];q.ctx.updateCompQueue();assert.equal(manual.disabled,true);assert.equal(ai.disabled,true);
+ q.elements.subject._queuedFiles=[];q.ctx.values._attachments.push({path:'new.pdf'});q.ctx.updateCompQueue();assert.equal(manual.disabled,true);assert.equal(ai.disabled,true);
+});
