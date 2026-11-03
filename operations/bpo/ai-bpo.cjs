@@ -1,11 +1,13 @@
 'use strict';
 const {completionPlan,validateCompletion,conditionChoices,selectedCondition}=require('../../supabase/functions/bpo-generate/completion.mjs');
 function sourceKey(v){return JSON.stringify((v._attachments||[]).map(d=>[d.path,d.category,d.sourceKind,d.extract]));}
-function fingerprint(v,C){const parts=[C.summaryFingerprint(v),sourceKey(v),v._lotUnit,v._aiReview?.at];if(selectedCondition(v))parts.push(selectedCondition(v));return JSON.stringify(parts);}
+function fingerprint(v,C){return JSON.stringify(['independent-1',sourceKey(v),selectedCondition(v)]);}
 function setCondition(input,condition){if(condition!==''&&!conditionChoices.includes(condition))throw Error('Choose one of the five subject conditions.');const v={...input,_aiSubjectCondition:condition};delete v._aiValuationContext;if(v._aiBpo)v._aiBpo={...v._aiBpo,source:''};return v;}
 function sourcesAnalyzed(v){const docs=(v._attachments||[]).filter(d=>d.extract!==false&&(v._clientTemplate==='rrr'||d.sourceKind!=='tax'));return docs.length>0&&!!v._aiReview?.at&&(v._aiSourceKey===sourceKey(v)||(!v._aiSourceKey&&docs.every(d=>Object.values(v._aiFields||{}).some(s=>!s.removed&&s.path===d.path))));}
-function ready(v,C){return v._clientTemplate!=='rrr'&&sourcesAnalyzed(v)&&C.validAddress(v.field_0008)&&C.number(v['sold.0.gla'])>0&&[1,2,3].some(i=>v['sold.'+i+'.address']&&C.number(v['sold.'+i+'.price'])>0&&C.number(v['sold.'+i+'.gla'])>0);}
-function accept(v,result,C){
+function ready(v,C){return v._clientTemplate!=='rrr'&&sourcesAnalyzed(v);}
+function accept(manual,result,C){
+ if(result?.independentVersion!==1||!result.sourceValues||typeof result.sourceValues!=='object'||Array.isArray(result.sourceValues))throw Error('Refresh and generate an independent AI BPO from the sources.');
+ const v=result.sourceValues;
  if(result?.aiBpoVersion!==5||![result.asIs,result.listPrice].every(n=>typeof n==='number'&&Number.isFinite(n)&&n>0&&n<1e10)||!/^sold\.[1-3]$/.test(result.primarySold)||!v[result.primarySold+'.address']||!Array.isArray(result.adjustments))throw Error('The AI BPO response was incomplete. Please refresh and generate again.');
  const plan=completionPlan(v,C.schema);validateCompletion(result,plan);
  const snapshot=structuredClone(v);delete snapshot._aiBpo;delete snapshot._summary;delete snapshot._adjustments;delete snapshot._summaryNotes;
@@ -28,7 +30,7 @@ function accept(v,result,C){
  calculated._summary.generation='ai-bpo'; // Never marks an AI result as human-reviewed.
  C.validateSummary(calculated);const errors=C.issues(calculated);if(errors.length)throw Error(errors[0]);
  const fit=C.fitIssues(calculated);if(fit.length)throw Error(fit[0].message);
- return {version:5,source:fingerprint(v,C),generatedAt:new Date().toISOString(),values:calculated,adjustments:result.adjustments};
+ return {version:5,source:fingerprint(manual,C),generatedAt:new Date().toISOString(),values:calculated,adjustments:result.adjustments};
 }
 function displayValue(v,f,value){
  const c=v._aiCompletion;if(c?.version!==5||f.kind==='check'||f.kind==='select')return value;
