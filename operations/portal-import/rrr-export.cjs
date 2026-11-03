@@ -52,7 +52,7 @@ function exportRRR(v,sourceRows=[]){
  const area=facts.area(v[p+'gla'],v[p+'basement']);
  if(area){add('comparables',pre+'txtSqFtLiving',area.living,label+' above-grade living area');add('comparables',pre+'txtBasementSqFt',area.basement,label+' basement square feet');}
  const dom=num(v[p+'dom']);if(dom!==null&&Number.isInteger(dom)&&dom>=0)add('comparables',pre+'txtDOM',dom,label+' days on market');
- const site=facts.lotAcres(v[p+'site']);if(site!==null)add('comparables',pre+'txtLotSizeAcres',Number(site.toFixed(4)),label+' acres');else if(v[p+'site'])warnings.push(label+': verify lot area and units.');
+ const site=facts.lotAcres(v[p+'site']);if(site!==null)add('comparables',pre+'txtLotSizeAcres',Math.round((site+Number.EPSILON)*100)/100,label+' acres');else if(v[p+'site'])warnings.push(label+': verify lot area and units.');
  if(v[p+'gla']&&!area)warnings.push(label+': confirm above-grade versus basement area before entering '+v[p+'gla']+' square feet.');
  if(v[p+'baths']&&!bath)warnings.push(label+': separate full and half baths from the source ('+v[p+'baths']+').');
  if(!pool)warnings.push(label+': verify private inground pool; unknown pool facts remain blank.');
