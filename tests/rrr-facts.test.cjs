@@ -28,5 +28,14 @@ test('export includes actual Sunrise-style facts and no calculated output cells'
 
 test('MLS dual-unit lots, count-only garages and labeled water views retain only supported facts',()=>{
  const f=require('../operations/portal-import/rrr-facts.cjs');assert.equal(Number(f.lotAcres('7,224 SqFt / 671 SqM').toFixed(4)),0.1658);assert.equal(f.lotAcres('7,224 SqFt / 100 SqM'),null);assert.equal(f.lotAcres('0.17'),null);assert.deepEqual(f.garage('2'),{count:2});assert.equal(f.garage('2.5'),null);assert.equal(f.mls('T3502012'),'T3502012');
- const {exportRRR}=require('../operations/portal-import/rrr-export.cjs');const p=exportRRR({_clientTemplate:'rrr','sold.0.address':'100 Test Ave','sold.0.city':'Tampa','sold.0.state':'FL','sold.0.zip':'33603','sold.0.site':'7,224 SqFt / 671 SqM','sold.0.view':'Water View: Pond','sold.0.source':'T3502012','active.1.address':'200 Test Ave','active.1.garage':'2'});const get=id=>p.fields.find(f=>f.id===id)?.value;assert.equal(get('rrrSubject_txtLotSizeAcres'),'0.1658');assert.equal(get('rrrSubject_ddlView'),'Water');assert.equal(get('rrrSubject_ddlDataSource'),'MLS');assert.equal(get('rrrListing1_txtGarages'),'2');assert.equal(get('rrrListing1_ddlGarageType'),undefined);
+ const {exportRRR}=require('../operations/portal-import/rrr-export.cjs');const p=exportRRR({_clientTemplate:'rrr','sold.0.address':'100 Test Ave','sold.0.city':'Tampa','sold.0.state':'FL','sold.0.zip':'33603','sold.0.site':'7,224 SqFt / 671 SqM','sold.0.view':'Water View: Pond','sold.0.source':'T3502012','active.1.address':'200 Test Ave','active.1.garage':'2'});const get=id=>p.fields.find(f=>f.id===id)?.value;assert.equal(get('rrrSubject_txtLotSizeAcres'),'0.17');assert.equal(get('rrrSubject_ddlView'),'Water');assert.equal(get('rrrSubject_ddlDataSource'),'MLS');assert.equal(get('rrrListing1_txtGarages'),'2');assert.equal(get('rrrListing1_ddlGarageType'),undefined);
 });
+
+ test('RRR exports subject and all comparable acreages with at most two decimals',()=>{
+ const values={_clientTemplate:'rrr','sold.0.address':'100 Test Ave','sold.0.city':'Tampa','sold.0.state':'FL','sold.0.zip':'33603'};
+ const sites=['0.1658 acres','0.1141 acres','0.1781 acres','0.1263 acres','0.124 acres','0.1687 acres','0.1922 acres'];
+ const keys=['sold.0','sold.1','sold.2','sold.3','active.1','active.2','active.3'];
+ keys.forEach((k,i)=>{values[k+'.address']=(100+i)+' Test Ave';values[k+'.site']=sites[i];});
+ const lots=exportRRR(values).fields.filter(f=>f.id.endsWith('_txtLotSizeAcres'));
+ assert.equal(lots.length,7);assert.deepEqual(lots.map(f=>f.value),['0.17','0.11','0.18','0.13','0.12','0.17','0.19']);
+ });

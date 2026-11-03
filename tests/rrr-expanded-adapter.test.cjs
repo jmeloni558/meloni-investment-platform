@@ -69,3 +69,16 @@ test('RRR zero-initialized property facts fill without replacing real entries or
  nodes.rrrSale1_txtGarages.value='3';assert.equal(api.plan(doc,payload,'comparables').find(f=>f.id==='rrrSale1_txtGarages').status,'existing entry — preserved');
  const id='rrrSale1_txtAdjustment';payload.fields.push({section:'comparables',id,value:'1000'});nodes[id]={id,tagName:'INPUT',type:'text',value:'0',maxLength:-1,getClientRects:()=>[{}]};assert.equal(api.plan(doc,payload,'comparables').find(f=>f.id===id).status,'existing entry — preserved');
 });
+
+test('legacy JSON acreage is rounded in preview and every transmitted event',()=>{
+ for(const prefix of ['rrrSubject','rrrSale1','rrrListing1']){
+ const {api,payload,nodes,doc}=fixture();const id=prefix+'_txtLotSizeAcres';
+ payload.fields=payload.fields.filter(f=>f.id!==id);payload.fields.push({section:'comparables',id,value:'0.1658'});
+ if(prefix==='rrrListing1'){payload.fields.push({section:'comparables',id:prefix+'_txtAddress',value:'102 Test Ave'});nodes[prefix+'_txtAddress']={id:prefix+'_txtAddress',tagName:'INPUT',type:'text',value:'102 Test Ave',getClientRects:()=>[{}]};}
+ const events=[];nodes[id]={id,tagName:'INPUT',type:'text',value:'0',maxLength:-1,isConnected:true,getClientRects:()=>[{}],dispatchEvent(){events.push(this.value);}};
+ let plan=api.plan(doc,payload,'comparables');assert.equal(plan.find(f=>f.id===id).value,'0.17');
+ assert.equal(api.apply(doc,payload,'comparables',plan,false).find(f=>f.id===id).status,'filled');assert.deepEqual(events,['0.17','0.17','0.17']);
+ assert.equal(api.plan(doc,payload,'comparables').find(f=>f.id===id).status,'already matches');
+ nodes[id].value='0.25';assert.equal(api.plan(doc,payload,'comparables').find(f=>f.id===id).status,'existing entry \u2014 preserved');
+ }
+});
