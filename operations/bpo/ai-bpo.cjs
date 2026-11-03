@@ -1,7 +1,7 @@
 'use strict';
 const {completionPlan,validateCompletion,conditionChoices,selectedCondition}=require('../../supabase/functions/bpo-generate/completion.mjs');
 function sourceKey(v){return JSON.stringify((v._attachments||[]).map(d=>[d.path,d.category,d.sourceKind,d.extract]));}
-function fingerprint(v,C){return JSON.stringify(['independent-1',sourceKey(v),selectedCondition(v)]);}
+function fingerprint(v,C){return JSON.stringify(['independent-2',sourceKey(v),selectedCondition(v)]);}
 function setCondition(input,condition){if(condition!==''&&!conditionChoices.includes(condition))throw Error('Choose one of the five subject conditions.');const v={...input,_aiSubjectCondition:condition};delete v._aiValuationContext;if(v._aiBpo)v._aiBpo={...v._aiBpo,source:''};return v;}
 function sourcesAnalyzed(v){const docs=(v._attachments||[]).filter(d=>d.extract!==false&&(v._clientTemplate==='rrr'||d.sourceKind!=='tax'));return docs.length>0&&!!v._aiReview?.at&&(v._aiSourceKey===sourceKey(v)||(!v._aiSourceKey&&docs.every(d=>Object.values(v._aiFields||{}).some(s=>!s.removed&&s.path===d.path))));}
 function ready(v,C){return v._clientTemplate!=='rrr'&&sourcesAnalyzed(v);}
@@ -30,7 +30,7 @@ function accept(manual,result,C){
  calculated._summary.generation='ai-bpo'; // Never marks an AI result as human-reviewed.
  C.validateSummary(calculated);const errors=C.issues(calculated);if(errors.length)throw Error(errors[0]);
  const fit=C.fitIssues(calculated);if(fit.length)throw Error(fit[0].message);
- return {version:6,source:fingerprint(manual,C),generatedAt:new Date().toISOString(),values:calculated,adjustments:result.adjustments};
+ return {version:6,source:fingerprint(manual,C),generatedAt:new Date().toISOString(),values:calculated,adjustments:result.adjustments,valuation:structuredClone(result.valuation)};
 }
 function displayValue(v,f,value){
  const c=v._aiCompletion;if(c?.version!==5||f.kind==='check'||f.kind==='select')return value;
