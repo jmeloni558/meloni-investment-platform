@@ -1,6 +1,7 @@
  'use strict';
 const facts=require('./rrr-facts.cjs');
 const source=require('./rrr-source.cjs');
+const adjustmentRemarks=require('./rrr-adjustment-remarks.cjs');
 const clientOf=v=>v._clientTemplate==='rrr'?'rrr':'general';
 function exportRRR(v,sourceRows=[]){
  if(clientOf(v)!=='rrr')throw Error('Choose RRR as the client before exporting.');
@@ -56,7 +57,7 @@ function exportRRR(v,sourceRows=[]){
  if(v[p+'gla']&&!area)warnings.push(label+': confirm above-grade versus basement area before entering '+v[p+'gla']+' square feet.');
  if(v[p+'baths']&&!bath)warnings.push(label+': separate full and half baths from the source ('+v[p+'baths']+').');
  if(!pool)warnings.push(label+': verify private inground pool; unknown pool facts remain blank.');
- if(i){const n=num(v[p+'net']);if(n!==null){add('comparables',pre+'ddlPositiveNegativeSign',n<0?'-':'+',label+' adjustment sign');add('comparables',pre+'txtAdjustment',Math.abs(n),label+' net adjustment');}
+ if(i){const remarks=adjustmentRemarks(v,p);add('comparables',group==='sold'?'txtSale'+i+'PropertyDataComments':'txtListing_'+i+'_PropertyDataComments',remarks,label+' adjustment remarks');const n=num(v[p+'net']);if(n!==null){add('comparables',pre+'ddlPositiveNegativeSign',n<0?'-':'+',label+' adjustment sign');add('comparables',pre+'txtAdjustment',Math.abs(n),label+' net adjustment');}
  if(v[p+'financing'])warnings.push(label+': verify the disclosed concession is included once in the net adjustment.');
  const primary=v[group==='sold'?'primary_sold_comp':'primary_active_comp'];if(primary==='Comp '+i)add('comparables',pre+'chkBestSaleList','true',label+' primary');
  }
