@@ -36,5 +36,5 @@ export function validateOutput(result,input){
  const completed=validateCompletion(result,input.completion);
  const valuation=validateValuation({...result,...completed},input);
  const summary=validateSummary(result,input);
- return {...summary,...completed,valuation,aiBpoVersion:5,independentVersion:1,sourceValues:input.sourceValues,asIs:result.asIs,listPrice:result.listPrice,primarySold:result.primarySold,adjustments:result.adjustments};
+ return {...summary,...completed,valuation,aiBpoVersion:6,independentVersion:1,sourceValues:input.sourceValues,asIs:result.asIs,listPrice:result.listPrice,primarySold:result.primarySold,adjustments:result.adjustments};
 }

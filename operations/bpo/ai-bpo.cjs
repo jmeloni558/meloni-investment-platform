@@ -8,7 +8,7 @@ function ready(v,C){return v._clientTemplate!=='rrr'&&sourcesAnalyzed(v);}
 function accept(manual,result,C){
  if(result?.independentVersion!==1||!result.sourceValues||typeof result.sourceValues!=='object'||Array.isArray(result.sourceValues))throw Error('Refresh and generate an independent AI BPO from the sources.');
  const v=result.sourceValues;
- if(result?.aiBpoVersion!==5||![result.asIs,result.listPrice].every(n=>typeof n==='number'&&Number.isFinite(n)&&n>0&&n<1e10)||!/^sold\.[1-3]$/.test(result.primarySold)||!v[result.primarySold+'.address']||!Array.isArray(result.adjustments))throw Error('The AI BPO response was incomplete. Please refresh and generate again.');
+ if(result?.aiBpoVersion!==6||![result.asIs,result.listPrice].every(n=>typeof n==='number'&&Number.isFinite(n)&&n>0&&n<1e10)||!/^sold\.[1-3]$/.test(result.primarySold)||!v[result.primarySold+'.address']||!Array.isArray(result.adjustments))throw Error('The AI BPO response was incomplete. Please refresh and generate again.');
  const plan=completionPlan(v,C.schema);validateCompletion(result,plan);
  const snapshot=structuredClone(v);delete snapshot._aiBpo;delete snapshot._summary;delete snapshot._adjustments;delete snapshot._summaryNotes;
  for(const f of C.schema)if(f.name.includes('.adj_')||/^field_047[7-9]$|^field_048[0234]$|^primary_/.test(f.name))delete snapshot[f.name];
@@ -30,7 +30,7 @@ function accept(manual,result,C){
  calculated._summary.generation='ai-bpo'; // Never marks an AI result as human-reviewed.
  C.validateSummary(calculated);const errors=C.issues(calculated);if(errors.length)throw Error(errors[0]);
  const fit=C.fitIssues(calculated);if(fit.length)throw Error(fit[0].message);
- return {version:5,source:fingerprint(manual,C),generatedAt:new Date().toISOString(),values:calculated,adjustments:result.adjustments};
+ return {version:6,source:fingerprint(manual,C),generatedAt:new Date().toISOString(),values:calculated,adjustments:result.adjustments};
 }
 function displayValue(v,f,value){
  const c=v._aiCompletion;if(c?.version!==5||f.kind==='check'||f.kind==='select')return value;
