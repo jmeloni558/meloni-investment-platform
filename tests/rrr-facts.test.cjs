@@ -25,3 +25,8 @@ test('export includes actual Sunrise-style facts and no calculated output cells'
  assert.equal(f('txtFullBaths'),'2');assert.equal(f('txtHalfBaths'),'1');assert.equal(f('txtSqFtLiving'),'2305');assert.equal(f('txtBasementSqFt'),'0');assert.equal(f('ddlGarageType'),'Attached');assert.equal(f('txtGarages'),'2');assert.equal(f('txtDOM'),'17');
  assert.equal(f('txtTotalGLA'),undefined);assert.equal(f('txtSpGla'),undefined);
 });
+
+test('MLS dual-unit lots, count-only garages and labeled water views retain only supported facts',()=>{
+ const f=require('../operations/portal-import/rrr-facts.cjs');assert.equal(Number(f.lotAcres('7,224 SqFt / 671 SqM').toFixed(4)),0.1658);assert.equal(f.lotAcres('7,224 SqFt / 100 SqM'),null);assert.equal(f.lotAcres('0.17'),null);assert.deepEqual(f.garage('2'),{count:2});assert.equal(f.garage('2.5'),null);assert.equal(f.mls('T3502012'),'T3502012');
+ const {exportRRR}=require('../operations/portal-import/rrr-export.cjs');const p=exportRRR({_clientTemplate:'rrr','sold.0.address':'100 Test Ave','sold.0.city':'Tampa','sold.0.state':'FL','sold.0.zip':'33603','sold.0.site':'7,224 SqFt / 671 SqM','sold.0.view':'Water View: Pond','sold.0.source':'T3502012','active.1.address':'200 Test Ave','active.1.garage':'2'});const get=id=>p.fields.find(f=>f.id===id)?.value;assert.equal(get('rrrSubject_txtLotSizeAcres'),'0.1658');assert.equal(get('rrrSubject_ddlView'),'Water');assert.equal(get('rrrSubject_ddlDataSource'),'MLS');assert.equal(get('rrrListing1_txtGarages'),'2');assert.equal(get('rrrListing1_ddlGarageType'),undefined);
+});

@@ -9,6 +9,7 @@ function baths(value){
 }
 function garage(value){
  const s=String(value??'').trim().toLowerCase().replace(/-/g,' ').replace(/\s+/g,' ');
+ if(/^\d+$/.test(s))return {count:Number(s)};
  if(/^(none|no garage|no garage or carport)$/.test(s))return {type:'None',count:0};
  const m=s.match(/^(?:(\d+)\s*(?:car\s*)?)?(attached|detached|built in)(?:\s*garage)?$/)||s.match(/^(\d+)\s*car\s+(attached|detached|built in)\s+garage$/);
  if(m)return {type:{attached:'Attached',detached:'Detached','built in':'Built-in'}[m[2]],...(m[1]===undefined?{}:{count:Number(m[1])})};
@@ -23,11 +24,19 @@ function area(gla,basement){
  return null;
 }
 function mls(value){
- const s=String(value??'');if(!/\bMLS\b/i.test(s))return null;
+ const s=String(value??'').trim();if(/^[A-Z]{1,4}\d{5,12}$/i.test(s))return s.toUpperCase();if(!/\bMLS\b/i.test(s))return null;
  const ids=[...s.matchAll(/\b[A-Z]{1,4}\d{5,12}\b/gi)].map(m=>m[0].toUpperCase());
  return new Set(ids).size===1?ids[0]:null;
 }
 function concession(value){const s=String(value??'').trim().replace(/[$,]/g,'');return /^\d+(?:\.0+)?$/.test(s)?Number(s):null;}
 function propertyType(value){return /^single family (?:residence|reside\.\.\.)$/i.test(String(value??'').trim())?'Single Family':null;}
 function airConditioning(value){return /\b(?:central air|air conditioning|a\/c)\b/i.test(String(value??''))&&!/\b(no|not|without|unknown)\b/i.test(String(value??''));}
-module.exports={baths,garage,area,mls,concession,propertyType,airConditioning};
+function lotAcres(value){
+ const s=String(value??'').replace(/,/g,'').trim();
+ const single=s.match(/^(\d+(?:\.\d+)?)\s*(acres?|ac|sq\.?\s*ft\.?|sqft|sf)$/i);
+ if(single)return Number(single[1])/(single[2].toLowerCase().startsWith('ac')?1:43560);
+ const dual=s.match(/^(\d+(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|sqft|sf)\s*\/\s*(\d+(?:\.\d+)?)\s*(?:sqm|sq\.?\s*m\.?|m2)$/i);
+ if(dual&&Number(dual[1])>0&&Math.abs(Number(dual[1])*0.09290304-Number(dual[2]))<=Math.max(1,Number(dual[2])*0.01))return Number(dual[1])/43560;
+ return null;
+}
+module.exports={lotAcres,baths,garage,area,mls,concession,propertyType,airConditioning};
