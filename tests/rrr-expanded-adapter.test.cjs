@@ -58,3 +58,14 @@ test('zero placeholders fill for original list price and owner unit default, rea
  let plan=api.plan(doc,payload,'comparables');assert.equal(plan.find(x=>x.id===price).status,'ready');assert.equal(plan.find(x=>x.id===units).status,'ready');
  nodes[price].value='$399,000';nodes[units].value='2';plan=api.plan(doc,payload,'comparables');assert.equal(plan.find(x=>x.id===price).status,'existing entry — preserved');assert.equal(plan.find(x=>x.id===units).status,'existing entry — preserved');
 });
+
+test('RRR zero-initialized property facts fill without replacing real entries or zero adjustments',()=>{
+ const {api,payload,nodes,doc}=fixture();
+ for(const suffix of ['txtYearBuilt','txtRooms','txtBeds','txtFullBaths','txtHalfBaths','txtSqFtLiving','txtGarages','txtLotSizeAcres']){
+  const id='rrrSale1_'+suffix;payload.fields=payload.fields.filter(f=>f.id!==id);payload.fields.push({section:'comparables',id,value:suffix==='txtYearBuilt'?'2020':suffix==='txtLotSizeAcres'?'0.15':'2'});nodes[id]={id,tagName:'INPUT',type:'text',value:'0',maxLength:-1,isConnected:true,getClientRects:()=>[{}],dispatchEvent(){}};
+ }
+ let plan=api.plan(doc,payload,'comparables');for(const suffix of ['txtYearBuilt','txtRooms','txtBeds','txtFullBaths','txtHalfBaths','txtSqFtLiving','txtGarages','txtLotSizeAcres'])assert.equal(plan.find(f=>f.id==='rrrSale1_'+suffix).status,'ready');
+ nodes.rrrSale1_txtRooms.value='8';api.apply(doc,payload,'comparables',plan,false);assert.equal(nodes.rrrSale1_txtYearBuilt.value,'2020');assert.equal(nodes.rrrSale1_txtRooms.value,'8');
+ nodes.rrrSale1_txtGarages.value='3';assert.equal(api.plan(doc,payload,'comparables').find(f=>f.id==='rrrSale1_txtGarages').status,'existing entry — preserved');
+ const id='rrrSale1_txtAdjustment';payload.fields.push({section:'comparables',id,value:'1000'});nodes[id]={id,tagName:'INPUT',type:'text',value:'0',maxLength:-1,getClientRects:()=>[{}]};assert.equal(api.plan(doc,payload,'comparables').find(f=>f.id===id).status,'existing entry — preserved');
+});

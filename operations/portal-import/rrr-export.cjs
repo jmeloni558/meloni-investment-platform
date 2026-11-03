@@ -9,7 +9,7 @@ function exportRRR(v,sourceRows=[]){
  const fields=[],warnings=[];const add=(section,id,value,label)=>{if(value!==undefined&&value!==null&&String(value).trim()!=='')fields.push({section,id,value:String(value),label});};
  const num=x=>{const s=String(x??'').trim().replace(/[$,]/g,'');return s!==''&&/^-?\d+(\.\d+)?$/.test(s)?Number(s):null;};
  const maps={view:{pond:'Water',lake:'Water',canal:'Water',water:'Water',waterfront:'Water',golf:'Golf Course','golf course':'Golf Course',neighborhood:'Neighborhood',wooded:'Wooded',park:'Park',city:'City',mountain:'Mountain'},condition:{excellent:'Excellent',good:'Good',average:'Average',fair:'Fair',poor:'Poor'},design:{ranch:'Rambler/Ranch',rambler:'Rambler/Ranch','2 story':'2 Story','two story':'2 Story'},garage:{attached:'Attached',detached:'Detached',carport:'Carport',none:'None'},tenure:{'fee simple':'Fee-simple','fee-simple':'Fee-simple',leasehold:'Leasehold'}};
- const choice=(key,val,label)=>{if(!String(val||'').trim())return undefined;const mapped=maps[key]?.[String(val).trim().toLowerCase()];if(!mapped)warnings.push(label+': select the RRR category manually ('+val+').');return mapped;};
+ const choice=(key,val,label)=>{if(!String(val||'').trim())return undefined;const mapped=maps[key]?.[String(val).trim().toLowerCase().replace(/^water view:\s*(?:yes[- ]*)?/,'')];if(!mapped)warnings.push(label+': select the RRR category manually ('+val+').');return mapped;};
  add('subject','ddlOwnershipType',choice('tenure',v['sold.0.tenure'],'Subject property rights'),'Property rights');
  add('subject','ddlStyleType',source.style(v['sold.0.design'])||source.matching(sourceRows,v,'sold.0.').style||choice('design',v['sold.0.design'],'Subject style'),'Subject style');
  add('subject','txtCounty',v.market_county,'County');
@@ -39,7 +39,7 @@ function exportRRR(v,sourceRows=[]){
  if(/\bMLS\b/i.test(v[p+'source']||''))add('comparables',pre+'ddlDataSource','MLS',label+' source');else if(/tax records?/i.test(v[p+'source']||''))add('comparables',pre+'ddlDataSource','Tax Records',label+' source');
  // Read source facts; only units and A/C use the owner's explicit defaults.
  const mls=facts.mls(v[p+'source']);
- if(mls)add('comparables',pre+'txtMLSNumber',mls,label+' MLS number');
+ if(mls){add('comparables',pre+'txtMLSNumber',mls,label+' MLS number');if(!fields.some(f=>f.id===pre+'ddlDataSource'))add('comparables',pre+'ddlDataSource','MLS',label+' source');}
  add('comparables',pre+'ddlPropertyType',facts.propertyType(v[p+'design']),label+' property type');
  add('comparables',pre+'lbAmenities_0','true',label+' A/C (owner default)');
  const pool=extra.pool||source.pool(v[p+'pool']);add('comparables',pre+'ddlPoolSpa',pool,label+' private inground pool');
@@ -47,12 +47,12 @@ function exportRRR(v,sourceRows=[]){
  const bath=facts.baths(v[p+'baths']);
  if(bath){add('comparables',pre+'txtFullBaths',bath.full,label+' full baths');add('comparables',pre+'txtHalfBaths',bath.half,label+' half baths');}
  const garage=facts.garage(v[p+'garage']);
- if(garage){add('comparables',pre+'ddlGarageType',garage.type,label+' garage type');add('comparables',pre+'txtGarages',garage.count,label+' garage spaces');}
+ if(garage){add('comparables',pre+'ddlGarageType',garage.type,label+' garage type');add('comparables',pre+'txtGarages',garage.count,label+' garage spaces');if(!garage.type)warnings.push(label+': garage count transferred; verify garage type manually.');}
  else if(v[p+'garage'])warnings.push(label+': verify garage type and count ('+v[p+'garage']+').');
  const area=facts.area(v[p+'gla'],v[p+'basement']);
  if(area){add('comparables',pre+'txtSqFtLiving',area.living,label+' above-grade living area');add('comparables',pre+'txtBasementSqFt',area.basement,label+' basement square feet');}
  const dom=num(v[p+'dom']);if(dom!==null&&Number.isInteger(dom)&&dom>=0)add('comparables',pre+'txtDOM',dom,label+' days on market');
- const site=String(v[p+'site']||'').replace(/,/g,'').match(/^\s*(\d+(?:\.\d+)?)\s*(acres?|ac|sq\.?\s*ft|sf)\s*$/i);if(site)add('comparables',pre+'txtLotSizeAcres',Number((Number(site[1])/(site[2].toLowerCase().startsWith('ac')?1:43560)).toFixed(4)),label+' acres');else if(v[p+'site'])warnings.push(label+': verify lot area and units.');
+ const site=facts.lotAcres(v[p+'site']);if(site!==null)add('comparables',pre+'txtLotSizeAcres',Number(site.toFixed(4)),label+' acres');else if(v[p+'site'])warnings.push(label+': verify lot area and units.');
  if(v[p+'gla']&&!area)warnings.push(label+': confirm above-grade versus basement area before entering '+v[p+'gla']+' square feet.');
  if(v[p+'baths']&&!bath)warnings.push(label+': separate full and half baths from the source ('+v[p+'baths']+').');
  if(!pool)warnings.push(label+': verify private inground pool; unknown pool facts remain blank.');
