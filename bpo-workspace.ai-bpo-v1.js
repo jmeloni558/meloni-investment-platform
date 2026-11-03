@@ -5,7 +5,7 @@ let allowed=false,checkedUser=null,checking=false,lastCheck=0,dialog=null,record
 const user=()=>{try{return cloudUser?.id||null;}catch(_){return null;}};
 const client=()=>{try{return cloudClient;}catch(_){return null;}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function core(){return corePromise||(corePromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='bpo-core.ai-bpo-v1.js?release=20261103-ai-bpo-reconciliation16';s.onload=async()=>{try{await window.PropertyThesisBPOCore.prepareValidation();resolve(window.PropertyThesisBPOCore);}catch(e){corePromise=null;reject(e);}};s.onerror=()=>{corePromise=null;reject(Error('Could not load the BPO editor.'));};document.head.append(s);}));}
+function core(){return corePromise||(corePromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='bpo-core.ai-bpo-v1.js?release=20261103-ai-bpo-reconciliation17';s.onload=async()=>{try{await window.PropertyThesisBPOCore.prepareValidation();resolve(window.PropertyThesisBPOCore);}catch(e){corePromise=null;reject(e);}};s.onerror=()=>{corePromise=null;reject(Error('Could not load the BPO editor.'));};document.head.append(s);}));}
 async function access(){if(!user())return false;const id=user();const {data,error}=await client().rpc('bpo_enabled');return !error&&data===true&&id===user();}
 function status(message){dialog?.querySelectorAll('[data-status],[data-subject-status]').forEach(n=>n.textContent=message);}
 function modified(){dirty=true;status('Unsaved changes');}
@@ -161,7 +161,7 @@ async function generateAiBpo(token=epoch){
  if(!(await save(token)))return;
  const id=user(),reportId=record.id,revision=record.revision,source=C.aiBpoFingerprint(values,C);
  status('Generating AI adjustments, value opinion, completed form and summary...');
- const {data,error}=await client().functions.invoke('bpo-generate',{body:{reportId,revision}});
+ const {data,error}=await client().functions.invoke('bpo-generate',{body:{reportId,revision,stream:true}});
  if(token!==epoch||id!==user()||!dialog||record?.id!==reportId)return;
  if(error||data?.error){let failure=data;try{failure=await error?.context?.json()||failure;}catch(_){}throw Error(failure?.error||'AI BPO generation failed. Your existing work is saved; please retry.');}
  if(data.revision!==revision||record.revision!==revision||C.aiBpoFingerprint(values,C)!==source)throw Error('The sources changed during generation. Please retry.');

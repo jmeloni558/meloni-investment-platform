@@ -28,12 +28,12 @@ export function createHandler({schema,env,fetchImpl=fetch}){
   if(rateError||!rate?.allowed)return json({error:'Please wait a minute before generating again.'},rateError?503:429);
   const {data:quota,error:quotaError}=await admin.rpc('consume_external_api_quota',{p_provider:'openai',p_endpoint:'bpo-generate',p_user_id:userId,p_guest_key_hash:null,p_daily_limit:50,p_monthly_limit:3000});
   if(quotaError||!quota?.allowed)return json({error:'AI BPO usage limit reached or unavailable. Your notes and existing AI BPO remain saved.'},quotaError?503:429);
-  try{
+  const work=async()=>{try{
    const documents=await sourceContent(db,report.field_values||{},userId,body.reportId);
    const fresh=await readIndependentFacts({values:report.field_values||{},schema,documents,key,model:env('BPO_GENERATE_MODEL')||'gpt-5-mini',fetchImpl});
    const input=prepare(fresh,schema);
    const {sourceValues,...modelInput}=input;
-   let result,feedback='';const deadline=Date.now()+130000;
+   let result,feedback='';const deadline=Date.now()+(body.stream===true?240000:130000);
    for(let attempt=0;attempt<2;attempt++){
     const response=await fetchImpl('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(Math.max(1000,Math.min(115000,deadline-Date.now()))),body:JSON.stringify({model:env('BPO_GENERATE_MODEL')||'gpt-5-mini',store:false,instructions:instructions+(feedback?'\nRevise the writing to satisfy this validation requirement: '+feedback:''),input:[{role:'user',content:[{type:'input_text',text:JSON.stringify(modelInput)},...documents]}],reasoning:{effort:'low'},max_output_tokens:12000,text:{format:{type:'json_schema',name:'ai_bpo',strict:true,schema:responseSchema(input)}}})});
     const payload=await response.json();if(!response.ok||payload.status!=='completed')throw Error('AI BPO provider status '+response.status+' / '+(payload.error?.code||payload.incomplete_details?.reason||payload.status||'unknown'));
@@ -43,6 +43,16 @@ export function createHandler({schema,env,fetchImpl=fetch}){
    const latest=await read();if(latest.error||latest.data?.revision!==report.revision)return json({error:'This BPO changed while the AI BPO was being written. Reopen it and generate again.'},409);
    // Return a draft only. The existing report is never overwritten by the server.
    return json({...result,revision:report.revision});
-  }catch(e){console.error('bpo-generate failed:',e?.name,e?.message);return json({error:'The AI BPO could not be completed. Your notes and previous narrative are safe. Please retry.'},502);}
+  }catch(e){console.error('bpo-generate failed:',e?.name,e?.message);return json({error:'The AI BPO could not be completed. Your notes and previous narrative are safe. Please retry.'},502);}};
+  if(body.stream!==true)return work();
+  // Valid JSON whitespace keeps the authenticated request active while source
+  // reading and validation retries run. No partial report is ever returned.
+  const encoder=new TextEncoder();let timer,closed=false;
+  const stream=new ReadableStream({start(controller){
+   controller.enqueue(encoder.encode(' '.repeat(1024)));
+   timer=setInterval(()=>{if(!closed)controller.enqueue(encoder.encode(' '.repeat(1024)));},10000);
+   work().then(async response=>{const text=await response.text();if(!closed){controller.enqueue(encoder.encode(text));controller.close();closed=true;}}).catch(()=>{if(!closed){controller.enqueue(encoder.encode(JSON.stringify({error:'AI BPO generation failed. Your saved report is unchanged.'})));controller.close();closed=true;}}).finally(()=>clearInterval(timer));
+  },cancel(){closed=true;clearInterval(timer);}});
+  return new Response(stream,{headers:{...headers,'Cache-Control':'no-store'}});
  };
 }
