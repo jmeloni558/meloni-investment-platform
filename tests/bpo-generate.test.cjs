@@ -77,3 +77,5 @@ test('clearing or changing condition never revives a stale AI report or prior re
  assert.equal(C.aiBpoFingerprint(fixture(),C),C.aiBpoFingerprint({...fixture(),...manual},C));
  });
  test('independent assignment accepts only uploaded documents and selected condition',async()=>{const {sourceAssignment}=await import('../supabase/functions/bpo-generate/independent.mjs');const v=fixture();v._aiSubjectCondition='Excellent';v._aiValuationContext={basis:'assumed-renovated'};const a=sourceAssignment(v);assert.equal(a._aiSubjectCondition,'Excellent');assert.equal(a._aiValuationContext,undefined);assert.equal(a.field_0477,undefined);assert.equal(a._aiFields,undefined);assert.equal(a._lotUnit,'sqft');});
+
+test('source inventory precision rounds consistently across server and browser boundaries',async()=>{const [c]=await modules,v=fixture(),input=c.prepare(v,C.schema),raw=output(input);raw.formFields.market_months_supply='3.96';raw.formEvidence.market_months_supply='Months of supply: 3.96';const result=c.validateOutput(raw,input);assert.equal(result.formFields.market_months_supply,'4');assert.equal(C.acceptAiBpo(v,result,C).values.market_months_supply,'4');});
