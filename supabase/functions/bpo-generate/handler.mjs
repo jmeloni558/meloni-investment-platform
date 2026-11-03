@@ -1,3 +1,4 @@
+import {readIndependentFacts} from './independent.mjs';
 import {sourceContent} from './sources.mjs';
 import {instructions,prepare,responseSchema,validateOutput} from './contract.mjs';
 
@@ -21,7 +22,7 @@ export function createHandler({schema,env,fetchImpl=fetch}){
   const read=()=>db.from('bpo_reports').select('id,revision,field_values').eq('id',body.reportId).eq('user_id',userId).maybeSingle();
   const {data:report,error}=await read();if(error||!report)return json({error:'BPO not found.'},404);
   if(report.revision!==body.revision)return json({error:'This BPO changed. Reopen it before generating an AI BPO.'},409);
-  let input;try{input=prepare(report.field_values||{},schema);}catch(e){return json({error:e.message},400);}
+  if(report.field_values?._clientTemplate==='rrr'||!report.field_values?._aiReview?.at)return json({error:'Analyze the source documents first.'},400);
   const key=env('OPENAI_API_KEY');if(!key)return json({error:'AI BPO writing is not configured. Your notes and existing AI BPO remain saved.'},503);
   const {data:rate,error:rateError}=await admin.rpc('consume_edge_rate_limit',{p_user_id:userId,p_function_name:'bpo-generate',p_limit:2,p_window_seconds:60});
   if(rateError||!rate?.allowed)return json({error:'Please wait a minute before generating again.'},rateError?503:429);
@@ -29,9 +30,12 @@ export function createHandler({schema,env,fetchImpl=fetch}){
   if(quotaError||!quota?.allowed)return json({error:'AI BPO usage limit reached or unavailable. Your notes and existing AI BPO remain saved.'},quotaError?503:429);
   try{
    const documents=await sourceContent(db,report.field_values||{},userId,body.reportId);
+   const fresh=await readIndependentFacts({values:report.field_values||{},schema,documents,key,model:env('BPO_GENERATE_MODEL')||'gpt-5-mini',fetchImpl});
+   const input=prepare(fresh,schema);
+   const {sourceValues,...modelInput}=input;
    let result,feedback='';const deadline=Date.now()+130000;
    for(let attempt=0;attempt<2;attempt++){
-    const response=await fetchImpl('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(Math.max(1000,Math.min(115000,deadline-Date.now()))),body:JSON.stringify({model:env('BPO_GENERATE_MODEL')||'gpt-5-mini',store:false,instructions:instructions+(feedback?'\nRevise the writing to satisfy this validation requirement: '+feedback:''),input:[{role:'user',content:[{type:'input_text',text:JSON.stringify(input)},...documents]}],reasoning:{effort:'low'},max_output_tokens:12000,text:{format:{type:'json_schema',name:'ai_bpo',strict:true,schema:responseSchema(input)}}})});
+    const response=await fetchImpl('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(Math.max(1000,Math.min(115000,deadline-Date.now()))),body:JSON.stringify({model:env('BPO_GENERATE_MODEL')||'gpt-5-mini',store:false,instructions:instructions+(feedback?'\nRevise the writing to satisfy this validation requirement: '+feedback:''),input:[{role:'user',content:[{type:'input_text',text:JSON.stringify(modelInput)},...documents]}],reasoning:{effort:'low'},max_output_tokens:12000,text:{format:{type:'json_schema',name:'ai_bpo',strict:true,schema:responseSchema(input)}}})});
     const payload=await response.json();if(!response.ok||payload.status!=='completed')throw Error('AI BPO provider status '+response.status+' / '+(payload.error?.code||payload.incomplete_details?.reason||payload.status||'unknown'));
     const output=payload.output?.flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('')||'';
     try{result=validateOutput(JSON.parse(output),input);break;}catch(e){feedback=e instanceof SyntaxError?'Return valid structured JSON.':e.message;if(attempt===1)throw e;}
