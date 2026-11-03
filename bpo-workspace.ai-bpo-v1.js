@@ -5,7 +5,7 @@ let allowed=false,checkedUser=null,checking=false,lastCheck=0,dialog=null,record
 const user=()=>{try{return cloudUser?.id||null;}catch(_){return null;}};
 const client=()=>{try{return cloudClient;}catch(_){return null;}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function core(){return corePromise||(corePromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='bpo-core.ai-bpo-v1.js?release=20261103-ai-bpo-independent13';s.onload=async()=>{try{await window.PropertyThesisBPOCore.prepareValidation();resolve(window.PropertyThesisBPOCore);}catch(e){corePromise=null;reject(e);}};s.onerror=()=>{corePromise=null;reject(Error('Could not load the BPO editor.'));};document.head.append(s);}));}
+function core(){return corePromise||(corePromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='bpo-core.ai-bpo-v1.js?release=20261103-ai-bpo-independent14';s.onload=async()=>{try{await window.PropertyThesisBPOCore.prepareValidation();resolve(window.PropertyThesisBPOCore);}catch(e){corePromise=null;reject(e);}};s.onerror=()=>{corePromise=null;reject(Error('Could not load the BPO editor.'));};document.head.append(s);}));}
 async function access(){if(!user())return false;const id=user();const {data,error}=await client().rpc('bpo_enabled');return !error&&data===true&&id===user();}
 function status(message){dialog?.querySelectorAll('[data-status],[data-subject-status]').forEach(n=>n.textContent=message);}
 function modified(){dirty=true;status('Unsaved changes');}
@@ -155,7 +155,7 @@ function bindSummaryPackage(){const C=window.PropertyThesisBPOCore;
 }
 
 function aiConditionPanel(C){return values._clientTemplate==='rrr'?'':'<h3>Subject condition for AI BPO</h3><label>Subject condition<select data-ai-subject-condition><option value="">Use uploaded evidence</option>'+C.aiBpoConditionChoices.map(x=>'<option value="'+x+'" '+(values._aiSubjectCondition===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label><p>Select the subject condition you want the AI to use for its valuation. Leave blank to use the uploaded evidence.</p>'; }
-function aiBpoCurrent(){const C=window.PropertyThesisBPOCore;return values._aiBpo?.version===5&&values._aiBpo.source===C.aiBpoFingerprint(values,C);}
+function aiBpoCurrent(){const C=window.PropertyThesisBPOCore;return values._aiBpo?.version===6&&values._aiBpo.source===C.aiBpoFingerprint(values,C);}
 async function generateAiBpo(token=epoch){
  const C=window.PropertyThesisBPOCore;collect();if(pendingCompUploads()||!C.aiBpoReady(values,C))throw Error('Upload and analyze subject and sold-comparable sources first.');
  if(!(await save(token)))return;
