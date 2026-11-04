@@ -12,7 +12,7 @@ $('file').onchange=async()=>{
     const next=JSON.parse(await file.text());
     if(file!==$('file').files[0])return;
     validateStewart(next);
-    payload=next;
+    payload=preparedStewart(next);
     $('subject').textContent='Confirm the open order is for '+Object.values(next.subject).join(', ')+'.';
     $('status').textContent='';
     $('apply').disabled=$('preview').disabled=false;

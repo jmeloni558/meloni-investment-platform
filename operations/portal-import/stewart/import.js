@@ -21,9 +21,9 @@ async function importStewartComps(payload) {
   }
   function control(kind,slot,key) {
     const prefix = kind==='sold'?'CompSale':'CompListing';
-    const id = prefix+'_'+key+'_'+slot+'_field';
+    const id = (key.startsWith('Adjustment:')?prefix+'Adjustments':prefix)+'_'+key.replace(/^Adjustment:/,'')+'_'+slot+'_field';
     const nodes = document.querySelectorAll('#'+id+', [name="'+id+'"]');
-    return nodes.length===1 && visible(nodes[0]) && /^(INPUT|TEXTAREA)$/.test(nodes[0].tagName)?nodes[0]:null;
+    return nodes.length===1 && visible(nodes[0]) && /^(INPUT|TEXTAREA|SELECT)$/.test(nodes[0].tagName)?nodes[0]:null;
   }
   function slotData(comp,i) {
     const get=key=>control(comp.kind,i,key)?.value?.trim()||'';
@@ -33,7 +33,10 @@ async function importStewartComps(payload) {
   const zipcode = c => c.zip || c.locality.match(/\b\d{5}(?:-\d{4})?$/)?.[0] || '';
   function vacant(c,s) {
     return ![s.address,s.second,s.unit,s.mls,s.zip,...s.facts].some(Boolean) &&
-      Object.keys(c.fields).every(key=>!control(c.kind,s.i,key)?.value.trim());
+      Object.keys(c.fields).every(key=>{
+        const node=control(c.kind,s.i,key);
+        return !String(node?.tagName==='SELECT'?node.selectedOptions[0]?.textContent||'':node?.value||'').trim();
+      });
   }
   function matches(c,s) {
     const extras=[s.second,s.unit].filter(Boolean);
@@ -49,6 +52,20 @@ async function importStewartComps(payload) {
     el.value=value;
     el.dispatchEvent(new Event('input',{bubbles:true}));
     el.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  function fill(node,value,label) {
+    if(!node||node.disabled||node.readOnly){rows.push(label+' · unavailable');return false;}
+    const option=node.tagName==='SELECT';
+    const current=option?(node.selectedOptions[0]?.textContent||'').trim():node.value.trim();
+    if(current){
+      if(current!==value.trim())rows.push(label+' · kept: '+current+' (transfer: '+value+')');
+      return false;
+    }
+    const target=option?[...node.options].find(o=>norm(o.textContent)===norm(value))?.value:value;
+    if(target==null){rows.push(label+' · no matching Stewart option for '+value);return false;}
+    set(node,target);
+    node.dispatchEvent(new Event('blur'));
+    return true;
   }
   async function settled(c,i) {
     let last='',since=0;
@@ -95,19 +112,24 @@ async function importStewartComps(payload) {
       if(!nearby.length)await add(c,selected.i);
       await settled(c,selected.i);
       let filled=0;
-      for(const [key,value] of Object.entries(c.fields)){
+      const adjustments=Object.entries(c.adjustments||{}).map(([k,v])=>['Adjustment:'+k,v]);
+      for(const [key,value] of [...Object.entries(c.fields),...adjustments]){
         checkOrder();
         if(!matches(c,slotData(c,selected.i)))stop('Slot identity changed. Review '+c.address+'.');
-        const node=control(c.kind,selected.i,key);
-        if(!node||node.disabled||node.readOnly)continue;
-        if(node.value.trim()){
-          if(node.value.trim()!==value.trim())rows.push(c.address+' · '+key+' kept: '+node.value+' (transfer: '+value+')');
-          continue;
-        }
-        set(node,value);
-        filled++;
+        if(fill(control(c.kind,selected.i,key),value,c.address+' · '+key))filled++;
       }
+      const note=control(c.kind,selected.i,'Comments');
+      if(c.legacyComment && note && !note.disabled && !note.readOnly && note.value===c.legacyComment && matches(c,slotData(c,selected.i))){
+        set(note,c.fields.Comments||'');
+        rows.push(c.address+' · removed previously imported adjustment text from comments.');
+      }
+      for(const item of c.manualAdjustments||[])rows.push(c.address+' · review unmapped adjustment: '+item);
       rows.push(c.address+' · '+(nearby.length?'Matched':'Added')+' in '+c.kind+' '+selected.i+' · '+filled+' blank fields filled.');
+    }
+    for(const [key,value] of Object.entries(payload.orderFields||{})){
+      checkOrder();
+      const node=document.getElementById(key+'_field');
+      if(fill(visible(node)?node:null,value,key))rows.push(key+' · filled');
     }
   } catch(error) { rows.push('Stopped: '+error.message); }
   finally { globalThis.stewartImportBusy=false; }
