@@ -1,7 +1,7 @@
 'use strict';
 // Legacy transfers stored these entered adjustments as a formatted comment list.
 // Only accept a complete list in the exporter's exact format, never narrative fragments.
-const adjustmentLabels={'Seller concessions':'SalesConcessions','Location':'LocationType','Site':'LotSize','View':'AdjustedViewPrice','Year built':'YearBuilt','Condition':'ConditionType','Living area':'LivingArea','Garage / carport':'GarageBayCount','Pool':'AdjustedPoolAndSpaPrice'};
+const adjustmentLabels={'Seller concessions':'FinancingConcessions','Location':'LocationType','Site':'LotSize','View':'AdjustedViewPrice','Year built':'YearBuilt','Condition':'ConditionType','Living area':'LivingArea','Garage / carport':'GarageBayCount','Pool':'AdjustedPoolAndSpaPrice'};
 const extraFacts=['ConditionType','LocationType','ViewType','Stories','GarageType','GarageBayCount','HeatingType','CoolingType','WaterSource','WasteDisposal','FuelType','UnitsInProperty'];
 const orderKeys=['Neighborhood_OwnerOccupancyPercentage','Neighborhood_TenantOccupancyPercentage','Neighborhood_AverageMarketingTime','Neighborhood_GeneralNeighborhoodComments'];
 function preparedStewart(payload){
@@ -22,6 +22,16 @@ function preparedStewart(payload){
     c.adjustments=Object.fromEntries(parsed.filter(m=>Object.hasOwn(adjustmentLabels,m[1])).map(m=>[adjustmentLabels[m[1]],String(Number(m[2]+m[3].replaceAll(',','')))]));
     c.manualAdjustments=parsed.filter(m=>!Object.hasOwn(adjustmentLabels,m[1])).map(m=>m[0]);
   }
+  for(const c of payload.comps){
+    if(c.kind!=='sold')continue;
+    const a=c.adjustments||={};
+    const old=a.SalesConcessions;
+    if(old!=null&&a.FinancingConcessions==null)a.FinancingConcessions=old;
+    delete a.SalesConcessions;
+    const signed=a.FinancingConcessions;
+    if(signed!=null && c.fields.FinancingConcessions==null)c.fields.FinancingConcessions=String(Math.abs(Number(signed)));
+    if(signed==null && c.fields.FinancingConcessions!=null)a.FinancingConcessions=String(-Number(c.fields.FinancingConcessions));
+  }
   return payload;
 }
 // Runs only when Jamie requests a preview. Read selected grid controls only.
@@ -40,7 +50,7 @@ function readStewartGrid(){
       const address=read('Address');
       if(address===null)continue;
       const fields={};
-      for(const key of ['ConditionType','LocationType','ViewType','Stories','GarageType','GarageBayCount','HeatingType','CoolingType','WaterSource','WasteDisposal','FuelType','UnitsInProperty',...['SalesConcessions','LocationType','LotSize','AdjustedViewPrice','YearBuilt','ConditionType','LivingArea','GarageBayCount','AdjustedPoolAndSpaPrice'].map(k=>'Adjustment:'+k),'Comments','BedroomCount','BathroomCount','HalfBathCount','LivingArea','TotalRooms','DaysOnMarket','YearBuilt','LotSize'].concat(kind==='sold'?'SalePrice':'CurrentListPrice'))fields[key]=read(key);
+      for(const key of ['ConditionType','LocationType','ViewType','Stories','GarageType','GarageBayCount','HeatingType','CoolingType','WaterSource','WasteDisposal','FuelType','UnitsInProperty','FinancingConcessions',...['SalesConcessions','FinancingConcessions','LocationType','LotSize','AdjustedViewPrice','YearBuilt','ConditionType','LivingArea','GarageBayCount','AdjustedPoolAndSpaPrice'].map(k=>'Adjustment:'+k),'Comments','BedroomCount','BathroomCount','HalfBathCount','LivingArea','TotalRooms','DaysOnMarket','YearBuilt','LotSize'].concat(kind==='sold'?'SalePrice':'CurrentListPrice'))fields[key]=read(key);
       slots.push({kind,slot,address,address2:read('Address2'),mls:read('MlsNumber'),fields});
     }
   }
@@ -49,7 +59,7 @@ function readStewartGrid(){
 }
 const canonical=value=>String(value??'').toLowerCase().trim().replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();
 const sharedFields=[...extraFacts,'Comments','BedroomCount','BathroomCount','HalfBathCount','LivingArea','TotalRooms','DaysOnMarket','YearBuilt','LotSize'];
-const comparableFields={sold:[...sharedFields,'SalePrice'],active:[...sharedFields,'CurrentListPrice']};
+const comparableFields={sold:[...sharedFields,'FinancingConcessions','SalePrice'],active:[...sharedFields,'CurrentListPrice']};
 function validateStewart(payload){
   if(payload?.format!=='propertythesis-stewart'||payload.version!==1||
     !['address','city','state','zip'].every(key=>typeof payload.subject?.[key]==='string'&&payload.subject[key].trim())||
@@ -60,8 +70,9 @@ function validateStewart(payload){
     if(!comp||!Object.hasOwn(comparableFields,comp.kind)||typeof comp.address!=='string'||!canonical(comp.address)||
       typeof comp.locality!=='string'||typeof comp.mls!=='string'||!comp.fields||!Object.entries(comp.fields).every(([key,value])=>comparableFields[comp.kind].includes(key)&&typeof value==='string'&&value.trim()))
       throw Error('Invalid Stewart comparable in transfer file.');
+    if(comp.fields.FinancingConcessions!=null&&!/^\d+(?:\.\d+)?$/.test(comp.fields.FinancingConcessions))throw Error('Invalid financing concession amount.');
     if(comp.manualAdjustments && (!Array.isArray(comp.manualAdjustments)||!comp.manualAdjustments.every(v=>typeof v==='string')))throw Error('Invalid review items.');
-    if(comp.adjustments && !Object.entries(comp.adjustments).every(([k,v])=>Object.values(adjustmentLabels).includes(k)&&typeof v==='string'&&/^-?\d+(?:\.\d+)?$/.test(v)))throw Error('Invalid Stewart adjustments.');
+    if(comp.adjustments && !Object.entries(comp.adjustments).every(([k,v])=>(k==='SalesConcessions'||Object.values(adjustmentLabels).includes(k))&&typeof v==='string'&&/^-?\d+(?:\.\d+)?$/.test(v)))throw Error('Invalid Stewart adjustments.');
     if(comp.zip && !/^\d{5}(?:-\d{4})?$/.test(comp.zip))throw Error('Invalid comp ZIP.');
     for(const id of [canonical(comp.address),canonical(comp.mls)].filter(Boolean)){
       const k=comp.kind+'|'+id; if(seen.has(k))throw Error('Duplicate comparable in transfer: '+comp.address); seen.add(k);

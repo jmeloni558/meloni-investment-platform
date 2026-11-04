@@ -3,7 +3,7 @@
 <title>Stewart HomeSteps importer</title>
 <style>body{font:14px system-ui;width:490px;padding:12px;color:#172637} li{padding:4px;overflow-wrap:anywhere} button{margin-top:10px}</style>
 <h1>Stewart HomeSteps importer</h1>
-<p>Choose your Property Thesis transfer. Import comps looks up each property through Add Address, waits for Stewart to populate the slot, then fills blank facts and adjustment cells from your transfer. Already selected comps are reused. Existing Stewart values are kept.</p>
+<p>Choose your Property Thesis transfer. Import comps looks up each property through Add Address, waits for Stewart to populate the slot, then fills blank facts and adjustment cells from your transfer. Already selected comps are reused. Blank subject and comp fields receive HomeSteps defaults. Seller concessions go to the financing amount and adjustment. An empty interior repair grid receives one $50 Other repair; existing repair entries are preserved.</p>
 <label>Property Thesis transfer <input id="file" type="file" accept=".json"></label>
 <p id="subject"></p><button id="apply" disabled>Import comps and fill blanks</button> <button id="preview" disabled>Preview selected comps</button>
 <p id="status" role="status"></p><ul id="rows"></ul>

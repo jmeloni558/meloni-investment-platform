@@ -1,7 +1,8 @@
 'use strict';
 const {mls,baths,lotAcres,garage}=require('./rrr-facts.cjs');
+const {concession}=require('../bpo/adjustments.cjs');
 const neighborhood=require('./rrr-neighborhood.cjs').neighborhood;
-const adjKeys={financing:'SalesConcessions',location:'LocationType',site:'LotSize',view:'AdjustedViewPrice',year:'YearBuilt',condition:'ConditionType',gla:'LivingArea',garage:'GarageBayCount',pool:'AdjustedPoolAndSpaPrice'};
+const adjKeys={financing:'FinancingConcessions',location:'LocationType',site:'LotSize',view:'AdjustedViewPrice',year:'YearBuilt',condition:'ConditionType',gla:'LivingArea',garage:'GarageBayCount',pool:'AdjustedPoolAndSpaPrice'};
 const clean=value=>String(value??'').trim();
 
 function exportStewart(values){
@@ -20,6 +21,10 @@ function exportStewart(values){
     Object.assign(fields,{BedroomCount:get('beds'),BathroomCount:clean(bath?.full),HalfBathCount:clean(bath?.half),
       LivingArea:get('gla'),TotalRooms:get('rooms'),DaysOnMarket:get('dom'),YearBuilt:get('year'),
       [kind==='sold'?'SalePrice':'CurrentListPrice']:get('price')});
+    if(kind==='sold'){
+      const amount=concession(get('financing'),Number(get('price').replace(/[$,]/g,''))).amount;
+      if(amount!=null)fields.FinancingConcessions=String(amount);
+    }
     const ratings=['Excellent','Good','Average','Fair','Poor'];
     for(const [key,target] of [['condition','ConditionType'],['location','LocationType'],['view','ViewType']]){
       const rating=ratings.find(r=>r.toLowerCase()===get(key).toLowerCase());

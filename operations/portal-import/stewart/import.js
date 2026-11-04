@@ -54,7 +54,7 @@ async function importStewartComps(payload) {
     el.dispatchEvent(new Event('change',{bubbles:true}));
   }
   function fill(node,value,label) {
-    if(!node||node.disabled||node.readOnly){rows.push(label+' · unavailable');return false;}
+    if(!visible(node)||node.disabled||node.readOnly){rows.push(label+' · unavailable');return false;}
     const option=node.tagName==='SELECT';
     const current=option?(node.selectedOptions[0]?.textContent||'').trim():node.value.trim();
     if(current){
@@ -66,6 +66,74 @@ async function importStewartComps(payload) {
     set(node,target);
     node.dispatchEvent(new Event('blur'));
     return true;
+  }
+  const defaults={SellerType:'Owner',TransactionType:'Fair Market',OwnershipType:'Fee Simple (Owner)',UnitsInProperty:'1',TotalBasementArea:'0',FinishedBasementArea:'0',HeatingType:'Heat Pump',FuelType:'Electric'};
+  const valueOf=node=>node?.tagName==='SELECT'?(node.selectedOptions[0]?.textContent||'').trim():(node?.value||'').trim();
+  function subjectDefaults(){
+    const keys={UnitsInProperty:'Subject_UnitCountType',TransactionType:'MLSTransactionHistory_SubjectTransactionType'};
+    for(const [key,value] of Object.entries(defaults)){
+      const id=(keys[key]||'Subject_'+key)+'_field';
+      const nodes=[...document.querySelectorAll('[id="'+id+'"]')].filter(visible);
+      // Stewart repeats the subject in both grids. Never let a blank copy override a populated copy.
+      if(nodes.some(n=>valueOf(n)&&norm(valueOf(n))!==norm(value)))continue;
+      for(const node of nodes)fill(node,value,id);
+    }
+  }
+  const money=v=>{
+    const plain=v.replace(/[$,]/g,'').replace(/^\((.+)\)$/,'-$1');
+    return /^[+-]?\d+(?:\.\d+)?$/.test(plain)?Number(plain):null;
+  };
+  function concessionDefaults(c,i){
+    if(c.kind!=='sold')return;
+    const old=control(c.kind,i,'Adjustment:SalesConcessions'),dest=control(c.kind,i,'Adjustment:FinancingConcessions');
+    const entered=c.adjustments?.FinancingConcessions;
+    const signed=Number(entered)>0?'+'+Number(entered):entered;
+    const oldValue=money(valueOf(old)),destValue=money(valueOf(dest));
+    if(oldValue!==null&&oldValue!==0&&signed!=null){
+      // Version 1.0.1 wrote the signed adjustment in the sales column. Move only an exact match.
+      if(oldValue!==Number(signed)||!old||old.readOnly||old.disabled||!dest||dest.disabled||dest.readOnly||
+        (valueOf(dest)&&destValue!==Number(signed))){
+        rows.push(c.address+' · review sales and financing adjustments; existing entries preserved.');return;
+      }
+      if(!valueOf(dest))set(dest,signed);
+      if(money(valueOf(dest))!==Number(signed)){rows.push(c.address+' · financing amount not accepted; sales adjustment preserved.');return;}
+      set(old,'0');
+    }else if(signed!=null)fill(dest,signed,c.address+' financing adjustment');
+    fill(control(c.kind,i,'SalesConcessions'),'0',c.address+' sales concessions');
+    fill(old,'0',c.address+' sales concessions adjustment');
+  }
+  function radio(target){
+    if(!visible(target)||target.disabled)return false;
+    if(target.checked)return true;
+    if([...document.getElementsByName(target.name)].some(n=>n.checked))return false;
+    target.click();return target.checked;
+  }
+  async function repairs(){
+    const by=id=>document.getElementById(id);
+    radio(by('SubjectRepairData_ExteriorRepairs_field_No'));
+    fill(by('Subject_RecommendedListing_field'),'As Repaired','Recommended listing');
+    if(!radio(by('SubjectRepairData_InteriorRepairs_field_Yes')))return;
+    const items=()=>[...document.querySelectorAll('#interiorRepairGrid select[id^="repair_item_"]')].filter(visible);
+    for(let n=0;n<20&&!items().length;n++)await sleep(100);
+    const list=items();
+    const used=item=>[...item.closest('tr').querySelectorAll('input,select,textarea')].some(n=>visible(n)&&(n.type==='radio'||n.type==='checkbox'?n.checked:!!valueOf(n)));
+    const existing=list.filter(used);
+    if(existing.length&&(existing.length!==1||valueOf(existing[0])!=='Other')){
+      rows.push('Interior repair rows already contain data; preserved for review.');return;
+    }
+    const item=existing[0]||list[0];if(!item){rows.push('Interior repair row unavailable; review in Stewart.');return;}
+    const suffix=item.id.slice('repair_item_'.length);
+    // Resume a partial default row, but never reinterpret an actual repair as this template.
+    if(existing.length){
+      const compatible=[['repair_cost_',v=>money(v)===50],['repair_recommendation_',v=>v==='Repair'],['repair_reason_',v=>v==='Normal Wear & Tear'],['repair_comment_',v=>v==='no repairs required'],['repair_subcategory_',()=>false]]
+        .every(([prefix,ok])=>{const v=valueOf(by(prefix+suffix));return !v||ok(v);});
+      if(!compatible||by('radio_no_recommended'+suffix)?.checked||by('radio_no_lenderReq'+suffix)?.checked){rows.push('Existing interior repair preserved for review.');return;}
+    }
+    fill(item,'Other','Interior damage');
+    if(valueOf(item)!=='Other')return;
+    for(const [prefix,v] of [['repair_cost_','50'],['repair_recommendation_','Repair'],['repair_reason_','Normal Wear & Tear'],['repair_comment_','no repairs required']])
+      fill(by(prefix+suffix),v,'Interior '+prefix);
+    for(const prefix of ['radio_yes_recommended','radio_yes_lenderReq'])if(!radio(by(prefix+suffix)))rows.push('Review interior repair recommendation: '+prefix);
   }
   async function settled(c,i) {
     let last='',since=0;
@@ -112,11 +180,17 @@ async function importStewartComps(payload) {
       if(!nearby.length)await add(c,selected.i);
       await settled(c,selected.i);
       let filled=0;
-      const adjustments=Object.entries(c.adjustments||{}).map(([k,v])=>['Adjustment:'+k,v]);
+      const adjustments=Object.entries(c.adjustments||{}).filter(([k])=>k!=='FinancingConcessions'&&k!=='SalesConcessions').map(([k,v])=>['Adjustment:'+k,v]);
       for(const [key,value] of [...Object.entries(c.fields),...adjustments]){
         checkOrder();
         if(!matches(c,slotData(c,selected.i)))stop('Slot identity changed. Review '+c.address+'.');
         if(fill(control(c.kind,selected.i,key),value,c.address+' · '+key))filled++;
+      }
+      checkOrder();
+      if(!matches(c,slotData(c,selected.i)))stop('Slot identity changed. Review '+c.address+'.');
+      concessionDefaults(c,selected.i);
+      for(const [key,value] of Object.entries(defaults)){
+        if(c.fields[key]===undefined && fill(control(c.kind,selected.i,key),value,c.address+' '+key))filled++;
       }
       const note=control(c.kind,selected.i,'Comments');
       if(c.legacyComment && note && !note.disabled && !note.readOnly && note.value===c.legacyComment && matches(c,slotData(c,selected.i))){
@@ -126,6 +200,9 @@ async function importStewartComps(payload) {
       for(const item of c.manualAdjustments||[])rows.push(c.address+' · review unmapped adjustment: '+item);
       rows.push(c.address+' · '+(nearby.length?'Matched':'Added')+' in '+c.kind+' '+selected.i+' · '+filled+' blank fields filled.');
     }
+    checkOrder();
+    subjectDefaults();
+    await repairs();
     for(const [key,value] of Object.entries(payload.orderFields||{})){
       checkOrder();
       const node=document.getElementById(key+'_field');
