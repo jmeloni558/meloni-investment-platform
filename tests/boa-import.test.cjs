@@ -55,7 +55,13 @@ test('packaged workflow fills only previewed blank fields on matching BOA pages'
     assert.equal(await p.locator('[data-tag*="NBHD_COMMENTS"]').inputValue(),'Manual edit');
     await show(2);
     await assert.rejects(apply(review),/changed/);
-    const second=await apply(await preview());
+    const pageTwo=await preview();
+    await p.evaluate(()=>history.replaceState(null,'','?id=other'));
+    await assert.rejects(apply(pageTwo),/order or page changed/);
+    await p.evaluate(()=>history.replaceState(null,'','?id=fixture#page2'));
+    // Extension message serialization may return object keys in a different order.
+    pageTwo.rows=pageTwo.rows.map(({status,tag,value,group,page})=>({group,page,status,tag,value}));
+    const second=await apply(pageTwo);
     assert.equal(second.rows.filter(f=>f.status==='filled').length,6);
     assert.equal(await p.locator('[data-tag*="GS_COMMENTS"]').inputValue(),'Prior sale verified. Adjustments: Condition -$500, Living area +$2,000. Adjusted value: $101,501.');
     assert.equal(await p.locator('[data-tag*="GL_COMMENTS"]').inputValue(),'Adjustments: Location -$2,000. Adjusted value: $98,001.');
