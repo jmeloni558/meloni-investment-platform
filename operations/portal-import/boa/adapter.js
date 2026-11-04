@@ -1,7 +1,8 @@
 'use strict';
 function inspectBOA(payload, approved){
   const norm=x=>String(x??'').toLowerCase().replace(/[.,]/g,'').replace(/\s+/g,' ').trim();
-  if(location.origin!=='https://www.acisky.com'||location.pathname.toLowerCase()!=='/formlayout/index'||!new URL(location.href).searchParams.get('id'))throw Error('Open the Service Link - BOA order in ACI Sky.');
+  const orderId=new URL(location.href).searchParams.get('id');
+  if(location.origin!=='https://www.acisky.com'||location.pathname.toLowerCase()!=='/formlayout/index'||!orderId)throw Error('Open the Service Link - BOA order in ACI Sky.');
   const visible=e=>e.getBoundingClientRect().width>0&&e.getBoundingClientRect().height>0;
   const footers=[...document.querySelectorAll('.formLabel span')].filter(visible).map(e=>e.textContent.trim()).filter(t=>/^Page \d+ of \d+$/.test(t));
   const page=footers.length===1?['','Page 1 of 3','Page 2 of 3'].indexOf(footers[0]):-1;
@@ -37,7 +38,12 @@ function inspectBOA(payload, approved){
   }
   const result=rows.map(f=>({...f,status:status(f,get(f.group,f.tag))}));
   if(approved){
-    if(approved.url!==location.href||approved.page!==page||JSON.stringify(approved.rows)!==JSON.stringify(result))throw Error('The page or its entries changed. Preview again.');
+    if(approved.orderId!==orderId||approved.page!==page)throw Error('The BOA order or page changed. Preview this page again.');
+    const keys=['page','group','tag','value','status'];
+    if(!Array.isArray(approved.rows)||approved.rows.length!==result.length)throw Error('The list of fields changed. Preview this page again.');
+    for(const [i,row] of result.entries()){
+      if(keys.some(key=>approved.rows[i]?.[key]!==row[key]))throw Error(row.group+' '+row.tag+' changed. Preview this page again.');
+    }
     for(const f of result.filter(row=>row.status==='ready')){
       const el=get(f.group,f.tag);
       if(status(f,el)!=='ready'){f.status='changed during fill';continue;}
@@ -48,6 +54,6 @@ function inspectBOA(payload, approved){
       f.status=el.value.trim()===f.value?'filled':'check manually';
     }
   }
-  return {url:location.href,page,rows:result};
+  return {orderId,page,rows:result};
 }
 globalThis.inspectBOA=inspectBOA;
