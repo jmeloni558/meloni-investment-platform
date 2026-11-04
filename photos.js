@@ -10,7 +10,7 @@ if(embedded){
   new ResizeObserver(resize).observe(document.body);
   resize();
 }
-window.PropertyThesisPhotos={canNavigate:()=>{if(busy){status('Wait for the current photo operation to finish.');return false;}if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Leave the selected photos? Photos not uploaded will need to be selected again.'))return false;return true;}};
+window.PropertyThesisPhotos={canNavigate:()=>{if(busy||dirtyDescriptions.size){status('Wait for photo changes to finish saving.');return false;}if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Leave the selected photos? Photos not uploaded will need to be selected again.'))return false;return true;}};
 
 const projectUrl='https://lmaiqpkogmmsldkziggy.supabase.co';
 const publishableKey='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
@@ -129,7 +129,55 @@ function renderQueue(){
   $('upload').textContent=queue.some(x=>x.state.startsWith('Failed'))?'Retry remaining photos':'Upload photos';
   $('upload').disabled=busy||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);
 }
-async function run(action){if(busy)return;setBusy(true);try{await action();}catch(error){status(error.message||'Something went wrong. Please try again.',true);}finally{setBusy(false);}}
+const dirtyDescriptions=new Set();
+function descriptionEditor(photo,property,version){
+  const label=node('label','Description (optional)');
+  const input=node('input');input.type='text';input.maxLength=80;input.className='photo-description';
+  input.value=photo.description;
+  input.setAttribute('aria-label','Description for '+originalName(photo.name));
+  const note=node('small');note.setAttribute('role','status');
+  let saving=null,timer;
+  const editor={save:persistDescription};
+  function persistDescription(){
+    clearTimeout(timer);
+    if(saving)return saving;
+    if(!dirtyDescriptions.has(editor))return Promise.resolve();
+    saving=(async()=>{
+      while(dirtyDescriptions.has(editor)){
+        check(version);
+        const value=input.value.trim();
+        if(value!==photo.description){
+          note.textContent='Saving…';
+          const {error}=await client.rpc('set_photo_description',{p_property:property.id,p_object:photo.id,p_description:value});
+          check(version);if(error)throw error;
+          photo.description=value;
+        }
+        if(input.value.trim()===value){dirtyDescriptions.delete(editor);note.textContent='Saved';}
+      }
+    })().catch(()=>{
+      note.textContent='Not saved. Return to this box and press Tab to retry.';
+      throw Error('A photo description could not be saved. Check your connection and try again.');
+    }).finally(()=>{saving=null;});
+    return saving;
+  }
+  const autoSave=()=>persistDescription().catch(()=>{});
+  input.oninput=()=>{
+    dirtyDescriptions.add(editor);note.textContent='Unsaved';
+    clearTimeout(timer);timer=setTimeout(autoSave,650);
+  };
+  input.onblur=autoSave;
+  input.onkeydown=event=>{
+    if(event.key!=='Tab'||event.ctrlKey||event.altKey||event.metaKey)return;
+    const fields=[...$('photos').querySelectorAll('.photo-description')];
+    const next=fields[fields.indexOf(input)+(event.shiftKey?-1:1)];
+    if(next){event.preventDefault();next.focus();}
+  };
+  label.append(input,note);return label;
+}
+async function flushDescriptions(){
+  await Promise.all([...dirtyDescriptions].map(editor=>editor.save()));
+}
+async function run(action){if(busy)return;setBusy(true);try{if(dirtyDescriptions.size)await flushDescriptions();await action();}catch(error){status(error.message||'Something went wrong. Please try again.',true);}finally{setBusy(false);}}
 async function loadProperties(){
   const version=epoch,rows=[];
   for(let offset=0;;offset+=500){const {data,error}=await client.from('photo_property_counts').select('id,address,created_at,completed_at,archived_at,deleting_at,photo_count').order('address').order('id').range(offset,offset+499);check(version);if(error)throw error;rows.push(...data);if(data.length<500)break;}
@@ -141,12 +189,15 @@ async function openProperty(p){
 }
 async function refreshPhotos(limitSignal){
   const version=epoch,p=selected;if(!p)return;const prefix=user.id+'/'+p.id;
-  status('Loading photos…');const [rows,dateResult]=await Promise.all([
+  status('Loading photos…');const [rows,dateResult,labels]=await Promise.all([
     listPhotos(bucket,prefix),
-    client.rpc('photo_dates_for_property',{p_property:p.id}).then(result=>result.data,()=>null)
+    client.rpc('photo_dates_for_property',{p_property:p.id}).then(result=>result.data,()=>null),
+    client.rpc('get_photo_descriptions',{p_property:p.id})
   ]);limitSignal?.throwIfAborted();check(version);if(p.id!==selected?.id)return;
+  if(labels.error)throw Error('Could not load photo descriptions. Refresh photos to retry.');
   status('Arranging photos in capture order…');
   for(const photo of rows){
+    photo.description=labels.data?.[photo.id]||'';
     const stored=dateResult?.[photo.id];
     if(stored){try{captureDates.set(prefix+'/'+photo.name,dateParts(stored).label);photo.takenOn=stored;}catch{/* Read the original if metadata is invalid. */}}
   }
@@ -179,6 +230,8 @@ async function refreshPhotos(limitSignal){
     if(!captureDates.has(path)&&photo.cameraTime)captureDates.set(path,dateParts(photo.cameraTime.slice(0,10)).label);
     const known=captureDates.get(path);
     const caption=node('div',null,'photo-caption'),date=node('p',known?'Taken: '+known:'Taken: Reading date…','taken-date');caption.append(node('p',originalName(photo.name)),date);card.append(caption);
+    if(p.completed_at&&!p.deleting_at)caption.append(descriptionEditor(photo,p,version));
+    else if(photo.description)caption.append(node('p',photo.description));
     const remove=node('button','Delete photo','delete-photo');
     remove.setAttribute('aria-label','Delete '+originalName(photo.name));
     remove.onclick=()=>run(async()=>{
@@ -330,7 +383,7 @@ function showList(mode=listMode){
   $('activeTab').setAttribute('aria-pressed',String(mode==='active'));$('completedTab').setAttribute('aria-pressed',String(mode==='completed'));$('archiveTab').setAttribute('aria-pressed',String(mode==='archive'));
   renderProperties();$('listTitle').focus();status(mode==='archive'?'Archived photo sets are available here.':mode==='completed'?'Completed photo sets are saved here.':'Choose a property or enter an address.');
 }
-$('backToList').onclick=()=>showList();
+$('backToList').onclick=()=>dirtyDescriptions.size?run(()=>showList()):showList();
 $('activeTab').onclick=()=>showList('active');
 $('archiveTab').onclick=()=>showList('archive');
 $('completedTab').onclick=()=>showList('completed');
@@ -479,7 +532,8 @@ async function downloadPhotos(items,date=''){
     const original=originalName(photo.name),dot=original.lastIndexOf('.');
     const stem=safeName(original.slice(0,dot)).slice(0,18);
     const suffix=date?'-'+date+'.jpg':original.slice(dot);
-    const filename=String(done+1).padStart(digits,'0')+'-'+stem+suffix;
+    const description=photo.description?safeName(photo.description)+'-':'';
+    const filename=String(done+1).padStart(digits,'0')+'-'+description+stem+suffix;
     if(date){blob=await stampPhoto(blob,date,originalName(photo.name));check(version);}
     if(bytes&&bytes+blob.size>limit)await flush(false);
     const options={};if(date){const d=dateParts(date);options.date=new Date(Date.UTC(Math.min(2107,Math.max(1980,d.year)),d.month-1,d.day));}
@@ -493,7 +547,7 @@ $('downloadSelected').onclick=()=>run(()=>downloadPhotos(photos.filter(p=>select
 $('downloadAllDated').onclick=()=>askDownloadDate(false);
 $('downloadSelectedDated').onclick=()=>askDownloadDate(true);
 $('signout').onclick=()=>run(async()=>{const {error}=await client.auth.signOut({scope:'local'});if(error)throw error;});
-addEventListener('beforeunload',e=>{if(busy||queue.some(x=>x.state!=='Uploaded'&&!x.invalid)){e.preventDefault();e.returnValue='';}});
+addEventListener('beforeunload',e=>{if(busy||dirtyDescriptions.size||queue.some(x=>x.state!=='Uploaded'&&!x.invalid)){e.preventDefault();e.returnValue='';}});
 addEventListener('offline',()=>status('You are offline. Keep this page open and retry remaining uploads when connected.',true));
 const installedDisplay=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 $('install').hidden=installedDisplay();
@@ -510,7 +564,7 @@ $('install').onclick=async()=>{
 async function sessionChanged(session){
   const next=session?.user;if(next?.id===user?.id&&user)return;
   $('storageUsage').textContent='Checking storage…';$('storageMeter').hidden=true;
-  batchController?.abort();clearCaptions();clearTransferCache();cameraTimes.clear();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
+  dirtyDescriptions.clear();batchController?.abort();clearCaptions();clearTransferCache();cameraTimes.clear();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
   $('files').value='';$('photos').replaceChildren();$('properties').replaceChildren();$('queue').replaceChildren();$('account').textContent='';$('library').hidden=true;$('workspace').hidden=true;$('addressList').hidden=false;$('signedOut').hidden=!!user;
   if(!user){initPhotoCaptcha();status('Sign in to upload and download your property photos.');return;}
   try{const {data,error}=await client.rpc('photo_library_enabled');check(version);if(error)throw error;if(!data){$('signedOut').hidden=false;initPhotoCaptcha();status('Photo Uploads is currently available only to the pilot account.',true);return;}$('library').hidden=false;$('password').value='';$('account').textContent=user.email;await loadProperties();showList('active');await openRequestedAddress();}catch(e){if(version===epoch)status(e.message,true);}
@@ -552,6 +606,7 @@ $('updateApp').onclick=async()=>{
   setBusy(true);status('Checking for the latest app…');
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
   try{
+    if(dirtyDescriptions.size)await flushDescriptions();
     const url=new URL(location.href);url.searchParams.set('app-update',String(Date.now()));
     const response=await fetch(url.href,{cache:'no-store',signal:controller.signal});
     if(!response.ok)throw Error('Update unavailable. Please try again shortly.');
