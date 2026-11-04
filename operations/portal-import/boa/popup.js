@@ -18,7 +18,7 @@ async function run(fill){
     if(!tab?.url?.startsWith('https://www.acisky.com/formlayout/index')||fill&&tab.id!==tabId)throw Error('Open the matching BOA form and preview this page.');
     const target={tabId:tab.id};
     await chrome.scripting.executeScript({target,files:['schema.js','adapter.js']});
-    const [response]=await chrome.scripting.executeScript({target,func:(p,r)=>{try{return globalThis.inspectBOA(p,r);}catch(e){return {error:e.message};}},args:[payload,fill?review:null]});
+    const [response]=await chrome.scripting.executeScript({target,func:async(p,r)=>{try{return await globalThis.inspectBOA(p,r);}catch(e){return {error:e.message};}},args:[payload,fill?review:null]});
     if(!response.result)throw Error(response.error?.message||'Preview failed. Check the page and subject address.');
     const result=response.result;
     if(result.error)throw Error(result.error);

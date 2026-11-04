@@ -16,11 +16,25 @@ test('export keeps all six comp slots separate, uses acre units and source-match
   for(const [kind,pre,price] of [['SALES','GS','SALE_PRICE'],['LIST','GL','LIST_PRICE']])for(let i=1;i<=3;i++){
     const f=payload.fields.filter(x=>x.group==='COMP_'+kind+'_'+i);
     assert.equal(f.find(x=>x.tag===pre+'_'+price).value,String(100000+i));
-    assert.equal(f.find(x=>x.tag===pre+'_LOT_SIZE').value,'0.1');
+    assert.equal(f.find(x=>x.tag===pre+'_LOT_SIZE').value,'0.10');
+    for(const [tag,value] of [['PROJ_SIZE','N/A'],['LSHLD_FEE_SMPL','Fee Simple'],['BASEMENT','None']])assert.equal(f.find(x=>x.tag===pre+'_'+tag).value,value);
   }
   assert.ok(payload.fields.some(x=>x.group==='COMP_LIST_1'&&x.tag==='GL_LIST_DATE'&&x.value==='10/12/2026'));
   assert.ok(payload.fields.some(x=>x.tag==='NBHD_PROP_VALUE_STAB_X'));
   assert.ok(payload.fields.some(x=>x.tag==='NBHD_COMMENTS'&&x.value==='Reviewed market conditions.'));
+});
+test('BOA compares private pools, retains overrides and replaces old generated pool deductions',()=>{
+  const C=require('../operations/bpo/core.cjs');
+  const data={...v,'sold.0.pool':'Private, Community','sold.1.pool':'Private','sold.1.adj_pool':'-50,000','active.1.pool':'Community','active.2.pool':'None','boa.sold.1.PROJ_SIZE':'20 units','sold.1.basement':'Finished','sold.1.tenure':'Leasehold',_adjustments:{globals:{pool:50000},generated:{'sold.1.adj_pool':{value:'-50,000',blanket:true}}}};
+  const withPools=C.addBoaPoolFacts(data,[{category:'sold',address:'3 Example Way, Tampa, FL 33601',boaPool:'Private'}]);
+  const corrected=C.applyAdjustments(withPools).values;
+  assert.equal(corrected['sold.1.adj_pool'],'0');
+  assert.equal(corrected['sold.3.adj_pool'],'0');
+  assert.equal(corrected['active.1.adj_pool'],'50,000');
+  assert.equal(corrected['active.2.adj_pool'],'50,000');
+  const fields=exportBOA(corrected).fields;
+  assert.deepEqual(fields.filter(f=>f.tag.endsWith('_AMENITIES')).map(f=>f.value),['Private','Private','Private']);
+  for(const [tag,value] of [['GS_PROJ_SIZE','20 units'],['GS_BASEMENT','Finished'],['GS_LSHLD_FEE_SMPL','Leasehold']])assert.equal(fields.find(f=>f.group==='COMP_SALES_1'&&f.tag===tag).value,value);
 });
 test('packaged workflow fills only previewed blank fields on matching BOA pages',async()=>{
   const browser=await chromium.launch({channel:'msedge',headless:true});
@@ -38,7 +52,8 @@ test('packaged workflow fills only previewed blank fields on matching BOA pages'
       const html='<div class="formLabel"><span>Page '+page+' of 3</span></div>'+ids.map((tag,i)=>inputs('SUBJECT',tag,'readonly value="'+Object.values(payload.subject)[i]+'"')).join('')+
         inputs('SUBJECT','NBHD_COMMENTS')+inputs('SUBJECT','COUNTY','value="Keep"')+
         inputs('SUBJECT','OCCUPANT_TENANT_X','data-checkbox-type="StandardCheckBox" onclick="this.value=\'X\'"')+
-        ['COMP_SALES_1','COMP_LIST_1'].map(g=>{const pre=g.includes('SALES')?'GS_':'GL_';return inputs(g,pre+'ADDRESS')+inputs(g,pre+(pre==='GS_'?'SALE_PRICE':'LIST_PRICE'))+inputs(g,pre+'COMMENTS');}).join('');
+        ['COMP_SALES_1','COMP_LIST_1'].map(g=>{const pre=g.includes('SALES')?'GS_':'GL_';return inputs(g,pre+'ADDRESS')+inputs(g,pre+(pre==='GS_'?'SALE_PRICE':'LIST_PRICE'))+inputs(g,pre+'COMMENTS');}).join('')+
+        (page===2?'<input class="reportField picklist" readonly data-tag="SLBOABPODB_23&#92;COMP_SALES_1&#92;GS_LSHLD_FEE_SMPL.1" onclick="document.querySelector(\'.picklist-displayed-text\').hidden=false"><div hidden class="picklist-displayed-text" ondblclick="document.querySelector(\'.picklist\').value=\'Fee Simple\'">2-Fee Simple</div>':'');
       await p.setContent(html);
       for(const script of ['schema','adapter'])await p.addScriptTag({path:'operations/portal-import/boa/'+script+'.js'});
     }
@@ -62,7 +77,8 @@ test('packaged workflow fills only previewed blank fields on matching BOA pages'
     // Extension message serialization may return object keys in a different order.
     pageTwo.rows=pageTwo.rows.map(({status,tag,value,group,page})=>({group,page,status,tag,value}));
     const second=await apply(pageTwo);
-    assert.equal(second.rows.filter(f=>f.status==='filled').length,6);
+    assert.equal(second.rows.filter(f=>f.status==='filled').length,7);
+    assert.equal(await p.locator('.picklist').inputValue(),'Fee Simple');
     assert.equal(await p.locator('[data-tag*="GS_COMMENTS"]').inputValue(),'Prior sale verified. Adjustments: Condition -$500, Living area +$2,000. Adjusted value: $101,501.');
     assert.equal(await p.locator('[data-tag*="GL_COMMENTS"]').inputValue(),'Adjustments: Location -$2,000. Adjusted value: $98,001.');
     assert.equal(await p.locator('[data-tag*="GL_LIST_PRICE"]').inputValue(),'100001');

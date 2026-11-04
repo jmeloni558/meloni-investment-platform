@@ -13,7 +13,7 @@ function comparisons(v,p){const g=k=>v[p+k],s=k=>v['sold.0.'+k],shared=[],differ
  const sg=number(s('gla')),cg=number(g('gla')),sb=number(s('baths')),cb=number(g('baths'));
  const size=[];if(sg>0&&cg>0&&sg!==cg)size.push((cg>sg?'more':'less')+' living area');if(sb!==null&&cb!==null&&sb!==cb)size.push((cb>sb?'more':'fewer')+' bathrooms');
  if(size.length)differences.push('Because it offers '+size.join(' and ')+', its unadjusted price is not directly equivalent to the subject’s.');
- const sp=poolClass(s('pool')),cp=poolClass(g('pool'));
+ const sp=poolClass(s('pool'),v._clientTemplate),cp=poolClass(g('pool'),v._clientTemplate);
  if(sp!==null&&cp!==null&&sp!==cp)differences.push(sp>cp?(/above[- ]?ground/i.test(g('pool'))?'Its above-ground pool is treated as having no pool value, distinguishing it from the subject’s private pool.':'The absence of a valued private pool makes this a useful comparison for the subject’s pool advantage.'):'Its private pool offers an amenity the subject lacks.');
  else if(sp===1&&cp===1)differences.push('Both properties have a reported private pool, allowing comparison without a pool difference.');
  const ss=storyClass(s('design')),cs=storyClass(g('design'));
