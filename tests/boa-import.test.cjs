@@ -42,8 +42,8 @@ test('packaged workflow fills only previewed blank fields on matching BOA pages'
     const p=await browser.newPage();
     await p.route('https://www.acisky.com/**',r=>r.fulfill({contentType:'text/html',body:'<main></main>'}));
     await p.goto('https://www.acisky.com/formlayout/index?id=fixture');
-    const workspace=fs.readFileSync('app-core.html','utf8').match(/src="(bpo-workspace\.boa-[^"]+)"/)[1];
-    const core=fs.readFileSync(workspace,'utf8').match(/s.src="(bpo-core\.boa-[^"]+)"/)[1];
+    const workspace=fs.readFileSync('app-core.html','utf8').match(/src="(bpo-workspace\.[a-z]+-[^"]+)"/)[1];
+    const core=fs.readFileSync(workspace,'utf8').match(/s.src="(bpo-core\.[a-z]+-[^"]+)"/)[1];
     await p.addScriptTag({path:core});
     assert.deepEqual(await p.evaluate(v=>[PropertyThesisBPOCore.clientOf(v),PropertyThesisBPOCore.exportBOA(v).format],v),['boa','propertythesis-boa']);
     async function show(page){

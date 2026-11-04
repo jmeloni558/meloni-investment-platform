@@ -1,0 +1,9 @@
+# Stewart HomeSteps form observations
+
+Reviewed the open Stewart Valuation Intelligence HomeSteps form in Edge on November 4, 2026. No order data was changed. This describes the inspected template; other Stewart orders may differ.
+
+The Comparables section shows market search results separately from Selected Comparables (Sale 1–3 and Listing 1–3). Results contain MLS number where available, address, active/sold status, date, price, DOM and property characteristics. The subject's own history also appears in results. Never treat a search result as a selected comp. The sale and listing grids each have their own **Add Address** control. Jamie uses that control to select a property and let Stewart populate the grid. All slots were empty at inspection, so which fields the service actually fills has not been verified on a populated slot.
+
+Visible grid field identifiers included `CompSale_Address_1_field`, `CompSale_Address2_1_field`, `CompSale_MlsNumber_1_field`, `CompSale_Comments_1_field` and their `CompListing_` equivalents. Listing columns also had `CompListing_LivingArea_1_field`, `CompListing_BedroomCount_1_field`, `CompListing_BathroomCount_1_field` and `CompListing_HalfBathCount_1_field`. Distinguish adjustment controls from descriptive values. The page has an adjustment auto-calculation section and calculated reconciliation totals.
+
+The Add Address controls live in saleCompsSection and listingCompsSection. Both open the Add Comparable dialog. The observed sale dialog contained ComparableSlot (Sales 1–3), ComparableZipCode, ComparableMlsNumber, ComparableAddress and addComparableBtn. Stewart asks for the ZIP and either an MLS number or an address. The importer runs the lookup for prepared comps, reuses matching populated slots, and fills supported blanks after the returned identity and listing facts stabilize. A lookup needing review stops the run. Verify service response timing against the next intended populated order.

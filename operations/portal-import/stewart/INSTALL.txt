@@ -1,0 +1,7 @@
+Stewart HomeSteps importer 0.2.0
+
+Unzip the importer. In Edge open edge://extensions, enable Developer mode, choose Load unpacked, and select the folder containing manifest.json.
+
+In Property Thesis choose Stewart HomeSteps, prepare your sale and listing comps including each comp ZIP, and choose Export for Stewart. Open the matching Stewart HomeSteps order. Open the importer extension, choose your exported JSON, verify the subject shown, and click Import comps and fill blanks.
+
+The importer looks up each new comp by MLS number when supplied, otherwise by street address. It waits for Stewart's listing facts, then fills supported empty fields. Existing values, including zero, are preserved. Read the per-comp results. If Stewart requests a selection, cannot find a listing, or returns a different property, resolve the lookup in Stewart and run the importer again. Existing matches can be in any slot of the correct grid. Review the completed order in Stewart before your normal submission.
