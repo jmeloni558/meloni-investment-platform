@@ -1,5 +1,6 @@
 import {takenDate,stampPhoto,dateParts} from './photo-dates.mjs?v=2';
-import {BUCKET,safeName,validateFile,originalName,listPhotos,uploadPhoto} from './photo-library.mjs?v=2';
+import {BUCKET,safeName,validateFile,originalName,listPhotos} from './photo-library.mjs?v=3';
+import {bounded,sendQueuedPhoto,uploadFailure} from './photo-upload-queue.mjs?v=1';
 const $=id=>document.getElementById(id);
 let embedded=false;try{embedded=parent!==window&&parent.location.origin===location.origin&&!!parent.PropertyThesisDesktopPhotos;}catch(_){}
 if(embedded){
@@ -11,7 +12,15 @@ if(embedded){
 }
 window.PropertyThesisPhotos={canNavigate:()=>{if(busy){status('Wait for the current photo operation to finish.');return false;}if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Leave the selected photos? Photos not uploaded will need to be selected again.'))return false;return true;}};
 
-const client=window.PropertyThesisSession?.getClient()||window.supabase?.createClient('https://lmaiqpkogmmsldkziggy.supabase.co','sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7');
+const projectUrl='https://lmaiqpkogmmsldkziggy.supabase.co';
+const publishableKey='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
+const client=window.PropertyThesisSession?.getClient()||window.supabase?.createClient(projectUrl,publishableKey);
+function createUploadClient(token,signal){
+  return window.supabase.createClient(projectUrl,publishableKey,{
+    accessToken:async()=>token,
+    global:{fetch:(url,options)=>fetch(url,{...options,signal})}
+  });
+}
 let user=null,properties=[],selected=null,photos=[],queue=[],busy=false,epoch=0,installPrompt,listMode='active';
 const bucket=client?.storage.from(BUCKET);
 const selectedPhotos=new Set();
@@ -109,8 +118,11 @@ function renderProperties(){
   const empty={active:'No active properties. Enter an address to begin.',completed:'No completed photo sets.',archive:'No archived photo sets.'};
   if(!list.children.length)list.append(node('p',empty[listMode],'hint'));
 }
+function setItemState(item,state){
+  item.state=state;if(item.row)item.row.textContent=item.file.name+' — '+state;
+}
 function renderQueue(){
-  $('queue').replaceChildren(...queue.map(x=>node('div',x.file.name+' — '+x.state,'queue-row')));
+  $('queue').replaceChildren(...queue.map(x=>(x.row=node('div',x.file.name+' — '+x.state,'queue-row'))));
   $('upload').textContent=queue.some(x=>x.state.startsWith('Failed'))?'Retry remaining photos':'Upload photos';
   $('upload').disabled=busy||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);
 }
@@ -124,12 +136,12 @@ async function openProperty(p){
   if(queue.some(x=>x.state!=='Uploaded')&&!confirm('Leave the selected photos? Photos not uploaded will need to be selected again.'))return;
   selectedPhotos.clear();selected=p;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();$('workspace').hidden=false;$('addressList').hidden=true;$('uploadControls').hidden=!!p.completed_at||!!p.deleting_at;$('complete').hidden=!!p.completed_at||!!p.deleting_at;$('reopen').hidden=!p.completed_at||!!p.deleting_at;$('completedNote').hidden=!p.completed_at;$('completedNote').textContent=p.archived_at?'This photo set is archived.':'This upload set is completed.';$('propertyTitle').textContent=p.address;renderProperties();await refreshPhotos();$('propertyTitle').focus();
 }
-async function refreshPhotos(){
+async function refreshPhotos(limitSignal){
   const version=epoch,p=selected;if(!p)return;const prefix=user.id+'/'+p.id;
   status('Loading photos…');const [rows,dateResult]=await Promise.all([
     listPhotos(bucket,prefix),
     client.rpc('photo_dates_for_property',{p_property:p.id}).then(result=>result.data,()=>null)
-  ]);check(version);if(p.id!==selected?.id)return;photos=rows;for(const name of selectedPhotos){if(!photos.some(p=>p.name===name))selectedPhotos.delete(name);}
+  ]);limitSignal?.throwIfAborted();check(version);if(p.id!==selected?.id)return;photos=rows;for(const name of selectedPhotos){if(!photos.some(p=>p.name===name))selectedPhotos.delete(name);}
   clearCaptions();$('photos').replaceChildren();syncPhotoCount();
   for(const photo of photos){
     const card=node('article',null,'photo');card.dataset.photoName=photo.name;
@@ -310,28 +322,57 @@ $('complete').onclick=()=>run(()=>changeCompletion(true));
 $('reopen').onclick=()=>run(()=>changeCompletion(false));
 $('search').oninput=renderProperties;
 $('files').onchange=()=>{queue=Array.from($('files').files).map(file=>{try{validateFile(file);return {file,state:'Ready'};}catch(e){return {file,state:e.message,invalid:true};}});renderQueue();};
+let batchController=null;
+$('pauseUpload').onclick=()=>batchController?.abort();
 $('upload').onclick=()=>run(async()=>{
   if(selected.completed_at)throw Error('Reopen this completed set before uploading.');
-  const version=epoch,prefix=user.id+'/'+selected.id;let failures=0,uploaded=0;
+  const version=epoch,prefix=user.id+'/'+selected.id;
   const waiting=queue.filter(item=>!item.invalid&&item.state!=='Uploaded');
-  let next=0;
+  const controller=new AbortController();
+  batchController=controller;
+  const pause=$('pauseUpload');
+  pause.hidden=false;pause.disabled=false;
+  const confirmed=new Set(photos.map(photo=>photo.name));
+  for(const item of queue)if(item.state==='Uploaded')confirmed.add(item.name);
+  let next=0,uploaded=0,failures=0,interruption='';
   async function worker(){
-    while(next<waiting.length){
+    while(next<waiting.length&&!controller.signal.aborted&&!interruption){
       check(version);
       const item=waiting[next++];
-      item.state='Uploading…';renderQueue();
+      setItemState(item,'Uploading…');
       try{
-        const takenOn=await takenDate(item.file,true).catch(()=>null);
-        check(version);item.name=await uploadPhoto(bucket,prefix,item.file,takenOn);
-        check(version);item.state='Uploaded';uploaded++;
+        item.name=await sendQueuedPhoto({file:item.file,prefix,takenDate,auth:client.auth,
+          createClient:createUploadClient,knownNames:confirmed,signal:controller.signal,
+          onRetry:(number,kind)=>setItemState(item,(kind==='auth'?'Renewing sign-in':'Connection interrupted')+' · retry '+number+' of 2')
+        });
+        check(version);confirmed.add(item.name);setItemState(item,'Uploaded');uploaded++;
+        const row=properties.find(p=>p.id===selected.id);
+        if(row)row.photo_count=confirmed.size;
       }catch(error){
-        check(version);item.state='Failed: '+(error.message||'Connection lost');failures++;
+        check(version);
+        if(controller.signal.aborted){setItemState(item,'Ready');break;}
+        const kind=uploadFailure(error);
+        setItemState(item,'Failed: '+(error.message||'Upload interrupted'));failures++;
+        if(kind!=='file')interruption=kind==='auth'?'Sign-in could not be renewed.':'The connection is unavailable.';
       }
-      status('Uploaded '+uploaded+' of '+waiting.length+' photos…');renderQueue();
+      status(uploaded+' of '+waiting.length+' photos confirmed.');
     }
   }
-  await Promise.all(Array.from({length:Math.min(3,waiting.length)},worker));
-  await refreshPhotos();status(uploaded+' uploaded. '+(failures?failures+' failed. Tap Retry remaining photos.':'Uploads complete.'),!!failures);renderQueue();
+  try{
+    const workers=matchMedia('(pointer: coarse), (max-width: 760px)').matches?1:3;
+    await Promise.all(Array.from({length:Math.min(workers,waiting.length)},worker));
+    check(version);
+    const paused=controller.signal.aborted||interruption;
+    if(!paused){
+      try{await bounded(signal=>refreshPhotos(signal),controller.signal,30000);}
+      catch{interruption='Gallery refresh interrupted.';}
+    }
+    const remaining=queue.filter(item=>!item.invalid&&item.state!=='Uploaded').length;
+    status(uploaded+' uploaded. '+(remaining?(interruption||'Upload paused.')+' '+remaining+' remaining. Tap Retry remaining photos.':interruption||'Uploads complete.'),!!failures||!!interruption);
+  }finally{
+    batchController=null;pause.hidden=true;renderQueue();
+    if(queue.some(item=>!item.invalid&&item.state!=='Uploaded'))$('upload').textContent='Retry remaining photos';
+  }
 });
 $('refresh').onclick=()=>run(refreshPhotos);
 let datedRequest=null;
@@ -389,7 +430,7 @@ $('install').onclick=async()=>{
 async function sessionChanged(session){
   const next=session?.user;if(next?.id===user?.id&&user)return;
   $('storageUsage').textContent='Checking storage…';$('storageMeter').hidden=true;
-  clearCaptions();clearTransferCache();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
+  batchController?.abort();clearCaptions();clearTransferCache();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
   $('files').value='';$('photos').replaceChildren();$('properties').replaceChildren();$('queue').replaceChildren();$('account').textContent='';$('library').hidden=true;$('workspace').hidden=true;$('addressList').hidden=false;$('signedOut').hidden=!!user;
   if(!user){initPhotoCaptcha();status('Sign in to upload and download your property photos.');return;}
   try{const {data,error}=await client.rpc('photo_library_enabled');check(version);if(error)throw error;if(!data){$('signedOut').hidden=false;initPhotoCaptcha();status('Photo Uploads is currently available only to the pilot account.',true);return;}$('library').hidden=false;$('password').value='';$('account').textContent=user.email;await loadProperties();showList('active');await openRequestedAddress();}catch(e){if(version===epoch)status(e.message,true);}
