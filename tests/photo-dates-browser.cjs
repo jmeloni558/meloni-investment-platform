@@ -57,6 +57,23 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  const rotatedMeta={...metadata,'0th':{...metadata['0th'],[piexif.ImageIFD.Orientation]:6}};
  const rotated=Buffer.from(piexif.insert(piexif.dump(rotatedMeta),'data:image/jpeg;base64,'+fixtures.jpg).split(',')[1],'base64');
  const dimensions=await page.evaluate(async bytes=>{const m=await import('./photo-dates.mjs?v=3');const b=await m.stampPhoto(new Blob([Uint8Array.from(bytes)]),'2026-10-29','rotated.jpg');const image=await createImageBitmap(b);const size=[image.width,image.height];image.close();try{await m.stampPhoto(new Blob(['broken']),'2026-10-29','broken.jpg');throw Error('Accepted corrupt photo');}catch(e){if(!e.message.includes('Cannot read'))throw e;}return size;},Array.from(rotated));assert.deepEqual(dimensions,[800,1200]);
+ // A client which ignores orientation must now see the same upright pixels as Edge.
+ const source=process.env.ORIENTED_JPEG?fs.readFileSync(process.env.ORIENTED_JPEG):rotated;
+ const upright=await page.evaluate(async base64=>{
+   const {uprightJpeg}=await import('./photo-dates.mjs?v=4');
+   const input=new Blob([Uint8Array.from(atob(base64),c=>c.charCodeAt(0))],{type:'image/jpeg'});
+   const output=await uprightJpeg(input,'camera.jpg');
+   async function sample(blob){
+     const bitmap=await createImageBitmap(blob),canvas=document.createElement('canvas');
+     canvas.width=4;canvas.height=4;const ctx=canvas.getContext('2d');ctx.drawImage(bitmap,0,0,4,4);
+     const result={size:[bitmap.width,bitmap.height],pixels:Array.from(ctx.getImageData(0,0,4,4).data)};bitmap.close();return result;
+   }
+   return {before:await sample(input),after:await sample(output),orientation:await window.exifr.orientation(output),
+     date:(await window.exifr.parse(output,{reviveValues:false,pick:['DateTimeOriginal']}))?.DateTimeOriginal};
+ },source.toString('base64'));
+ assert.equal(upright.orientation,1);assert.deepEqual(upright.after.size,upright.before.size);
+ assert.ok(upright.after.pixels.every((x,i)=>Math.abs(x-upright.before.pixels[i])<15));
+ assert.equal(upright.date,(await exifr.parse(source,{reviveValues:false,pick:['DateTimeOriginal']})).DateTimeOriginal);
  // Optional upstream HEIC fixture: validate real conversion and new metadata.
  if(process.env.HEIC_FIXTURE){const bytes=fs.readFileSync(process.env.HEIC_FIXTURE);const result=await page.evaluate(async bytes=>{const m=await import('./photo-dates.mjs?v=3');const b=await m.stampPhoto(new Blob([Uint8Array.from(bytes)]),'2026-10-29','sample.heic');return Array.from(new Uint8Array(await b.arrayBuffer()));},Array.from(bytes));assert.equal(piexif.load(Buffer.from(result).toString('binary')).Exif[piexif.ExifIFD.DateTimeOriginal],'2026:10:29 00:00:00');}
  await page.screenshot({path:path.join(os.tmpdir(),'photo-dates-gallery.png'),fullPage:true});assert.deepEqual(errors,[]);console.log('PASS: consecutive Create, duplicates stay on list, caption EXIF dates/timezone, unknown dates, blank required date/cancel, all/selected downloads, JPG/PNG/WebP stamps, EXIF replacement and originals unchanged'+(process.env.HEIC_FIXTURE?', real HEIC conversion':''));

@@ -1,4 +1,4 @@
-import {cameraTimestamp,stampPhoto,dateParts} from './photo-dates.mjs?v=3';
+import {cameraTimestamp,stampPhoto,dateParts,uprightJpeg} from './photo-dates.mjs?v=4';
 import {BUCKET,safeName,validateFile,originalName,listPhotos} from './photo-library.mjs?v=3';
 import {bounded,sendQueuedPhoto,uploadFailure} from './photo-upload-queue.mjs?v=1';
 const $=id=>document.getElementById(id);
@@ -534,13 +534,14 @@ async function downloadPhotos(items,date=''){
     const suffix=date?'-'+date+'.jpg':original.slice(dot);
     const description=photo.description?safeName(photo.description)+'-':'';
     const filename=String(done+1).padStart(digits,'0')+'-'+description+stem+suffix;
-    if(date){blob=await stampPhoto(blob,date,originalName(photo.name));check(version);}
+    blob=date?await stampPhoto(blob,date,original):await uprightJpeg(blob,original);
+    check(version);
     if(bytes&&bytes+blob.size>limit)await flush(false);
     const options={};if(date){const d=dateParts(date);options.date=new Date(Date.UTC(Math.min(2107,Math.max(1980,d.year)),d.month-1,d.day));}
     zip.file(filename,blob,options);bytes+=blob.size;done++;
   }
  }
- await flush(true);status(done+' '+(date?'dated JPG copies':'original photos')+' downloaded. Extract the ZIP'+(part>2?' files':' file')+' to access your photos.');
+ await flush(true);status(done+' '+(date?'dated JPG copies':'photos')+' downloaded. Extract the ZIP'+(part>2?' files':' file')+' to access your photos.');
 }
 $('downloadAll').onclick=()=>run(()=>downloadPhotos([...photos]));
 $('downloadSelected').onclick=()=>run(()=>downloadPhotos(photos.filter(p=>selectedPhotos.has(p.name))));

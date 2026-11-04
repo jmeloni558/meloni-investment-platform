@@ -43,6 +43,32 @@ export async function takenDate(blob,iso=false){
   const day=timestamp.slice(0,10);
   return iso?day:dateParts(day).label;
 }
+// Client portals may discard EXIF before displaying a JPEG. Render its visual
+// orientation into the pixels while retaining camera dates on the exported copy.
+export async function uprightJpeg(blob,name){
+  if(!/\.jpe?g$/i.test(name))return blob;
+  const exifr=await dependency('exifr','assets/vendor/exifr-7.1.3.js');
+  const orientation=await exifr.orientation(blob).catch(()=>null);
+  if(!(orientation>=2&&orientation<=8))return blob;
+  const piexif=await dependency('piexif','assets/vendor/piexif-1.0.6.js');
+  const bitmap=await createImageBitmap(blob,{imageOrientation:'from-image'});
+  const canvas=document.createElement('canvas');canvas.width=bitmap.width;canvas.height=bitmap.height;
+  try{
+    canvas.getContext('2d').drawImage(bitmap,0,0);
+    const reader=new FileReader();
+    const original=await new Promise((resolve,reject)=>{
+      reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob);
+    });
+    const tags=piexif.load(original);
+    tags['0th'][piexif.ImageIFD.Orientation]=1;
+    tags.Exif[piexif.ExifIFD.PixelXDimension]=bitmap.width;
+    tags.Exif[piexif.ExifIFD.PixelYDimension]=bitmap.height;
+    tags['1st']={};tags.thumbnail=null;
+    const output=piexif.insert(piexif.dump(tags),canvas.toDataURL('image/jpeg',.95));
+    const binary=atob(output.split(',')[1]);
+    return new Blob([Uint8Array.from(binary,c=>c.charCodeAt(0))],{type:'image/jpeg'});
+  }finally{bitmap.close();canvas.width=canvas.height=1;}
+}
 export async function stampPhoto(blob,date,name='photo'){
   const parts=dateParts(date),piexif=await dependency('piexif','assets/vendor/piexif-1.0.6.js');
   let bitmap;
