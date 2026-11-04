@@ -1,4 +1,4 @@
-import {takenDate,cameraTimestamp,stampPhoto,dateParts} from './photo-dates.mjs?v=3';
+import {cameraTimestamp,stampPhoto,dateParts} from './photo-dates.mjs?v=3';
 import {BUCKET,safeName,validateFile,originalName,listPhotos} from './photo-library.mjs?v=3';
 import {bounded,sendQueuedPhoto,uploadFailure} from './photo-upload-queue.mjs?v=1';
 const $=id=>document.getElementById(id);
@@ -24,6 +24,7 @@ function createUploadClient(token,signal){
 let user=null,properties=[],selected=null,photos=[],queue=[],busy=false,epoch=0,installPrompt,listMode='active';
 const bucket=client?.storage.from(BUCKET);
 const selectedPhotos=new Set();
+const cameraTimes=new Map();
 const captureDates=new Map();let captionQueue=[],captionRunning=0,captionObservers=[];
 function clearCaptions(){captionObservers.forEach(o=>o.disconnect());captionObservers=[];captionQueue=[];for(const url of previewURLs)URL.revokeObjectURL(url);previewURLs.clear();}
 const previewURLs=new Set();
@@ -44,7 +45,7 @@ function loadPreview(card,caption,img,photo,version){
           img.src=url;
         }
         if(!captureDates.has(path)){
-          photo.cameraTime=await cameraTimestamp(blob);
+          if(photo.cameraTime===undefined)photo.cameraTime=await cameraTimestamp(blob);
           const date=photo.cameraTime?dateParts(photo.cameraTime.slice(0,10)).label:null;
           if(version!==epoch||!card.isConnected)return;
           captureDates.set(path,date);
@@ -59,7 +60,8 @@ function loadPreview(card,caption,img,photo,version){
             const label=dateParts(input).label;
             const {error}=await client.from('photo_capture_dates').insert({object_id:photo.id,property_id:selected.id,taken_on:input});
             check(version);if(error)throw error;
-            photo.takenOn=input;captureDates.set(path,label);caption.textContent='Taken: '+label;add.remove();
+            photo.takenOn=input;captureDates.set(path,label);
+            await refreshPhotos();
           });
           caption.after(add);
         }
@@ -142,7 +144,31 @@ async function refreshPhotos(limitSignal){
   status('Loading photos…');const [rows,dateResult]=await Promise.all([
     listPhotos(bucket,prefix),
     client.rpc('photo_dates_for_property',{p_property:p.id}).then(result=>result.data,()=>null)
-  ]);limitSignal?.throwIfAborted();check(version);if(p.id!==selected?.id)return;photos=rows;for(const name of selectedPhotos){if(!photos.some(p=>p.name===name))selectedPhotos.delete(name);}
+  ]);limitSignal?.throwIfAborted();check(version);if(p.id!==selected?.id)return;
+  status('Arranging photos in capture order…');
+  for(const photo of rows){
+    const stored=dateResult?.[photo.id];
+    if(stored){try{captureDates.set(prefix+'/'+photo.name,dateParts(stored).label);photo.takenOn=stored;}catch{/* Read the original if metadata is invalid. */}}
+  }
+  let incomplete=false;
+  for(let offset=0;offset<rows.length;offset+=4){
+    limitSignal?.throwIfAborted();check(version);if(p.id!==selected?.id)return;
+    await Promise.all(rows.slice(offset,offset+4).map(async photo=>{
+      const key=prefix+'/'+photo.name;
+      // An object name includes the file hash, so its camera time is immutable.
+      if(cameraTimes.has(key))photo.cameraTime=cameraTimes.get(key);
+      else{
+        try{
+          const stamp=await bounded(signal=>readOrderTimestamp(photo,version,signal),limitSignal,20000);
+          check(version);if(p.id!==selected?.id)return;
+          photo.cameraTime=stamp;cameraTimes.set(key,stamp);
+        }catch{incomplete=true;}
+      }
+    }));
+  }
+  limitSignal?.throwIfAborted();check(version);if(p.id!==selected?.id)return;
+  photos=sortByCaptureTime(rows);
+  for(const name of selectedPhotos){if(!photos.some(p=>p.name===name))selectedPhotos.delete(name);}
   clearCaptions();$('photos').replaceChildren();syncPhotoCount();
   for(const photo of photos){
     const card=node('article',null,'photo');card.dataset.photoName=photo.name;
@@ -150,8 +176,7 @@ async function refreshPhotos(limitSignal){
     if(/\.(heic|heif)$/i.test(photo.name)){card.append(node('div','HEIC / HEIF photo','placeholder'));}
     else {const img=node('img');img.alt=originalName(photo.name);card.append(img);}
     const path=prefix+'/'+photo.name;
-    const stored=dateResult?.[photo.id];
-    if(stored){try{captureDates.set(path,dateParts(stored).label);photo.takenOn=stored;}catch{/* Read the original if metadata is invalid. */}}
+    if(!captureDates.has(path)&&photo.cameraTime)captureDates.set(path,dateParts(photo.cameraTime.slice(0,10)).label);
     const known=captureDates.get(path);
     const caption=node('div',null,'photo-caption'),date=node('p',known?'Taken: '+known:'Taken: Reading date…','taken-date');caption.append(node('p',originalName(photo.name)),date);card.append(caption);
     const remove=node('button','Delete photo','delete-photo');
@@ -169,7 +194,7 @@ async function refreshPhotos(limitSignal){
     $('photos').append(card);loadPreview(card,date,card.querySelector('img'),photo,version);
   }
   renderPhotoSelection();
-  status(p.deleting_at?'Property deletion is unfinished. Click Delete property again to finish.':photos.length?'Photos are up to date.':'This property is ready. Select photos to upload.');
+  status(p.deleting_at?'Property deletion is unfinished. Click Delete property again to finish.':incomplete?'Some capture times could not be loaded. Refresh photos to retry.':photos.length?'Photos are up to date.':'This property is ready. Select photos to upload.');
 }
 
 function renderPhotoSelection(){
@@ -342,11 +367,16 @@ $('upload').onclick=()=>run(async()=>{
       const item=waiting[next++];
       setItemState(item,'Uploading…');
       try{
-        item.name=await sendQueuedPhoto({file:item.file,prefix,takenDate,auth:client.auth,
+        item.name=await sendQueuedPhoto({file:item.file,prefix,auth:client.auth,
+          takenDate:async file=>{
+            item.cameraTime=await cameraTimestamp(file);
+            return item.cameraTime?.slice(0,10)||null;
+          },
           createClient:createUploadClient,knownNames:confirmed,signal:controller.signal,
           onRetry:(number,kind)=>setItemState(item,(kind==='auth'?'Renewing sign-in':'Connection interrupted')+' · retry '+number+' of 2')
         });
-        check(version);confirmed.add(item.name);setItemState(item,'Uploaded');uploaded++;
+        check(version);if(item.cameraTime!==undefined)cameraTimes.set(prefix+'/'+item.name,item.cameraTime);
+        confirmed.add(item.name);setItemState(item,'Uploaded');uploaded++;
         const row=properties.find(p=>p.id===selected.id);
         if(row)row.photo_count=confirmed.size;
       }catch(error){
@@ -384,13 +414,12 @@ function askDownloadDate(onlySelected){
 $('cancelDateDownload').onclick=()=>{datedRequest=null;$('dateDownloadDialog').close();};
 $('dateDownloadDialog').addEventListener('cancel',()=>datedRequest=null);
 $('dateDownloadForm').onsubmit=e=>{e.preventDefault();const request=datedRequest,date=$('stampDate').value;if(!request)return;try{dateParts(date);check(request.version);if(selected?.id!==request.property)throw Error('Reopen the property and try again.');}catch(error){status(error.message,true);return;}$('dateDownloadDialog').close();datedRequest=null;run(()=>downloadPhotos(request.items,date));};
-async function readOrderTimestamp(photo,version){
+async function readOrderTimestamp(photo,version,signal){
   const path=user.id+'/'+selected.id+'/'+photo.name;
   if(!recentBlobs.has(path)&&!pendingReads.has(path)&&!queue.some(item=>item.name===photo.name)){
-    // JPEG camera metadata usually fits in the first 256 KiB. For large sets,
-    // read only that header before sorting, then fetch the full photo for the ZIP.
-    if(/\.jpe?g$/i.test(photo.name)){
-      const {data,error}=await bucket.download(path,undefined,{headers:{Range:'bytes=0-262143'}});
+    // Read only the camera header of larger JPEGs before sorting.
+    if(/\.jpe?g$/i.test(photo.name)&&Number(photo.metadata?.size)>262144){
+      const {data,error}=await bucket.download(path,undefined,{headers:{Range:'bytes=0-262143'},signal});
       check(version);
       if(!error&&data){
         const stamp=await cameraTimestamp(data).catch(()=>null);
@@ -398,6 +427,7 @@ async function readOrderTimestamp(photo,version){
       }
     }
   }
+  signal?.throwIfAborted();
   return cameraTimestamp(await getPhoto(photo,version)).catch(()=>null);
 }
 async function orderForDownload(items,version,limit){
@@ -415,18 +445,20 @@ async function orderForDownload(items,version,limit){
     }));
   }
   check(version);
+  return {ordered:sortByCaptureTime(items),originals};
+}
+function sortByCaptureTime(items){
   const byName=new Intl.Collator('en',{numeric:true,sensitivity:'base'});
   const orderKey=p=>{
     const value=p.cameraTime||p.takenOn;
     if(!value)return '~';
     return value.length===10?value+'T99':value;
   };
-  const ordered=items.slice().sort((a,b)=>{
+  return items.slice().sort((a,b)=>{
     const left=orderKey(a),right=orderKey(b);
     if(left!==right)return left<right?-1:1;
     return byName.compare(originalName(a.name),originalName(b.name))||a.name.localeCompare(b.name);
   });
-  return {ordered,originals};
 }
 async function downloadPhotos(items,date=''){
  if(!items.length)throw Error('Select photos to download.');
@@ -478,7 +510,7 @@ $('install').onclick=async()=>{
 async function sessionChanged(session){
   const next=session?.user;if(next?.id===user?.id&&user)return;
   $('storageUsage').textContent='Checking storage…';$('storageMeter').hidden=true;
-  batchController?.abort();clearCaptions();clearTransferCache();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
+  batchController?.abort();clearCaptions();clearTransferCache();cameraTimes.clear();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
   $('files').value='';$('photos').replaceChildren();$('properties').replaceChildren();$('queue').replaceChildren();$('account').textContent='';$('library').hidden=true;$('workspace').hidden=true;$('addressList').hidden=false;$('signedOut').hidden=!!user;
   if(!user){initPhotoCaptcha();status('Sign in to upload and download your property photos.');return;}
   try{const {data,error}=await client.rpc('photo_library_enabled');check(version);if(error)throw error;if(!data){$('signedOut').hidden=false;initPhotoCaptcha();status('Photo Uploads is currently available only to the pilot account.',true);return;}$('library').hidden=false;$('password').value='';$('account').textContent=user.email;await loadProperties();showList('active');await openRequestedAddress();}catch(e){if(version===epoch)status(e.message,true);}

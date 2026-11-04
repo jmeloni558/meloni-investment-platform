@@ -33,8 +33,15 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  });
  await page.setInputFiles('#files',orderedInput.reverse());await page.click('#upload');
  await page.waitForFunction(()=>document.querySelectorAll('.photo').length===6&&!document.querySelector('#files').disabled);
+ const expectedGallery=['z.jpg','b.jpg','a.jpg','front.jpg','back.png','side.webp'];
+ for(const width of [390,1360]){
+   await page.setViewportSize({width,height:900});await page.reload();
+   await page.locator('#properties button').filter({hasText:'123 Date Street'}).click();
+   await page.waitForFunction(()=>document.querySelectorAll('.photo').length===6);
+   assert.deepEqual(await page.locator('.photo .photo-caption p:first-child').allTextContents(),expectedGallery);
+ }
  for(const dated of [false,true])for(const selected of [false,true]){
-   if(selected){await page.click('#clearPhotoSelection');for(const [name] of sequence.slice(1).reverse())await page.getByRole('checkbox',{name:'Select '+name,exact:true}).check();}
+   if(selected){if(await page.locator('#clearPhotoSelection').isEnabled())await page.click('#clearPhotoSelection');for(const [name] of sequence.slice(1).reverse())await page.getByRole('checkbox',{name:'Select '+name,exact:true}).check();}
    const button='#download'+(selected?'Selected':'All')+(dated?'Dated':'');
    const ready=page.waitForEvent('download');await page.click(button);
    if(dated){await page.fill('#stampDate','2026-11-04');await page.click('#dateDownloadForm button[type=submit]');}
