@@ -13,6 +13,11 @@ function boaDetails(v){
   }));
 }
 const boaGridDetails = {PROP_TYPE:'Property type',PROJ_SIZE:'Project size',EXT_FINISH:'Exterior construction / finish',REO_SHORT_SALE:'REO / short sale (yes or no)',LISTED:'Currently for sale?',COMMENTS:'Comparison / sales history comments'};
+function boaAdjustmentNotes(values,prefix){
+  const adjustments=remarks(values,prefix);
+  const adjusted=String(values[prefix+'adjusted']??'').trim();
+  return [adjustments&&'Adjustments: '+adjustments+'.',adjusted&&'Adjusted value: $'+adjusted+'.'].filter(Boolean).join(' ');
+}
 function exportBOA(v,sourceRows=[]){
   if(v._clientTemplate!=='boa')throw Error('Choose Service Link - BOA before exporting.');
   const subject=Object.fromEntries(['address','city','state','zip'].map(k=>[k,String(v['sold.0.'+k]??'').trim()]));
@@ -64,10 +69,14 @@ function exportBOA(v,sourceRows=[]){
         const type=i?v[p+'design']:details['Property type'];
         if(/^(SFR|single family|condo|PUD|manufactured|multi-unit|coop|vacant land)$/i.test(type||''))fallback=type;
       }
-      if(tag==='COMMENTS'&&i)fallback=remarks(v,p);
+      if(tag==='COMMENTS'&&i){
+        const manual=String(v['boa.'+p+tag]??'').trim();
+        put(tag,[manual,boaAdjustmentNotes(v,p)].filter(Boolean).join(' '));
+        continue;
+      }
       put(tag,v['boa.'+p+tag]??fallback);
     }
   }
   return {format:'propertythesis-boa',version:1,subject,fields};
 }
-module.exports={exportBOA,boaDetails,boaChoices:choices,boaGridDetails};
+module.exports={exportBOA,boaDetails,boaChoices:choices,boaGridDetails,boaAdjustmentNotes};

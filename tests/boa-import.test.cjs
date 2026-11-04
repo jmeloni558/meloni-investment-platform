@@ -6,7 +6,9 @@ const {chromium}=require('playwright');
 const fs=require('node:fs');
 const v={_clientTemplate:'boa','sold.0.address':'100 Example St','sold.0.city':'Tampa','sold.0.state':'FL','sold.0.zip':'33601','boa.Occupancy':'Tenant',market_county:'Example County',field_0037:true,market_price_change_months:6,field_0047:180000,'boa.Neighborhood comments':'Reviewed market conditions.'};
 for(const kind of ['sold','active'])for(let i=1;i<=3;i++)Object.assign(v,{[kind+'.'+i+'.address']:i+' Example Way',[kind+'.'+i+'.price']:100000+i,[kind+'.'+i+'.site']:'4356 sq ft',[kind+'.'+i+'.beds']:3});
-const payload=exportBOA(v,[{category:'active',address:'1 Example Way, Tampa, FL 33601',originalDate:'10/12/2026',saleType:'Short Sale'}]);
+const {recalculate}=require('../operations/bpo/core.cjs');
+Object.assign(v,{'sold.1.adj_gla':'2,000','sold.1.adj_condition':'-500','boa.sold.1.COMMENTS':'Prior sale verified.','active.1.adj_location':'-2,000','boa.active.1.COMMENTS':''});
+const payload=exportBOA(recalculate(v),[{category:'active',address:'1 Example Way, Tampa, FL 33601',originalDate:'10/12/2026',saleType:'Short Sale'}]);
 test('export keeps all six comp slots separate, uses acre units and source-matched listing facts',()=>{
   assert.throws(()=>exportBOA({...v,_clientTemplate:'rrr'}));
   assert.throws(()=>exportBOA({...v,'sold.0.zip':''}));
@@ -36,7 +38,7 @@ test('packaged workflow fills only previewed blank fields on matching BOA pages'
       const html='<div class="formLabel"><span>Page '+page+' of 3</span></div>'+ids.map((tag,i)=>inputs('SUBJECT',tag,'readonly value="'+Object.values(payload.subject)[i]+'"')).join('')+
         inputs('SUBJECT','NBHD_COMMENTS')+inputs('SUBJECT','COUNTY','value="Keep"')+
         inputs('SUBJECT','OCCUPANT_TENANT_X','data-checkbox-type="StandardCheckBox" onclick="this.value=\'X\'"')+
-        ['COMP_SALES_1','COMP_LIST_1'].map(g=>{const pre=g.includes('SALES')?'GS_':'GL_';return inputs(g,pre+'ADDRESS')+inputs(g,pre+(pre==='GS_'?'SALE_PRICE':'LIST_PRICE'));}).join('');
+        ['COMP_SALES_1','COMP_LIST_1'].map(g=>{const pre=g.includes('SALES')?'GS_':'GL_';return inputs(g,pre+'ADDRESS')+inputs(g,pre+(pre==='GS_'?'SALE_PRICE':'LIST_PRICE'))+inputs(g,pre+'COMMENTS');}).join('');
       await p.setContent(html);
       for(const script of ['schema','adapter'])await p.addScriptTag({path:'operations/portal-import/boa/'+script+'.js'});
     }
@@ -54,7 +56,9 @@ test('packaged workflow fills only previewed blank fields on matching BOA pages'
     await show(2);
     await assert.rejects(apply(review),/changed/);
     const second=await apply(await preview());
-    assert.equal(second.rows.filter(f=>f.status==='filled').length,4);
+    assert.equal(second.rows.filter(f=>f.status==='filled').length,6);
+    assert.equal(await p.locator('[data-tag*="GS_COMMENTS"]').inputValue(),'Prior sale verified. Adjustments: Condition -$500, Living area +$2,000. Adjusted value: $101,501.');
+    assert.equal(await p.locator('[data-tag*="GL_COMMENTS"]').inputValue(),'Adjustments: Location -$2,000. Adjusted value: $98,001.');
     assert.equal(await p.locator('[data-tag*="GL_LIST_PRICE"]').inputValue(),'100001');
     await assert.rejects(p.evaluate(p=>inspectBOA({...p,subject:{...p.subject,zip:'99999'}},null),payload),/does not match/);
     await assert.rejects(p.evaluate(p=>inspectBOA({...p,fields:[{page:3,group:'SUBJECT',tag:'ORDER_NUMBER',value:'bad'}]},null),payload),/Unexpected/);
