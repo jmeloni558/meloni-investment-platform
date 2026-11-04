@@ -5,7 +5,7 @@ test('Comparable Sales saves a BOA report and downloads the reviewed transfer',a
   try{
     const page=await browser.newPage();
     page.setDefaultTimeout(10000);
-    const workspace=fs.readFileSync('app-core.html','utf8').match(/src="(bpo-workspace\.boa-[^"]+)"/)[1];
+    const workspace=fs.readFileSync('app-core.html','utf8').match(/src="(bpo-workspace\.[a-z]+-[^"]+)"/)[1];
     const mock=`let cloudUser={id:'owner'},report;
     const cloudClient={rpc:async()=>({data:true}),from:()=>{const q={select:()=>q,eq:()=>q,order:()=>({data:[]}),
       insert:r=>(report={...r,revision:1},q),update:r=>(Object.assign(report,r),q),maybeSingle:()=>({data:structuredClone(report)})};return q;}};`;
