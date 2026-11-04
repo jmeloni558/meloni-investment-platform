@@ -108,6 +108,18 @@ async function importStewartComps(payload) {
     if([...document.getElementsByName(target.name)].some(n=>n.checked))return false;
     target.click();return target.checked;
   }
+  function conditionDefaults(){
+    const by=key=>document.getElementById('SubjectCondition_'+key+'_field');
+    for(const [key,answer] of Object.entries({InFinanceableCondition:'Yes',TitleLegalIssues:'No',HealthSafetyIssues:'No',EnvironmentalIssues:'No',ImmediateAttentionRequired:'No',InspectionRecommended:'No'})){
+      radio(document.getElementById('SubjectCondition_'+key+'_field_'+answer));
+    }
+    for(const key of ['AppearStructurallySound','OnPermanentFoundation','KitchenAndBathFunctional','ElectricalSystemFunctioning','PlumbingSepticWaterSystemsWorking','RoofFreeOfLeaks','RoofFreeOfTemporaryRepairs','HvacSystemFunctional','PropertyFreeOfEnvironmentalHazards','PropertyFreeOfLeadBasedPaint','PropertyFreeOfWoodInsects','WoodInsectInspectionPerformed']){
+      fill(by(key),key==='PropertyFreeOfWoodInsects'?'Unknown':key==='WoodInsectInspectionPerformed'?'No':'Yes',key);
+    }
+    for(const key of ['InitialTrashOutAmount','InitialCleaningAmount','InitialYardCleaningAmount','HealthAndSafetyAmount','OtherMaintenanceAmount','InitialPoolCleaningAmount','PoolPreservationAmount']){
+      fill(by(key),key==='InitialCleaningAmount'?'250':'0',key);
+    }
+  }
   async function repairs(){
     const by=id=>document.getElementById(id);
     radio(by('SubjectRepairData_ExteriorRepairs_field_No'));
@@ -115,14 +127,39 @@ async function importStewartComps(payload) {
     if(!radio(by('SubjectRepairData_InteriorRepairs_field_Yes')))return;
     const items=()=>[...document.querySelectorAll('#interiorRepairGrid select[id^="repair_item_"]')].filter(visible);
     for(let n=0;n<20&&!items().length;n++)await sleep(100);
+    const persisted=item=>/^repair_item_\d+$/.test(item?.id||'');
+    const suffixOf=item=>item.id.slice('repair_item_'.length);
+    const exact=item=>{
+      if(!persisted(item)||valueOf(item)!=='Other')return false;
+      const id=suffixOf(item),get=p=>by(p+id);
+      return money(valueOf(get('repair_cost_')))===50 && valueOf(get('repair_recommendation_'))==='Repair' &&
+        !valueOf(get('repair_subcategory_')) && valueOf(get('repair_reason_'))==='Normal Wear & Tear' &&
+        valueOf(get('repair_comment_'))==='no repairs required' && get('radio_yes_recommended')?.checked && get('radio_yes_lenderReq')?.checked;
+    };
+    // Retain the first saved template; never touch a changed or unrelated repair.
+    const copies=items().filter(exact);
+    if(copies.length){
+      const keep=copies[0].id;
+      for(const copy of copies.slice(1)){
+        checkOrder();
+        const current=by(copy.id);
+        if(!exact(by(keep))||!exact(current))break;
+        const button=current.closest('tr')?.querySelector('a[alt="Delete row"] img.remove-row');
+        if(!visible(button)){rows.push('Review duplicate Other repair: delete control unavailable.');return;}
+        button.click();
+        for(let n=0;n<50&&items().some(i=>i.id===copy.id);n++)await sleep(100);
+        if(items().some(i=>i.id===copy.id)){rows.push('Stewart has not removed the duplicate. Review its delete prompt before rerunning.');return;}
+      }
+      return;
+    }
     const list=items();
     const used=item=>[...item.closest('tr').querySelectorAll('input,select,textarea')].some(n=>visible(n)&&(n.type==='radio'||n.type==='checkbox'?n.checked:!!valueOf(n)));
     const existing=list.filter(used);
     if(existing.length&&(existing.length!==1||valueOf(existing[0])!=='Other')){
       rows.push('Interior repair rows already contain data; preserved for review.');return;
     }
-    const item=existing[0]||list[0];if(!item){rows.push('Interior repair row unavailable; review in Stewart.');return;}
-    const suffix=item.id.slice('repair_item_'.length);
+    let item=existing[0]||list[0];if(!item){rows.push('Interior repair row unavailable; review in Stewart.');return;}
+    let suffix=suffixOf(item);
     // Resume a partial default row, but never reinterpret an actual repair as this template.
     if(existing.length){
       const compatible=[['repair_cost_',v=>money(v)===50],['repair_recommendation_',v=>v==='Repair'],['repair_reason_',v=>v==='Normal Wear & Tear'],['repair_comment_',v=>v==='no repairs required'],['repair_subcategory_',()=>false]]
@@ -130,7 +167,18 @@ async function importStewartComps(payload) {
       if(!compatible||by('radio_no_recommended'+suffix)?.checked||by('radio_no_lenderReq'+suffix)?.checked){rows.push('Existing interior repair preserved for review.');return;}
     }
     fill(item,'Other','Interior damage');
-    if(valueOf(item)!=='Other')return;
+    // A new row has a client-only ID. Multiple edits before Stewart assigns its
+    // saved numeric ID can create multiple records. Never send a second edit to it.
+    if(!persisted(item)){
+      for(let n=0;n<100;n++){
+        const saved=items().filter(i=>persisted(i)&&valueOf(i)==='Other');
+        if(saved.length===1){item=saved[0];break;}
+        if(saved.length>1)break;
+        await sleep(100);
+      }
+    }
+    if(!persisted(item)||valueOf(item)!=='Other'){rows.push('Waiting for Stewart to save the Other repair. Rerun after it is saved.');return;}
+    suffix=suffixOf(item);
     for(const [prefix,v] of [['repair_cost_','50'],['repair_recommendation_','Repair'],['repair_reason_','Normal Wear & Tear'],['repair_comment_','no repairs required']])
       fill(by(prefix+suffix),v,'Interior '+prefix);
     for(const prefix of ['radio_yes_recommended','radio_yes_lenderReq'])if(!radio(by(prefix+suffix)))rows.push('Review interior repair recommendation: '+prefix);
@@ -202,6 +250,7 @@ async function importStewartComps(payload) {
     }
     checkOrder();
     subjectDefaults();
+    conditionDefaults();
     await repairs();
     for(const [key,value] of Object.entries(payload.orderFields||{})){
       checkOrder();
