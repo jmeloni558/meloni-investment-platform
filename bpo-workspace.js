@@ -5,7 +5,7 @@ let allowed=false,checkedUser=null,checking=false,lastCheck=0,dialog=null,record
 const user=()=>{try{return cloudUser?.id||null;}catch(_){return null;}};
 const client=()=>{try{return cloudClient;}catch(_){return null;}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function core(){return corePromise||(corePromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src="bpo-core.boa-a94fd7a51a5d.js";s.onload=async()=>{try{await window.PropertyThesisBPOCore.prepareValidation();resolve(window.PropertyThesisBPOCore);}catch(e){corePromise=null;reject(e);}};s.onerror=()=>{corePromise=null;reject(Error('Could not load the BPO editor.'));};document.head.append(s);}));}
+function core(){return corePromise||(corePromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src="bpo-core.boa-9b7b184ab3d1.js";s.onload=async()=>{try{await window.PropertyThesisBPOCore.prepareValidation();resolve(window.PropertyThesisBPOCore);}catch(e){corePromise=null;reject(e);}};s.onerror=()=>{corePromise=null;reject(Error('Could not load the BPO editor.'));};document.head.append(s);}));}
 async function access(){if(!user())return false;const id=user();const {data,error}=await client().rpc('bpo_enabled');return !error&&data===true&&id===user();}
 function status(message){dialog?.querySelectorAll('[data-status],[data-subject-status]').forEach(n=>n.textContent=message);}
 function modified(){dirty=true;status('Unsaved changes');}
@@ -191,7 +191,8 @@ function editor(){step=Math.max(1,Math.min(workflowLimit(),step));dialog.classLi
      const p=kind+'.'+i+'.';
      if(i&&!values[p+'address'])continue;
      const label=i?kind+' comparable '+i:'Subject in '+kind+' grid';
-     panel+='<details><summary>'+esc(label)+'</summary><div class="pt-bpo-entry-grid">'+Object.entries(C.boaGridDetails).filter(([tag])=>!(kind==='active'&&(tag==='LISTED'||!i&&tag==='COMMENTS'))).map(([tag,title])=>'<label>'+esc(title)+'<textarea data-boa-detail="'+p+tag+'">'+esc(values['boa.'+p+tag]||'')+'</textarea></label>').join('')+'</div></details>';
+     const adjustmentNotes=i?C.boaAdjustmentNotes(values,p):'';
+     panel+='<details><summary>'+esc(label)+'</summary><div class="pt-bpo-entry-grid">'+Object.entries(C.boaGridDetails).filter(([tag])=>!(kind==='active'&&(tag==='LISTED'||!i&&tag==='COMMENTS'))).map(([tag,title])=>'<label>'+esc(title)+'<textarea data-boa-detail="'+p+tag+'">'+esc(values['boa.'+p+tag]||'')+'</textarea></label>').join('')+'</div>'+(adjustmentNotes?'<p><strong>Included in exported remarks</strong> '+esc(adjustmentNotes)+'</p>':'')+'</details>';
    }
  }
  if(contentStep===4&&values._clientTemplate==='boa')panel=panel.replaceAll('Step 5','the BOA form')+'<p>Export for Service Link - BOA when your comparable review is complete.</p>';
