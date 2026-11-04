@@ -2,7 +2,7 @@
 const facts=require('./rrr-facts.cjs');
 const source=require('./rrr-source.cjs');
 const adjustmentRemarks=require('./rrr-adjustment-remarks.cjs');
-const clientOf=v=>v._clientTemplate==='rrr'?'rrr':'general';
+const clientOf=v=>['rrr','boa'].includes(v._clientTemplate)?v._clientTemplate:'general';
 function exportRRR(v,sourceRows=[]){
  if(clientOf(v)!=='rrr')throw Error('Choose RRR as the client before exporting.');
  const subject={address:v['sold.0.address']||v['active.0.address'],city:v['sold.0.city'],state:v['sold.0.state'],zip:v['sold.0.zip']};
