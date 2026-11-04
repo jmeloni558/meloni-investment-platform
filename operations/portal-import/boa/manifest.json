@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "PropertyThesis Service Link - BOA Importer",
+  "version": "1.0.0",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.acisky.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

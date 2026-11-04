@@ -1,0 +1,3 @@
+Extract this ZIP to a folder. In Edge, open edge://extensions, enable Developer mode, choose Load unpacked and select the folder containing manifest.json.
+In PropertyThesis Comparable Sales choose Service Link - BOA, review the subject, neighborhood and comparable data, and export the JSON. On page 1 of the matching ACI Sky BOA drive-by form, open the extension, choose the JSON, preview and fill. Repeat on page 2. Review both pages in Sky. Leave all later pages for manual completion. Sky may autosave edits.
+
