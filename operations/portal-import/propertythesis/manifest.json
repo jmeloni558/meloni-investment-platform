@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "PropertyThesis Importers",
+  "version": "1.0.0",
+  "description": "Choose a client form to import your prepared PropertyThesis report.",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.acisky.com/*"
+  ],
+  "icons": {
+    "16": "icons/pt-16.png",
+    "32": "icons/pt-32.png",
+    "48": "icons/pt-48.png",
+    "128": "icons/pt-128.png"
+  },
+  "action": {
+    "default_title": "PropertyThesis Importers",
+    "default_popup": "menu.html",
+    "default_icon": {
+      "16": "icons/pt-16.png",
+      "32": "icons/pt-32.png",
+      "48": "icons/pt-48.png",
+      "128": "icons/pt-128.png"
+    }
+  }
+}

@@ -1,0 +1,5 @@
+In Edge open edge://extensions. Turn on Developer mode, click Load unpacked, and select the extracted PropertyThesis Importers folder containing manifest.json.
+
+Pin PropertyThesis Importers from the Extensions menu. Once the new menu opens, unpin or turn off the three previous standalone importers in Edge to remove their toolbar icons.
+
+Open the client order in Edge, click the PropertyThesis icon, then choose the client and form by name. Select the transfer exported from the matching PropertyThesis report. Each importer keeps its own preview and fill controls.
