@@ -25,15 +25,32 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  // Originals retain their exact bytes after dating; all three formats become valid dated JPGs.
  event=page.waitForEvent('download');await page.click('#downloadAll');download=await event;zip=await JSZip.loadAsync(fs.readFileSync(await download.path()));files=Object.values(zip.files).filter(f=>!f.dir);assert.equal(files.length,3);assert.deepEqual(await files.find(f=>f.name.endsWith('front.jpg')).async('nodebuffer'),jpg);
  await page.click('#downloadAllDated');assert.equal(await page.locator('#stampDate').inputValue(),'');await page.fill('#stampDate','2024-02-29');event=page.waitForEvent('download');await page.click('#dateDownloadForm button[type=submit]');zip=await JSZip.loadAsync(fs.readFileSync(await (await event).path()));files=Object.values(zip.files).filter(f=>!f.dir);assert.equal(files.length,3);for(const f of files){const bytes=await f.async('nodebuffer');assert.equal(piexif.load(bytes.toString('binary')).Exif[piexif.ExifIFD.DateTimeOriginal],'2024:02:29 00:00:00');}
+ // Check ZIP filenames against camera times even when selection/name order disagrees.
+ const sequence=[['z.jpg','09:01:00','004'],['b.jpg','09:01:00','020'],['a.jpg','09:10:00','000']];
+ const orderedInput=sequence.map(([name,time,fraction])=>{
+   const exif={...metadata.Exif,[piexif.ExifIFD.DateTimeOriginal]:'2019:05:01 '+time,[piexif.ExifIFD.SubSecTimeOriginal]:fraction};
+   return {name,mimeType:'image/jpeg',buffer:Buffer.from(piexif.insert(piexif.dump({...metadata,Exif:exif}),'data:image/jpeg;base64,'+fixtures.jpg).split(',')[1],'base64')};
+ });
+ await page.setInputFiles('#files',orderedInput.reverse());await page.click('#upload');
+ await page.waitForFunction(()=>document.querySelectorAll('.photo').length===6&&!document.querySelector('#files').disabled);
+ for(const dated of [false,true])for(const selected of [false,true]){
+   if(selected){await page.click('#clearPhotoSelection');for(const [name] of sequence.slice(1).reverse())await page.getByRole('checkbox',{name:'Select '+name,exact:true}).check();}
+   const button='#download'+(selected?'Selected':'All')+(dated?'Dated':'');
+   const ready=page.waitForEvent('download');await page.click(button);
+   if(dated){await page.fill('#stampDate','2026-11-04');await page.click('#dateDownloadForm button[type=submit]');}
+   const archive=await JSZip.loadAsync(fs.readFileSync(await (await ready).path()));
+   const expected=selected?['b','a']:['z','b','a','front','back','side'];
+   assert.deepEqual(Object.keys(archive.files).map(name=>name.match(/^\d+-(\w+)/)[1]),expected);
+ }
  // Read WebP EXIF from the RIFF chunk without timezone changes.
  const tiff=Buffer.from(piexif.dump(metadata).slice(6),'binary'),chunk=Buffer.alloc(8+tiff.length+(tiff.length%2));chunk.write('EXIF');chunk.writeUInt32LE(tiff.length,4);tiff.copy(chunk,8);const withExif=Buffer.concat([webp,chunk]);withExif.writeUInt32LE(withExif.length-8,4);
- const parsed=await page.evaluate(async bytes=>{const m=await import('./photo-dates.mjs?v=2');return m.takenDate(new Blob([Uint8Array.from(bytes)]));},Array.from(withExif));assert.equal(parsed,'02/03/20');
- const valid=await page.evaluate(async()=>{const m=await import('./photo-dates.mjs?v=2');try{m.dateParts('2025-02-29');return false;}catch(_){return true;}});assert.equal(valid,true);
+ const parsed=await page.evaluate(async bytes=>{const m=await import('./photo-dates.mjs?v=3');return m.takenDate(new Blob([Uint8Array.from(bytes)]));},Array.from(withExif));assert.equal(parsed,'02/03/20');
+ const valid=await page.evaluate(async()=>{const m=await import('./photo-dates.mjs?v=3');try{m.dateParts('2025-02-29');return false;}catch(_){return true;}});assert.equal(valid,true);
  // Rotation is applied before stamping, and corrupt inputs fail rather than yielding a blank dated file.
  const rotatedMeta={...metadata,'0th':{...metadata['0th'],[piexif.ImageIFD.Orientation]:6}};
  const rotated=Buffer.from(piexif.insert(piexif.dump(rotatedMeta),'data:image/jpeg;base64,'+fixtures.jpg).split(',')[1],'base64');
- const dimensions=await page.evaluate(async bytes=>{const m=await import('./photo-dates.mjs?v=2');const b=await m.stampPhoto(new Blob([Uint8Array.from(bytes)]),'2026-10-29','rotated.jpg');const image=await createImageBitmap(b);const size=[image.width,image.height];image.close();try{await m.stampPhoto(new Blob(['broken']),'2026-10-29','broken.jpg');throw Error('Accepted corrupt photo');}catch(e){if(!e.message.includes('Cannot read'))throw e;}return size;},Array.from(rotated));assert.deepEqual(dimensions,[800,1200]);
+ const dimensions=await page.evaluate(async bytes=>{const m=await import('./photo-dates.mjs?v=3');const b=await m.stampPhoto(new Blob([Uint8Array.from(bytes)]),'2026-10-29','rotated.jpg');const image=await createImageBitmap(b);const size=[image.width,image.height];image.close();try{await m.stampPhoto(new Blob(['broken']),'2026-10-29','broken.jpg');throw Error('Accepted corrupt photo');}catch(e){if(!e.message.includes('Cannot read'))throw e;}return size;},Array.from(rotated));assert.deepEqual(dimensions,[800,1200]);
  // Optional upstream HEIC fixture: validate real conversion and new metadata.
- if(process.env.HEIC_FIXTURE){const bytes=fs.readFileSync(process.env.HEIC_FIXTURE);const result=await page.evaluate(async bytes=>{const m=await import('./photo-dates.mjs?v=2');const b=await m.stampPhoto(new Blob([Uint8Array.from(bytes)]),'2026-10-29','sample.heic');return Array.from(new Uint8Array(await b.arrayBuffer()));},Array.from(bytes));assert.equal(piexif.load(Buffer.from(result).toString('binary')).Exif[piexif.ExifIFD.DateTimeOriginal],'2026:10:29 00:00:00');}
+ if(process.env.HEIC_FIXTURE){const bytes=fs.readFileSync(process.env.HEIC_FIXTURE);const result=await page.evaluate(async bytes=>{const m=await import('./photo-dates.mjs?v=3');const b=await m.stampPhoto(new Blob([Uint8Array.from(bytes)]),'2026-10-29','sample.heic');return Array.from(new Uint8Array(await b.arrayBuffer()));},Array.from(bytes));assert.equal(piexif.load(Buffer.from(result).toString('binary')).Exif[piexif.ExifIFD.DateTimeOriginal],'2026:10:29 00:00:00');}
  await page.screenshot({path:path.join(os.tmpdir(),'photo-dates-gallery.png'),fullPage:true});assert.deepEqual(errors,[]);console.log('PASS: consecutive Create, duplicates stay on list, caption EXIF dates/timezone, unknown dates, blank required date/cancel, all/selected downloads, JPG/PNG/WebP stamps, EXIF replacement and originals unchanged'+(process.env.HEIC_FIXTURE?', real HEIC conversion':''));
 }finally{await browser.close();server.close();}})().catch(e=>{console.error(e);server.close();process.exitCode=1;});

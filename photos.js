@@ -1,4 +1,4 @@
-import {takenDate,stampPhoto,dateParts} from './photo-dates.mjs?v=2';
+import {takenDate,cameraTimestamp,stampPhoto,dateParts} from './photo-dates.mjs?v=3';
 import {BUCKET,safeName,validateFile,originalName,listPhotos} from './photo-library.mjs?v=3';
 import {bounded,sendQueuedPhoto,uploadFailure} from './photo-upload-queue.mjs?v=1';
 const $=id=>document.getElementById(id);
@@ -44,7 +44,8 @@ function loadPreview(card,caption,img,photo,version){
           img.src=url;
         }
         if(!captureDates.has(path)){
-          const date=await takenDate(blob);
+          photo.cameraTime=await cameraTimestamp(blob);
+          const date=photo.cameraTime?dateParts(photo.cameraTime.slice(0,10)).label:null;
           if(version!==epoch||!card.isConnected)return;
           captureDates.set(path,date);
         }
@@ -58,7 +59,7 @@ function loadPreview(card,caption,img,photo,version){
             const label=dateParts(input).label;
             const {error}=await client.from('photo_capture_dates').insert({object_id:photo.id,property_id:selected.id,taken_on:input});
             check(version);if(error)throw error;
-            captureDates.set(path,label);caption.textContent='Taken: '+label;add.remove();
+            photo.takenOn=input;captureDates.set(path,label);caption.textContent='Taken: '+label;add.remove();
           });
           caption.after(add);
         }
@@ -150,7 +151,7 @@ async function refreshPhotos(limitSignal){
     else {const img=node('img');img.alt=originalName(photo.name);card.append(img);}
     const path=prefix+'/'+photo.name;
     const stored=dateResult?.[photo.id];
-    if(stored){try{captureDates.set(path,dateParts(stored).label);}catch{/* Read the original if metadata is invalid. */}}
+    if(stored){try{captureDates.set(path,dateParts(stored).label);photo.takenOn=stored;}catch{/* Read the original if metadata is invalid. */}}
     const known=captureDates.get(path);
     const caption=node('div',null,'photo-caption'),date=node('p',known?'Taken: '+known:'Taken: Reading date…','taken-date');caption.append(node('p',originalName(photo.name)),date);card.append(caption);
     const remove=node('button','Delete photo','delete-photo');
@@ -383,23 +384,70 @@ function askDownloadDate(onlySelected){
 $('cancelDateDownload').onclick=()=>{datedRequest=null;$('dateDownloadDialog').close();};
 $('dateDownloadDialog').addEventListener('cancel',()=>datedRequest=null);
 $('dateDownloadForm').onsubmit=e=>{e.preventDefault();const request=datedRequest,date=$('stampDate').value;if(!request)return;try{dateParts(date);check(request.version);if(selected?.id!==request.property)throw Error('Reopen the property and try again.');}catch(error){status(error.message,true);return;}$('dateDownloadDialog').close();datedRequest=null;run(()=>downloadPhotos(request.items,date));};
+async function readOrderTimestamp(photo,version){
+  const path=user.id+'/'+selected.id+'/'+photo.name;
+  if(!recentBlobs.has(path)&&!pendingReads.has(path)&&!queue.some(item=>item.name===photo.name)){
+    // JPEG camera metadata usually fits in the first 256 KiB. For large sets,
+    // read only that header before sorting, then fetch the full photo for the ZIP.
+    if(/\.jpe?g$/i.test(photo.name)){
+      const {data,error}=await bucket.download(path,undefined,{headers:{Range:'bytes=0-262143'}});
+      check(version);
+      if(!error&&data){
+        const stamp=await cameraTimestamp(data).catch(()=>null);
+        if(stamp||data.size>=Number(photo.metadata?.size))return stamp;
+      }
+    }
+  }
+  return cameraTimestamp(await getPhoto(photo,version)).catch(()=>null);
+}
+async function orderForDownload(items,version,limit){
+  const originals=new Map();
+  const fits=items.reduce((sum,p)=>sum+(Number(p.metadata?.size)||Infinity),0)<=limit;
+  for(let offset=0;offset<items.length;offset+=4){
+    check(version);
+    await Promise.all(items.slice(offset,offset+4).map(async photo=>{
+      if(photo.cameraTime!==undefined)return;
+      if(fits){
+        const blob=await getPhoto(photo,version);
+        originals.set(photo.name,blob);
+        photo.cameraTime=await cameraTimestamp(blob).catch(()=>null);
+      }else photo.cameraTime=await readOrderTimestamp(photo,version);
+    }));
+  }
+  check(version);
+  const byName=new Intl.Collator('en',{numeric:true,sensitivity:'base'});
+  const orderKey=p=>{
+    const value=p.cameraTime||p.takenOn;
+    if(!value)return '~';
+    return value.length===10?value+'T99':value;
+  };
+  const ordered=items.slice().sort((a,b)=>{
+    const left=orderKey(a),right=orderKey(b);
+    if(left!==right)return left<right?-1:1;
+    return byName.compare(originalName(a.name),originalName(b.name))||a.name.localeCompare(b.name);
+  });
+  return {ordered,originals};
+}
 async function downloadPhotos(items,date=''){
  if(!items.length)throw Error('Select photos to download.');
  if(!window.JSZip)throw Error('The ZIP tool did not load. Refresh the page and try again.');
  const version=epoch,name=safeName(selected.address.split(',')[0].slice(0,24)),limit=128*1024*1024;let zip=new window.JSZip(),bytes=0,part=1,done=0;
+ status('Sorting photos by the time they were taken…');
+ const {ordered,originals}=await orderForDownload(items,version,limit);
+ const digits=Math.max(3,String(ordered.length).length);
  const flush=async(final)=>{const blob=await zip.generateAsync({type:'blob',compression:'STORE'});check(version);save(blob,name+(date?'-dated-'+date:'')+(part>1||!final?'-part-'+part:'')+'.zip');part++;zip=new window.JSZip();bytes=0;};
- for(let offset=0;offset<items.length;offset+=4){
+ for(let offset=0;offset<ordered.length;offset+=4){
   check(version);
-  const batch=items.slice(offset,offset+4);
-  const blobs=await Promise.all(batch.map(photo=>getPhoto(photo,version)));
+  const batch=ordered.slice(offset,offset+4);
+  const blobs=await Promise.all(batch.map(photo=>originals.get(photo.name)||getPhoto(photo,version)));
   check(version);
   for(const [index,photo] of batch.entries()){
     check(version);status('Preparing '+(date?'dated ':'')+'photo '+(done+1)+' of '+items.length+'…');
-    let blob=blobs[index];
+    let blob=blobs[index];originals.delete(photo.name);
     const original=originalName(photo.name),dot=original.lastIndexOf('.');
     const stem=safeName(original.slice(0,dot)).slice(0,18);
     const suffix=date?'-'+date+'.jpg':original.slice(dot);
-    const filename=String(done+1).padStart(3,'0')+'-'+stem+suffix;
+    const filename=String(done+1).padStart(digits,'0')+'-'+stem+suffix;
     if(date){blob=await stampPhoto(blob,date,originalName(photo.name));check(version);}
     if(bytes&&bytes+blob.size>limit)await flush(false);
     const options={};if(date){const d=dateParts(date);options.date=new Date(Date.UTC(Math.min(2107,Math.max(1980,d.year)),d.month-1,d.day));}
