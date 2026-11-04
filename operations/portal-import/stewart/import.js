@@ -109,6 +109,10 @@ async function importStewartComps(payload) {
     target.click();return target.checked;
   }
   function conditionDefaults(){
+    for(const key of ['Subject_IsReportCompletedUsingValidityInspection','Subject_MixedUseOrCommercial'])
+      radio(document.getElementById(key+'_field_No'));
+    for(const [key,v] of [['Subject_HasIllegalUnits','No'],['Property_Zoning','Residential'],['Subject_RealEstateTaxPaymentSchedule','Annually']])
+      fill(document.getElementById(key+'_field'),v,key);
     const by=key=>document.getElementById('SubjectCondition_'+key+'_field');
     for(const [key,answer] of Object.entries({InFinanceableCondition:'Yes',TitleLegalIssues:'No',HealthSafetyIssues:'No',EnvironmentalIssues:'No',ImmediateAttentionRequired:'No',InspectionRecommended:'No'})){
       radio(document.getElementById('SubjectCondition_'+key+'_field_'+answer));
@@ -125,6 +129,8 @@ async function importStewartComps(payload) {
     radio(by('SubjectRepairData_ExteriorRepairs_field_No'));
     fill(by('Subject_RecommendedListing_field'),'As Repaired','Recommended listing');
     if(!radio(by('SubjectRepairData_InteriorRepairs_field_Yes')))return;
+    const reason=document.querySelector('#interiorRepairGrid textarea.notRecommendedRepairComments');
+    if(visible(reason)&&!reason.disabled&&!reason.readOnly&&reason.value.trim()==='dddd')set(reason,'');
     const items=()=>[...document.querySelectorAll('#interiorRepairGrid select[id^="repair_item_"]')].filter(visible);
     for(let n=0;n<20&&!items().length;n++)await sleep(100);
     const persisted=item=>/^repair_item_\d+$/.test(item?.id||'');
@@ -133,8 +139,11 @@ async function importStewartComps(payload) {
       if(!persisted(item)||valueOf(item)!=='Other')return false;
       const id=suffixOf(item),get=p=>by(p+id);
       return money(valueOf(get('repair_cost_')))===50 && valueOf(get('repair_recommendation_'))==='Repair' &&
-        !valueOf(get('repair_subcategory_')) && valueOf(get('repair_reason_'))==='Normal Wear & Tear' &&
+        ['','Other'].includes(valueOf(get('repair_subcategory_'))) && valueOf(get('repair_reason_'))==='Normal Wear & Tear' &&
         valueOf(get('repair_comment_'))==='no repairs required' && get('radio_yes_recommended')?.checked && get('radio_yes_lenderReq')?.checked;
+    };
+    const subcategory=item=>{
+      if(item===items()[0]&&exact(item))fill(by('repair_subcategory_'+suffixOf(item)),'Other','Interior repair subcategory');
     };
     // Retain the first saved template; never touch a changed or unrelated repair.
     const copies=items().filter(exact);
@@ -150,6 +159,7 @@ async function importStewartComps(payload) {
         for(let n=0;n<50&&items().some(i=>i.id===copy.id);n++)await sleep(100);
         if(items().some(i=>i.id===copy.id)){rows.push('Stewart has not removed the duplicate. Review its delete prompt before rerunning.');return;}
       }
+      subcategory(by(keep));
       return;
     }
     const list=items();
@@ -162,7 +172,7 @@ async function importStewartComps(payload) {
     let suffix=suffixOf(item);
     // Resume a partial default row, but never reinterpret an actual repair as this template.
     if(existing.length){
-      const compatible=[['repair_cost_',v=>money(v)===50],['repair_recommendation_',v=>v==='Repair'],['repair_reason_',v=>v==='Normal Wear & Tear'],['repair_comment_',v=>v==='no repairs required'],['repair_subcategory_',()=>false]]
+      const compatible=[['repair_cost_',v=>money(v)===50],['repair_recommendation_',v=>v==='Repair'],['repair_reason_',v=>v==='Normal Wear & Tear'],['repair_comment_',v=>v==='no repairs required'],['repair_subcategory_',v=>v==='Other']]
         .every(([prefix,ok])=>{const v=valueOf(by(prefix+suffix));return !v||ok(v);});
       if(!compatible||by('radio_no_recommended'+suffix)?.checked||by('radio_no_lenderReq'+suffix)?.checked){rows.push('Existing interior repair preserved for review.');return;}
     }
@@ -182,6 +192,7 @@ async function importStewartComps(payload) {
     for(const [prefix,v] of [['repair_cost_','50'],['repair_recommendation_','Repair'],['repair_reason_','Normal Wear & Tear'],['repair_comment_','no repairs required']])
       fill(by(prefix+suffix),v,'Interior '+prefix);
     for(const prefix of ['radio_yes_recommended','radio_yes_lenderReq'])if(!radio(by(prefix+suffix)))rows.push('Review interior repair recommendation: '+prefix);
+    subcategory(by('repair_item_'+suffix));
   }
   async function settled(c,i) {
     let last='',since=0;

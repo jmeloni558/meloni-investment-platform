@@ -19,11 +19,14 @@ test('defaults matched subject and comp cells, moves legacy concession once, and
  const decisions=['InFinanceableCondition','TitleLegalIssues','HealthSafetyIssues','EnvironmentalIssues','ImmediateAttentionRequired','InspectionRecommended'];
  const condition=k=>'SubjectCondition_'+k+'_field';
  const controls=[...hazardYes,'PropertyFreeOfWoodInsects','WoodInsectInspectionPerformed'].map(k=>'<select id="'+condition(k)+'"><option></option><option>Yes</option><option>No</option><option>Unknown</option></select>').join('')+moneyKeys.map(k=>input(condition(k))).join('')+decisions.map(k=>radio(condition(k)+'_Yes',k)+radio(condition(k)+'_No',k)).join('');
- const html='<h1>1 Oak St Tampa FL 33617</h1>'+controls+grid+sale('Address','2 Oak St')+sale('LivingArea','1250')+
+ const openingRadios=['Subject_IsReportCompletedUsingValidityInspection','Subject_MixedUseOrCommercial'];
+ const openingSelects={Subject_HasIllegalUnits:'No',Property_Zoning:'Residential',Subject_RealEstateTaxPaymentSchedule:'Annually'};
+ const opening=openingRadios.map(k=>radio(k+'_field_No',k)+radio(k+'_field_Yes',k)).join('')+Object.entries(openingSelects).map(([k,v])=>select(k+'_field',v)).join('');
+ const html='<h1>1 Oak St Tampa FL 33617</h1>'+opening+controls+grid+sale('Address','2 Oak St')+sale('LivingArea','1250')+
  ['TotalBasementArea','FinishedBasementArea'].map(k=>input(subject(k))+sale(k)).join('')+
  sale('FinancingConcessions')+sale('SalesConcessions')+input('CompSaleAdjustments_SalesConcessions_1_field','-$1,250')+input('CompSaleAdjustments_FinancingConcessions_1_field')+
  radio('SubjectRepairData_InteriorRepairs_field_Yes','interior')+radio('SubjectRepairData_ExteriorRepairs_field_No','exterior')+select('Subject_RecommendedListing_field','As Repaired')+
- '<div id="interiorRepairGrid"><table><tr><td>'+select('repair_item_xyz','Other')+input('repair_cost_xyz')+select('repair_recommendation_xyz','Repair')+select('repair_reason_xyz','Normal Wear &amp; Tear')+input('repair_comment_xyz')+radio('radio_yes_recommendedxyz','recommendedxyz')+radio('radio_yes_lenderReqxyz','lenderxyz')+'<a alt="Delete row"><img class="remove-row" width="14" height="14"></a></td></tr></table></div>';
+ '<div id="interiorRepairGrid"><table><tr><td>'+select('repair_item_xyz','Other')+select('repair_subcategory_xyz','Other')+input('repair_cost_xyz')+select('repair_recommendation_xyz','Repair')+select('repair_reason_xyz','Normal Wear &amp; Tear')+input('repair_comment_xyz')+radio('radio_yes_recommendedxyz','recommendedxyz')+radio('radio_yes_lenderReqxyz','lenderxyz')+'<a alt="Delete row"><img class="remove-row" width="14" height="14"></a></td></tr></table><textarea class="notRecommendedRepairComments">dddd</textarea></div>';
  await page.route(url,r=>r.fulfill({contentType:'text/html',body:html}));await page.goto(url);
  await page.evaluate(()=>{
    // Every edit to an unsaved row can issue another create. Model the delay
@@ -44,6 +47,11 @@ test('defaults matched subject and comp cells, moves legacy concession once, and
  assert.equal(await page.evaluate(()=>window.creates),1);
  for(const [id,v] of Object.entries({CompSale_FinancingConcessions_1_field:'1250',CompSaleAdjustments_FinancingConcessions_1_field:'-1250',CompSale_SalesConcessions_1_field:'0',CompSaleAdjustments_SalesConcessions_1_field:'0',repair_item_123:'Other',repair_cost_123:'50',repair_recommendation_123:'Repair',repair_reason_123:'Normal Wear & Tear',repair_comment_123:'no repairs required',Subject_RecommendedListing_field:'As Repaired'}))assert.equal(await page.inputValue('#'+id),v);
  for(const id of ['radio_yes_recommended123','radio_yes_lenderReq123','SubjectRepairData_ExteriorRepairs_field_No','SubjectRepairData_InteriorRepairs_field_Yes'])assert.ok(await page.locator('#'+id).isChecked());
+ for(const k of openingRadios)assert.ok(await page.locator('#'+k+'_field_No').isChecked());
+ for(const [k,v] of Object.entries(openingSelects))assert.equal(await page.inputValue('#'+k+'_field'),v);
+ assert.equal(await page.inputValue('#repair_subcategory_123'),'Other');
+ assert.equal(await page.inputValue('.notRecommendedRepairComments'),'');
+ await page.locator('.notRecommendedRepairComments').fill('Reviewed by agent');
  for(const k of hazardYes)assert.equal(await page.inputValue('#'+condition(k)),'Yes');
  assert.equal(await page.inputValue('#'+condition('PropertyFreeOfWoodInsects')),'Unknown');
  assert.equal(await page.inputValue('#'+condition('WoodInsectInspectionPerformed')),'No');
@@ -57,11 +65,13 @@ test('defaults matched subject and comp cells, moves legacy concession once, and
        const orig=row.querySelector('[id="'+e.id+'"]');e.id=e.id.replace('123',String(i));e.name=e.name.replace('123',String(i));e.value=orig.value;e.checked=orig.checked;
      }
      row.parentElement.appendChild(clone);
-     if(i===130)clone.querySelector('[id^=repair_comment_]').value='Actual separate repair';
+     if(i===130){clone.querySelector('[id^=repair_comment_]').value='Actual separate repair';clone.querySelector('[id^=repair_subcategory_]').value='';}
    }
  });
  await page.evaluate(importStewartComps,transfer);
  assert.equal(await page.locator('#interiorRepairGrid tr').count(),2);
+ assert.equal(await page.inputValue('#repair_subcategory_130'),'');
+ assert.equal(await page.inputValue('.notRecommendedRepairComments'),'Reviewed by agent');
  assert.equal(await page.inputValue('#repair_comment_130'),'Actual separate repair');
  assert.equal(await page.inputValue('#repair_comment_123'),'no repairs required');
  }finally{await browser.close();}
