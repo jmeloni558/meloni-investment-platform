@@ -4,6 +4,7 @@ const {neighborhood}=require('./rrr-neighborhood.cjs');
 const {lotSquareFeet}=require('../bpo/general-fields.cjs');
 const {matching}=require('./rrr-source.cjs');
 const remarks=require('./rrr-adjustment-remarks.cjs');
+const {privatePool}=require('../bpo/boa-pool.cjs');
 function boaDetails(v){
   const defaults={'Overall condition':v['sold.0.condition'],'Property type':v['sold.0.design'],'Current / last list price':v['active.0.price'],'Neighborhood comments':neighborhood(v)};
   return Object.fromEntries([...Object.keys(choices),...Object.keys(entries)].map(label=>{
@@ -17,6 +18,17 @@ function boaAdjustmentNotes(values,prefix){
   const adjustments=remarks(values,prefix);
   const adjusted=String(values[prefix+'adjusted']??'').trim();
   return [adjustments&&'Adjustments: '+adjustments+'.',adjusted&&'Adjusted value: $'+adjusted+'.'].filter(Boolean).join(' ');
+}
+function addBoaPoolFacts(values,sourceRows){
+  const v={...values};
+  for(const kind of ['sold','active'])for(let i=0;i<=3;i++){
+    const p=kind+'.'+i+'.';
+    if(!String(v[p+'pool']??'').trim()&&v[p+'address']){
+      const fact=matching(sourceRows,v,p).boaPool;
+      if(fact)v[p+'pool']=fact;
+    }
+  }
+  return v;
 }
 function exportBOA(v,sourceRows=[]){
   if(v._clientTemplate!=='boa')throw Error('Choose Service Link - BOA before exporting.');
@@ -51,18 +63,20 @@ function exportBOA(v,sourceRows=[]){
     const put=(tag,value)=>add(2,group,(sale?'GS_':'GL_')+tag,value);
     for(const [key,tag] of Object.entries(grid)){
       const name=p+key;
-      if(v[name]!==v._generalDefaults?.[name])put(tag,v[name]);
+      if(i&&(key==='tenure'||key==='basement'))put(tag,String(v[name]??'').trim()||(key==='tenure'?'Fee Simple':'None'));
+      else if(v[name]!==v._generalDefaults?.[name])put(tag,v[name]);
     }
     put(sale?'SALE_PRICE':'LIST_PRICE',v[p+'price']);
     // Subject dates are mirrored between the base grids. Use an explicit subject list date.
     put(sale?'DATE_TIME_O_SALE':'LIST_DATE',sale?v[p+'date']:i?extra.originalDate||v[p+'date']:details['Original list date']);
     const sqft=lotSquareFeet(v[p+'site'],v._lotUnit);
-    if(sqft!==null)put('LOT_SIZE',Number((sqft/43560).toFixed(5)));
-    put('AMENITIES',v[p+'pool']);
+    if(sqft!==null)put('LOT_SIZE',(sqft/43560).toFixed(2));
+    if(privatePool(v[p+'pool'])===1)put('AMENITIES','Private');
     if(i)put('PROXIMITY',v[p+'distance']);
     for(const tag of Object.keys(boaGridDetails)){
       if(!allowed(2,group,(sale?'GS_':'GL_')+tag))continue;
       let fallback='';
+      if(tag==='PROJ_SIZE'&&i){put(tag,String(v['boa.'+p+tag]??'').trim()||'N/A');continue;}
       if(tag==='REO_SHORT_SALE'&&extra.saleType)fallback=['REO','Short Sale'].includes(extra.saleType)?'Yes':'No';
       if(tag==='LISTED'&&!i)fallback=details['Currently listed'];
       if(tag==='PROP_TYPE'){
@@ -79,4 +93,4 @@ function exportBOA(v,sourceRows=[]){
   }
   return {format:'propertythesis-boa',version:1,subject,fields};
 }
-module.exports={exportBOA,boaDetails,boaChoices:choices,boaGridDetails,boaAdjustmentNotes};
+module.exports={exportBOA,boaDetails,boaChoices:choices,boaGridDetails,boaAdjustmentNotes,addBoaPoolFacts};

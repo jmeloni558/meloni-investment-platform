@@ -23,7 +23,7 @@ function storyClass(raw){
  const multi=/\b(two|three|four|five|multi|multiple|[2-9]|\d{2,}|1\.5)\s*(?:story|storey|stories|storeys|level|levels|floor|floors)\b|\b(second|third|fourth|[2-9](?:nd|rd|th)|upper) floor\b/.test(s);
  return single===multi?null:single?1:0;
 }
-function poolClass(raw){const s=String(raw??'').toLowerCase().replace(/[-–—]/g,' ');if(/above\s*ground|\b(no|none|community)\b/.test(s))return 0;if(/^(?:swimming\s+)?pool$/.test(s.trim())||/in\s*ground|\b(private|yes|gunite|concrete|fiberglass)\b/.test(s))return 1;return null;}
+function poolClass(raw,client){if(client==='boa')return require('./boa-pool.cjs').privatePool(raw);const s=String(raw??'').toLowerCase().replace(/[-–—]/g,' ');if(/above\s*ground|\b(no|none|community)\b/.test(s))return 0;if(/^(?:swimming\s+)?pool$/.test(s.trim())||/in\s*ground|\b(private|yes|gunite|concrete|fiberglass)\b/.test(s))return 1;return null;}
 function viewContext(v,p){return [v.field_0008||v['sold.0.address'],v['sold.0.view'],v[p+'.address'],v[p+'.city'],v[p+'.state'],v[p+'.zip'],v[p+'.view']].map(x=>String(x??'').trim().toLowerCase());}
 function viewComparison(v,p){const entry=v._viewComparisons?.[p];return entry&&['superior','similar','inferior'].includes(entry.choice)&&JSON.stringify(entry.context)===JSON.stringify(viewContext(v,p))?entry.choice:'';}
 function setViewComparison(input,p,choice){
@@ -79,7 +79,10 @@ function apply(input,number,money,overwrite=false){
     else if(mode==='quality'){const choice=qualityComparison(v,p.slice(0,-1));if(!choice){valid=false;warnings.push({prefix:p,message:'Choose Superior, Similar or Inferior beside this comparable’s construction quality before applying the quality factor.'});}else sum+=({superior:-1,similar:0,inferior:1}[choice])*factor;}
     else if(mode==='condition'){const grades=['poor','fair','average','good','excellent'],grade=x=>grades.indexOf(String(x??'').trim().toLowerCase()),sub=grade(v['sold.0.condition']),comp=grade(v[p+'condition']);if(sub<0||comp<0){valid=false;warnings.push({prefix:p,message:'Condition adjustment needs Poor, Fair, Average, Good or Excellent for both properties. Review custom descriptions and enter an individual adjustment.'});}else sum+=(sub-comp)*factor;}
     else if(mode==='story'){const sub=storyClass(v['sold.0.design']),comp=storyClass(v[p+'design']);if(sub===null||comp===null){valid=false;warnings.push({prefix:p,message:'Design and appeal needs an explicit single-story/ranch or multistory description for both properties. Review Step 5.'});}else sum+=(sub-comp)*factor;}
-    else if(mode==='pool'){const sub=poolClass(v['sold.0.pool']),comp=poolClass(v[p+'pool']);if(sub===null||comp===null){valid=false;warnings.push({prefix:p,message:'Pool adjustment needs known pool types for both properties. Above-ground and community pools receive no private-pool value.'});}else sum+=(sub-comp)*Math.abs(factor);}
+    else if(mode==='pool'){
+     const sub=poolClass(v['sold.0.pool'],v._clientTemplate),comp=poolClass(v[p+'pool'],v._clientTemplate);
+     if(sub===null||comp===null){valid=false;warnings.push({prefix:p,message:'Pool adjustment needs known pool types for both properties.'});}else sum+=(sub-comp)*Math.abs(factor);
+    }
     else if(mode==='difference'){const sub=number(v['sold.0.'+name]),comp=number(v[p+name]);if(sub===null||comp===null||sub<0||comp<0){valid=false;warnings.push({prefix:p,message:label+' difference needs numeric subject and comparable facts. Review Step 5.'});}else sum+=(sub-comp)*factor;}
     else sum+=factor;
    }

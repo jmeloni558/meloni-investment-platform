@@ -1,5 +1,5 @@
 'use strict';
-function inspectBOA(payload, approved){
+async function inspectBOA(payload, approved){
   const norm=x=>String(x??'').toLowerCase().replace(/[.,]/g,'').replace(/\s+/g,' ').trim();
   const orderId=new URL(location.href).searchParams.get('id');
   if(location.origin!=='https://www.acisky.com'||location.pathname.toLowerCase()!=='/formlayout/index'||!orderId)throw Error('Open the Service Link - BOA order in ACI Sky.');
@@ -23,8 +23,9 @@ function inspectBOA(payload, approved){
     seen.add(key);
   }
   const rows=payload.fields.filter(f=>f.page===page);
+  const ownershipPicker=(f,el)=>el?.matches('input[readonly].picklist')&&f.tag.endsWith('_LSHLD_FEE_SMPL')&&/^(fee simple|leasehold)$/i.test(f.value);
   function status(f,el){
-    if(!el||el.readOnly||el.disabled)return 'locked or unavailable';
+    if(!el||el.readOnly&&!ownershipPicker(f,el)||el.disabled)return 'locked or unavailable';
     if(f.group!=='SUBJECT'){
       const key=f.tag.slice(0,3)+'ADDRESS';
       const address=rows.find(x=>x.group===f.group&&x.tag===key);
@@ -48,10 +49,20 @@ function inspectBOA(payload, approved){
       const el=get(f.group,f.tag);
       if(status(f,el)!=='ready'){f.status='changed during fill';continue;}
       el.focus();
-      if(el.dataset.checkboxType)el.click();
+      if(ownershipPicker(f,el)){
+        el.click();
+        for(let attempt=0;attempt<15;attempt++){
+          if(document.activeElement!==el||!visible(el)||status(f,el)!=='ready'||new URL(location.href).searchParams.get('id')!==orderId)break;
+          const label=f.value.toLowerCase()==='fee simple'?'2-fee simple':'1-leasehold';
+          const options=[...document.querySelectorAll('.picklist-displayed-text')].filter(e=>visible(e)&&e.textContent.trim().toLowerCase()===label);
+          if(options.length===1){options[0].dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));break;}
+          await new Promise(resolve=>setTimeout(resolve,50));
+        }
+      }
+      else if(el.dataset.checkboxType)el.click();
       else{el.value=f.value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}
       el.blur();
-      f.status=el.value.trim()===f.value?'filled':'check manually';
+      f.status=(ownershipPicker(f,el)?el.value.trim().toLowerCase()===f.value.toLowerCase():el.value.trim()===f.value)?'filled':'check manually';
     }
   }
   return {orderId,page,rows:result};
