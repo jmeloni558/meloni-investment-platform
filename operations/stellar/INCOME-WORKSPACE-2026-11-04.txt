@@ -1,0 +1,34 @@
+Saved income properties: optional Stellar source candidate
+
+Prepared locally, NOT deployed. Existing RentCast/manual comp workflows are unchanged.
+The saved income-property card gains "Stellar Feed (demo)" for accounts permitted by
+the existing stellar_bpo_enabled RPC and catalog RLS. No new account grants or schema.
+
+Subject information: review asking and historical sale prices separately, units,
+area, beds and baths. Does not overwrite the saved subject.
+Sales comps: only closed records with valid sale price/date can be reviewed.
+Income comps: the existing six-step calculator is seeded with closed-sale facts,
+source citation and units when supplied. Missing units must be entered. Rent is
+blank and the operating period is unspecified; current catalog has no income data.
+Defaults in the calculator remain modeling assumptions, not MLS facts.
+
+All demo calculation paths remain ephemeral. Finish returns to search, never calls
+income-comparable persistence, never changes the subject and never adds report data.
+This is a demo preparation step, NOT completed live-feed import functionality.
+
+Remaining before the user's full live import workflow can ship:
+- Stellar permission for income analysis and finished income reports under BBO;
+  existing approval correspondence concerns private BPO use. Obtain explicit scope.
+- Live approved credentials/replication/freshness/removal controls described in
+  READINESS-2026-11-04.txt.
+- Map actual live income fields and periods from verified examples. Never treat
+  missing rents/expenses as zero or infer a cap rate from asking price.
+- Reviewed field-level subject merge, normal property-owned sales/ income comp
+  persistence with source provenance and revision conflicts, source revocation at
+  import/save/export, and report tests using approved live evidence.
+- Authenticated staging browser review and publication of this candidate.
+
+Local verification: five adapter/picker/access tests; five actual income form
+workflow tests including demo calculation/no-save; eleven income model tests;
+fourteen existing Stellar BPO tests. 35 total. Syntax and whitespace checks.
+Tests use output/test-dependencies/node_modules (untracked jsdom 26.1.0).
