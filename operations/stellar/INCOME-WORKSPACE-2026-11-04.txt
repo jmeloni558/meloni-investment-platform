@@ -1,6 +1,6 @@
 Saved income properties: optional Stellar source candidate
 
-Prepared locally, NOT deployed. Existing RentCast/manual comp workflows are unchanged.
+Publication authorized by Jamie November 4, 2026. Candidate prepared for production. Existing RentCast/manual comp workflows are unchanged.
 The saved income-property card gains "Stellar Feed (demo)" for accounts permitted by
 the existing stellar_bpo_enabled RPC and catalog RLS. No new account grants or schema.
 
