@@ -1,0 +1,10 @@
+Stellar optional live BPO pilot - 2026-11-04
+Baseline origin/main 9d231644. Production catalog is an 85-record MLS Grid DEMO snapshot, not live feed.
+Server allowlist: seven pre-existing owner/Gmail-alias BPO accounts, fixed UUID entries, not automatic future BPO subscribers.
+Authenticated may read only their allowlist entry and eligible catalog rows when both bpo_enabled and stellar_bpo_enabled pass. No anonymous catalog grant; no client catalog/access writes.
+Existing PDF upload, extraction, manual entry and client templates retained. Optional picker at source upload, subject and comp review steps.
+Import only into empty address slots; duplicate ListingKey blocked. User reviews fields before normal save. Existing attachments and client type retained. Demo source metadata stored in BPO field_values.
+Demo-backed BPOs have prominent notice and disabled client exports/AI BPO generation. Normal uploaded/manual BPO exports unchanged.
+27 unit/regression tests passed. CUA synthetic full-workflow passed: subject import, continuation/save, sold comp selection, final editable form, concessions. Non-enabled fixture: zero Stellar panels, six PDF upload groups, manual save enabled.
+Production RLS tests: approved owner85rows, unapproved0, anonymous SELECT false, authenticated INSERT false on both new tables. No Stellar/MLS findings in security advisors.
+Rollback frontend: revert this commit. Disable stellar_bpo_access.active to suspend access. No existing BPO data/schema changed. Production setup SQL kept as an operator record, not an automatic migration.
