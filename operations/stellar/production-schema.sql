@@ -1,0 +1,16 @@
+begin;
+create table public.stellar_bpo_access(user_id uuid primary key references auth.users(id) on delete cascade,active boolean not null default true);
+alter table public.stellar_bpo_access enable row level security;
+revoke all on public.stellar_bpo_access from public,anon,authenticated;
+grant select on public.stellar_bpo_access to authenticated;
+create policy stellar_access_own on public.stellar_bpo_access for select to authenticated using(user_id=(select auth.uid()));
+insert into public.stellar_bpo_access(user_id) select user_id from public.bpo_access where active and user_id in ('8c3d1560-0eb7-4814-8f27-f24694b788a3','8b1c65f7-fec0-4127-acdc-76406ba60bf1','0b429e44-3f74-41eb-ad7b-2950dd0562cc','58d64acf-0e45-4490-8659-7bba164ec83e','304a01c2-47b7-43c0-8e34-1ccc1dadd1a0','9e85804c-d620-41fa-92c5-c0e011f40612','1fc0340b-8c7a-4c2b-bf7f-faad1f10dfa8');
+create function public.stellar_bpo_enabled() returns boolean language sql stable security invoker set search_path=pg_catalog,public as $f$ select public.bpo_enabled() and exists(select 1 from public.stellar_bpo_access where user_id=(select auth.uid()) and active); $f$;
+revoke all on function public.stellar_bpo_enabled() from public,anon;
+grant execute on function public.stellar_bpo_enabled() to authenticated;
+create table public.mls_grid_demo_catalog(listing_key text primary key,address text not null,listing_id text not null,comp_group text,proposal jsonb not null check((proposal->>'isDemo'='true') is true),imported_at timestamptz not null default now());
+alter table public.mls_grid_demo_catalog enable row level security;
+revoke all on public.mls_grid_demo_catalog from public,anon,authenticated;
+grant select on public.mls_grid_demo_catalog to authenticated;
+create policy stellar_pilot_catalog on public.mls_grid_demo_catalog for select to authenticated using((select public.stellar_bpo_enabled()) and proposal->'facts'->>'propertyType' in ('Residential','Residential Income'));
+commit;

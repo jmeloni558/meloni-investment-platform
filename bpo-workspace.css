@@ -99,3 +99,5 @@ body.pt-bpo-active main.shell > :not(#appNavShell):not(#ptBpoWorkspace):not(.foo
 .pt-bpo-summary-section .pt-bpo-note-address{display:block;margin-top:4px;font-weight:400;letter-spacing:0;color:#526879}
 
 #ptBpoWorkspace button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+
+.pt-stellar-picker{border:2px solid #25857a;background:#f1faf7;border-radius:12px;padding:18px;margin:0 0 22px}.pt-stellar-picker summary{cursor:pointer;font-weight:700;color:#154955}.pt-stellar-search{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.pt-stellar-search label{flex:1;min-width:180px}.pt-stellar-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;max-height:480px;overflow:auto;margin:16px 0}.pt-stellar-results article{background:white;border:1px solid #bdd6d0;border-radius:8px;padding:12px}.pt-stellar-notice{background:#fff4d7;border-left:4px solid #b17d17;padding:14px}
