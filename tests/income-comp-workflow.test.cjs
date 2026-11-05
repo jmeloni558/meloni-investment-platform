@@ -59,3 +59,19 @@ test('financing choices seed editable terms, preserve private classification and
 });
 
 test('unequal comp rents survive save and reopen and drive annual income',async()=>{const t=setup(),w=t.w;try{await w.PropertyThesisIncomeComps.open('subject');await complete(w);await submit(w);w.document.querySelector('[data-ic-edit]').click();await submit(w);const rents=[1000,1400,1800,2200];for(const [i,v] of rents.entries()){const e=w.document.querySelector(`[data-unit-rent="${i}"]`);e.value=v;e.dispatchEvent(new w.Event('input',{bubbles:true}));}for(let i=0;i<6;i++)await submit(w);const c=t.stored.evidence.items[0];assert.deepEqual(Array.from(c.assumptions.unitRents),rents);assert.equal(c.assumptions.units,4);assert.equal(c.assumptions.rent,1600);assert.equal(c.operating.pgi,76800);w.document.querySelector('[data-ic-edit]').click();await submit(w);assert.equal(w.document.querySelector('[data-unit-rent="3"]').value,'2200');}finally{t.dom.window.close();}});
+
+test('Stellar preview seeds sale facts and calculates without invoking persistence',async()=>{
+ const t=setup(),w=t.w;let saved=0,finished=0;
+ try{
+  const host=w.document.createElement('div');w.document.body.append(host);
+  w.PropertyThesisIncomeCompAnalysis.mount(host,{subjectId:'subject',subjectName:'Saved subject',getUser:()=>w.cloudUser?.id,previewOnly:true,
+   initialDraft:{assumptions:{address:'100 Test Comp',price:600000,units:4,rent:''},evidence:{saleDate:'2026-09-01',source:'Stellar demo',period:'Period not specified by source',incomeBasis:'mls'}},
+   onSave:async()=>{saved++},onCancel:()=>{finished++}});
+  assert.equal(host.querySelector('[name=address]').value,'100 Test Comp');assert.equal(host.querySelector('[name=price]').value,'600000');
+  fill(w,{land:100000,hold:7,initialRepairs:0});await submit(w);
+  assert.equal(host.querySelector('[name=period]').value,'Period not specified by source');assert.equal(host.querySelector('[name=source]').value,'Stellar demo');
+  fill(w,{rent:1500,vacancy:5,rentGrowth:2});await submit(w);fill(w,{opEx:30});await submit(w);await submit(w);await submit(w);await submit(w);
+  assert.match(host.textContent,/Finish demo preview/);assert.match(host.textContent,/not saved evidence/);await submit(w);
+  assert.equal(saved,0);assert.equal(finished,1);assert.equal(t.stored,null);assert.equal(w.state.address,'Untouched subject');
+ }finally{t.dom.window.close()}
+});
