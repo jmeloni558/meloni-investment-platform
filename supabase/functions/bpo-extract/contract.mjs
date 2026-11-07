@@ -83,6 +83,46 @@ export function cleanExtraction(payload, schema, documents, {general=false,now=n
   return {fields,warnings};
 }
 export const responseSchema={type:'object',additionalProperties:false,required:['fields','warnings'],properties:{fields:{type:'array',items:{type:'object',additionalProperties:false,required:['name','value','document','page','evidence'],properties:{name:{type:'string'},value:{type:'string'},document:{type:'integer'},page:{type:'integer'},evidence:{type:'string'}}}},warnings:{type:'array',items:{type:'string'}}}};
+// A closed historical listing can still supply the subject's physical characteristics.
+export function subjectMlsFallback(pages, document, expectedAddress, extracted) {
+  const first = String(pages[0] || '').replace(/\s+/g, ' ');
+  const header = /\b([A-Z]{1,4}\d{5,12})\s+(\d+[A-Z]?\s+[^,]{2,100}),\s*([A-Z][A-Z .'-]+?),\s*([A-Z]{2})\s+(\d{5})(?:-\d{4})?\b/gi;
+  const listing = [...first.matchAll(header)][0];
+  if (!listing) return [];
+  const [, mls, street, city, state, zip] = listing;
+  const address = [street.trim(), city.trim(), state + ' ' + zip].join(', ');
+  const normalize = text => String(text).toLowerCase().replace(/\bstreet\b/g,'st').replace(/\broad\b/g,'rd').replace(/\bavenue\b/g,'ave').replace(/[^a-z0-9]/g,'');
+  const identities = [expectedAddress, ...extracted.filter(f=>['field_0008','sold.0.address','active.0.address'].includes(f.name)).map(f=>f.value)].filter(Boolean);
+  if (identities.some(a=>![normalize(street), normalize(address)].includes(normalize(a)))) return [];
+  for (const page of pages) {
+    for (const match of String(page).replace(/\s+/g,' ').matchAll(header)) {
+      if (match[1]!==mls || normalize(match[0])!==normalize(listing[0])) return [];
+    }
+  }
+  const fields = [];
+  const add = (name,value,evidence) => {
+    const peer = name.replace(/^sold\.0\./,'active.0.');
+    if (!extracted.some(f=>f.name===name || f.name===peer)) fields.push({name,value,document,page:1,evidence});
+  };
+  add('field_0008',address,listing[0]);
+  for (const [key,value] of Object.entries({address:street.trim(),city:city.trim(),state,zip,source:mls})) add('sold.0.'+key,value,listing[0]);
+  const facts = [
+    ['beds', /\bBeds:\s*(\d+)\b/i], ['year', /\bYear Built:\s*(\d{4})\b/i],
+    ['gla', /\bHeated Area:\s*([\d,]+)\s*Sq\s*Ft\b/i], ['dom', /\bADOM:\s*(\d+)\b/i],
+    ['site', /\bLot Size:\s*([\d,]+\s*Sq\s*Ft)\b/i],
+    ['pool', /\bPool:\s*(Private|Community|None)\b/i], ['fireplace', /\bFireplace:\s*(Yes|No)\b/i],
+    ['tenure', /\bOwnership:\s*(Fee Simple|Leasehold)\b/i],
+    ['design', /\bFloors in Unit\/Home:\s*(One|Two)\b/i, m=>m[1].toLowerCase()==='one'?'Ranch':'2 Story'],
+    ['baths', /\bBaths:\s*(\d+)\s*\/\s*([01])\b/i, m=>String(Number(m[1])+Number(m[2])/2)],
+    ['garage', /\bGarage:\s*Yes\s+Attch:\s*Yes\s+Spcs:\s*(\d+)\b/i, m=>m[1]+'-car attached garage']
+  ];
+  for (const [key,pattern,format] of facts) {
+    const match = first.match(pattern);
+    if (match) add('sold.0.'+key,format ? format(match) : match[1],match[0]);
+  }
+  return fields;
+}
+
 export function extractionScopes(schema,general=false){
  const allowed=schema.filter(f=>!f.readonly&&!forbidden(f.name,general));
  return [allowed.filter(f=>! /^(sold|active)\.[1-3]\./.test(f.name)),allowed.filter(f=>/^sold\.[1-3]\./.test(f.name)),allowed.filter(f=>/^active\.[1-3]\./.test(f.name))];
