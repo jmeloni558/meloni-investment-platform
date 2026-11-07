@@ -2,14 +2,14 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),fs=requir
 const {stripTypeScriptTypes}=require('node:module');
 const schema=JSON.parse(fs.readFileSync('supabase/functions/bpo-extract/fields.json','utf8'));
 
-async function exercise(attachments){
+async function exercise(attachments, transcript=['fixture']){
  const contract=await import('../supabase/functions/bpo-extract/contract.mjs');
  const downloads=[],requests=[];
  const report={id:'11111111-1111-1111-1111-111111111111',revision:1,field_values:{_clientTemplate:'general',_subjectPending:true,_attachments:attachments}};
  const query={select(){return this;},eq(){return this;},async maybeSingle(){return {data:report};}};
  const db={rpc:async()=>({data:true}),from:()=>query,storage:{from:()=>({download:async path=>{downloads.push(path);return {data:new Blob(['%PDF-'+path])};}})}};
  const admin={auth:{admin:{getUserById:async()=>({data:{user:{email_confirmed_at:'2026-01-01'}}})}},rpc:async()=>({data:{allowed:true}})};
- const context={...contract,schema,withSupabase:(_options,handler)=>handler,Request,Response,Blob,TextDecoder,Uint8Array,AbortSignal,btoa,console,Deno:{env:{get:name=>name==='OPENAI_API_KEY'?'test-key':undefined}},extractText:async()=>({text:['fixture']}),PDFDocument:{create:async()=>({embedFont:async()=>({widthOfTextAtSize:()=>0})})},StandardFonts:{Helvetica:'Helvetica'},fetch:async(_url,options)=>{requests.push(JSON.parse(options.body));return new Response(JSON.stringify({status:'completed',output:[{content:[{type:'output_text',text:'{"fields":[],"warnings":[]}'}]}]}));}};
+ const context={...contract,schema,withSupabase:(_options,handler)=>handler,Request,Response,Blob,TextDecoder,Uint8Array,AbortSignal,btoa,console,Deno:{env:{get:name=>name==='OPENAI_API_KEY'?'test-key':undefined}},extractText:async()=>({text:transcript}),PDFDocument:{create:async()=>({embedFont:async()=>({widthOfTextAtSize:()=>0})})},StandardFonts:{Helvetica:'Helvetica'},fetch:async(_url,options)=>{requests.push(JSON.parse(options.body));return new Response(JSON.stringify({status:'completed',output:[{content:[{type:'output_text',text:'{"fields":[],"warnings":[]}'}]}]}));}};
  const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/bpo-extract/index.ts','utf8').replace(/^import .*;\r?\n/gm,'').replace('export default','const handler ='))+'\nthis.handler=handler;';
  vm.createContext(context);vm.runInContext(source,context);
  const response=await context.handler.fetch(new Request('https://test.invalid',{method:'POST',headers:{origin:'https://propertythesis.com'},body:JSON.stringify({reportId:report.id,revision:1})}),{supabase:db,supabaseAdmin:admin,userClaims:{id:'owner'}});
@@ -24,4 +24,17 @@ test('handler never downloads or transmits optional tax PDFs; iMapp is still sen
 });
 test('tax-only handler request performs no download or AI request',async()=>{
  const result=await exercise([document('tax',{extract:false})]);assert.equal(result.response.status,400);assert.deepEqual(result.downloads,[]);assert.deepEqual(result.requests,[]);
+});
+
+test('an empty AI subject section recovers historical MLS facts only from the designated subject sheet',async()=>{
+ const page='T1234567   10 EXAMPLE ST, SAMPLE, FL 33570\nStatus: Sold Beds: 4 Baths: 2/1 Year Built: 2006 Heated Area:1,695 SqFt Sold Date: 11/05/2021 Sold Price: $325,000';
+ const docs=[document('mls'),document('sold',{category:'sold'})];
+ const result=await exercise(docs,[page]);
+ const data=await result.response.json();
+ const facts=Object.fromEntries(data.fields.map(f=>[f.name,f.value]));
+ assert.equal(facts['sold.0.gla'],'1695');assert.equal(facts['sold.0.baths'],'2.5');assert.equal(facts['sold.0.source'],'T1234567');
+ assert.ok(data.fields.every(f=>f.path===docs[0].path && f.page===1));assert.equal(facts['sold.0.price'],undefined);
+ const {subjectMlsFallback}=await import('../supabase/functions/bpo-extract/contract.mjs');
+ assert.deepEqual(subjectMlsFallback([page],0,'22 Example St',[]),[]);
+ assert.deepEqual(subjectMlsFallback([page,page.replace('10 EXAMPLE','22 EXAMPLE')],0,null,[]),[]);
 });
