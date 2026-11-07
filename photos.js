@@ -591,6 +591,11 @@ async function openRequestedAddress(){
  const address=raw.trim().replace(/\s+/g,' ');if(!address||address.length>500){status('Enter a valid property address of 500 characters or fewer.',true);return;}
  await run(async()=>{
   const version=epoch;let property=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());
+  if(stewartMode&&!property){
+    // A BPO may supply only the street line. Keep the unit and require one completed match.
+    const matches=properties.filter(row=>propertyList(row)==='completed'&&!row.deleting_at&&row.address.split(',')[0].trim().toLowerCase()===address.toLowerCase());
+    if(matches.length===1)property=matches[0];
+  }
   if(stewartMode&&(!property||propertyList(property)!=='completed'||property.deleting_at)){
    status('Choose the matching address from Completed photos for the Stewart workflow.');
   }else if(!property){

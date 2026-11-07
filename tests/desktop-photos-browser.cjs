@@ -12,11 +12,11 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
 
  // A long list must expand the desktop page; switching to Archive must shrink it.
  const sampleRows=Array.from({length:24},(_,i)=>({id:'layout-'+i,address:'Layout Street '+i,completed_at:null}));
- sampleRows.push({id:'archive-me',address:'Archive sample',completed_at:'2026-11-01T12:00:00Z'});
+ sampleRows.push({id:'archive-me',address:'Archive sample, Tampa FL',completed_at:'2026-11-01T12:00:00Z'});
  await page.evaluate(rows=>localStorage.setItem('photo-test',JSON.stringify({rows,files:{'owner/archive-me/sample.jpg':'YQ=='}})),sampleRows);
  await page.goto(base+'/photos.html?stewart=1&address=Archive%20sample');
  await frame.locator('#stewartPhotos').waitFor({state:'visible'});
- assert.match(await frame.locator('#stewartRequest').inputValue(),/Archive sample using Completed photos/);
+ assert.match(await frame.locator('#stewartRequest').inputValue(),/Archive sample, Tampa FL using Completed photos/);
  assert.doesNotMatch(await frame.locator('#stewartRequest').inputValue(),/Mark No/);
  await frame.locator('#stewartNo').check();
  assert.match(await frame.locator('#stewartRequest').inputValue(),/Mark No for repair items/);
@@ -31,11 +31,11 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  const countLabel=frame.locator('#properties .address-photo-count');
  assert.equal(await countLabel.innerText(),'1 photo');
  assert.equal(await countLabel.evaluate(label=>getComputedStyle(label).color),'rgb(128, 255, 132)');
- await frame.getByRole('button',{name:'Archive Archive sample',exact:true}).click();
+ await frame.getByRole('button',{name:'Archive Archive sample, Tampa FL',exact:true}).click();
  await frame.getByText('No completed photo sets.',{exact:true}).waitFor();await frame.locator('#archiveTab').click();
- await frame.getByRole('button',{name:'Archive sample · 1 photo',exact:true}).click();await frame.locator('#count').getByText('1 photo',{exact:true}).waitFor();
+ await frame.getByRole('button',{name:'Archive sample, Tampa FL · 1 photo',exact:true}).click();await frame.locator('#count').getByText('1 photo',{exact:true}).waitFor();
  await frame.locator('#backToList').click();await page.waitForFunction(()=>{const f=document.querySelector('#ptDesktopPhotos iframe');return f.clientHeight<800&&f.contentDocument.documentElement.scrollHeight<=f.clientHeight+1;});
- await page.reload();await frame.locator('#archiveTab').click();await frame.getByRole('button',{name:'Restore Archive sample',exact:true}).click();await frame.getByText('No archived photo sets.',{exact:true}).waitFor();
+ await page.reload();await frame.locator('#archiveTab').click();await frame.getByRole('button',{name:'Restore Archive sample, Tampa FL',exact:true}).click();await frame.getByText('No archived photo sets.',{exact:true}).waitFor();
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('photo-test')).rows.find(r=>r.id==='archive-me').archived_at),null);
  await page.evaluate(()=>localStorage.removeItem('photo-test'));await page.reload();await frame.locator('#library').waitFor({state:'visible'});
  await page.click('#appNavExisting');assert.equal(await page.locator('#propertyhub').isVisible(),true);assert.equal(await page.locator('#ptDesktopPhotos').isVisible(),false);
