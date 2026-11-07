@@ -60,9 +60,10 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  // A client which ignores orientation must now see the same upright pixels as Edge.
  const source=process.env.ORIENTED_JPEG?fs.readFileSync(process.env.ORIENTED_JPEG):rotated;
  const upright=await page.evaluate(async base64=>{
-   const {uprightJpeg}=await import('./photo-dates.mjs?v=4');
+   const {uprightJpeg}=await import('./photo-dates.mjs?v=5');
    const input=new Blob([Uint8Array.from(atob(base64),c=>c.charCodeAt(0))],{type:'image/jpeg'});
-   const output=await uprightJpeg(input,'camera.jpg');
+   const parser=window.exifr;window.exifr={...parser,orientation:async()=>{throw Error('Fast EXIF read failed')}};
+   let output;try{output=await uprightJpeg(input,'camera.jpg');}finally{window.exifr=parser;}
    async function sample(blob){
      const bitmap=await createImageBitmap(blob),canvas=document.createElement('canvas');
      canvas.width=4;canvas.height=4;const ctx=canvas.getContext('2d');ctx.drawImage(bitmap,0,0,4,4);

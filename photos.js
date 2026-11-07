@@ -1,4 +1,4 @@
-import {cameraTimestamp,stampPhoto,dateParts,uprightJpeg} from './photo-dates.mjs?v=4';
+import {cameraTimestamp,stampPhoto,dateParts,uprightJpeg} from './photo-dates.mjs?v=5';
 import {BUCKET,safeName,validateFile,originalName,listPhotos} from './photo-library.mjs?v=3';
 import {bounded,sendQueuedPhoto,uploadFailure} from './photo-upload-queue.mjs?v=1';
 const $=id=>document.getElementById(id);
@@ -516,7 +516,7 @@ function sortByCaptureTime(items){
 async function downloadPhotos(items,date=''){
  if(!items.length)throw Error('Select photos to download.');
  if(!window.JSZip)throw Error('The ZIP tool did not load. Refresh the page and try again.');
- const version=epoch,name=safeName(selected.address.split(',')[0].slice(0,24)),limit=128*1024*1024;let zip=new window.JSZip(),bytes=0,part=1,done=0;
+ const version=epoch,name=safeName(selected.address.split(',')[0].slice(0,18))+'-ready',limit=128*1024*1024;let zip=new window.JSZip(),bytes=0,part=1,done=0;
  status('Sorting photos by the time they were taken…');
  const {ordered,originals}=await orderForDownload(items,version,limit);
  const digits=Math.max(3,String(ordered.length).length);

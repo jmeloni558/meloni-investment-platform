@@ -48,24 +48,32 @@ export async function takenDate(blob,iso=false){
 export async function uprightJpeg(blob,name){
   if(!/\.jpe?g$/i.test(name))return blob;
   const exifr=await dependency('exifr','assets/vendor/exifr-7.1.3.js');
-  const orientation=await exifr.orientation(blob).catch(()=>null);
-  if(!(orientation>=2&&orientation<=8))return blob;
+  const orientation=await exifr.orientation(blob).catch(()=>undefined);
+  if(orientation===1)return blob;
+  const header=new Uint8Array(await blob.slice(0,2).arrayBuffer());
+  if(header[0]!==0xff||header[1]!==0xd8)return blob;
   const piexif=await dependency('piexif','assets/vendor/piexif-1.0.6.js');
+  const reader=new FileReader();
+  const original=await new Promise((resolve,reject)=>{
+    reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);
+    reader.readAsDataURL(blob.slice(0,blob.size,'image/jpeg'));
+  });
+  // The fast reader can miss EXIF. Inspect the complete JPEG before passing it through.
+  const tags=piexif.load(original);
+  const rotation=tags['0th'][piexif.ImageIFD.Orientation]??orientation;
+  if(rotation==null||rotation===1)return blob;
+  if(!Number.isInteger(rotation)||rotation<2||rotation>8)throw Error('Cannot verify camera orientation for '+name);
   const bitmap=await createImageBitmap(blob,{imageOrientation:'from-image'});
   const canvas=document.createElement('canvas');canvas.width=bitmap.width;canvas.height=bitmap.height;
   try{
     canvas.getContext('2d').drawImage(bitmap,0,0);
-    const reader=new FileReader();
-    const original=await new Promise((resolve,reject)=>{
-      reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob);
-    });
-    const tags=piexif.load(original);
     tags['0th'][piexif.ImageIFD.Orientation]=1;
     tags.Exif[piexif.ExifIFD.PixelXDimension]=bitmap.width;
     tags.Exif[piexif.ExifIFD.PixelYDimension]=bitmap.height;
     tags['1st']={};tags.thumbnail=null;
     const output=piexif.insert(piexif.dump(tags),canvas.toDataURL('image/jpeg',.95));
     const binary=atob(output.split(',')[1]);
+    if(piexif.load(binary)['0th'][piexif.ImageIFD.Orientation]!==1)throw Error('Could not verify upright export for '+name);
     return new Blob([Uint8Array.from(binary,c=>c.charCodeAt(0))],{type:'image/jpeg'});
   }finally{bitmap.close();canvas.width=canvas.height=1;}
 }
