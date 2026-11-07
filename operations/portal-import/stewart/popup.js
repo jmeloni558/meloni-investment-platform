@@ -3,6 +3,8 @@ const $=id=>document.getElementById(id);
 let payload;
 $('file').onchange=async()=>{
   payload=null;
+  const photoWorkflow=new URL('https://propertythesis.com/photos.html?stewart=1');
+  $('photoWorkflow').href=photoWorkflow.href;
   $('rows').replaceChildren();
   $('apply').disabled=$('preview').disabled=true;
   $('subject').textContent='';
@@ -13,6 +15,9 @@ $('file').onchange=async()=>{
     if(file!==$('file').files[0])return;
     validateStewart(next);
     payload=next;
+    const {address,city,state,zip}=next.subject;
+    photoWorkflow.searchParams.set('address',[address,city,[state,zip].filter(Boolean).join(' ')].filter(Boolean).join(', '));
+    $('photoWorkflow').href=photoWorkflow.href;
     $('subject').textContent='Confirm the open order is for '+Object.values(next.subject).join(', ')+'.';
     $('status').textContent='';
     $('apply').disabled=$('preview').disabled=false;
