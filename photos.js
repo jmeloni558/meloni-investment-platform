@@ -22,6 +22,18 @@ function createUploadClient(token,signal){
   });
 }
 let user=null,properties=[],selected=null,photos=[],queue=[],busy=false,epoch=0,installPrompt,listMode='active';
+const stewartMode=new URLSearchParams(location.search).get('stewart')==='1';
+function updateStewartRequest(){
+  $('copyResult').textContent='';
+  if(!selected||$('stewartPhotos').hidden){$('stewartRequest').value='';return;}
+  const repair=$('stewartNo').checked?' Mark No for repair items on every subject photo.':'';
+  $('stewartRequest').value='Run $stewart-order-photos for '+selected.address+' using Completed photos in PT Photos. Upload upright copies and label each subject photo in the matching Stewart order.'+repair;
+}
+$('stewartNo').onchange=updateStewartRequest;
+$('copyStewart').onclick=async()=>{
+  try{await navigator.clipboard.writeText($('stewartRequest').value);$('copyResult').textContent=' Copied. Paste into Codex.';}
+  catch{$('stewartRequest').select();$('copyResult').textContent=' Select Copy to copy this request.';}
+};
 const bucket=client?.storage.from(BUCKET);
 const selectedPhotos=new Set();
 const cameraTimes=new Map();
@@ -185,7 +197,10 @@ async function loadProperties(){
 }
 async function openProperty(p){
   if(queue.some(x=>x.state!=='Uploaded')&&!confirm('Leave the selected photos? Photos not uploaded will need to be selected again.'))return;
-  selectedPhotos.clear();selected=p;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();$('workspace').hidden=false;$('addressList').hidden=true;$('uploadControls').hidden=!!p.completed_at||!!p.deleting_at;$('complete').hidden=!!p.completed_at||!!p.deleting_at;$('reopen').hidden=!p.completed_at||!!p.deleting_at;$('completedNote').hidden=!p.completed_at;$('completedNote').textContent=p.archived_at?'This photo set is archived.':'This upload set is completed.';$('propertyTitle').textContent=p.address;renderProperties();await refreshPhotos();$('propertyTitle').focus();
+  selectedPhotos.clear();selected=p;
+  $('stewartPhotos').hidden=!stewartMode||propertyList(p)!=='completed'||!!p.deleting_at;
+  $('stewartNo').checked=false;updateStewartRequest();
+  photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();$('workspace').hidden=false;$('addressList').hidden=true;$('uploadControls').hidden=!!p.completed_at||!!p.deleting_at;$('complete').hidden=!!p.completed_at||!!p.deleting_at;$('reopen').hidden=!p.completed_at||!!p.deleting_at;$('completedNote').hidden=!p.completed_at;$('completedNote').textContent=p.archived_at?'This photo set is archived.':'This upload set is completed.';$('propertyTitle').textContent=p.address;renderProperties();await refreshPhotos();$('propertyTitle').focus();
 }
 async function refreshPhotos(limitSignal){
   const version=epoch,p=selected;if(!p)return;const prefix=user.id+'/'+p.id;
@@ -379,7 +394,7 @@ function showList(mode=listMode){
   clearCaptions();clearTransferCache();selectedPhotos.clear();listMode=mode;selected=null;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();
   $('workspace').hidden=true;$('addressList').hidden=false;$('newProperty').hidden=mode!=='active';
   refreshStorage();
-  $('listTitle').textContent=listTitles[mode];
+  $('listTitle').textContent=stewartMode&&mode==='completed'?'Stewart photo workflow — choose a completed property':listTitles[mode];
   $('activeTab').setAttribute('aria-pressed',String(mode==='active'));$('completedTab').setAttribute('aria-pressed',String(mode==='completed'));$('archiveTab').setAttribute('aria-pressed',String(mode==='archive'));
   renderProperties();$('listTitle').focus();status(mode==='archive'?'Archived photo sets are available here.':mode==='completed'?'Completed photo sets are saved here.':'Choose a property or enter an address.');
 }
@@ -568,7 +583,7 @@ async function sessionChanged(session){
   dirtyDescriptions.clear();batchController?.abort();clearCaptions();clearTransferCache();cameraTimes.clear();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
   $('files').value='';$('photos').replaceChildren();$('properties').replaceChildren();$('queue').replaceChildren();$('account').textContent='';$('library').hidden=true;$('workspace').hidden=true;$('addressList').hidden=false;$('signedOut').hidden=!!user;
   if(!user){initPhotoCaptcha();status('Sign in to upload and download your property photos.');return;}
-  try{const {data,error}=await client.rpc('photo_library_enabled');check(version);if(error)throw error;if(!data){$('signedOut').hidden=false;initPhotoCaptcha();status('Photo Uploads is currently available only to the pilot account.',true);return;}$('library').hidden=false;$('password').value='';$('account').textContent=user.email;await loadProperties();showList('active');await openRequestedAddress();}catch(e){if(version===epoch)status(e.message,true);}
+  try{const {data,error}=await client.rpc('photo_library_enabled');check(version);if(error)throw error;if(!data){$('signedOut').hidden=false;initPhotoCaptcha();status('Photo Uploads is currently available only to the pilot account.',true);return;}$('library').hidden=false;$('password').value='';$('account').textContent=user.email;await loadProperties();showList(stewartMode?'completed':'active');await openRequestedAddress();}catch(e){if(version===epoch)status(e.message,true);}
 }
 let requestedAddressHandled=false;
 async function openRequestedAddress(){
@@ -576,7 +591,9 @@ async function openRequestedAddress(){
  const address=raw.trim().replace(/\s+/g,' ');if(!address||address.length>500){status('Enter a valid property address of 500 characters or fewer.',true);return;}
  await run(async()=>{
   const version=epoch;let property=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());
-  if(!property){
+  if(stewartMode&&(!property||propertyList(property)!=='completed'||property.deleting_at)){
+   status('Choose the matching address from Completed photos for the Stewart workflow.');
+  }else if(!property){
    $('address').value=address;status('No photo address exists for this property. Click Create only when you are ready to add photos.');$('address').focus();
   }else{check(version);listMode=propertyList(property);await openProperty(property);}
   requestedAddressHandled=true;url.searchParams.delete('address');history.replaceState(history.state,'',url);

@@ -14,6 +14,16 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  const sampleRows=Array.from({length:24},(_,i)=>({id:'layout-'+i,address:'Layout Street '+i,completed_at:null}));
  sampleRows.push({id:'archive-me',address:'Archive sample',completed_at:'2026-11-01T12:00:00Z'});
  await page.evaluate(rows=>localStorage.setItem('photo-test',JSON.stringify({rows,files:{'owner/archive-me/sample.jpg':'YQ=='}})),sampleRows);
+ await page.goto(base+'/photos.html?stewart=1&address=Archive%20sample');
+ await frame.locator('#stewartPhotos').waitFor({state:'visible'});
+ assert.match(await frame.locator('#stewartRequest').inputValue(),/Archive sample using Completed photos/);
+ assert.doesNotMatch(await frame.locator('#stewartRequest').inputValue(),/Mark No/);
+ await frame.locator('#stewartNo').check();
+ assert.match(await frame.locator('#stewartRequest').inputValue(),/Mark No for repair items/);
+ await page.goto(base+'/photos.html?stewart=1&address=Layout%20Street%200');
+ await frame.getByText('Choose the matching address from Completed photos for the Stewart workflow.').waitFor();
+ assert.equal(await frame.locator('#workspace').isHidden(),true);
+ await page.goto(base+'/photos.html');
  await page.reload();await frame.locator('#properties button').first().waitFor();
  await page.waitForFunction(()=>{const f=document.querySelector('#ptDesktopPhotos iframe');return f.clientHeight>1000&&f.contentDocument.documentElement.scrollHeight<=f.clientHeight+1;});
  await frame.getByText('1 B in your photos · 99.75 GB left of 100 GB',{exact:true}).waitFor();
