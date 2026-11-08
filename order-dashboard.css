@@ -74,3 +74,11 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-contact-attempts label{display:grid;justify-items:center;margin:0;font-size:.8rem;cursor:pointer}
 #ptOrders .od-contact-attempts input{accent-color:#145d54;margin:3px 0;width:18px;height:18px}
 #ptOrders #od-phone-dialog a{display:inline-block;padding:10px 16px;color:#145d54;font-weight:650}
+#ptOrders .od-entry-codes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#ptOrders .od-entry-codes label{min-width:0;margin:6px 0}
+#ptOrders article.od-field-order{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:0 8px;padding:4px 0}
+#ptOrders .od-field-order button[data-order]{grid-column:2 / -1;padding:3px 0}
+#ptOrders .od-field-order:has(.od-row-photos) button[data-order]{grid-column:2}
+#ptOrders .od-field-order .od-schedule{grid-column:2 / -1;align-items:center;gap:2px 8px;font-size:.8rem;color:#53696c}
+#ptOrders .od-field-order .od-schedule time:not(:first-child){color:#7035a1;font-weight:700}
+#ptOrders .od-directions{display:inline-flex;align-items:center;min-height:30px;padding:0 8px;border:1px solid #9cbcb4;border-radius:6px;color:#145d54;text-decoration:none;font-weight:650}
