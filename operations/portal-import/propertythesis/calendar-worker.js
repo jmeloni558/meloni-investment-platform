@@ -24,3 +24,5 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   opening.then(() => reply(true), () => reply(false));
   return true;
 });
+
+importScripts('inspection-worker.js');
