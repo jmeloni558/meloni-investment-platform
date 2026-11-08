@@ -1,7 +1,7 @@
 // The two enrolled sign-ins share one order list and the realty account's field photo library.
 (() => {
   const kinds = ['Int BPO','Ext BPO','Int PCR','Ext PCR','PDCR','Desktop BPO','Marketing Photos','Inspection Photos'];
-  const autoLand = !location.search && !location.hash;
+  const autoLand = (!location.search && !location.hash) || new URLSearchParams(location.search).get('orders')==='1';
   let db, account, membership, panel, menu, generation=0, request=0, landing=autoLand, completed=false, orders=[], clients=[];
   const el=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text||''});
   const field=id=>panel.querySelector('#od-'+id);
@@ -10,7 +10,7 @@
   function hide(){document.body.classList.remove('pt-orders-open');menu?.removeAttribute('aria-current');}
   function open(){
     if(!membership||!panel)return;
-    document.body.classList.add('pt-orders-open');menu.setAttribute('aria-current','page');load();
+    document.body.classList.add('pt-orders-open');menu.setAttribute('aria-current','page');window.AppNavigationToolbar?.refresh();load();
   }
   async function load(){
     const current=++request, version=generation;
@@ -23,7 +23,14 @@
       }
       const result=await db.from('order_clients').select('name').order('name');
       if(result.error)throw result.error;
+      let openCount=rows.length;
+      if(completed){
+        const total=await db.from('field_orders').select('id',{count:'exact',head:true}).eq('complete',false);
+        if(total.error)throw total.error;
+        openCount=total.count;
+      }
       if(current!==request||version!==generation)return;
+      field('count').textContent=openCount+' open '+(openCount===1?'order':'orders');
       orders=rows;clients=result.data.map(c=>c.name);
       if(field('details').hidden) populateClients();
       render();field('status').textContent='';
@@ -167,8 +174,8 @@
     if(menu.nextElementSibling!==anchor)anchor.before(menu);
     if(panel)return;
     panel=el('section');panel.id='ptOrders';panel.innerHTML=`
-      <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1></div><button id="od-new">New order</button></header>
-      <nav><button id="od-open">Open orders</button><button id="od-completed">Completed</button><button id="od-calendar">Outlook calendar</button></nav>
+      <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"></p></div></header>
+      <nav><button id="od-new">New order</button><button id="od-open">Open orders</button><button id="od-completed">Completed</button><button id="od-calendar">Outlook calendar</button></nav>
       <div id="od-subscribe" hidden><p>In Outlook Calendar, choose Add calendar → Subscribe from web. Paste this private link and select Import. Outlook refreshes the appointments on its own schedule.</p><label>Private calendar URL<input id="od-url" readonly></label><button id="od-copy">Copy link</button> <a href="https://outlook.office.com/calendar/" target="_blank" rel="noopener">Open Outlook Calendar</a></div>
       <p id="od-status" role="status"></p><div class="od-columns"><div id="od-list"></div>
       <aside id="od-details" aria-labelledby="od-title" hidden><form id="od-form"><header><h2 id="od-title" tabindex="-1"></h2><button type="button" id="od-cancel">Close</button></header>
@@ -227,7 +234,7 @@
     db.auth.onAuthStateChange((_e,s)=>setTimeout(()=>auth(s),0));
     db.auth.getSession().then(({data})=>auth(data.session));
     new MutationObserver(mount).observe(document.body,{childList:true,subtree:true});
-    document.addEventListener('click',e=>{const target=e.target.closest('#appNavShell button,#appNavShell a,#ptBpoMenu button');if(target&&target!==menu){landing=false;hide();}},true);
+    document.addEventListener('click',e=>{const target=e.target.closest('#appNavShell button,#appNavShell a,#ptBpoMenu button');if(target && target!==menu && target.target!=='_blank'){landing=false;hide();}},true);
     window.addEventListener('focus',()=>{if(document.body.classList.contains('pt-orders-open')&&field('details').hidden)load();});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

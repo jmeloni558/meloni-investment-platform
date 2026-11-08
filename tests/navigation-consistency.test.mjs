@@ -5,9 +5,10 @@ import vm from 'node:vm';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 test('only the visible primary section is highlighted, including listings over saved properties',()=>{
   const refresh=read('app-navigation-toolbar.js').match(/  function refresh\(\)\{[^\n]+/)[0];
-  const buttons=['appNavNew','appNavExisting','appNavListings','appNavMortgage'].map(id=>({id,active:false,classList:{toggle(_name,on){buttons.find(b=>b.classList===this).active=on;}},setAttribute(){},removeAttribute(){}}));
+  const buttons=['ptOrderNav','appNavNew','appNavExisting','appNavListings','appNavMortgage','ptPhotoLibrary'].map(id=>({id,active:false,classList:{toggle(_name,on){buttons.find(b=>b.classList===this).active=on;}},setAttribute(){},removeAttribute(){}}));
+  const bodyClasses=new Set();
   let listings=false,section='propertyhub',bpoMode=null;
-  const context={ensureToolbar:()=>true,cleanWorkflow(){},retireLegacyNavigation(){},uiShowsSignedOut:()=>false,mortgageMode:false,setMortgageMode(){},activeSection:()=>section,primary:['dashboard'],document:{getElementById:id=>id==='ptBpoWorkspace'&&bpoMode?{dataset:{bpoMode}}:id==='ptListingsPanel'?{classList:{contains:()=>listings}}:null,querySelectorAll:()=>buttons}};
+  const context={ensureToolbar:()=>true,cleanWorkflow(){},retireLegacyNavigation(){},uiShowsSignedOut:()=>false,mortgageMode:false,setMortgageMode(){},activeSection:()=>section,primary:['dashboard'],document:{body:{classList:{contains:key=>bodyClasses.has(key)}},getElementById:id=>id==='ptBpoWorkspace'&&bpoMode?{dataset:{bpoMode}}:id==='ptListingsPanel'?{classList:{contains:()=>listings}}:null,querySelectorAll:()=>buttons}};
   vm.createContext(context);vm.runInContext(refresh,context);
   const current=()=>buttons.filter(b=>b.active).map(b=>b.id);
   context.refresh();assert.deepEqual(current(),['appNavExisting']);
@@ -15,6 +16,9 @@ test('only the visible primary section is highlighted, including listings over s
   context.refresh();assert.deepEqual(current(),['appNavListings']);
   listings=false;context.refresh();assert.deepEqual(current(),['appNavExisting']);
   section='dashboard';context.refresh();assert.deepEqual(current(),['appNavNew']);
+  bodyClasses.add('pt-photos-open');context.refresh();assert.deepEqual(current(),['ptPhotoLibrary']);
+  bodyClasses.add('pt-orders-open');context.refresh();assert.deepEqual(current(),['ptOrderNav']);
+  bodyClasses.clear();
   for(const [mode,expected] of [['new','appNavNew'],['saved','appNavExisting'],['library','appNavExisting']]){bpoMode=mode;context.refresh();assert.deepEqual(current(),[expected]);context.refresh();assert.deepEqual(current(),[expected]);}
 });
 test('standalone signed-in toolbar includes account controls and excludes injected guest Guides',()=>{
