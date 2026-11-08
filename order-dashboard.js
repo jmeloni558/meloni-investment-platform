@@ -128,6 +128,12 @@
       }
       if(searchText())schedule.append(el('small',o.complete?'Completed':o.on_hold?'On Hold':'Open'));
       title.append(summary,schedule);
+      if(o.appointment_needed && !o.appointment){
+        title.classList.add('od-needs-appointment');
+        const reminder=el('span','Appointment Needed');
+        reminder.className='od-appointment-warning';
+        title.append(reminder);
+      }
       row.append(check,title);
       field('list').append(row);
     }
@@ -200,6 +206,7 @@
     if(o?.todo_title)field('source').textContent='Microsoft To Do: '+o.todo_title+' · Completed '+new Date(o.todo_completed_at).toLocaleDateString();
     for(const k of ['address','kind','client','due','notes'])field(k).value=o?.[k]||'';
     field('photos').checked=!!o?.needs_photos;
+    field('appointment-needed').checked=!!o?.appointment_needed;
     field('state-label').hidden=!o;
     field('state').value=o?.on_hold?'hold':o?.complete?'completed':'open';
     const photos=field('photo-link');
@@ -222,7 +229,7 @@
     try{
       const client=field('client').value, address=field('address').value.trim();
       if((!client && field('client').required)||!address)throw Error('Enter the address and client.');
-      const changes={address,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
+      const changes={address,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
       if(original)await update(original,{...changes,complete:field('state').value==='completed',on_hold:field('state').value==='hold',needs_photos:field('photos').checked});
       else {
         const {error}=await db.from('field_orders').insert({...changes,id:draftId,needs_photos:field('photos').checked});
@@ -258,6 +265,7 @@
       <label>Due date<input type="date" id="od-due" required></label>
       <label>Appointment (optional, local time)<input type="datetime-local" id="od-appointment"></label>
       <label><input type="checkbox" id="od-photos"> Photos needed</label>
+      <label><input type="checkbox" id="od-appointment-needed"> Appointment Needed</label>
       <div id="od-photo-link"></div><label id="od-state-label">Order status<select id="od-state"><option value="open">Open orders</option><option value="hold">On Hold</option><option value="completed">Completed</option></select></label>
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
       <div id="od-preview" aria-label="Links in notes" hidden></div><p id="od-error" role="alert"></p>
