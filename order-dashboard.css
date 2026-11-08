@@ -44,3 +44,7 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
   #ptOrders .od-columns:has(aside:not([hidden])) > div:first-child{display:none}
   #od-details{position:static;max-height:none;border:0;padding:0}
 }
+
+#ptOrders .od-open-picker{position:relative;display:inline-flex}
+#ptOrders .od-open-picker select{margin:0;width:auto;max-width:18em;min-width:9em;padding:9px 12px;border-radius:8px;color:#144c45;font-weight:650;cursor:pointer}
+#ptOrders .od-open-picker select[data-active=true]{background:#185e54;color:white}

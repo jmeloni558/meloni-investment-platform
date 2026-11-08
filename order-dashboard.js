@@ -3,6 +3,7 @@
   const kinds = ['Int BPO','Ext BPO','Int PCR','Ext PCR','PDCR','Desktop BPO','Marketing Photos','Inspection Photos'];
   const autoLand = (!location.search && !location.hash) || new URLSearchParams(location.search).get('orders')==='1';
   let db, account, membership, panel, menu, generation=0, request=0, landing=autoLand, currentList='open', orders=[], clients=[];
+  let selectedList='', namedLists=[];
   const el=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text||''});
   const field=id=>panel.querySelector('#od-'+id);
   const dateLabel=value=>new Date(value+'T12:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
@@ -38,8 +39,9 @@
   let page=0, searchTimer;
   function searchText(){return field('search').value.trim();}
   async function orderPage(term){
-    const query=term ? db.rpc('search_field_orders',{search_text:term}) :
+    let query=term ? db.rpc('search_field_orders',{search_text:term}) :
       db.from('field_orders').select('*').eq('complete',currentList==='completed').eq('on_hold',currentList==='hold');
+    if(!term && currentList==='open')query=selectedList?query.eq('list_name',selectedList):query.is('list_name',null);
     const offset=page*pageSize;
     const {data,error}=await query.order('due',{ascending:!term && currentList!=='completed',nullsFirst:false}).order('id').range(offset,offset+pageSize);
     if(error)throw error;
@@ -56,9 +58,20 @@
       ]);
       if(held?.error)throw held.error;
       if(completed.error)throw completed.error;
-      const result=await db.from('order_clients').select('name').order('name');
+      const [result,lists]=await Promise.all([
+        db.from('order_clients').select('name').order('name'),
+        db.from('order_lists').select('name').order('name')
+      ]);
+      if(lists.error)throw lists.error;
       if(result.error)throw result.error;
       if(current!==request||version!==generation)return;
+      namedLists=lists.data.map(list=>list.name);
+      const picker=field('open');
+      const placeholder=new Option('Open orders','');
+      placeholder.disabled=true;placeholder.hidden=true;
+      picker.replaceChildren(placeholder,new Option('Open orders',''),...namedLists.map(name=>new Option(name,name)));
+      picker.selectedIndex=currentList==='open' && !term?namedLists.indexOf(selectedList)+2:0;
+      field('new').textContent=currentList==='open' && selectedList?'New task':'New order';
       openDates=openRows.map(order=>order.due);
       field('hold').textContent='On Hold ('+held.count+')';
       field('completed').textContent='Completed ('+completed.count.toLocaleString()+')';
@@ -72,7 +85,8 @@
   }
   function render(){
     field('list').replaceChildren();
-    for(const list of ['open','hold','completed']){
+    field('open').dataset.active=String(currentList==='open' && !searchText());
+    for(const list of ['hold','completed']){
       field(list).setAttribute('aria-pressed',String(!searchText() && list===currentList));
     }
     for(const o of orders){
@@ -150,6 +164,11 @@
     const nvmsInterior=kind==='Int PCR' && clientName().toLowerCase()==='nvms';
     field('photos').checked=Boolean(kind) && kind!=='PDCR' && kind!=='Desktop BPO' && !nvmsInterior;
   }
+  function updateRequirements(){
+    const task=Boolean(field('destination').value);
+    field('address-label').textContent=task?'Task or property address':'Property address';
+    for(const id of ['kind','client','due'])field(id).required=!task && !editing?.todo_title;
+  }
   function edit(o){
     if(!canLeave())return;
     dirty=false;
@@ -157,14 +176,17 @@
     field('new-client-label').hidden=true;
     field('new-client').required=false;
     editing=o;photosOverridden=false;draftId=o?.id||crypto.randomUUID();const f=field('form');f.reset();field('error').textContent='';
-    field('title').textContent=o?'Order details':'New order';
+    const destination=o?o.list_name:(currentList==='open'?selectedList:'');
+    field('destination').replaceChildren(new Option('Main dashboard',''),...namedLists.map(name=>new Option(name,name)));
+    field('destination').value=destination || '';
+    field('title').textContent=o?'Details':destination?'New task':'New order';
     field('kind').querySelector('[data-historical]')?.remove();
     if(o?.kind && !kinds.includes(o.kind)){
       const legacy=new Option(o.kind,o.kind);
       legacy.dataset.historical='true';
       field('kind').append(legacy);
     }
-    for(const id of ['kind','client','due'])field(id).required=!o?.todo_title;
+    updateRequirements();
     field('source').hidden=!o?.todo_title;
     if(o?.todo_title)field('source').textContent='Microsoft To Do: '+o.todo_title+' · Completed '+new Date(o.todo_completed_at).toLocaleDateString();
     for(const k of ['address','kind','client','due','notes'])field(k).value=o?.[k]||'';
@@ -190,7 +212,7 @@
     const version=generation,original=editing;
     try{
       const name=clientName(), address=field('address').value.trim();
-      if((!name && !original?.todo_title)||!address)throw Error('Enter the address and client.');
+      if((!name && field('client').required)||!address)throw Error('Enter the address and client.');
       let client=clients.find(c=>c.toLowerCase()===name.toLowerCase());
       if(name && !client){
         const {error}=await db.from('order_clients').insert({name});
@@ -199,7 +221,7 @@
         client=r.data.find(c=>c.name.toLowerCase()===name.toLowerCase())?.name;if(!client)throw Error('Client could not be saved.');
       }
       if(version!==generation)return;
-      const changes={address,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
+      const changes={address,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
       if(original)await update(original,{...changes,complete:field('state').value==='completed',on_hold:field('state').value==='hold',needs_photos:field('photos').checked});
       else {
         const {error}=await db.from('field_orders').insert({...changes,id:draftId,needs_photos:field('photos').checked});
@@ -216,12 +238,14 @@
     if(panel)return;
     panel=el('section');panel.id='ptOrders';panel.innerHTML=`
       <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"><span id="od-total"></span><span id="od-today"></span><span id="od-overdue"></span></p></div></header>
-      <nav><button id="od-new">New order</button><button id="od-open">Open orders</button><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><button id="od-calendar">Outlook calendar</button></nav>
+      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><span class="od-open-picker"><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><button id="od-calendar">Outlook calendar</button></nav>
+      <form id="od-list-form" hidden><label>List name<input id="od-name" maxlength="80" required></label>
+      <button id="od-create-list">Create list</button> <button type="button" id="od-cancel-list">Cancel</button></form>
       <div id="od-subscribe" hidden><p>In Outlook Calendar, choose Add calendar → Subscribe from web. Paste this private link and select Import. Outlook refreshes the appointments on its own schedule.</p><label>Private calendar URL<input id="od-url" readonly></label><button id="od-copy">Copy link</button> <a href="https://outlook.office.com/calendar/" target="_blank" rel="noopener">Open Outlook Calendar</a></div>
       <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
       <p id="od-status" role="status"></p><div class="od-columns"><div><div id="od-list"></div><button id="od-prev" hidden>Previous page</button> <button id="od-next" hidden>Next page</button></div>
       <aside id="od-details" aria-labelledby="od-title" hidden><form id="od-form"><header><h2 id="od-title" tabindex="-1"></h2><button type="button" id="od-cancel">Close</button></header>
-      <p id="od-source" hidden></p><label>Property address<input id="od-address" maxlength="500" required></label>
+      <p id="od-source" hidden></p><label>List<select id="od-destination"></select></label><label><span id="od-address-label">Property address</span><input id="od-address" maxlength="500" required></label>
       <label>Order type<select id="od-kind" required></select></label>
       <label>Client<select id="od-client" required></select></label>
       <label id="od-new-client-label" hidden>New client name<input id="od-new-client" maxlength="160"></label>
@@ -256,15 +280,45 @@
     field('photos').onchange=()=>{photosOverridden=true;};
     field('kind').append(new Option('Choose order type',''),...kinds.map(k=>new Option(k==='PDCR'?'PDCR (Property Data Collection Report)':k,k)));
     field('new').onclick=()=>edit(null);field('cancel').onclick=()=>{if(canLeave())closeDetails();};field('form').onsubmit=submit;
-    for(const list of ['open','hold','completed']){
-      field(list).onclick=()=>{
-        if(!canLeave())return;
-        closeDetails();
-        field('search').value='';page=0;clearTimeout(searchTimer);
-        currentList=list;
-        load();
-      };
+    function switchList(status,name=''){
+      if(!canLeave())return false;
+      closeDetails();
+      field('search').value='';page=0;clearTimeout(searchTimer);
+      currentList=status;selectedList=name;
+      load();
+      return true;
     }
+    field('destination').onchange=updateRequirements;
+    field('open').onchange=()=>{
+      if(!switchList('open',field('open').value)){
+        field('open').selectedIndex=currentList==='open' && !searchText()?namedLists.indexOf(selectedList)+2:0;
+      }
+    };
+    for(const status of ['hold','completed'])field(status).onclick=()=>switchList(status);
+    field('new-list').onclick=()=>{
+      if(!canLeave())return;
+      closeDetails();
+      field('list-form').hidden=false;
+      field('name').focus();
+    };
+    field('cancel-list').onclick=()=>{field('list-form').hidden=true;};
+    field('list-form').onsubmit=async event=>{
+      event.preventDefault();
+      const name=field('name').value.trim(),button=field('create-list'),version=generation;
+      if(button.disabled)return;
+      if(!name || name.toLowerCase()==='open orders'){
+        field('status').textContent='Choose a different list name.';return;
+      }
+      button.disabled=true;
+      try{
+        const {error}=await db.from('order_lists').insert({name});
+        if(error)throw Error(error.code==='23505'?'A list with that name already exists.':error.message);
+        if(version!==generation)return;
+        field('list-form').reset();field('list-form').hidden=true;
+        switchList('open',name);
+      }catch(e){if(version===generation)field('status').textContent=e.message;}
+      finally{button.disabled=false;}
+    };
     field('calendar').onclick=async()=>{
       const version=generation;
       if(!field('subscribe').hidden){field('subscribe').hidden=true;return;}
@@ -279,7 +333,7 @@
   async function auth(session){
     const id=session?.user?.id||null;if(id===account)return;
     clearTimeout(midnightTimer);clearTimeout(searchTimer);page=0;openDates=[];
-    const old=account;account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';
+    const old=account;account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';selectedList='';namedLists=[];
     if(!id){if(old)landing=true;return;}
     const {data,error}=await db.from('order_members').select('photo_owner').eq('user_id',id).maybeSingle();
     if(version!==generation||error||!data)return;membership=data;mount();
