@@ -195,6 +195,11 @@ async function loadProperties(){
   for(let offset=0;;offset+=500){const {data,error}=await client.from('photo_property_counts').select('id,address,created_at,completed_at,archived_at,deleting_at,photo_count').order('address').order('id').range(offset,offset+499);check(version);if(error)throw error;rows.push(...data);if(data.length<500)break;}
   properties=rows;renderProperties();
 }
+function refreshFieldList(){
+ if(user&&!busy&&!selected&&!$('library').hidden&&document.visibilityState==='visible')loadProperties().catch(e=>status(e.message,true));
+}
+document.addEventListener('visibilitychange',refreshFieldList);
+window.addEventListener('focus',refreshFieldList);
 async function openProperty(p){
   if(queue.some(x=>x.state!=='Uploaded')&&!confirm('Leave the selected photos? Photos not uploaded will need to be selected again.'))return;
   selectedPhotos.clear();selected=p;
@@ -587,7 +592,15 @@ async function sessionChanged(session){
 }
 let requestedAddressHandled=false;
 async function openRequestedAddress(){
- const url=new URL(location.href),raw=url.searchParams.get('address');if(requestedAddressHandled||!raw)return;
+ const url=new URL(location.href),raw=url.searchParams.get('address');const setId=url.searchParams.get('set');
+ if(requestedAddressHandled)return;
+ if(setId){
+   requestedAddressHandled=true;
+   const record=properties.find(p=>p.id===setId);
+   if(record){listMode=propertyList(record);await openProperty(record);}else status('This photo set is unavailable.',true);
+   return;
+ }
+ if(!raw)return;
  const address=raw.trim().replace(/\s+/g,' ');if(!address||address.length>500){status('Enter a valid property address of 500 characters or fewer.',true);return;}
  await run(async()=>{
   const version=epoch;let property=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());
