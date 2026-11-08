@@ -91,13 +91,23 @@ async function customerDirectory() {
     return json({matches,customers});
   } catch {return json({matches,customers:[],unavailable:true});}
 }
-async function saveCustomerMatch(input: {client:string; customerId:string; add?:boolean; previous?:string}) {
+async function saveCustomerMatch(input: {client:string; customerId?:string; add?:boolean; autoMatch?:boolean; previous?:string}) {
   const client = typeof input.client==="string" ? input.client.trim() : "";
-  if (!client || client.length>160 || typeof input.customerId!=="string" || !/^(\d+)?$/.test(input.customerId)) return json({error:"Invalid client or customer."},400);
+  const autoMatch=input.add===true && input.autoMatch===true;
+  let customerId=autoMatch ? "" : input.customerId;
+  if (!client || client.length>160 || typeof customerId!=="string" || !/^(\d+)?$/.test(customerId)) return json({error:"Invalid client or customer."},400);
   let name="";
-  if(input.customerId) {
-    const result=await api(await customerAccessToken(),"/customer/"+input.customerId);
-    if(result.Customer?.Id!==input.customerId || !result.Customer.Active) return json({error:"Choose an active customer."},409);
+  if(autoMatch) {
+    try {
+      customerId=await lookup(await customerAccessToken(),"Customer",client);
+      name=client;
+    } catch (err) {
+      if(!(err instanceof Error) || err.message!=="check_Customer")
+        return json({error:"QuickBooks could not check the name. Please try again."},503);
+    }
+  } else if(customerId) {
+    const result=await api(await customerAccessToken(),"/customer/"+customerId);
+    if(result.Customer?.Id!==customerId || !result.Customer.Active) return json({error:"Choose an active customer."},409);
     name=result.Customer.FullyQualifiedName;
   }
   return await sql.begin(async tx=>{
@@ -110,10 +120,10 @@ async function saveCustomerMatch(input: {client:string; customerId:string; add?:
     if(!input.add && (prior?.customer_id ?? prior?.customer_name ?? "")!==input.previous) return json({error:"The match changed. Reopen Manage clients to refresh."},409);
     if(input.add) await tx`select public.add_order_client(${key})`;
     // Restoring an unlisted client without a selection preserves its prior match.
-    if(!input.add || input.customerId || !prior) {
-      if(input.customerId) {
+    if(!input.add || !prior || (!autoMatch && customerId)) {
+      if(customerId) {
         await tx`insert into private.qbo_customer_matches(client,customer_name,customer_id,confirmed)
-          values(${key},${name},${input.customerId},true) on conflict(client) do update set
+          values(${key},${name},${customerId},true) on conflict(client) do update set
           customer_name=excluded.customer_name,customer_id=excluded.customer_id,confirmed=true`;
         await tx`update private.qbo_invoice_requests r set next_attempt=now() from public.field_orders f
           where f.id=r.order_id and f.client=${key} and r.payload is null and r.invoice_id is null and r.error_code='review_order_mapping'`;
