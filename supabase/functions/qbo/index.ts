@@ -57,10 +57,10 @@ async function newInvoiceDefaults(token: string, customerId: string) {
 // AUTO_GENERATE literally on an update. Keep corrections on the original transaction.
 async function ensureInvoiceNumber(token: string, created: {Id:string;DocNumber?:string}) {
   const numbered=(number?:string)=>Boolean(number?.trim() && number!=="AUTO_GENERATE");
-  if (numbered(created.DocNumber)) return;
+  if (numbered(created.DocNumber)) return created.DocNumber;
   const current=(await api(token,"/invoice/"+encodeURIComponent(created.Id))).Invoice;
   if (current?.Id!==created.Id) throw new Error("invoice_unconfirmed");
-  if (numbered(current.DocNumber)) return;
+  if (numbered(current.DocNumber)) return current.DocNumber;
   const query=async(q:string)=>(await api(token,"/query?query="+encodeURIComponent(q))).QueryResponse?.Invoice ?? [];
   const recent=await query("select * from Invoice order by MetaData.CreateTime desc maxresults 100");
   const last=recent.find((i:{DocNumber?:string})=>/^\d+$/.test(i.DocNumber??""));
@@ -72,7 +72,7 @@ async function ensureInvoiceNumber(token: string, created: {Id:string;DocNumber?
     const update=await api(token,"/invoice?requestid=pt-num-"+current.Id+"-"+current.SyncToken+"-"+number,
       {Id:current.Id,SyncToken:current.SyncToken,sparse:true,DocNumber:number});
     if(update.Invoice?.DocNumber!==number) throw new Error("invoice_unconfirmed");
-    return;
+    return number;
   }
   throw new Error("invoice_unconfirmed");
 }
@@ -214,11 +214,11 @@ async function worker() {
     const revision=prepared.payload.Id ? "-"+prepared.payload.SyncToken : "";
     const reply = await api(prepared.token, "/invoice?requestid=" + prepared.id+revision, prepared.payload);
     if (!reply.Invoice?.Id) throw new Error("invoice_unconfirmed");
-    if (!prepared.payload.Id) await ensureInvoiceNumber(prepared.token,reply.Invoice);
+    const invoiceNumber=prepared.payload.Id ? reply.Invoice.DocNumber : await ensureInvoiceNumber(prepared.token,reply.Invoice);
     await sql.begin(async tx=>{
       if (prepared.month) await tx`insert into private.qbo_monthly_invoices(customer_id,month,invoice_id)
         values(${prepared.payload.CustomerRef.value},${prepared.month+"-01"}::date,${reply.Invoice.Id}) on conflict (customer_id,month) do nothing`;
-      await tx`update private.qbo_invoice_requests set invoice_id=${reply.Invoice.Id},error_code=null where order_id=${prepared.id}`;
+      await tx`update private.qbo_invoice_requests set invoice_id=${reply.Invoice.Id},invoice_number=${invoiceNumber || null},error_code=null where order_id=${prepared.id}`;
     });
   } catch (err) {
     if (err instanceof Error && err.message==="stale_invoice" && prepared.payload.Id) {
