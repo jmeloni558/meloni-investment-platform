@@ -55,14 +55,21 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-needs-appointment .od-schedule{grid-column:1}
 #ptOrders .od-appointment-warning{grid-column:2;grid-row:2;align-self:baseline;color:#af2029;font-weight:700;text-align:right;font-size:.85rem}
 #ptOrders article .od-row-photos{flex:0 0 auto;min-height:44px;padding:6px 12px;border:1px solid #145d54;color:#145d54}
-#od-contacts>fieldset{margin:12px 0;padding:10px 12px;border:1px solid #bdcecb;border-radius:8px;min-width:0}
+#od-contacts>fieldset{margin:6px 0;padding:4px 9px 7px;border:1px solid #bdcecb;border-radius:8px;min-width:0}
 #ptOrders .od-contact-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
 #ptOrders .od-contact-row>div{min-width:0}
-#ptOrders .od-contact-row>div>label{margin-bottom:3px}
+#ptOrders #od-contacts label{margin:3px 0}
+#ptOrders #od-contacts .od-contact-row>div>label{margin:3px 0 1px}
+#ptOrders #od-contacts input:not([type=checkbox]){padding:5px 7px;margin:1px 0 2px;box-sizing:border-box}
+#ptOrders #od-contacts .od-attempt-slot{display:grid;justify-items:center;align-content:start}
+#ptOrders #od-contacts .od-attempt-slot button{border:0;padding:1px 2px;min-height:0;line-height:1.3;font-size:.76rem}
+#ptOrders #od-contacts .od-contact-attempts label{margin:0}
+#ptOrders #od-contacts .od-contact-attempts input{margin:2px 0}
+#ptOrders #od-details>form>label{margin:6px 0}
 #ptOrders .od-contact-row>div>input{box-sizing:border-box;width:100%;padding:8px;border:1px solid #98afad;border-radius:6px;font:inherit}
 #ptOrders .od-contact-row>div>a,#ptOrders .od-contact-row>div>button:first-of-type{overflow-wrap:anywhere}
 #ptOrders .od-contact-row>div>button{font-size:.9rem;padding:5px 6px}
-#ptOrders .od-contact-attempts{display:grid;grid-template-columns:repeat(3,1.8rem);border:0;padding:0;margin:0}
+#ptOrders .od-contact-attempts{display:grid;grid-template-columns:repeat(3,2.15rem);border:0;padding:0;margin:0}
 #ptOrders .od-contact-attempts legend{font-size:.8rem}
 #ptOrders .od-contact-attempts label{display:grid;justify-items:center;margin:0;font-size:.8rem;cursor:pointer}
 #ptOrders .od-contact-attempts input{accent-color:#145d54;margin:3px 0;width:18px;height:18px}
