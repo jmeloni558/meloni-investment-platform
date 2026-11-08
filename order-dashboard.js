@@ -66,6 +66,12 @@
       if(result.error)throw result.error;
       if(current!==request||version!==generation)return;
       namedLists=lists.data.map(list=>list.name);
+      if(selectedList && !namedLists.includes(selectedList)){
+        selectedList='';page=0;await load();return;
+      }
+      const managing=currentList==='open' && Boolean(selectedList) && !term;
+      field('rename-list').hidden=!managing;
+      field('delete-list').hidden=!managing;
       field('main-open').hidden=namedLists.length>0;
       field('picker').hidden=namedLists.length===0;
       const picker=field('open');
@@ -168,7 +174,7 @@
     field('photos').checked=Boolean(kind) && kind!=='PDCR' && kind!=='Desktop BPO' && !nvmsInterior;
   }
   function updateRequirements(){
-    const task=Boolean(field('destination').value);
+    const task=Boolean(field('destination').value || editing?.former_list_task);
     field('address-label').textContent=task?'Task or property address':'Property address';
     for(const id of ['kind','client','due'])field(id).required=!task && !editing?.todo_title;
   }
@@ -241,7 +247,7 @@
     if(panel)return;
     panel=el('section');panel.id='ptOrders';panel.innerHTML=`
       <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"><span id="od-total"></span><span id="od-today"></span><span id="od-overdue"></span></p></div></header>
-      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><button type="button" id="od-main-open">Open orders</button><span class="od-open-picker" id="od-picker" hidden><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Outlook calendar</a></nav>
+      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><button type="button" id="od-main-open">Open orders</button><span class="od-open-picker" id="od-picker" hidden><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-rename-list" hidden>Rename list</button><button id="od-delete-list" hidden>Delete list</button><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Outlook calendar</a></nav>
       <form id="od-list-form" hidden><label>List name<input id="od-name" maxlength="80" required></label>
       <button id="od-create-list">Create list</button> <button type="button" id="od-cancel-list">Cancel</button></form>
       <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
@@ -286,6 +292,7 @@
       if(!canLeave())return false;
       closeDetails();
       field('search').value='';page=0;clearTimeout(searchTimer);
+      field('list-form').hidden=true;
       currentList=status;selectedList=name;
       load();
       return true;
@@ -298,11 +305,31 @@
       }
     };
     for(const status of ['hold','completed'])field(status).onclick=()=>switchList(status);
-    field('new-list').onclick=()=>{
+    let renameFrom=null;
+    function openListForm(originalName){
       if(!canLeave())return;
       closeDetails();
+      renameFrom=originalName;
+      field('create-list').textContent=originalName?'Save name':'Create list';
+      field('name').value=originalName || '';
       field('list-form').hidden=false;
       field('name').focus();
+      field('name').select();
+    }
+    field('new-list').onclick=()=>openListForm(null);
+    field('rename-list').onclick=()=>openListForm(selectedList);
+    field('delete-list').onclick=async()=>{
+      const name=selectedList,button=field('delete-list'),version=generation;
+      if(!name || button.disabled || !canLeave())return;
+      if(!window.confirm('Delete “'+name+'”? Its open tasks will move to Open orders. Held and completed tasks will keep their status.'))return;
+      closeDetails();
+      button.disabled=true;
+      try{
+        const {error}=await db.from('order_lists').delete().eq('name',name);
+        if(error)throw error;
+        if(version===generation)switchList('open');
+      }catch(e){if(version===generation)field('status').textContent=e.message;}
+      finally{button.disabled=false;}
     };
     field('cancel-list').onclick=()=>{field('list-form').hidden=true;};
     field('list-form').onsubmit=async event=>{
@@ -314,7 +341,10 @@
       }
       button.disabled=true;
       try{
-        const {error}=await db.from('order_lists').insert({name});
+        const table=db.from('order_lists');
+        const {error}=renameFrom
+          ? await table.update({name}).eq('name',renameFrom).select('name').single()
+          : await table.insert({name});
         if(error)throw Error(error.code==='23505'?'A list with that name already exists.':error.message);
         if(version!==generation)return;
         field('list-form').reset();field('list-form').hidden=true;
