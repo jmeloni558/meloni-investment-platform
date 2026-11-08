@@ -26,3 +26,11 @@ header{align-items:center}#updateApp{background:transparent;color:white;border-c
 .storage-summary meter { display: block; width: 100%; margin: 4px 0; }
 .storage-summary small { color: #495e60; }
 .address-photo-count { color: #80ff84; background: #164830; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+
+#fieldViews{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+#fieldViews button[aria-pressed=false]{background:white;color:#145d54}
+body.pt-orders-open #fieldPhotoPane{display:none}
+#fieldDashboardHost #ptOrders{margin:0}
+#fieldDashboardHost #ptOrders header{background:none;color:inherit;padding:0}
+#fieldDashboardHost #ptOrders input[type=checkbox]{display:inline-block;width:20px;height:20px;padding:0;vertical-align:middle}
+#fieldDashboardHost #ptOrders article input[type=checkbox]{margin:0 5px}
