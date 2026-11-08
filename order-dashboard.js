@@ -37,11 +37,17 @@
   async function load(){
     const current=++request, version=generation;
     try{
-      const [rows,openRows]=await Promise.all([fetchOrders(currentList,'*'),currentList==='open'?null:fetchOrders('open','due')]);
+      const [rows,openRows,held]=await Promise.all([
+        fetchOrders(currentList,'*'),
+        currentList==='open'?null:fetchOrders('open','due'),
+        currentList==='hold'?null:db.from('field_orders').select('id',{count:'exact',head:true}).eq('complete',false).eq('on_hold',true)
+      ]);
+      if(held?.error)throw held.error;
       const result=await db.from('order_clients').select('name').order('name');
       if(result.error)throw result.error;
       if(current!==request||version!==generation)return;
       openDates=(openRows || rows).map(order=>order.due);
+      field('hold').textContent='On Hold ('+(held?.count ?? rows.length)+')';
       displayCounts();
       orders=rows;clients=result.data.map(c=>c.name);
       if(field('details').hidden) populateClients();
