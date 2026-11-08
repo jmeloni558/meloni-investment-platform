@@ -46,6 +46,36 @@ async function lookup(token: string, entity: "Customer" | "Item", name: string) 
   if (matches.length !== 1) throw new Error("check_" + entity);
   return matches[0].Id;
 }
+async function newInvoiceDefaults(token: string, customerId: string) {
+  const {Customer}=await api(token,"/customer/"+encodeURIComponent(customerId));
+  if (Customer?.Id!==customerId) throw new Error("check_Customer");
+  const terms=Customer.SalesTermRef?.value ??
+    (await api(token,"/preferences")).Preferences?.SalesFormsPrefs?.DefaultTerms?.value;
+  return {DocNumber:"AUTO_GENERATE",...(terms ? {SalesTermRef:{value:terms}} : {})};
+}
+// QuickBooks may leave a number blank with custom numbering enabled, or echo
+// AUTO_GENERATE literally on an update. Keep corrections on the original transaction.
+async function ensureInvoiceNumber(token: string, created: {Id:string;DocNumber?:string}) {
+  const numbered=(number?:string)=>Boolean(number?.trim() && number!=="AUTO_GENERATE");
+  if (numbered(created.DocNumber)) return;
+  const current=(await api(token,"/invoice/"+encodeURIComponent(created.Id))).Invoice;
+  if (current?.Id!==created.Id) throw new Error("invoice_unconfirmed");
+  if (numbered(current.DocNumber)) return;
+  const query=async(q:string)=>(await api(token,"/query?query="+encodeURIComponent(q))).QueryResponse?.Invoice ?? [];
+  const recent=await query("select * from Invoice order by MetaData.CreateTime desc maxresults 100");
+  const last=recent.find((i:{DocNumber?:string})=>/^\d+$/.test(i.DocNumber??""));
+  if (!last) throw new Error("invoice_unconfirmed");
+  let next=BigInt(last.DocNumber)+1n;
+  for(let i=0;i<100;i++,next++) {
+    const number=String(next).padStart(last.DocNumber.length,"0");
+    if ((await query("select * from Invoice where DocNumber = '"+number+"' maxresults 1")).length) continue;
+    const update=await api(token,"/invoice?requestid=pt-num-"+current.Id+"-"+current.SyncToken+"-"+number,
+      {Id:current.Id,SyncToken:current.SyncToken,sparse:true,DocNumber:number});
+    if(update.Invoice?.DocNumber!==number) throw new Error("invoice_unconfirmed");
+    return;
+  }
+  throw new Error("invoice_unconfirmed");
+}
 async function targetInvoice(token: string, customer: string, number: string | null, month: string | null, pinned?: string) {
   if (!/^\d+$/.test(customer)) throw new Error("check_Customer");
   if (pinned) {
@@ -171,6 +201,7 @@ async function worker() {
           where customer_id=${customer} and month=${month}::date` : [];
         const target=await targetInvoice(token.access_token,customer,job.invoice_target,job.monthly_date?month:null,pin?.invoice_id);
         payload=invoiceBody(customer,lines,target,job.monthly_date);
+        if (!target) Object.assign(payload,await newInvoiceDefaults(token.access_token,customer));
       }
       await tx`update private.qbo_invoice_requests set payload=${tx.json(payload)},next_attempt=now()+interval '10 minutes' where order_id=${job.order_id}`;
       return { token:token.access_token, id:job.order_id, payload, lineCount:1+job.invoice_extra_lines.length, month:job.monthly_date?.slice(0,7) };
@@ -183,6 +214,7 @@ async function worker() {
     const revision=prepared.payload.Id ? "-"+prepared.payload.SyncToken : "";
     const reply = await api(prepared.token, "/invoice?requestid=" + prepared.id+revision, prepared.payload);
     if (!reply.Invoice?.Id) throw new Error("invoice_unconfirmed");
+    if (!prepared.payload.Id) await ensureInvoiceNumber(prepared.token,reply.Invoice);
     await sql.begin(async tx=>{
       if (prepared.month) await tx`insert into private.qbo_monthly_invoices(customer_id,month,invoice_id)
         values(${prepared.payload.CustomerRef.value},${prepared.month+"-01"}::date,${reply.Invoice.Id}) on conflict (customer_id,month) do nothing`;
