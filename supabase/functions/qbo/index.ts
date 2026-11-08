@@ -106,6 +106,44 @@ async function customerAccessToken() {
     return token.access_token;
   });
 }
+async function existingOrderInvoice(input:{action:string;orderId:string;client:string;invoiceId?:string;start?:number}) {
+  const saving=input.action==="linkOrderInvoice";
+  const start=input.start ?? 1;
+  if(!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(input.orderId) ||
+     !Number.isSafeInteger(start) || start<1 || (saving && !/^\d+$/.test(input.invoiceId ?? ""))) return json({},400);
+  const [order]=await sql`select f.client,m.customer_id,m.customer_name from public.field_orders f
+    left join private.qbo_customer_matches m on m.client=f.client and m.confirmed where f.id=${input.orderId}`;
+  if(!order || order.client!==input.client) return json({error:"The client changed. Reopen the saved order."},409);
+  if(!order.customer_name) return json({error:"Link this client to a QuickBooks customer in Manage clients first."},409);
+  const token=await customerAccessToken();
+  const customer=order.customer_id ?? await lookup(token,"Customer",order.customer_name);
+  if(!/^\d+$/.test(customer)) throw new Error("check_Customer");
+  if(!saving) {
+    const query="select * from Invoice where CustomerRef = '"+customer+"' order by TxnDate desc startposition "+start+" maxresults 51";
+    const rows=(await api(token,"/query?query="+encodeURIComponent(query))).QueryResponse?.Invoice ?? [];
+    return json({customer:order.customer_name,next:rows.length>50 ? start+50 : null,
+      invoices:rows.slice(0,50).filter((i:{CustomerRef?:{value:string}})=>i.CustomerRef?.value===customer)
+        .map((i:{Id:string;DocNumber?:string;TxnDate:string;TotalAmt:number;Line?:{Description?:string}[]})=>({
+          id:i.Id,number:i.DocNumber,date:i.TxnDate,total:i.TotalAmt,description:i.Line?.find(l=>l.Description)?.Description?.slice(0,180)
+        }))});
+  }
+  const invoice=(await api(token,"/invoice/"+input.invoiceId)).Invoice;
+  if(invoice?.Id!==input.invoiceId || invoice.CustomerRef?.value!==customer) return json({error:"Choose an invoice for this order's QuickBooks customer."},409);
+  return await sql.begin(async tx=>{
+    await tx`select pg_advisory_xact_lock(93418751)`;
+    const [current]=await tx`select f.client,m.customer_name,m.customer_id from public.field_orders f
+      left join private.qbo_customer_matches m on m.client=f.client and m.confirmed where f.id=${input.orderId} for update of f`;
+    if(current?.client!==order.client || current.customer_name!==order.customer_name || current.customer_id!==order.customer_id)
+      return json({error:"The client match changed. Reopen this order."},409);
+    const [link]=await tx`insert into private.qbo_invoice_requests as r(order_id,invoice_id,invoice_number)
+      values(${input.orderId},${invoice.Id},${invoice.DocNumber || null})
+      on conflict(order_id) do update set invoice_id=excluded.invoice_id,invoice_number=excluded.invoice_number,error_code=null
+      where r.invoice_id=excluded.invoice_id or (r.invoice_id is null and r.payload is null and
+        not exists(select from private.qbo_connection c where r.created_at>=c.activated_at))
+      returning invoice_id`;
+    return link ? json({ok:true}) : json({error:"This order already has an invoice linked or in progress. Reopen it to see its status."},409);
+  });
+}
 async function customerDirectory() {
   const matches = await sql`select client,customer_name,customer_id from private.qbo_customer_matches where confirmed`;
   const customers: {id:string;name:string}[] = [];
@@ -267,9 +305,10 @@ Deno.serve(async req => {
     const identity=await user.json();
     const input=await req.json();
     const {action}=input;
-    if(action==="customerDirectory" || action==="saveCustomerMatch") {
+    if(["customerDirectory","saveCustomerMatch","listOrderInvoices","linkOrderInvoice"].includes(action)) {
       const [member]=await sql`select 1 from public.order_members where user_id=${identity.id}::uuid`;
       if(!member) return json({},403);
+      if(action==="listOrderInvoices" || action==="linkOrderInvoice") return await existingOrderInvoice(input);
       return action==="customerDirectory" ? await customerDirectory() : await saveCustomerMatch(input);
     }
     if(identity.email?.toLowerCase() !== "jamie@melonirealty.com") return json({},403);

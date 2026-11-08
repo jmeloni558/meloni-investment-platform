@@ -151,6 +151,57 @@
   function canLeave(){
     return !field('save').disabled && (field('details').hidden || !dirty || window.confirm('Discard your unsaved order changes?'));
   }
+  async function qbo(action,values={}){
+    const {data,error}=await db.functions.invoke('qbo',{body:{action,...values}});
+    if(error){
+      const details=await error.context?.json?.().catch(()=>null);
+      throw Error(details?.error || 'QuickBooks could not complete the request. Please try again.');
+    }
+    return data;
+  }
+  function existingInvoicePicker(box,orderId,version){
+    const client=editing?.client;
+    if(!client)return;
+    const button=el('button','Link existing invoice');
+    button.type='button';box.append(' ',button);
+    button.onclick=async()=>{
+      const status=el('span','Loading invoices...');
+      const select=el('select');select.setAttribute('aria-label','Existing QuickBooks invoice');
+      select.add(new Option('Choose invoice',''));
+      select.oninput=event=>event.stopPropagation();
+      const more=el('button','Load older invoices'),save=el('button','Link invoice');
+      more.type=save.type='button';more.hidden=true;save.disabled=true;
+      const controls=el('div');controls.append(select,more,save);
+      controls.hidden=true;button.replaceWith(status,controls);
+      let next=1;
+      async function list(){
+        more.disabled=true;
+        try{
+          const page=await qbo('listOrderInvoices',{orderId,client,start:next});
+          if(version!==invoiceVersion)return;
+          for(const i of page.invoices){
+            const label=[i.number?'#'+i.number:'Invoice ID '+i.id,i.date,'$'+Number(i.total).toFixed(2),i.description].filter(Boolean).join(' | ');
+            select.add(new Option(label,i.id));
+          }
+          next=page.next;more.hidden=!next;controls.hidden=select.options.length===1 && !next;
+          status.textContent=controls.hidden?'No QuickBooks invoices found for '+page.customer+'.':'Invoices for '+page.customer;
+        }catch(err){status.textContent=err.message;more.hidden=false;controls.hidden=false;more.textContent='Retry invoice list';}
+        finally{more.disabled=false;}
+      }
+      more.onclick=list;
+      select.onchange=()=>{save.disabled=!select.value;};
+      save.onclick=async()=>{
+        if(!select.value || save.disabled)return;
+        if(field('client').value!==client){status.textContent='Save the client change and reopen the order first.';return;}
+        select.disabled=save.disabled=more.disabled=true;
+        try{
+          await qbo('linkOrderInvoice',{orderId,client,invoiceId:select.value});
+          if(version===invoiceVersion)showOrderInvoice(orderId);
+        }catch(err){status.textContent=err.message;select.disabled=save.disabled=more.disabled=false;}
+      };
+      await list();
+    };
+  }
   let invoiceTimer,invoiceVersion=0;
   function stopInvoiceWatch(){
     clearTimeout(invoiceTimer);
@@ -172,6 +223,7 @@
         link.target='_blank';link.rel='noopener';box.append(link);
       }else{
         box.append(error?'Unable to check invoice status':data?.pending?'Pending':'No linked invoice');
+        if(!error && !data?.pending)existingInvoicePicker(box,orderId,version);
         if(error || data?.pending)invoiceTimer=setTimeout(refresh,error?30000:10000);
       }
     }
@@ -315,7 +367,7 @@
       <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
       <p id="od-status" role="status"></p><div class="od-columns"><div><div id="od-list"></div><button id="od-prev" hidden>Previous page</button> <button id="od-next" hidden>Next page</button></div>
       <aside id="od-details" aria-labelledby="od-title" hidden><form id="od-form"><header><h2 id="od-title" tabindex="-1"></h2><button type="button" id="od-cancel">Close</button></header>
-      <p id="od-invoice" role="status" hidden></p><p id="od-source" hidden></p><label>List<select id="od-destination"></select></label><label><span id="od-address-label">Property address</span><input id="od-address" maxlength="500" required></label>
+      <div id="od-invoice" role="status" hidden></div><p id="od-source" hidden></p><label>List<select id="od-destination"></select></label><label><span id="od-address-label">Property address</span><input id="od-address" maxlength="500" required></label>
       <label>Order type<select id="od-kind" required></select></label>
       <label>Client<select id="od-client" required></select></label>
       <label>Order fee ($)<input type="number" id="od-fee" inputmode="decimal" min="0" max="9999999999.99" step="0.01"></label>
@@ -414,14 +466,7 @@
     const clientChoice=field('client-choice'),removeClient=field('remove-client');
     let linked=new Map(),customers=[],matchesLoaded=false,matchBusy=false;
     const matchChoice=field('match-choice');
-    async function qbo(action,values={}){
-      const {data,error}=await db.functions.invoke('qbo',{body:{action,...values}});
-      if(error){
-        const details=await error.context?.json?.().catch(()=>null);
-        throw Error(details?.error || 'QuickBooks could not complete the request. Reopen Manage clients to retry.');
-      }
-      return data;
-    }
+
     function showMatch(){
       const match=linked.get(clientChoice.value);
       const select=customers.find(c=>match?.customer_id?c.id===match.customer_id:c.name===match?.customer_name);
