@@ -66,6 +66,8 @@
       if(result.error)throw result.error;
       if(current!==request||version!==generation)return;
       namedLists=lists.data.map(list=>list.name);
+      field('main-open').hidden=namedLists.length>0;
+      field('picker').hidden=namedLists.length===0;
       const picker=field('open');
       const placeholder=new Option('Open orders','');
       placeholder.disabled=true;placeholder.hidden=true;
@@ -85,6 +87,7 @@
   }
   function render(){
     field('list').replaceChildren();
+    field('main-open').setAttribute('aria-pressed',String(currentList==='open' && !searchText()));
     field('open').dataset.active=String(currentList==='open' && !searchText());
     for(const list of ['hold','completed']){
       field(list).setAttribute('aria-pressed',String(!searchText() && list===currentList));
@@ -238,7 +241,7 @@
     if(panel)return;
     panel=el('section');panel.id='ptOrders';panel.innerHTML=`
       <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"><span id="od-total"></span><span id="od-today"></span><span id="od-overdue"></span></p></div></header>
-      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><span class="od-open-picker"><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Outlook calendar</a></nav>
+      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><button type="button" id="od-main-open">Open orders</button><span class="od-open-picker" id="od-picker" hidden><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Outlook calendar</a></nav>
       <form id="od-list-form" hidden><label>List name<input id="od-name" maxlength="80" required></label>
       <button id="od-create-list">Create list</button> <button type="button" id="od-cancel-list">Cancel</button></form>
       <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
@@ -288,6 +291,7 @@
       return true;
     }
     field('destination').onchange=updateRequirements;
+    field('main-open').onclick=()=>switchList('open');
     field('open').onchange=()=>{
       if(!switchList('open',field('open').value)){
         field('open').selectedIndex=currentList==='open' && !searchText()?namedLists.indexOf(selectedList)+2:0;
