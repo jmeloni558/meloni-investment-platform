@@ -54,7 +54,7 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-needs-appointment .od-summary{grid-column:1 / -1}
 #ptOrders .od-needs-appointment .od-schedule{grid-column:1}
 #ptOrders .od-appointment-warning{grid-column:2;grid-row:2;align-self:baseline;color:#af2029;font-weight:700;text-align:right;font-size:.85rem}
-#ptOrders article .od-row-photos{flex:0 0 auto;min-height:44px;padding:6px 12px;border:1px solid #145d54;color:#145d54}
+
 #od-contacts>fieldset{margin:6px 0;padding:4px 9px 7px;border:1px solid #bdcecb;border-radius:8px;min-width:0}
 #ptOrders .od-contact-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
 #ptOrders .od-contact-row>div{min-width:0}
@@ -81,4 +81,6 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-field-order:has(.od-row-photos) button[data-order]{grid-column:2}
 #ptOrders .od-field-order .od-schedule{grid-column:2 / -1;align-items:center;gap:2px 8px;font-size:.8rem;color:#53696c}
 #ptOrders .od-field-order .od-schedule time:not(:first-child){color:#7035a1;font-weight:700}
-#ptOrders .od-directions{display:inline-flex;align-items:center;min-height:30px;padding:0 8px;border:1px solid #9cbcb4;border-radius:6px;color:#145d54;text-decoration:none;font-weight:650}
+#ptOrders article :is(.od-directions,.od-row-photos){box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;flex:none;width:6rem;height:44px;padding:0;border:0;border-radius:8px;color:white;font-size:.875rem;font-weight:650;line-height:1.2;text-decoration:none}
+#ptOrders article .od-directions{background:#185c96}
+#ptOrders article .od-row-photos{background:#17634d}
