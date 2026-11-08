@@ -6,6 +6,7 @@
   const el=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text||''});
   const field=id=>panel.querySelector('#od-'+id);
   const dateLabel=value=>new Date(value+'T12:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  const appointmentLabel=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
   function hide(){document.body.classList.remove('pt-orders-open');menu?.removeAttribute('aria-current');}
   function open(){
     if(!membership||!panel)return;
@@ -50,7 +51,15 @@
       const address=el('strong',o.address);
       address.title=o.address;
       summary.append(address,el('small',o.kind+' · '+o.client));
-      title.append(summary,due);
+      const schedule=el('span');
+      schedule.className='od-schedule';
+      schedule.append(due);
+      if(o.appointment){
+        const appointment=el('time','Appt '+appointmentLabel.format(new Date(o.appointment)));
+        appointment.dateTime=o.appointment;
+        schedule.append(appointment);
+      }
+      title.append(summary,schedule);
       row.append(check,title);
       field('list').append(row);
     }
