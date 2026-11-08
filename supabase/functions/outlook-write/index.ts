@@ -21,22 +21,47 @@ async function microsoftToken(tenant: string, client: string, refresh: string) {
   return token;
 }
 
+function checkGraph(response: Response) {
+  if (!response.ok) throw new RemoteError("calendar_"+response.status,Number(response.headers.get("Retry-After"))||0);
+}
+
+async function removeLinkedVisit(calendarId: string, eventId: string | null, createKey: string, accessToken: string) {
+  const calendar=calendarBase+encodeURIComponent(calendarId);
+  const headers={Authorization:"Bearer "+accessToken,Prefer:'IdType="ImmutableId"'};
+  const info=await fetch(calendar+"?$select=isDefaultCalendar",{headers,signal:timeout()});
+  checkGraph(info);
+  if ((await info.json()).isDefaultCalendar!==false) throw new RemoteError("default_calendar_protected");
+
+  // Look only inside the configured calendar. This also recovers a successful POST
+  // whose response was lost, and leaves an event moved to another calendar alone.
+  let next=calendar+"/events?$select=id,transactionId&$top=250";
+  while (next) {
+    if (new URL(next).origin!=="https://graph.microsoft.com") throw new RemoteError("invalid_graph_page");
+    const page=await fetch(next,{headers,signal:timeout()});
+    checkGraph(page);
+    const result=await page.json();
+    const match=result.value.find((item:{id:string;transactionId?:string})=>
+      item.transactionId===createKey && (!eventId || item.id===eventId));
+    if (match) {
+      const response=await fetch(calendar+"/events/"+encodeURIComponent(match.id),{method:"DELETE",headers,signal:timeout()});
+      if (response.status!==404) checkGraph(response);
+      return;
+    }
+    next=result["@odata.nextLink"];
+  }
+}
+
 async function dispatch() {
   return await sql.begin(async tx => {
     // Only one writer refreshes Microsoft tokens or creates events at a time.
     const [lock]=await tx`select pg_try_advisory_xact_lock(942113807) as acquired`;
     if (!lock.acquired) return false;
-    const [job]=await tx`select j.order_id,j.version,j.event_id,j.failures,
+    const [job]=await tx`select j.order_id,j.create_key,j.version,j.event_id,j.failures,
       f.address,f.client,f.kind,f.appointment,f.appointment_minutes
       from private.outlook_jobs j join public.field_orders f on f.id=j.order_id
       where j.done<j.version and j.retry_at<=clock_timestamp()
       order by j.retry_at,j.order_id limit 1`;
     if (!job) return false;
-    // Clearing the appointment preserves the prior Outlook event and its identity.
-    if (!job.appointment) {
-      await tx`update private.outlook_jobs set done=${job.version} where order_id=${job.order_id}`;
-      return true;
-    }
     try {
       const [config]=await tx`select c.*,v.decrypted_secret as refresh from private.outlook_calendar_connection c
         join vault.decrypted_secrets v on c.refresh_secret=v.id`;
@@ -45,6 +70,12 @@ async function dispatch() {
       if (token.refresh_token && token.refresh_token!==config.refresh)
         await tx`select vault.update_secret(${config.refresh_secret}::uuid,${token.refresh_token})`;
 
+      if (!job.appointment) {
+        await removeLinkedVisit(config.calendar_id,job.event_id,job.create_key,token.access_token);
+        await tx`update private.outlook_jobs set done=${job.version},event_id=null,create_key=gen_random_uuid(),
+          failures=0,last_error=null where order_id=${job.order_id}`;
+        return true;
+      }
       const start=new Date(job.appointment);
       const end=new Date(start.getTime()+job.appointment_minutes*60000);
       const time=(date:Date)=>({dateTime:date.toISOString().slice(0,-1),timeZone:"UTC"});
@@ -56,7 +87,7 @@ async function dispatch() {
       const response=await fetch(updating?events+"/"+encodeURIComponent(job.event_id):events,{
         method:updating?"PATCH":"POST",signal:timeout(),
         headers:{Authorization:"Bearer "+token.access_token,"Content-Type":"application/json",Prefer:'IdType="ImmutableId"'},
-        body:JSON.stringify(updating?event:{...event,transactionId:job.order_id})
+        body:JSON.stringify(updating?event:{...event,transactionId:job.create_key})
       });
       if (!response.ok) throw new RemoteError("calendar_"+response.status,Number(response.headers.get("Retry-After"))||0);
       const id=updating?job.event_id:(await response.json()).id;
