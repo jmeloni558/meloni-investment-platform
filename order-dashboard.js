@@ -4,7 +4,7 @@
   const kindLabels = new Map([['Int BPO','Interior BPO'],['Ext BPO','Exterior BPO'],['PDCR','Data Collection Report']]);
   const kindLabel = kind => kindLabels.get(kind) ?? kind;
   const fieldApp=window.PropertyThesisFieldApp;
-  const autoLand = !fieldApp && ( (!location.search && !location.hash) || new URLSearchParams(location.search).get('orders')==='1');
+  const autoLand = fieldApp ? fieldApp.startOnDashboard : ((!location.search && !location.hash) || new URLSearchParams(location.search).get('orders')==='1');
   let db, account, membership, panel, menu, generation=0, request=0, landing=autoLand, currentList='open', orders=[], clients=[];
   let selectedList='', namedLists=[];
   const el=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text||''});
@@ -598,7 +598,7 @@
     clearTimeout(midnightTimer);clearTimeout(searchTimer);page=0;openDates=[];
     const old=account;account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';selectedList='';namedLists=[];
     if(fieldApp)document.getElementById('fieldViews').hidden=true;
-    if(!id){if(old)landing=!fieldApp;return;}
+    if(!id){if(old)landing=fieldApp ? fieldApp.startOnDashboard : true;return;}
     const {data,error}=await db.from('order_members').select('photo_owner').eq('user_id',id).maybeSingle();
     if(version!==generation||error||!data)return;membership=data;mount();
   }
