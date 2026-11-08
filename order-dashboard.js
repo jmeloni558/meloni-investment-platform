@@ -278,7 +278,7 @@
       <form id="od-add-client-form"><label>New client name<input id="od-new-client" maxlength="160" required></label>
       <label>QuickBooks customer for new client<select id="od-new-customer"><option value="">Unmatched</option></select></label>
       <button id="od-add-client">Add client</button></form>
-      <label>Existing client and current match<select id="od-client-choice"></select></label>
+      <label>Existing client<select id="od-client-choice"></select></label>
       <label>Linked QuickBooks customer<select id="od-match-choice" disabled></select></label>
       <button type="button" id="od-save-match" disabled>Save match</button>
       <button type="button" id="od-remove-client" disabled>Remove from dropdown</button>
@@ -398,7 +398,8 @@
     function showMatch(){
       const match=linked.get(clientChoice.value);
       const select=customers.find(c=>match?.customer_id?c.id===match.customer_id:c.name===match?.customer_name);
-      matchChoice.replaceChildren(new Option('Unmatched',''),...customers.map(c=>new Option(c.name,c.id)));
+      const emptyLabel=!clientChoice.value || !matchesLoaded ? 'Choose an existing client' : match ? 'Unmatched' : 'No QuickBooks customer linked';
+      matchChoice.replaceChildren(new Option(emptyLabel,''),...customers.map(c=>new Option(c.name,c.id)));
       if(match && !select)matchChoice.add(new Option(match.customer_name+' (unavailable)','current'));
       matchChoice.value=select?.id || (match?'current':'');
       matchChoice.disabled=matchBusy || !matchesLoaded || !clientChoice.value;
@@ -407,10 +408,7 @@
     }
     function showClientChoices(){
       clientChoice.replaceChildren(new Option('Choose client',''),
-        ...clients.filter(c=>c.listed!==false).map(c=>{
-          const match=linked.get(c.name);
-          return new Option(matchesLoaded?c.name+'  /  '+(match?.customer_name || 'Unmatched'):c.name,c.name);
-        }));
+        ...clients.filter(c=>c.listed!==false).map(c=>new Option(c.name,c.name)));
       showMatch();
     }
     function refreshClientDropdowns(){
