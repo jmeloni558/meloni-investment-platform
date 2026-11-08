@@ -267,6 +267,33 @@
     if(!/^\+?\d{3,15}$/.test(number))return null;
     return {dial:number+(parts[2]?';ext='+parts[2]:''),sms:number};
   }
+  function phoneAttempt(check,description,index,savedType){
+    const slot=el('span'),kind=el('button');
+    slot.className='od-attempt-slot';kind.type='button';
+    function display(type){
+      check.dataset.method=type==='Call'||type==='Text'?type:'';
+      kind.textContent=check.checked?(check.dataset.method || 'Set type'):String(index+1);
+      kind.setAttribute('aria-label',description+': '+(check.dataset.method || 'choose call or text'));
+      kind.title=kind.getAttribute('aria-label');
+    }
+    function choose(){
+      const dialog=field('attempt-dialog');
+      field('attempt-context').textContent=description;
+      for(const type of ['Call','Text']){
+        field('attempt-'+type.toLowerCase()).onclick=()=>{
+          check.checked=true;display(type);dirty=true;dialog.close();
+        };
+      }
+      dialog.showModal();
+    }
+    kind.onclick=choose;
+    check.onchange=()=>{
+      if(check.checked){check.checked=false;choose();}
+      else display('');
+    };
+    display(savedType);slot.append(kind,check);
+    return slot;
+  }
   function renderContacts(contacts=[]){
     const root=field('contacts');
     root.replaceChildren();
@@ -302,7 +329,10 @@
         for(let n=0;n<3;n++){
           const check=el('input'),attempt=el('label',String(n+1));check.type='checkbox';
           check.checked=method.attempts?.[n]===true;
-          check.setAttribute('aria-label',poc+' '+title+' attempt '+(n+1));attempt.append(check);attempts.append(attempt);
+          const description=poc+' '+title+' attempt '+(n+1);
+          check.setAttribute('aria-label',description);
+          if(type==='tel')attempts.append(phoneAttempt(check,description,n,method.attemptTypes?.[n]));
+          else{attempt.append(check);attempts.append(attempt);}
         }
         row.append(entry,attempts);group.append(row);
       }
@@ -313,8 +343,10 @@
     return Array.from(field('contacts').children,group=>{
       const contact={name:group.querySelector('.od-poc-name').value.trim()};
       group.querySelectorAll('.od-contact-row').forEach((row,i)=>{
-        contact[contactMethods[i][0]]={value:row.querySelector('input').value.trim(),
-          attempts:Array.from(row.querySelectorAll('input[type=checkbox]'),check=>check.checked)};
+        const checks=Array.from(row.querySelectorAll('input[type=checkbox]'));
+        const method={value:row.querySelector('input').value.trim(),attempts:checks.map(check=>check.checked)};
+        if(contactMethods[i][2]==='tel')method.attemptTypes=checks.map(check=>check.checked && check.dataset.method || null);
+        contact[contactMethods[i][0]]=method;
       });
       return contact;
     });
@@ -469,9 +501,12 @@
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
       <p id="od-error" role="alert"></p>
       <button id="od-save">Save order</button></form></aside></div>
+      <dialog id="od-attempt-dialog" aria-labelledby="od-attempt-title" closedby="any"><h2 id="od-attempt-title">Record contact attempt</h2><p id="od-attempt-context"></p>
+      <button type="button" id="od-attempt-call">Call</button> <button type="button" id="od-attempt-text">Text</button> <button type="button" id="od-attempt-cancel">Cancel</button></dialog>
       <dialog id="od-phone-dialog" aria-labelledby="od-phone-number" closedby="any">
       <h2 id="od-phone-number"></h2><a id="od-call-number">Call</a> <a id="od-text-number">Text</a>
       <button id="od-phone-cancel" type="button">Cancel</button></dialog>`;
+    field('attempt-cancel').onclick=()=>field('attempt-dialog').close();
     for(const id of ['call-number','text-number','phone-cancel'])field(id).onclick=()=>field('phone-dialog').close();
     if(fieldApp){
       document.getElementById('fieldDashboardHost').append(panel);
