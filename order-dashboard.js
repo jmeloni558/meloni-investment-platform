@@ -339,7 +339,13 @@
     db.auth.getSession().then(({data})=>auth(data.session));
     new MutationObserver(mount).observe(document.body,{childList:true,subtree:true});
     document.addEventListener('click',e=>{const target=e.target.closest('#appNavShell button,#appNavShell a,#ptBpoMenu button');if(target && target!==menu && target.target!=='_blank'){landing=false;hide();}},true);
-    window.addEventListener('focus',()=>{if(document.body.classList.contains('pt-orders-open')&&field('details').hidden)load();});
+    function refreshVisibleOrders(){
+      if(!document.hidden && document.body.classList.contains('pt-orders-open') && field('details').hidden &&
+         field('list-form').hidden && !field('open').matches(':focus'))load();
+    }
+    window.addEventListener('focus',refreshVisibleOrders);
+    setInterval(refreshVisibleOrders,60000);
+
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
