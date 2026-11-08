@@ -58,7 +58,7 @@
     field('title').textContent=o?'Order details':'New order';
     for(const k of ['address','kind','client','due','notes'])field(k).value=o?.[k]||'';
     field('photos').checked=!!o?.needs_photos;
-    for(const k of ['address','kind','photos'])field(k).disabled=!!o;
+    for(const k of ['address','kind'])field(k).disabled=!!o;
     if(o?.appointment){const t=new Date(o.appointment);field('appointment').value=new Date(t-t.getTimezoneOffset()*60000).toISOString().slice(0,16);}
     field('dialog').showModal();field(o?'notes':'address').focus();
   }
@@ -77,7 +77,7 @@
       }
       if(version!==generation)return;
       const changes={client,due:field('due').value,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
-      if(original)await update(original,changes);
+      if(original)await update(original,{...changes,needs_photos:field('photos').checked});
       else {
         const {error}=await db.from('field_orders').insert({...changes,id:draftId,address,kind:field('kind').value,needs_photos:field('photos').checked});
         if(error&&error.code!=='23505')throw error;
