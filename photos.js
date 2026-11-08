@@ -741,6 +741,6 @@ if(window===parent){
       if(previous)history.go(previous.index-target.index);
     }finally{restoring=false;}
   });
-  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=short-due-1';document.head.append(sheet);
-  import('./order-dashboard.js?v=short-due-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=short-appointment-1';document.head.append(sheet);
+  import('./order-dashboard.js?v=short-appointment-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }

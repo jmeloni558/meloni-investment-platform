@@ -10,7 +10,7 @@
   const el=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text||''});
   const field=id=>panel.querySelector('#od-'+id);
   const dateLabel=value=>fieldApp ? value.slice(5,7)+'/'+value.slice(8,10)+'/'+value.slice(2,4) : new Date(value+'T12:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
-  const appointmentLabel=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  const appointmentLabel=fieldApp ? new Intl.DateTimeFormat('en-US',{month:'2-digit',day:'2-digit',year:'2-digit',hour:'numeric',minute:'2-digit',hour12:true}) : new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
   function hide(){stopInvoiceWatch();document.body.classList.remove('pt-orders-open');menu?.removeAttribute('aria-current');if(fieldApp){menu?.setAttribute('aria-pressed','false');document.getElementById('fieldPhotos').setAttribute('aria-pressed','true');}}
   function open(){
     if(!membership||!panel || (fieldApp && !fieldApp.canShowDashboard()))return;
@@ -148,6 +148,7 @@
       }
       if(o.appointment){
         const appointment=el('time','Appt '+appointmentLabel.format(new Date(o.appointment)));
+        if(fieldApp)appointment.className='od-field-appointment';
         appointment.dateTime=o.appointment;
         schedule.append(appointment);
       }
