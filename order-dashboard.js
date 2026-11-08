@@ -2,7 +2,7 @@
 (() => {
   const kinds = ['Int BPO','Ext BPO','Int PCR','Ext PCR','PDCR','Desktop BPO','Marketing Photos','Inspection Photos'];
   const autoLand = (!location.search && !location.hash) || new URLSearchParams(location.search).get('orders')==='1';
-  let db, account, membership, panel, menu, generation=0, request=0, landing=autoLand, completed=false, orders=[], clients=[];
+  let db, account, membership, panel, menu, generation=0, request=0, landing=autoLand, currentList='open', orders=[], clients=[];
   const el=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text||''});
   const field=id=>panel.querySelector('#od-'+id);
   const dateLabel=value=>new Date(value+'T12:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
@@ -25,10 +25,10 @@
     const midnight=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
     midnightTimer=setTimeout(displayCounts,midnight-now+100);
   }
-  async function fetchOrders(isComplete,columns){
+  async function fetchOrders(list,columns){
     const rows=[];
     for(let offset=0;;offset+=500){
-      const {data,error}=await db.from('field_orders').select(columns).eq('complete',isComplete).order('due').order('id').range(offset,offset+499);
+      const {data,error}=await db.from('field_orders').select(columns).eq('complete',list==='completed').eq('on_hold',list==='hold').order('due').order('id').range(offset,offset+499);
       if(error)throw error;
       rows.push(...data);
       if(data.length<500)return rows;
@@ -37,7 +37,7 @@
   async function load(){
     const current=++request, version=generation;
     try{
-      const [rows,openRows]=await Promise.all([fetchOrders(completed,'*'),completed?fetchOrders(false,'due'):null]);
+      const [rows,openRows]=await Promise.all([fetchOrders(currentList,'*'),currentList==='open'?null:fetchOrders('open','due')]);
       const result=await db.from('order_clients').select('name').order('name');
       if(result.error)throw result.error;
       if(current!==request||version!==generation)return;
@@ -49,7 +49,10 @@
     }catch(e){if(version===generation&&current===request)field('status').textContent=e.message;}
   }
   function render(){
-    field('list').replaceChildren();field('open').setAttribute('aria-pressed',String(!completed));field('completed').setAttribute('aria-pressed',String(completed));
+    field('list').replaceChildren();
+    for(const list of ['open','hold','completed']){
+      field(list).setAttribute('aria-pressed',String(list===currentList));
+    }
     for(const o of orders){
       const row=el('article'), check=el('input'), title=el('button'), due=el('time','Due '+dateLabel(o.due));
       check.type='checkbox';
@@ -58,7 +61,7 @@
       check.onchange=async()=>{
         if(!canLeave()){check.checked=o.complete;return;}
         check.disabled=true;
-        try{await update(o,{complete:check.checked});closeDetails();await load();}
+        try{await update(o,{complete:check.checked,on_hold:false});closeDetails();await load();}
         catch(e){check.checked=o.complete;check.disabled=false;field('status').textContent=e.message;}
       };
       title.dataset.order=o.id;
@@ -82,7 +85,7 @@
       row.append(check,title);
       field('list').append(row);
     }
-    if(!orders.length)field('list').append(el('p',completed?'No completed orders.':'No open orders.'));
+    if(!orders.length)field('list').append(el('p',{open:'No open orders.',hold:'No orders on hold.',completed:'No completed orders.'}[currentList]));
   }
   async function update(o,changes){
     const {data,error}=await db.from('field_orders').update(changes).eq('id',o.id).eq('updated_at',o.updated_at).select('id').maybeSingle();
@@ -134,8 +137,8 @@
     field('title').textContent=o?'Order details':'New order';
     for(const k of ['address','kind','client','due','notes'])field(k).value=o?.[k]||'';
     field('photos').checked=!!o?.needs_photos;
-    field('complete-label').hidden=!o;
-    field('complete').checked=!!o?.complete;
+    field('state-label').hidden=!o;
+    field('state').value=o?.on_hold?'hold':o?.complete?'completed':'open';
     const photos=field('photo-link');
     photos.replaceChildren();
     if(o?.photo_id){
@@ -165,7 +168,7 @@
       }
       if(version!==generation)return;
       const changes={address,kind:field('kind').value,client,due:field('due').value,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
-      if(original)await update(original,{...changes,complete:field('complete').checked,needs_photos:field('photos').checked});
+      if(original)await update(original,{...changes,complete:field('state').value==='completed',on_hold:field('state').value==='hold',needs_photos:field('photos').checked});
       else {
         const {error}=await db.from('field_orders').insert({...changes,id:draftId,needs_photos:field('photos').checked});
         if(error&&error.code!=='23505')throw error;
@@ -181,7 +184,7 @@
     if(panel)return;
     panel=el('section');panel.id='ptOrders';panel.innerHTML=`
       <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"><span id="od-total"></span><span id="od-today"></span><span id="od-overdue"></span></p></div></header>
-      <nav><button id="od-new">New order</button><button id="od-open">Open orders</button><button id="od-completed">Completed</button><button id="od-calendar">Outlook calendar</button></nav>
+      <nav><button id="od-new">New order</button><button id="od-open">Open orders</button><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><button id="od-calendar">Outlook calendar</button></nav>
       <div id="od-subscribe" hidden><p>In Outlook Calendar, choose Add calendar → Subscribe from web. Paste this private link and select Import. Outlook refreshes the appointments on its own schedule.</p><label>Private calendar URL<input id="od-url" readonly></label><button id="od-copy">Copy link</button> <a href="https://outlook.office.com/calendar/" target="_blank" rel="noopener">Open Outlook Calendar</a></div>
       <p id="od-status" role="status"></p><div class="od-columns"><div id="od-list"></div>
       <aside id="od-details" aria-labelledby="od-title" hidden><form id="od-form"><header><h2 id="od-title" tabindex="-1"></h2><button type="button" id="od-cancel">Close</button></header>
@@ -192,7 +195,7 @@
       <label>Due date<input type="date" id="od-due" required></label>
       <label>Appointment (optional, local time)<input type="datetime-local" id="od-appointment"></label>
       <label><input type="checkbox" id="od-photos"> Photos needed</label>
-      <div id="od-photo-link"></div><label id="od-complete-label"><input id="od-complete" type="checkbox"> Completed</label>
+      <div id="od-photo-link"></div><label id="od-state-label">Order status<select id="od-state"><option value="open">Open orders</option><option value="hold">On Hold</option><option value="completed">Completed</option></select></label>
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
       <div id="od-preview" aria-label="Links in notes" hidden></div><p id="od-error" role="alert"></p>
       <button id="od-save">Save order</button></form></aside></div>`;
@@ -211,7 +214,14 @@
     field('photos').onchange=()=>{photosOverridden=true;};
     field('kind').append(new Option('Choose order type',''),...kinds.map(k=>new Option(k==='PDCR'?'PDCR (Property Data Collection Report)':k,k)));
     field('new').onclick=()=>edit(null);field('cancel').onclick=()=>{if(canLeave())closeDetails();};field('form').onsubmit=submit;
-    field('open').onclick=()=>{if(!canLeave())return;closeDetails();completed=false;load();};field('completed').onclick=()=>{if(!canLeave())return;closeDetails();completed=true;load();};
+    for(const list of ['open','hold','completed']){
+      field(list).onclick=()=>{
+        if(!canLeave())return;
+        closeDetails();
+        currentList=list;
+        load();
+      };
+    }
     field('calendar').onclick=async()=>{
       const version=generation;
       if(!field('subscribe').hidden){field('subscribe').hidden=true;return;}
@@ -226,7 +236,7 @@
   async function auth(session){
     const id=session?.user?.id||null;if(id===account)return;
     clearTimeout(midnightTimer);openDates=[];
-    const old=account;account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];completed=false;
+    const old=account;account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';
     if(!id){if(old)landing=true;return;}
     const {data,error}=await db.from('order_members').select('photo_owner').eq('user_id',id).maybeSingle();
     if(version!==generation||error||!data)return;membership=data;mount();
