@@ -12,25 +12,37 @@
     if(!membership||!panel)return;
     document.body.classList.add('pt-orders-open');menu.setAttribute('aria-current','page');window.AppNavigationToolbar?.refresh();load();
   }
+  let openDates=[], midnightTimer;
+  function displayCounts(){
+    clearTimeout(midnightTimer);
+    if(!panel || !membership)return;
+    const now=new Date();
+    const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+    const total=openDates.length;
+    field('total').textContent=total+' open '+(total===1?'order':'orders');
+    field('today').textContent=openDates.filter(date=>date===today).length+' due today';
+    field('overdue').textContent=openDates.filter(date=>date && date<today).length+' overdue';
+    const midnight=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
+    midnightTimer=setTimeout(displayCounts,midnight-now+100);
+  }
+  async function fetchOrders(isComplete,columns){
+    const rows=[];
+    for(let offset=0;;offset+=500){
+      const {data,error}=await db.from('field_orders').select(columns).eq('complete',isComplete).order('due').order('id').range(offset,offset+499);
+      if(error)throw error;
+      rows.push(...data);
+      if(data.length<500)return rows;
+    }
+  }
   async function load(){
     const current=++request, version=generation;
     try{
-      const rows=[];
-      for(let offset=0;;offset+=500){
-        const {data,error}=await db.from('field_orders').select('*').eq('complete',completed).order('due').order('id').range(offset,offset+499);
-        if(error)throw error;
-        rows.push(...data);if(data.length<500)break;
-      }
+      const [rows,openRows]=await Promise.all([fetchOrders(completed,'*'),completed?fetchOrders(false,'due'):null]);
       const result=await db.from('order_clients').select('name').order('name');
       if(result.error)throw result.error;
-      let openCount=rows.length;
-      if(completed){
-        const total=await db.from('field_orders').select('id',{count:'exact',head:true}).eq('complete',false);
-        if(total.error)throw total.error;
-        openCount=total.count;
-      }
       if(current!==request||version!==generation)return;
-      field('count').textContent=openCount+' open '+(openCount===1?'order':'orders');
+      openDates=(openRows || rows).map(order=>order.due);
+      displayCounts();
       orders=rows;clients=result.data.map(c=>c.name);
       if(field('details').hidden) populateClients();
       render();field('status').textContent='';
@@ -93,24 +105,18 @@
   function clientName(){
     return (field('client').value==='__add__'?field('new-client').value:field('client').value).trim();
   }
-  function showNotes(){
+  function showNoteLinks(){
     const preview=field('preview'), notes=field('notes').value;
     preview.replaceChildren();
-    let offset=0;
     for(const match of notes.matchAll(/\b(?:https?:\/\/|www\.)[^\s<>"']+/gi)){
       let url=match[0].replace(/[.,;:!?]+$/,'');
       while(url.endsWith(')') && url.split(')').length>url.split('(').length)url=url.slice(0,-1);
-      preview.append(notes.slice(offset,match.index));
       const link=el('a',url);
       link.href=/^www\./i.test(url)?'https://'+url:url;
       link.target='_blank';link.rel='noopener noreferrer';
       preview.append(link);
-      offset=match.index+url.length;
     }
-    preview.append(notes.slice(offset));
-    field('note-editor').hidden=Boolean(notes);
-    preview.hidden=!notes;
-    field('edit-notes').hidden=!notes;
+    preview.hidden=!preview.childElementCount;
   }
   function updatePhotoDefault(){
     if(editing || photosOverridden)return;
@@ -140,7 +146,7 @@
         photos.append(link);
       }else photos.textContent='Photo set in PT Photos · realty sign-in';
     }
-    showNotes();
+    showNoteLinks();
     if(o?.appointment){const t=new Date(o.appointment);field('appointment').value=new Date(t-t.getTimezoneOffset()*60000).toISOString().slice(0,16);}
     field('details').hidden=false;render();field(o?'title':'address').focus();
   }
@@ -174,7 +180,7 @@
     if(menu.nextElementSibling!==anchor)anchor.before(menu);
     if(panel)return;
     panel=el('section');panel.id='ptOrders';panel.innerHTML=`
-      <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"></p></div></header>
+      <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"><span id="od-total"></span><span id="od-today"></span><span id="od-overdue"></span></p></div></header>
       <nav><button id="od-new">New order</button><button id="od-open">Open orders</button><button id="od-completed">Completed</button><button id="od-calendar">Outlook calendar</button></nav>
       <div id="od-subscribe" hidden><p>In Outlook Calendar, choose Add calendar â†’ Subscribe from web. Paste this private link and select Import. Outlook refreshes the appointments on its own schedule.</p><label>Private calendar URL<input id="od-url" readonly></label><button id="od-copy">Copy link</button> <a href="https://outlook.office.com/calendar/" target="_blank" rel="noopener">Open Outlook Calendar</a></div>
       <p id="od-status" role="status"></p><div class="od-columns"><div id="od-list"></div>
@@ -187,8 +193,8 @@
       <label>Appointment (optional, local time)<input type="datetime-local" id="od-appointment"></label>
       <label><input type="checkbox" id="od-photos"> Photos needed</label>
       <div id="od-photo-link"></div><label id="od-complete-label"><input id="od-complete" type="checkbox"> Completed</label>
-      <div id="od-preview" class="od-note" aria-label="Notes"></div><button type="button" id="od-edit-notes">Edit notes</button>
-      <label id="od-note-editor">Notes<textarea id="od-notes" rows="5"></textarea></label><p id="od-error" role="alert"></p>
+      <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
+      <div id="od-preview" aria-label="Links in notes" hidden></div><p id="od-error" role="alert"></p>
       <button id="od-save">Save order</button></form></aside></div>`;
     document.querySelector('#appNavShell').after(panel);
     field('kind').onchange=updatePhotoDefault;
@@ -201,12 +207,7 @@
     };
     field('new-client').oninput=updatePhotoDefault;
     field('form').oninput=()=>{dirty=true;};
-    field('edit-notes').onclick=()=>{
-      field('note-editor').hidden=false;
-      field('preview').hidden=true;
-      field('edit-notes').hidden=true;
-      field('notes').focus();
-    };
+    field('notes').oninput=showNoteLinks;
     field('photos').onchange=()=>{photosOverridden=true;};
     field('kind').append(new Option('Choose order type',''),...kinds.map(k=>new Option(k==='PDCR'?'PDCR (Property Data Collection Report)':k,k)));
     field('new').onclick=()=>edit(null);field('cancel').onclick=()=>{if(canLeave())closeDetails();};field('form').onsubmit=submit;
@@ -224,6 +225,7 @@
   }
   async function auth(session){
     const id=session?.user?.id||null;if(id===account)return;
+    clearTimeout(midnightTimer);openDates=[];
     const old=account;account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];completed=false;
     if(!id){if(old)landing=true;return;}
     const {data,error}=await db.from('order_members').select('photo_owner').eq('user_id',id).maybeSingle();
