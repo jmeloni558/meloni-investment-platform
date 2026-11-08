@@ -9,7 +9,7 @@
   let selectedList='', namedLists=[];
   const el=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text||''});
   const field=id=>panel.querySelector('#od-'+id);
-  const dateLabel=value=>new Date(value+'T12:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  const dateLabel=value=>fieldApp ? value.slice(5,7)+'/'+value.slice(8,10)+'/'+value.slice(2,4) : new Date(value+'T12:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
   const appointmentLabel=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
   function hide(){stopInvoiceWatch();document.body.classList.remove('pt-orders-open');menu?.removeAttribute('aria-current');if(fieldApp){menu?.setAttribute('aria-pressed','false');document.getElementById('fieldPhotos').setAttribute('aria-pressed','true');}}
   function open(){
