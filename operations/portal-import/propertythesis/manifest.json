@@ -1,14 +1,17 @@
 {
   "manifest_version": 3,
   "name": "PropertyThesis Importers",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Choose a client form to import your prepared PropertyThesis report.",
   "permissions": [
     "activeTab",
     "scripting"
   ],
   "host_permissions": [
-    "https://www.acisky.com/*"
+    "https://www.acisky.com/*",
+    "https://outlook.cloud.microsoft/*",
+    "https://outlook.office.com/*",
+    "https://outlook.office365.com/*"
   ],
   "icons": {
     "16": "icons/pt-16.png",
@@ -25,5 +28,18 @@
       "48": "icons/pt-48.png",
       "128": "icons/pt-128.png"
     }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://propertythesis.com/*"
+      ],
+      "js": [
+        "calendar-launcher.js"
+      ]
+    }
+  ],
+  "background": {
+    "service_worker": "calendar-worker.js"
   }
 }

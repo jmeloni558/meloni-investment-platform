@@ -238,10 +238,10 @@
     if(panel)return;
     panel=el('section');panel.id='ptOrders';panel.innerHTML=`
       <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"><span id="od-total"></span><span id="od-today"></span><span id="od-overdue"></span></p></div></header>
-      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><span class="od-open-picker"><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><button type="button" id="od-calendar" aria-controls="od-subscribe" aria-expanded="false">Outlook calendar</button></nav>
+      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><span class="od-open-picker"><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Outlook calendar</a><button type="button" id="od-calendar-setup" aria-controls="od-subscribe" aria-expanded="false">Calendar setup</button></nav>
       <form id="od-list-form" hidden><label>List name<input id="od-name" maxlength="80" required></label>
       <button id="od-create-list">Create list</button> <button type="button" id="od-cancel-list">Cancel</button></form>
-      <div id="od-subscribe" hidden><p>In Outlook Calendar, choose Add calendar → Subscribe from web. Paste this private link and select Import. Outlook refreshes the appointments on its own schedule.</p><label>Private calendar URL<input id="od-url" readonly></label><button id="od-copy">Copy link</button> <a href="https://outlook.office.com/calendar/" target="_blank" rel="noopener">Open Outlook Calendar</a> <button type="button" id="od-close-calendar">Close</button></div>
+      <div id="od-subscribe" hidden><p>In Outlook Calendar, choose Add calendar → Subscribe from web. Paste this private link and select Import. Outlook refreshes the appointments on its own schedule.</p><label>Private calendar URL<input id="od-url" readonly></label><button id="od-copy">Copy link</button> <button type="button" id="od-close-calendar">Close</button></div>
       <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
       <p id="od-status" role="status"></p><div class="od-columns"><div><div id="od-list"></div><button id="od-prev" hidden>Previous page</button> <button id="od-next" hidden>Next page</button></div>
       <aside id="od-details" aria-labelledby="od-title" hidden><form id="od-form"><header><h2 id="od-title" tabindex="-1"></h2><button type="button" id="od-cancel">Close</button></header>
@@ -319,25 +319,25 @@
       }catch(e){if(version===generation)field('status').textContent=e.message;}
       finally{button.disabled=false;}
     };
-    const calendarButton=field('calendar');
-    calendarButton.onclick=async()=>{
-      if(!field('subscribe').hidden || calendarButton.disabled)return;
+    const setupButton=field('calendar-setup');
+    setupButton.onclick=async()=>{
+      if(!field('subscribe').hidden || setupButton.disabled)return;
       const version=generation;
-      calendarButton.disabled=true;
+      setupButton.disabled=true;
       try{
         const {data,error}=await db.rpc('order_calendar_key');
         if(version!==generation)return;
         if(error)throw error;
         field('url').value='https://lmaiqpkogmmsldkziggy.supabase.co/functions/v1/order-calendar?key='+data;
         field('subscribe').hidden=false;
-        calendarButton.setAttribute('aria-expanded','true');
+        setupButton.setAttribute('aria-expanded','true');
       }catch(e){if(version===generation)field('status').textContent=e.message;}
-      finally{calendarButton.disabled=false;}
+      finally{setupButton.disabled=false;}
     };
     field('close-calendar').onclick=()=>{
       field('subscribe').hidden=true;
-      calendarButton.setAttribute('aria-expanded','false');
-      calendarButton.focus();
+      setupButton.setAttribute('aria-expanded','false');
+      setupButton.focus();
     };
     field('copy').onclick=async()=>{try{await navigator.clipboard.writeText(field('url').value);field('status').textContent='Calendar link copied.';}catch{field('url').select();}};
     if(landing){landing=false;open();}
