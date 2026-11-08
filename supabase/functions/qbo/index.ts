@@ -1,4 +1,5 @@
 import postgres from "npm:postgres@3.4.7";
+import { saleLine, invoiceBody } from "./invoice-lines.mjs";
 
 const sql = postgres(Deno.env.get("SUPABASE_DB_URL")!, { max: 1, prepare: false, idle_timeout: 4 });
 const site = "https://propertythesis.com";
@@ -27,7 +28,11 @@ async function api(token: string, route: string, body?: unknown) {
   const res = await fetch(company + route, { method: body ? "POST" : "GET", headers: {
     Authorization: "Bearer " + token, Accept: "application/json", "Content-Type": "application/json"
   }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(12000) });
-  if (!res.ok) throw new Error("quickbooks_" + res.status);
+  if (!res.ok) {
+    const fault=await res.json().catch(()=>null);
+    if (fault?.Fault?.Error?.some((item:{code:string})=>item.code==="5010")) throw new Error("stale_invoice");
+    throw new Error("quickbooks_" + res.status);
+  }
   return await res.json();
 }
 async function lookup(token: string, entity: "Customer" | "Item", name: string) {
@@ -38,15 +43,42 @@ async function lookup(token: string, entity: "Customer" | "Item", name: string) 
   if (rows.length !== 1 || rows[0][field] !== name) throw new Error("check_" + entity);
   return rows[0].Id;
 }
+async function targetInvoice(token: string, customer: string, number: string | null, month: string | null, pinned?: string) {
+  if (!/^\d+$/.test(customer)) throw new Error("check_Customer");
+  if (pinned) {
+    const result = await api(token,"/invoice/"+encodeURIComponent(pinned));
+    if (!result.Invoice || (number && result.Invoice.DocNumber!==number)) throw new Error("review_open_invoice");
+    return result.Invoice;
+  }
+  if (!number && !month) return null;
+  let condition = "CustomerRef = '"+customer+"'";
+  if (number) condition += " and DocNumber = '"+number.replaceAll("\\","\\\\").replaceAll("'","\\'")+"'";
+  else {
+    const next = new Date(month+"T12:00Z"); next.setUTCMonth(next.getUTCMonth()+1);
+    condition += " and TxnDate >= '"+month+"' and TxnDate < '"+next.toISOString().slice(0,10)+"' and Balance > '0'";
+  }
+  const query = "select * from Invoice where "+condition+" maxresults 2";
+  const rows = (await api(token,"/query?query="+encodeURIComponent(query))).QueryResponse?.Invoice ?? [];
+  if (rows.length>1 || (number && rows.length!==1)) throw new Error("review_open_invoice");
+  return rows[0] ?? null;
+}
 async function worker() {
   // Commit a frozen body before any invoice POST so retries use the same request ID and data.
   const prepared = await sql.begin(async tx => {
     await tx`select pg_advisory_xact_lock(93418751)`;
     const [job] = await tx`select r.order_id,r.payload,l.customer_name,l.confirmed,l.product,l.amount,
-      l.description,l.service_date::text as service_date,c.refresh_secret,v.decrypted_secret as refresh
+      l.description,l.service_date::text as service_date,f.invoice_target,f.invoice_extra_lines,
+      case when m.monthly_bpo and f.kind in ('Int BPO','Ext BPO','Desktop BPO')
+        then (r.created_at at time zone 'America/New_York')::date::text end as monthly_date,
+      c.refresh_secret,v.decrypted_secret as refresh
       from private.qbo_invoice_requests r join private.qbo_connection c on r.created_at>=c.activated_at
       join vault.decrypted_secrets v on v.id=c.refresh_secret left join private.qbo_invoice_lines l using(order_id)
-      where r.invoice_id is null and r.next_attempt<=now() order by r.next_attempt limit 1 for update of r`;
+      join public.field_orders f on f.id=r.order_id left join public.order_clients m on m.name=f.client
+      where r.invoice_id is null and r.next_attempt<=now()
+      and not exists(select from private.qbo_invoice_requests earlier join public.field_orders ef on ef.id=earlier.order_id
+        where earlier.invoice_id is null and earlier.payload is not null and ef.client=f.client and
+          (earlier.created_at,earlier.order_id)<(r.created_at,r.order_id) and earlier.created_at>=c.activated_at)
+      order by r.created_at,r.order_id limit 1 for update of r`;
     if (!job) return;
     try {
       if (!job.payload && (!job.confirmed || !job.description || !job.service_date || !(Number(job.amount)>0))) throw new Error("review_order_mapping");
@@ -56,23 +88,45 @@ async function worker() {
       if (!payload) {
         const customer = await lookup(token.access_token, "Customer", job.customer_name);
         const item = await lookup(token.access_token, "Item", job.product);
-        payload = { CustomerRef:{value:customer}, EmailStatus:"NotSet", Line:[{DetailType:"SalesItemLineDetail",
-          Description:job.description, Amount:Number(job.amount), SalesItemLineDetail:{ItemRef:{value:item},
-          Qty:1, UnitPrice:Number(job.amount), ServiceDate:job.service_date}}] };
+        const lines = [saleLine(item,job.description,job.amount,job.monthly_date || job.service_date)];
+        for (const extra of job.invoice_extra_lines) {
+          const [service]=await tx`select product from private.qbo_service_map where kind=${extra.kind}`;
+          if (!service) throw new Error("review_order_lines");
+          lines.push(saleLine(await lookup(token.access_token,"Item",service.product),extra.description,extra.amount,extra.date));
+        }
+        const month=job.monthly_date?.slice(0,7)+"-01";
+        const [pin]=job.monthly_date ? await tx`select invoice_id from private.qbo_monthly_invoices
+          where customer_id=${customer} and month=${month}::date` : [];
+        const target=await targetInvoice(token.access_token,customer,job.invoice_target,job.monthly_date?month:null,pin?.invoice_id);
+        payload=invoiceBody(customer,lines,target,job.monthly_date);
       }
       await tx`update private.qbo_invoice_requests set payload=${tx.json(payload)},next_attempt=now()+interval '10 minutes' where order_id=${job.order_id}`;
-      return { token:token.access_token, id:job.order_id, payload };
+      return { token:token.access_token, id:job.order_id, payload, lineCount:1+job.invoice_extra_lines.length, month:job.monthly_date?.slice(0,7) };
     } catch (err) {
       await tx`update private.qbo_invoice_requests set error_code=${code(err)},next_attempt=now()+interval '30 minutes' where order_id=${job.order_id}`;
     }
   });
   if (!prepared) return;
   try {
-    const reply = await api(prepared.token, "/invoice?requestid=" + prepared.id, prepared.payload);
+    const revision=prepared.payload.Id ? "-"+prepared.payload.SyncToken : "";
+    const reply = await api(prepared.token, "/invoice?requestid=" + prepared.id+revision, prepared.payload);
     if (!reply.Invoice?.Id) throw new Error("invoice_unconfirmed");
-    await sql`update private.qbo_invoice_requests set invoice_id=${reply.Invoice.Id},error_code=null where order_id=${prepared.id}`;
+    await sql.begin(async tx=>{
+      if (prepared.month) await tx`insert into private.qbo_monthly_invoices(customer_id,month,invoice_id)
+        values(${prepared.payload.CustomerRef.value},${prepared.month+"-01"}::date,${reply.Invoice.Id}) on conflict (customer_id,month) do nothing`;
+      await tx`update private.qbo_invoice_requests set invoice_id=${reply.Invoice.Id},error_code=null where order_id=${prepared.id}`;
+    });
   } catch (err) {
-    await sql`update private.qbo_invoice_requests set error_code=${code(err)} where order_id=${prepared.id}`;
+    if (err instanceof Error && err.message==="stale_invoice" && prepared.payload.Id) {
+      // Intuit rejected this revision. Re-read the same invoice and preserve concurrent edits.
+      const current=(await api(prepared.token,"/invoice/"+encodeURIComponent(prepared.payload.Id))).Invoice;
+      if (!current || current.Id!==prepared.payload.Id) throw new Error("review_open_invoice");
+      const body=invoiceBody(prepared.payload.CustomerRef.value,prepared.payload.Line.slice(-prepared.lineCount),current,null);
+      await sql`update private.qbo_invoice_requests set payload=${sql.json(body)},next_attempt=now()
+        where order_id=${prepared.id} and invoice_id is null`;
+    } else {
+      await sql`update private.qbo_invoice_requests set error_code=${code(err)} where order_id=${prepared.id}`;
+    }
   }
 }
 function code(err: unknown) {

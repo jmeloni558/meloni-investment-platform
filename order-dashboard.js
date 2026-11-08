@@ -59,7 +59,7 @@
       if(held?.error)throw held.error;
       if(completed.error)throw completed.error;
       const [result,lists]=await Promise.all([
-        db.from('order_clients').select('name,listed').order('name'),
+        db.from('order_clients').select('name,listed,monthly_bpo').order('name'),
         db.from('order_lists').select('name').order('name')
       ]);
       if(lists.error)throw lists.error;
@@ -181,9 +181,22 @@
     const nvmsInterior=kind==='Int PCR' && field('client').value.toLowerCase()==='nvms';
     field('photos').checked=Boolean(kind) && kind!=='PDCR' && kind!=='Desktop BPO' && !nvmsInterior;
   }
+  function monthlyBpo(){return clients.some(c=>c.name===field('client').value && c.monthly_bpo) && field('kind').value.endsWith('BPO');}
+  function addInvoiceLine(){
+    const row=el('fieldset');
+    row.innerHTML='<legend>Additional invoice line</legend><label>Service<select required></select></label><label>Address or description<input required maxlength="500"></label><label>Fee ($)<input required type="number" min="0.01" step="0.01" max="9999999999.99"></label><label>Service date<input required type="date"></label><button type="button">Remove line</button>';
+    const service=row.querySelector('select'), inputs=row.querySelectorAll('input');
+    for(const name of kinds.filter(k=>!k.endsWith('Photos')))service.add(new Option(name,name));
+    service.value=field('kind').value;
+    inputs[2].value=monthlyBpo()?new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()):field('due').value;
+    row.querySelector('button').onclick=()=>{row.remove();dirty=true;};
+    field('invoice-lines').append(row);dirty=true;inputs[0].focus();
+  }
   function updateRequirements(){
     const task=Boolean(field('destination').value || editing?.former_list_task);
     field('fee').required=!editing && !task && !['Marketing Photos','Inspection Photos'].includes(field('kind').value);
+    field('billing').disabled=field('billing').hidden=!field('fee').required;
+    field('monthly').hidden=!monthlyBpo();
     field('address-label').textContent=task?'Task or property address':'Property address';
     for(const id of ['kind','client','due'])field(id).required=!task && !editing?.todo_title;
   }
@@ -207,6 +220,7 @@
     if(o?.todo_title)field('source').textContent='Microsoft To Do: '+o.todo_title+' · Completed '+new Date(o.todo_completed_at).toLocaleDateString();
     for(const k of ['address','kind','client','due','notes'])field(k).value=o?.[k]||'';
     field('fee').value=o?.fee ?? '';
+    field('invoice-lines').replaceChildren();updateRequirements();
     field('photos').checked=!!o?.needs_photos;
     field('appointment-needed').checked=!!o?.appointment_needed;
     field('state-label').hidden=!o;
@@ -234,6 +248,14 @@
       const changes={address,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
       if(original)await update(original,{...changes,complete:field('state').value==='completed',on_hold:field('state').value==='hold',needs_photos:field('photos').checked});
       else {
+        if(!field('billing').disabled){
+          changes.invoice_target=field('invoice-target').value.trim()||null;
+          changes.invoice_extra_lines=Array.from(field('invoice-lines').children,row=>{
+            const [description,amount,date]=row.querySelectorAll('input');
+            if(!description.value.trim())throw Error('Enter a description for each invoice line.');
+            return {kind:row.querySelector('select').value,description:description.value.trim(),amount:Number(amount.value),date:date.value};
+          });
+        }
         const {error}=await db.from('field_orders').insert({...changes,id:draftId,needs_photos:field('photos').checked});
         if(error&&error.code!=='23505')throw error;
         if(error){const r=await db.from('field_orders').select('id').eq('id',draftId).maybeSingle();if(!r.data)throw error;}
@@ -265,6 +287,8 @@
       <label>Order type<select id="od-kind" required></select></label>
       <label>Client<select id="od-client" required></select></label>
       <label>Order fee ($)<input type="number" id="od-fee" inputmode="decimal" min="0" max="9999999999.99" step="0.01"></label>
+      <fieldset id="od-billing"><legend>QuickBooks invoice</legend><p id="od-monthly" hidden>This BPO uses the date entered as its service date on the client's monthly invoice.</p>
+      <label>Existing open invoice number (optional)<input id="od-invoice-target" maxlength="21"></label><div id="od-invoice-lines"></div><button type="button" id="od-add-line">Add invoice line</button></fieldset>
       <label>Due date<input type="date" id="od-due" required></label>
       <label>Appointment (optional, local time)<input type="datetime-local" id="od-appointment"></label>
       <label><input type="checkbox" id="od-photos"> Photos needed</label>
@@ -284,7 +308,8 @@
       field(id).onclick=()=>{if(!canLeave())return;closeDetails();page+=direction;field('prev').hidden=field('next').hidden=true;load();};
     }
     field('kind').onchange=()=>{updatePhotoDefault();updateRequirements();};
-    field('client').onchange=updatePhotoDefault;
+    field('client').onchange=()=>{updatePhotoDefault();updateRequirements();};
+    field('add-line').onclick=addInvoiceLine;
     field('form').oninput=()=>{dirty=true;};
     field('notes').oninput=showNoteLinks;
     field('photos').onchange=()=>{photosOverridden=true;};
