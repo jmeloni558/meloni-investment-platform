@@ -1,0 +1,21 @@
+#ptOrders{display:none;background:#fff;border:1px solid #d6e1df;border-radius:16px;padding:clamp(16px,3vw,36px);margin:18px 0;color:#17343a}
+body.pt-orders-open main.shell > :not(#appNavShell):not(#ptOrders):not(.footer){display:none!important}
+body.pt-orders-open #ptOrders{display:block!important}
+#ptOrders header,#ptOrders nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#ptOrders header{justify-content:space-between;margin-bottom:20px}
+#ptOrders h1,#ptOrders h2{margin:4px 0}
+#ptOrders small{font-weight:700;color:#486567}
+#ptOrders button,#ptOrders a{cursor:pointer}
+#ptOrders button{border:1px solid #a9c1bc;border-radius:8px;padding:9px 14px;color:#144c45;background:white;font:inherit;font-weight:650}
+#ptOrders button[aria-pressed=true],#ptOrders #od-new,#ptOrders #od-save,body.pt-orders-open #ptOrderNav{background:#185e54;color:white}
+#ptOrders article{display:flex;align-items:flex-start;gap:12px;padding:16px 0;border-top:1px solid #dbe4e1}
+#ptOrders article input{width:19px;height:19px;margin:3px}
+#ptOrders article button{padding:0;border:0;text-align:left;color:#184f66}
+#ptOrders article time,#ptOrders article small{display:block}
+#ptOrders .od-note{white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0}
+#ptOrders dialog{width:min(470px,94vw);max-height:90vh;overflow:auto;border:1px solid #acc3be;border-radius:14px;padding:24px}
+#ptOrders dialog::backdrop{background:#102e3bbb}
+#ptOrders label{display:block;margin:10px 0;font-weight:650}
+#ptOrders label input:not([type=checkbox]),#ptOrders select,#ptOrders textarea{box-sizing:border-box;display:block;width:100%;margin-top:4px;padding:8px;font:inherit;border:1px solid #98afad;border-radius:6px}
+#ptOrders [hidden]{display:none!important}
+#od-error{color:#963e25}

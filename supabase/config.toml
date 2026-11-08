@@ -37,3 +37,6 @@ entrypoint = "./functions/bpo-summary/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/bpo-generate/index.ts"
+
+[functions.order-calendar]
+verify_jwt = false
