@@ -134,18 +134,28 @@
       const schedule=el('span');
       schedule.className='od-schedule';
       schedule.append(due);
+      const showDirections=fieldApp && o.address?.trim() && !o.list_name && !o.former_list_task;
+      if(showDirections){
+        const directions=el('a','Directions'),url=new URL('https://www.google.com/maps/dir/');
+        url.search=new URLSearchParams({api:'1',destination:o.address.trim(),travelmode:'driving'}).toString();
+        directions.href=url.href;directions.target='_blank';directions.rel='noopener noreferrer';
+        directions.className='od-directions';directions.setAttribute('aria-label','Driving directions to '+o.address);
+        schedule.append(directions);
+      }
       if(o.appointment){
         const appointment=el('time','Appt '+appointmentLabel.format(new Date(o.appointment)));
         appointment.dateTime=o.appointment;
         schedule.append(appointment);
       }
       if(searchText())schedule.append(el('small',o.complete?'Completed':o.on_hold?'On Hold':'Open'));
-      title.append(summary,schedule);
+      title.append(summary);
+      if(showDirections)row.className='od-field-order';
+      else title.append(schedule);
       if(o.appointment_needed && !o.appointment){
-        title.classList.add('od-needs-appointment');
+        if(!showDirections)title.classList.add('od-needs-appointment');
         const reminder=el('span','Appointment Needed');
         reminder.className='od-appointment-warning';
-        title.append(reminder);
+        (showDirections?schedule:title).append(reminder);
       }
       row.append(check,title);
       if(fieldApp && o.needs_photos && o.photo_id && account===membership.photo_owner){
@@ -153,6 +163,7 @@
         button.className='od-row-photos';
         row.append(button);
       }
+      if(showDirections)row.append(schedule);
       field('list').append(row);
     }
     if(!orders.length)field('list').append(el('p',searchText()?'No matching orders.':{open:'No open orders.',hold:'No orders on hold.',completed:'No completed orders.'}[currentList]));
@@ -498,8 +509,8 @@
       <div id="od-photo-link"></div><label id="od-state-label">Order status<select id="od-state"><option value="open">Open orders</option><option value="hold">On Hold</option><option value="completed">Completed</option></select></label>
       <label>Order Link<input id="od-order-link" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://"></label>
       <a id="od-open-order-link" target="_blank" rel="noopener noreferrer" hidden>Open order link</a>
-      <label>Lockbox Code<input id="od-lockbox-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
-      <label>Gate Code<input id="od-gate-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+      <div class="od-entry-codes"><label>Lockbox Code<input id="od-lockbox-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+      <label>Gate Code<input id="od-gate-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label></div>
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
       <p id="od-error" role="alert"></p>
       <button id="od-save">Save order</button></form></aside></div>
