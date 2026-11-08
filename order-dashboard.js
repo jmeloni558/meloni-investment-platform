@@ -259,18 +259,19 @@
       field('client').append(savedOption);
     }
   }
-  function showNoteLinks(){
-    const preview=field('preview'), notes=field('notes').value;
-    preview.replaceChildren();
-    for(const match of notes.matchAll(/\b(?:https?:\/\/|www\.)[^\s<>"']+/gi)){
-      let url=match[0].replace(/[.,;:!?]+$/,'');
-      while(url.endsWith(')') && url.split(')').length>url.split('(').length)url=url.slice(0,-1);
-      const link=el('a',url);
-      link.href=/^www\./i.test(url)?'https://'+url:url;
-      link.target='_blank';link.rel='noopener noreferrer';
-      preview.append(link);
+  function updateOrderLink(){
+    const input=field('order-link'),link=field('open-order-link'),value=input.value.trim();
+    let href='';
+    if(value && !/\s/.test(value)){
+      try{
+        const url=new URL(/^[a-z][a-z0-9+.-]*:/i.test(value)?value:'https://'+value);
+        if(['http:','https:'].includes(url.protocol) && url.hostname.includes('.') && !url.username && !url.password)href=url.href;
+      }catch{}
     }
-    preview.hidden=!preview.childElementCount;
+    input.setCustomValidity(value && !href?'Enter a valid website address.':'');
+    link.hidden=!href;
+    if(href)link.href=href;else link.removeAttribute('href');
+    return href || null;
   }
   function updatePhotoDefault(){
     if(editing || photosOverridden)return;
@@ -336,7 +337,9 @@
         }
       }else photos.textContent='Photo set in PT Photos · realty sign-in';
     }
-    showNoteLinks();
+    field('order-link').value=o?.order_link || '';
+    field('lockbox-code').value=o?.lockbox_code || '';
+    updateOrderLink();
     if(o?.appointment){const t=new Date(o.appointment);field('appointment').value=new Date(t-t.getTimezoneOffset()*60000).toISOString().slice(0,16);}
     field('details').hidden=false;showOrderInvoice(o?.id);render();field(o?'title':'address').focus();fieldApp?.recordView();
   }
@@ -346,7 +349,7 @@
     try{
       const client=field('client').value, address=field('address').value.trim();
       if((!client && field('client').required)||!address)throw Error('Enter the address and client.');
-      const changes={address,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
+      const changes={address,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
       if(original)await update(original,{...changes,complete:field('state').value==='completed',on_hold:field('state').value==='hold',needs_photos:field('photos').checked});
       else {
         if(!field('billing').disabled){
@@ -397,8 +400,11 @@
       <label><input type="checkbox" id="od-photos"> Photos needed</label>
       <label><input type="checkbox" id="od-appointment-needed"> Appointment Needed</label>
       <div id="od-photo-link"></div><label id="od-state-label">Order status<select id="od-state"><option value="open">Open orders</option><option value="hold">On Hold</option><option value="completed">Completed</option></select></label>
+      <label>Order Link<input id="od-order-link" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://"></label>
+      <a id="od-open-order-link" target="_blank" rel="noopener noreferrer" hidden>Open order link</a>
+      <label>Lockbox Code<input id="od-lockbox-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
-      <div id="od-preview" aria-label="Links in notes" hidden></div><p id="od-error" role="alert"></p>
+      <p id="od-error" role="alert"></p>
       <button id="od-save">Save order</button></form></aside></div>`;
     if(fieldApp){
       document.getElementById('fieldDashboardHost').append(panel);
@@ -420,7 +426,7 @@
     field('client').onchange=()=>{updatePhotoDefault();updateRequirements();};
     field('add-line').onclick=addInvoiceLine;
     field('form').oninput=()=>{dirty=true;};
-    field('notes').oninput=showNoteLinks;
+    field('order-link').oninput=updateOrderLink;
     field('photos').onchange=()=>{photosOverridden=true;};
     field('kind').append(new Option('Choose order type',''),...kinds.map(k=>new Option(kindLabel(k),k)));
     field('new').onclick=()=>edit(null);field('cancel').onclick=()=>{if(canLeave())closeDetails();};field('form').onsubmit=submit;

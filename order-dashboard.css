@@ -12,7 +12,6 @@ body.pt-orders-open #ptOrders{display:block!important}
 body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color:#175c92!important;color:#fff!important}
 #ptOrders #od-new{background:#99420f;color:white;border-color:#99420f}
 #ptOrders #od-overdue{color:#af2029}
-#ptOrders #od-preview a{display:block;overflow-wrap:anywhere}
 #ptOrders #od-count{display:flex;flex-wrap:wrap;gap:.25em 1em;margin:0;color:#486567;font-weight:600}
 #ptOrders article{display:flex;align-items:flex-start;gap:12px;padding:16px 0;border-top:1px solid #dbe4e1}
 #ptOrders article input{width:19px;height:19px;margin:3px}
