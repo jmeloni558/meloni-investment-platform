@@ -24,7 +24,7 @@ Deno.serve(async (request) => {
   for (const order of await result.json()) {
     const start = new Date(order.appointment);
     lines.push("BEGIN:VEVENT","UID:"+order.id+"@propertythesis.com","DTSTAMP:"+stamp(new Date(order.updated_at)),
-      "LAST-MODIFIED:"+stamp(new Date(order.updated_at)),"DTSTART:"+stamp(start),"DURATION:PT1H",
+      "LAST-MODIFIED:"+stamp(new Date(order.updated_at)),"DTSTART:"+stamp(start),"DURATION:PT"+(order.appointment_minutes ?? 60)+"M",
       "SUMMARY:"+escapeText(order.kind+" ("+order.client+") – "+order.address),"LOCATION:"+escapeText(order.address),"END:VEVENT");
   }
   return new Response([...lines,"END:VCALENDAR",""].map(fold).join("\r\n"),{headers:{"Content-Type":"text/calendar; charset=utf-8","Cache-Control":"private, no-store"}});
