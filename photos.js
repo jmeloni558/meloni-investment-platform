@@ -741,6 +741,6 @@ if(window===parent){
       if(previous)history.go(previous.index-target.index);
     }finally{restoring=false;}
   });
-  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=field-actions-3';document.head.append(sheet);
-  import('./order-dashboard.js?v=field-directions-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=compact-actions-1';document.head.append(sheet);
+  import('./order-dashboard.js?v=compact-actions-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }
