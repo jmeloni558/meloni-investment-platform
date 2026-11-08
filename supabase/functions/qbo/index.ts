@@ -37,11 +37,14 @@ async function api(token: string, route: string, body?: unknown) {
 }
 async function lookup(token: string, entity: "Customer" | "Item", name: string) {
   const field = entity === "Customer" ? "DisplayName" : "Name";
-  const escaped = name.replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+  const searchName = entity === "Customer" ? name.split(":").at(-1)! : name;
+  const escaped = searchName.replaceAll("\\", "\\\\").replaceAll("'", "\\'");
   const query = "select * from " + entity + " where " + field + " = '" + escaped + "' and Active = true";
   const rows = (await api(token, "/query?query=" + encodeURIComponent(query))).QueryResponse?.[entity] ?? [];
-  if (rows.length !== 1 || rows[0][field] !== name) throw new Error("check_" + entity);
-  return rows[0].Id;
+  const matches = rows.filter((row:Record<string,string>) =>
+    (entity === "Customer" ? row.FullyQualifiedName : row.Name) === name);
+  if (matches.length !== 1) throw new Error("check_" + entity);
+  return matches[0].Id;
 }
 async function targetInvoice(token: string, customer: string, number: string | null, month: string | null, pinned?: string) {
   if (!/^\d+$/.test(customer)) throw new Error("check_Customer");

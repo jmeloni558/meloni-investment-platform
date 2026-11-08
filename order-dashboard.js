@@ -180,7 +180,7 @@
   function updatePhotoDefault(){
     if(editing || photosOverridden)return;
     const kind=field('kind').value;
-    const nvmsInterior=kind==='Int PCR' && field('client').value.toLowerCase()==='nvms';
+    const nvmsInterior=kind==='Int PCR' && ['nvms','national vendor management services'].includes(field('client').value.toLowerCase());
     field('photos').checked=Boolean(kind) && kind!=='PDCR' && kind!=='Desktop BPO' && !nvmsInterior;
   }
   function monthlyBpo(){return clients.some(c=>c.name===field('client').value && c.monthly_bpo) && field('kind').value.endsWith('BPO');}
