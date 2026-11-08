@@ -205,7 +205,7 @@ async function openProperty(p){
   selectedPhotos.clear();selected=p;
   $('stewartPhotos').hidden=!stewartMode||propertyList(p)!=='completed'||!!p.deleting_at;
   $('stewartNo').checked=false;updateStewartRequest();
-  photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();$('workspace').hidden=false;$('addressList').hidden=true;$('uploadControls').hidden=!!p.completed_at||!!p.deleting_at;$('complete').hidden=!!p.completed_at||!!p.deleting_at;$('reopen').hidden=!p.completed_at||!!p.deleting_at;$('completedNote').hidden=!p.completed_at;$('completedNote').textContent=p.archived_at?'This photo set is archived.':'This upload set is completed.';$('propertyTitle').textContent=p.address;renderProperties();await refreshPhotos();$('propertyTitle').focus();
+  photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();$('workspace').hidden=false;$('addressList').hidden=true;$('uploadControls').hidden=!!p.completed_at||!!p.deleting_at;$('complete').hidden=!!p.completed_at||!!p.deleting_at;$('reopen').hidden=!p.completed_at||!!p.deleting_at;$('completedNote').hidden=!p.completed_at;$('completedNote').textContent=p.archived_at?'This photo set is archived.':'This upload set is completed.';$('propertyTitle').textContent=p.address;renderProperties();window.PropertyThesisFieldApp?.recordView();await refreshPhotos();$('propertyTitle').focus();
 }
 async function refreshPhotos(limitSignal){
   const version=epoch,p=selected;if(!p)return;const prefix=user.id+'/'+p.id;
@@ -398,7 +398,7 @@ function showList(mode=listMode){
   if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Return to addresses without uploading the selected photos?'))return;
   clearCaptions();clearTransferCache();selectedPhotos.clear();listMode=mode;selected=null;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();
   $('workspace').hidden=true;$('addressList').hidden=false;$('newProperty').hidden=mode!=='active';
-  refreshStorage();
+  refreshStorage();window.PropertyThesisFieldApp?.recordView();
   $('listTitle').textContent=stewartMode&&mode==='completed'?'Stewart photo workflow — choose a completed property':listTitles[mode];
   $('activeTab').setAttribute('aria-pressed',String(mode==='active'));$('completedTab').setAttribute('aria-pressed',String(mode==='completed'));$('archiveTab').setAttribute('aria-pressed',String(mode==='archive'));
   renderProperties();$('listTitle').focus();status(mode==='archive'?'Archived photo sets are available here.':mode==='completed'?'Completed photo sets are saved here.':'Choose a property or enter an address.');
@@ -658,7 +658,28 @@ $('updateApp').onclick=async()=>{
 if(window===parent){
   // Keep the photo workspace mounted so tab switches preserve the open set and file queue.
   const launchParams=new URLSearchParams(location.search);
-  window.PropertyThesisFieldApp={
+  let currentEntry=null,restoring=false;
+  const fieldView=()=>document.body.classList.contains('pt-orders-open') && app.dashboard
+    ? app.dashboard.view() : {screen:'photos',mode:selected?propertyList(selected):listMode,set:selected?.id || null};
+  // The real launch entry is the root. Only user navigation adds entries above it.
+  function beginHistory(event){
+    if(!user || !event.target.closest('#fieldViews,#ptOrders,#library'))return;
+    if(currentEntry?.owner===user.id)return;
+    currentEntry={owner:user.id,index:history.state?.ptField?.index || 0,view:fieldView()};
+    history.replaceState({...history.state,ptField:currentEntry},'');
+  }
+  document.addEventListener('click',beginHistory,true);
+  document.addEventListener('change',beginHistory,true);
+  const app=window.PropertyThesisFieldApp={
+    recordView(){
+      queueMicrotask(()=>{
+        if(restoring || !user || currentEntry?.owner!==user.id)return;
+        const view=fieldView();
+        if(JSON.stringify(view)===JSON.stringify(currentEntry.view))return;
+        currentEntry={owner:user.id,index:currentEntry.index+1,view};
+        history.pushState({ptField:currentEntry},'');
+      });
+    },
     startOnDashboard:!stewartMode && !launchParams.get('address') && !launchParams.get('set'),
     canShowDashboard(){
       if(!busy)return true;
@@ -681,13 +702,45 @@ if(window===parent){
       }).catch(e=>status(e.message,true));
     },
     openSet(id){
-      if(selected?.id===id){this.resumePhotos();return;}
+      if(selected?.id===id){this.resumePhotos();this.recordView();return;}
       run(async()=>{await loadProperties();const p=properties.find(row=>row.id===id);
         if(!p)throw Error('This photo set is unavailable.');
         await openProperty(p);if(selected?.id===id)listMode=propertyList(p);
       });
     }
   };
+  window.addEventListener('popstate',async event=>{
+    const target=event.state?.ptField;
+    if(!target || !user || target.owner!==user.id)return;
+    if(currentEntry?.index===target.index)return;
+    const previous=currentEntry;
+    restoring=true;
+    try{
+      let ok=false;
+      const view=target.view;
+      if(!busy && view.screen==='dashboard' && app.dashboard)ok=await app.dashboard.restore(view);
+      if(!busy && view.screen==='photos'){
+        if(dirtyDescriptions.size)await flushDescriptions();
+        app.dashboard?.hide();
+        if(view.set && selected?.id!==view.set){
+          await run(async()=>{
+            await loadProperties();
+            const p=properties.find(row=>row.id===view.set);
+            if(p){await openProperty(p);if(selected?.id===p.id)listMode=propertyList(p);}
+            else showList(view.mode);
+          });
+          ok=selected?.id===view.set || (!selected && !properties.some(p=>p.id===view.set));
+        }else if(!view.set && (selected || listMode!==view.mode)){
+          showList(view.mode);ok=!selected && listMode===view.mode;
+        }else{app.resumePhotos();ok=true;}
+      }
+      if(!ok && previous){history.go(previous.index-target.index);return;}
+      currentEntry=target;
+    }catch(error){
+      status(error.message || 'Unable to return to that screen.',true);
+      if(previous)history.go(previous.index-target.index);
+    }finally{restoring=false;}
+  });
   const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=field-order-photos';document.head.append(sheet);
-  import('./order-dashboard.js?v=field-order-photos').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  import('./order-dashboard.js?v=field-back-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }
