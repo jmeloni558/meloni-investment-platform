@@ -183,7 +183,7 @@
   }
   function updateRequirements(){
     const task=Boolean(field('destination').value || editing?.former_list_task);
-    field('fee').required=!editing && !task;
+    field('fee').required=!editing && !task && !['Marketing Photos','Inspection Photos'].includes(field('kind').value);
     field('address-label').textContent=task?'Task or property address':'Property address';
     for(const id of ['kind','client','due'])field(id).required=!task && !editing?.todo_title;
   }
@@ -283,7 +283,7 @@
     for(const [id,direction] of [['prev',-1],['next',1]]){
       field(id).onclick=()=>{if(!canLeave())return;closeDetails();page+=direction;field('prev').hidden=field('next').hidden=true;load();};
     }
-    field('kind').onchange=updatePhotoDefault;
+    field('kind').onchange=()=>{updatePhotoDefault();updateRequirements();};
     field('client').onchange=updatePhotoDefault;
     field('form').oninput=()=>{dirty=true;};
     field('notes').oninput=showNoteLinks;
