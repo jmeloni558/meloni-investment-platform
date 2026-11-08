@@ -79,7 +79,7 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders article.od-field-order{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:0 8px;padding:4px 0}
 #ptOrders .od-field-order button[data-order]{grid-column:2 / -1;padding:3px 0}
 #ptOrders .od-due-actions{display:flex;align-items:center;gap:6px;max-width:100%}
-#ptOrders .od-due-actions time{min-width:0}
+#ptOrders .od-due-actions time{white-space:nowrap}
 #ptOrders .od-field-actions{display:inline-flex;gap:4px;flex:none}
 #ptOrders .od-field-order .od-schedule{grid-column:2 / -1;align-items:center;gap:2px 8px;font-size:.8rem;color:#53696c}
 #ptOrders .od-field-order .od-schedule time:not(:first-child){color:#7035a1;font-weight:700}
