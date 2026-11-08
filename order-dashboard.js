@@ -46,9 +46,15 @@
     const {data,error}=await db.from('field_orders').update(changes).eq('id',o.id).eq('updated_at',o.updated_at).select('id').maybeSingle();
     if(error)throw error;if(!data)throw Error('This order changed on another device. Close the editor and refresh the dashboard.');
   }
-  let editing, draftId;
+  let editing, draftId, photosOverridden;
+  function updatePhotoDefault(){
+    if(editing || photosOverridden)return;
+    const kind=field('kind').value;
+    const nvmsInterior=kind==='Int PCR' && field('client').value.trim().toLowerCase()==='nvms';
+    field('photos').checked=Boolean(kind) && kind!=='PDCR' && kind!=='Desktop BPO' && !nvmsInterior;
+  }
   function edit(o){
-    editing=o;draftId=o?.id||crypto.randomUUID();const f=field('form');f.reset();field('error').textContent='';
+    editing=o;photosOverridden=false;draftId=o?.id||crypto.randomUUID();const f=field('form');f.reset();field('error').textContent='';
     field('title').textContent=o?'Order details':'New order';
     for(const k of ['address','kind','client','due','notes'])field(k).value=o?.[k]||'';
     field('photos').checked=!!o?.needs_photos;
@@ -100,6 +106,10 @@
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label><p id="od-error" role="alert"></p>
       <button id="od-save">Save order</button> <button type="button" id="od-cancel">Close</button></form></dialog>`;
     document.querySelector('#appNavShell').after(panel);
+    field('kind').onchange=updatePhotoDefault;
+    field('client').oninput=updatePhotoDefault;
+    field('client').onchange=updatePhotoDefault;
+    field('photos').onchange=()=>{photosOverridden=true;};
     field('kind').append(new Option('Choose order type',''),...kinds.map(k=>new Option(k==='PDCR'?'PDCR (Property Data Collection Report)':k,k)));
     field('new').onclick=()=>edit(null);field('cancel').onclick=()=>field('dialog').close();field('form').onsubmit=submit;
     field('open').onclick=()=>{completed=false;load();};field('completed').onclick=()=>{completed=true;load();};
