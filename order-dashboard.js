@@ -17,6 +17,7 @@
     if(fieldApp){menu.setAttribute('aria-pressed','true');document.getElementById('fieldPhotos').setAttribute('aria-pressed','false');}
     document.body.classList.add('pt-orders-open');menu.setAttribute('aria-current','page');window.AppNavigationToolbar?.refresh();load();
     if(editing && !field('details').hidden)showOrderInvoice(editing.id);
+    fieldApp?.recordView();
   }
   let openDates=[], midnightTimer;
   function displayCounts(){
@@ -248,7 +249,7 @@
     field('details').hidden=true;
     editing=null;
     dirty=false;
-    render();
+    render();fieldApp?.recordView();
   }
   function populateClients(savedName){
     field('client').replaceChildren(new Option('Choose client',''),...clients.filter(c=>c.listed!==false).map(c=>new Option(c.name,c.name)));
@@ -337,7 +338,7 @@
     }
     showNoteLinks();
     if(o?.appointment){const t=new Date(o.appointment);field('appointment').value=new Date(t-t.getTimezoneOffset()*60000).toISOString().slice(0,16);}
-    field('details').hidden=false;showOrderInvoice(o?.id);render();field(o?'title':'address').focus();
+    field('details').hidden=false;showOrderInvoice(o?.id);render();field(o?'title':'address').focus();fieldApp?.recordView();
   }
   async function submit(event){
     event.preventDefault();const save=field('save');if(save.disabled)return;save.disabled=true;
@@ -404,7 +405,7 @@
       const photosTab=document.getElementById('fieldPhotos');
       photosTab.parentElement.hidden=false;
       menu.setAttribute('aria-pressed','false');
-      photosTab.onclick=()=>{if(document.body.classList.contains('pt-orders-open')){hide();fieldApp.resumePhotos();}};
+      photosTab.onclick=()=>{if(document.body.classList.contains('pt-orders-open')){hide();fieldApp.resumePhotos();fieldApp.recordView();}};
     }else document.querySelector('#appNavShell').after(panel);
     field('search').oninput=()=>{
       ++request;
@@ -602,6 +603,29 @@
       event.preventDefault();
       field('status').textContent='To open your existing Outlook tab, reload PropertyThesis Importers in Edge, then refresh this dashboard.';
     };
+    if(fieldApp){
+      fieldApp.dashboard={
+        view:()=>({screen:'dashboard',list:currentList,name:selectedList,page,search:searchText(),
+          detail:field('details').hidden?null:editing?.id || 'new'}),
+        hide,
+        restore:async view=>{
+          const sameDetail=!field('details').hidden && (editing?.id || 'new')===view.detail;
+          if(!sameDetail && !canLeave())return false;
+          if(!sameDetail)closeDetails();
+          currentList=view.list;selectedList=view.name;page=view.page;field('search').value=view.search;
+          open();
+          if(view.detail && !sameDetail){
+            if(view.detail==='new')edit(null);
+            else{
+              const {data,error}=await db.from('field_orders').select('*').eq('id',view.detail).maybeSingle();
+              if(error)throw error;
+              if(data)edit(data);
+            }
+          }
+          return true;
+        }
+      };
+    }
     if(landing){landing=false;open();}
   }
   async function auth(session){
