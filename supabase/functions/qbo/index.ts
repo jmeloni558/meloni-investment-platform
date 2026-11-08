@@ -65,11 +65,69 @@ async function targetInvoice(token: string, customer: string, number: string | n
   if (rows.length>1 || (number && rows.length!==1)) throw new Error("review_open_invoice");
   return rows[0] ?? null;
 }
+async function customerAccessToken() {
+  return await sql.begin(async tx => {
+    await tx`select pg_advisory_xact_lock(93418751)`;
+    const [connection] = await tx`select c.refresh_secret,v.decrypted_secret from private.qbo_connection c
+      join vault.decrypted_secrets v on v.id=c.refresh_secret`;
+    if (!connection) throw new Error("credentials_pending");
+    const token = await tokens({grant_type:"refresh_token",refresh_token:connection.decrypted_secret});
+    await tx`select vault.update_secret(${connection.refresh_secret}::uuid,${token.refresh_token})`;
+    return token.access_token;
+  });
+}
+async function customerDirectory() {
+  const matches = await sql`select client,customer_name,customer_id from private.qbo_customer_matches where confirmed`;
+  const customers: {id:string;name:string}[] = [];
+  try {
+    const token = await customerAccessToken();
+    for(let start=1;;start+=1000) {
+      const query="select * from Customer where Active = true order by Id startposition "+start+" maxresults 1000";
+      const page=(await api(token,"/query?query="+encodeURIComponent(query))).QueryResponse?.Customer ?? [];
+      for(const customer of page) customers.push({id:customer.Id,name:customer.FullyQualifiedName});
+      if(page.length<1000) break;
+    }
+    customers.sort((a,b)=>a.name.localeCompare(b.name));
+    return json({matches,customers});
+  } catch {return json({matches,customers:[],unavailable:true});}
+}
+async function saveCustomerMatch(input: {client:string; customerId:string; add?:boolean; previous?:string}) {
+  const client = typeof input.client==="string" ? input.client.trim() : "";
+  if (!client || client.length>160 || typeof input.customerId!=="string" || !/^(\d+)?$/.test(input.customerId)) return json({error:"Invalid client or customer."},400);
+  let name="";
+  if(input.customerId) {
+    const result=await api(await customerAccessToken(),"/customer/"+input.customerId);
+    if(result.Customer?.Id!==input.customerId || !result.Customer.Active) return json({error:"Choose an active customer."},409);
+    name=result.Customer.FullyQualifiedName;
+  }
+  return await sql.begin(async tx=>{
+    await tx`select pg_advisory_xact_lock(93418751)`;
+    const [existing]=await tx`select name,listed,monthly_bpo from public.order_clients where lower(name)=lower(${client}) for update`;
+    if(!input.add && !existing?.listed) return json({error:"This client is no longer listed."},409);
+    if(input.add && existing?.listed) return json({error:"Client already exists. Select it to change its match."},409);
+    const key=existing?.name ?? client;
+    const [prior]=await tx`select customer_id,customer_name from private.qbo_customer_matches where client=${key} and confirmed`;
+    if(!input.add && (prior?.customer_id ?? prior?.customer_name ?? "")!==input.previous) return json({error:"The match changed. Reopen Manage clients to refresh."},409);
+    if(input.add) await tx`select public.add_order_client(${key})`;
+    // Restoring an unlisted client without a selection preserves its prior match.
+    if(!input.add || input.customerId || !prior) {
+      if(input.customerId) {
+        await tx`insert into private.qbo_customer_matches(client,customer_name,customer_id,confirmed)
+          values(${key},${name},${input.customerId},true) on conflict(client) do update set
+          customer_name=excluded.customer_name,customer_id=excluded.customer_id,confirmed=true`;
+        await tx`update private.qbo_invoice_requests r set next_attempt=now() from public.field_orders f
+          where f.id=r.order_id and f.client=${key} and r.payload is null and r.invoice_id is null and r.error_code='review_order_mapping'`;
+      } else await tx`delete from private.qbo_customer_matches where client=${key}`;
+    }
+    const [match]=await tx`select client,customer_name,customer_id from private.qbo_customer_matches where client=${key} and confirmed`;
+    return json({client:key,match:match ?? null,monthly_bpo:existing?.monthly_bpo ?? false});
+  });
+}
 async function worker() {
   // Commit a frozen body before any invoice POST so retries use the same request ID and data.
   const prepared = await sql.begin(async tx => {
     await tx`select pg_advisory_xact_lock(93418751)`;
-    const [job] = await tx`select r.order_id,r.payload,l.customer_name,l.confirmed,l.product,l.amount,
+    const [job] = await tx`select r.order_id,r.payload,cm.customer_id,l.customer_name,l.confirmed,l.product,l.amount,
       l.description,l.service_date::text as service_date,f.invoice_target,f.invoice_extra_lines,
       case when m.monthly_bpo and f.kind in ('Int BPO','Ext BPO','Desktop BPO')
         then (r.created_at at time zone 'America/New_York')::date::text end as monthly_date,
@@ -77,6 +135,7 @@ async function worker() {
       from private.qbo_invoice_requests r join private.qbo_connection c on r.created_at>=c.activated_at
       join vault.decrypted_secrets v on v.id=c.refresh_secret left join private.qbo_invoice_lines l using(order_id)
       join public.field_orders f on f.id=r.order_id left join public.order_clients m on m.name=f.client
+      left join private.qbo_customer_matches cm on cm.client=f.client
       where r.invoice_id is null and r.next_attempt<=now()
       and not exists(select from private.qbo_invoice_requests earlier join public.field_orders ef on ef.id=earlier.order_id
         where earlier.invoice_id is null and earlier.payload is not null and ef.client=f.client and
@@ -89,7 +148,7 @@ async function worker() {
       await tx`select vault.update_secret(${job.refresh_secret}::uuid,${token.refresh_token})`;
       let payload = job.payload;
       if (!payload) {
-        const customer = await lookup(token.access_token, "Customer", job.customer_name);
+        const customer = job.customer_id ?? await lookup(token.access_token, "Customer", job.customer_name);
         const item = await lookup(token.access_token, "Item", job.product);
         const lines = [saleLine(item,job.description,job.amount,job.monthly_date || job.service_date)];
         for (const extra of job.invoice_extra_lines) {
@@ -162,8 +221,16 @@ Deno.serve(async req => {
       await worker(); return json({ok:true});
     }
     const user = await fetch(backend + "/auth/v1/user",{headers:{Authorization:auth,apikey:Deno.env.get("SUPABASE_ANON_KEY")!}});
-    if (!user.ok || (await user.json()).email?.toLowerCase() !== "jamie@melonirealty.com") return json({},403);
-    const {action} = await req.json();
+    if (!user.ok) return json({},403);
+    const identity=await user.json();
+    const input=await req.json();
+    const {action}=input;
+    if(action==="customerDirectory" || action==="saveCustomerMatch") {
+      const [member]=await sql`select 1 from public.order_members where user_id=${identity.id}::uuid`;
+      if(!member) return json({},403);
+      return action==="customerDirectory" ? await customerDirectory() : await saveCustomerMatch(input);
+    }
+    if(identity.email?.toLowerCase() !== "jamie@melonirealty.com") return json({},403);
     if (action === "status") {
       const [state] = await sql`select exists(select from private.qbo_connection) as connected`;
       return json({...state,ready:Boolean(Deno.env.get("QBO_CLIENT_ID") && Deno.env.get("QBO_CLIENT_SECRET"))});

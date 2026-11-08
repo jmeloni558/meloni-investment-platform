@@ -276,8 +276,11 @@
       <dialog closedby="any" id="od-clients-dialog" aria-labelledby="od-clients-title">
       <h2 id="od-clients-title">Manage clients</h2>
       <form id="od-add-client-form"><label>New client name<input id="od-new-client" maxlength="160" required></label>
-      <button id="od-add-client">Add client</button></form><p>Remove a client from the dropdown. Saved orders keep their client name.</p>
-      <label>Client to remove<select id="od-client-choice"></select></label>
+      <label>QuickBooks customer for new client<select id="od-new-customer"><option value="">Unmatched</option></select></label>
+      <button id="od-add-client">Add client</button></form>
+      <label>Existing client and current match<select id="od-client-choice"></select></label>
+      <label>Linked QuickBooks customer<select id="od-match-choice" disabled></select></label>
+      <button type="button" id="od-save-match" disabled>Save match</button>
       <button type="button" id="od-remove-client" disabled>Remove from dropdown</button>
       <button type="button" id="od-close-clients">Close</button><p id="od-client-message" role="status"></p></dialog>
       <form id="od-list-form" hidden><label>List name<input id="od-name" maxlength="80" required></label>
@@ -382,10 +385,33 @@
       finally{button.disabled=false;}
     };
     const clientChoice=field('client-choice'),removeClient=field('remove-client');
+    let linked=new Map(),customers=[],matchesLoaded=false,matchBusy=false;
+    const matchChoice=field('match-choice'),newCustomer=field('new-customer');
+    async function qbo(action,values={}){
+      const {data,error}=await db.functions.invoke('qbo',{body:{action,...values}});
+      if(error){
+        const details=await error.context?.json?.().catch(()=>null);
+        throw Error(details?.error || 'QuickBooks could not complete the request. Reopen Manage clients to retry.');
+      }
+      return data;
+    }
+    function showMatch(){
+      const match=linked.get(clientChoice.value);
+      const select=customers.find(c=>match?.customer_id?c.id===match.customer_id:c.name===match?.customer_name);
+      matchChoice.replaceChildren(new Option('Unmatched',''),...customers.map(c=>new Option(c.name,c.id)));
+      if(match && !select)matchChoice.add(new Option(match.customer_name+' (unavailable)','current'));
+      matchChoice.value=select?.id || (match?'current':'');
+      matchChoice.disabled=matchBusy || !matchesLoaded || !clientChoice.value;
+      field('save-match').disabled=true;
+      removeClient.disabled=matchBusy || !clientChoice.value;
+    }
     function showClientChoices(){
       clientChoice.replaceChildren(new Option('Choose client',''),
-        ...clients.filter(c=>c.listed!==false).map(c=>new Option(c.name,c.name)));
-      removeClient.disabled=true;
+        ...clients.filter(c=>c.listed!==false).map(c=>{
+          const match=linked.get(c.name);
+          return new Option(matchesLoaded?c.name+'  /  '+(match?.customer_name || 'Unmatched'):c.name,c.name);
+        }));
+      showMatch();
     }
     function refreshClientDropdowns(){
       const selected=field('client').value;
@@ -400,14 +426,15 @@
       if(!name){field('client-message').textContent='Enter a client name.';return;}
       button.disabled=true;
       try{
-        const {data,error}=await db.rpc('add_order_client',{client_name:name});
+        const added=await qbo('saveCustomerMatch',{add:true,client:name,customerId:newCustomer.value});
         if(version!==generation)return;
-        if(error)throw error;
+        const data=added.client;
+        if(added.match)linked.set(data,added.match);
         ++request;
         const existing=clients.find(c=>c.name===data);
         if(existing)existing.listed=true;
         else{
-          clients.push({name:data,listed:true});
+          clients.push({name:data,listed:true,monthly_bpo:added.monthly_bpo});
           clients.sort((a,b)=>a.name.localeCompare(b.name));
         }
         refreshClientDropdowns();
@@ -416,13 +443,43 @@
       }catch(e){if(version===generation)field('client-message').textContent=e.message;}
       finally{button.disabled=false;}
     };
-    field('manage-clients').onclick=()=>{
+    let directoryRequest=0;
+    field('manage-clients').onclick=async()=>{
+      const ticket=++directoryRequest,version=generation;
+      matchesLoaded=false;linked=new Map();customers=[];
       showClientChoices();
-      field('client-message').textContent='';
+      newCustomer.replaceChildren(new Option('Unmatched',''));
+      newCustomer.disabled=true;
+      field('add-client').disabled=true;
+      field('client-message').textContent='Loading QuickBooks customer matches...';
       field('clients-dialog').showModal();
+      try{
+        const data=await qbo('customerDirectory');
+        if(version!==generation || ticket!==directoryRequest)return;
+        linked=new Map(data.matches.map(m=>[m.client,m]));customers=data.customers;
+        matchesLoaded=true;showClientChoices();
+        newCustomer.append(...customers.map(c=>new Option(c.name,c.id)));
+        newCustomer.disabled=!!data.unavailable;
+        field('add-client').disabled=false;
+        field('client-message').textContent=data.unavailable?'QuickBooks customers could not be loaded. Saved matches are shown.':'';
+      }catch(e){if(version===generation && ticket===directoryRequest)field('client-message').textContent=e.message;}
+    };
+    matchChoice.onchange=()=>{field('save-match').disabled=matchChoice.disabled || matchChoice.value==='current';};
+    field('save-match').onclick=async()=>{
+      if(matchBusy || !matchesLoaded || !clientChoice.value)return;
+      const version=generation,client=clientChoice.value,previous=linked.get(client);
+      matchBusy=true;clientChoice.disabled=matchChoice.disabled=removeClient.disabled=field('save-match').disabled=true;
+      try{
+        const data=await qbo('saveCustomerMatch',{client,customerId:matchChoice.value,previous:previous?.customer_id ?? previous?.customer_name ?? ''});
+        if(version!==generation)return;
+        if(data.match)linked.set(client,data.match);else linked.delete(client);
+        showClientChoices();clientChoice.value=client;
+        field('client-message').textContent=data.match?'Match saved for '+client+'.':client+' is now unmatched.';
+      }catch(e){if(version===generation)field('client-message').textContent=e.message;}
+      finally{matchBusy=false;clientChoice.disabled=false;if(version===generation)showMatch();}
     };
     field('close-clients').onclick=()=>field('clients-dialog').close();
-    clientChoice.onchange=()=>{removeClient.disabled=!clientChoice.value;};
+    clientChoice.onchange=showMatch;
     removeClient.onclick=async()=>{
       const name=clientChoice.value,version=generation;
       if(!name || removeClient.disabled)return;
