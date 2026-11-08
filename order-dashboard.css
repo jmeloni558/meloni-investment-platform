@@ -49,3 +49,7 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-open-picker{position:relative;display:inline-flex}
 #ptOrders .od-open-picker select{margin:0;width:auto;max-width:18em;min-width:9em;padding:9px 12px;border-radius:8px;color:#144c45;font-weight:650;cursor:pointer}
 #ptOrders .od-open-picker select[data-active=true]{background:#185e54;color:white}
+
+#ptOrders article button.od-needs-appointment{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:.65em}
+#ptOrders .od-needs-appointment .od-schedule{grid-column:1}
+#ptOrders .od-appointment-warning{grid-column:2;grid-row:1 / span 2;align-self:center;max-width:11ch;color:#af2029;font-weight:700;text-align:right;font-size:.85rem}
