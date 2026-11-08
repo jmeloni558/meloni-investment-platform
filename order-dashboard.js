@@ -49,16 +49,19 @@
     const current=++request, version=generation;
     try{
       const term=searchText();
-      const [batch,openRows,held]=await Promise.all([
+      const [batch,openRows,held,completed]=await Promise.all([
         orderPage(term),fetchOrders('open','due'),
-        db.from('field_orders').select('id',{count:'exact',head:true}).eq('complete',false).eq('on_hold',true)
+        db.from('field_orders').select('id',{count:'exact',head:true}).eq('complete',false).eq('on_hold',true),
+        db.from('field_orders').select('id',{count:'exact',head:true}).eq('complete',true)
       ]);
       if(held?.error)throw held.error;
+      if(completed.error)throw completed.error;
       const result=await db.from('order_clients').select('name').order('name');
       if(result.error)throw result.error;
       if(current!==request||version!==generation)return;
       openDates=openRows.map(order=>order.due);
       field('hold').textContent='On Hold ('+held.count+')';
+      field('completed').textContent='Completed ('+completed.count.toLocaleString()+')';
       displayCounts();
       field('prev').hidden=page===0;
       field('next').hidden=batch.length<=pageSize;
