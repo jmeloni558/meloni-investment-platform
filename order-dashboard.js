@@ -135,12 +135,16 @@
       schedule.className='od-schedule';
       schedule.append(due);
       const showDirections=fieldApp && o.address?.trim() && !o.list_name && !o.former_list_task;
-      if(showDirections){
+      const actions=showDirections?el('span'):null;
+      if(actions){
+        actions.className='od-field-actions';
+        const dueActions=el('span');dueActions.className='od-due-actions';
+        dueActions.append(due,actions);schedule.append(dueActions);
         const directions=el('a','Directions'),url=new URL('https://www.google.com/maps/dir/');
         url.search=new URLSearchParams({api:'1',destination:o.address.trim(),travelmode:'driving'}).toString();
         directions.href=url.href;directions.target='_blank';directions.rel='noopener noreferrer';
         directions.className='od-directions';directions.setAttribute('aria-label','Driving directions to '+o.address);
-        schedule.append(directions);
+        actions.append(directions);
       }
       if(o.appointment){
         const appointment=el('time','Appt '+appointmentLabel.format(new Date(o.appointment)));
@@ -161,7 +165,7 @@
       if(fieldApp && o.needs_photos && o.photo_id && account===membership.photo_owner){
         const button=fieldPhotoButton(o,'Photos');
         button.className='od-row-photos';
-        row.append(button);
+        (actions || row).append(button);
       }
       if(showDirections)row.append(schedule);
       field('list').append(row);
