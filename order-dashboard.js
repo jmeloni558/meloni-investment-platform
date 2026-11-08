@@ -276,7 +276,6 @@
       <dialog closedby="any" id="od-clients-dialog" aria-labelledby="od-clients-title">
       <h2 id="od-clients-title">Manage clients</h2>
       <form id="od-add-client-form"><label>New client name<input id="od-new-client" maxlength="160" required></label>
-      <label>QuickBooks customer for new client<select id="od-new-customer"><option value="">Unmatched</option></select></label>
       <button id="od-add-client">Add client</button></form>
       <label>Existing client<select id="od-client-choice"></select></label>
       <label>Linked QuickBooks customer<select id="od-match-choice" disabled></select></label>
@@ -386,7 +385,7 @@
     };
     const clientChoice=field('client-choice'),removeClient=field('remove-client');
     let linked=new Map(),customers=[],matchesLoaded=false,matchBusy=false;
-    const matchChoice=field('match-choice'),newCustomer=field('new-customer');
+    const matchChoice=field('match-choice');
     async function qbo(action,values={}){
       const {data,error}=await db.functions.invoke('qbo',{body:{action,...values}});
       if(error){
@@ -424,10 +423,16 @@
       if(!name){field('client-message').textContent='Enter a client name.';return;}
       button.disabled=true;
       try{
-        const added=await qbo('saveCustomerMatch',{add:true,client:name,customerId:newCustomer.value});
+        const added=await qbo('saveCustomerMatch',{add:true,client:name,autoMatch:true});
         if(version!==generation)return;
         const data=added.client;
-        if(added.match)linked.set(data,added.match);
+        if(added.match){
+          linked.set(data,added.match);
+          if(added.match.customer_id && !customers.some(c=>c.id===added.match.customer_id)){
+            customers.push({id:added.match.customer_id,name:added.match.customer_name});
+            customers.sort((a,b)=>a.name.localeCompare(b.name));
+          }
+        }else linked.delete(data);
         ++request;
         const existing=clients.find(c=>c.name===data);
         if(existing)existing.listed=true;
@@ -436,8 +441,10 @@
           clients.sort((a,b)=>a.name.localeCompare(b.name));
         }
         refreshClientDropdowns();
+        clientChoice.value=data;
+        showMatch();
         field('add-client-form').reset();
-        field('client-message').textContent=data+' is available in the client dropdown.';
+        field('client-message').textContent=added.match?'Client saved and linked to QuickBooks.':'Client saved. Choose a QuickBooks customer below to link it.';
       }catch(e){if(version===generation)field('client-message').textContent=e.message;}
       finally{button.disabled=false;}
     };
@@ -446,8 +453,6 @@
       const ticket=++directoryRequest,version=generation;
       matchesLoaded=false;linked=new Map();customers=[];
       showClientChoices();
-      newCustomer.replaceChildren(new Option('Unmatched',''));
-      newCustomer.disabled=true;
       field('add-client').disabled=true;
       field('client-message').textContent='Loading QuickBooks customer matches...';
       field('clients-dialog').showModal();
@@ -456,8 +461,6 @@
         if(version!==generation || ticket!==directoryRequest)return;
         linked=new Map(data.matches.map(m=>[m.client,m]));customers=data.customers;
         matchesLoaded=true;showClientChoices();
-        newCustomer.append(...customers.map(c=>new Option(c.name,c.id)));
-        newCustomer.disabled=!!data.unavailable;
         field('add-client').disabled=false;
         field('client-message').textContent=data.unavailable?'QuickBooks customers could not be loaded. Saved matches are shown.':'';
       }catch(e){if(version===generation && ticket===directoryRequest)field('client-message').textContent=e.message;}
