@@ -688,6 +688,6 @@ if(window===parent){
       });
     }
   };
-  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=three-line-orders-1';document.head.append(sheet);
-  import('./order-dashboard.js?v=field-dashboard-first').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=field-order-photos';document.head.append(sheet);
+  import('./order-dashboard.js?v=field-order-photos').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }

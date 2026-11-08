@@ -96,6 +96,13 @@
       render();field('status').textContent='';
     }catch(e){if(version===generation&&current===request)field('status').textContent=e.message;}
   }
+  function fieldPhotoButton(order,label){
+    const button=el('button',label);
+    button.type='button';
+    button.setAttribute('aria-label',label+' for '+order.address);
+    button.onclick=()=>{hide();fieldApp.openSet(order.photo_id);};
+    return button;
+  }
   function render(){
     field('list').replaceChildren();
     field('main-open').setAttribute('aria-pressed',String(currentList==='open' && !searchText()));
@@ -140,6 +147,11 @@
         title.append(reminder);
       }
       row.append(check,title);
+      if(fieldApp && o.needs_photos && o.photo_id && account===membership.photo_owner){
+        const button=fieldPhotoButton(o,'Photos');
+        button.className='od-row-photos';
+        row.append(button);
+      }
       field('list').append(row);
     }
     if(!orders.length)field('list').append(el('p',searchText()?'No matching orders.':{open:'No open orders.',hold:'No orders on hold.',completed:'No completed orders.'}[currentList]));
@@ -314,8 +326,7 @@
     if(o?.photo_id){
       if(account===membership.photo_owner){
         if(fieldApp){
-          const button=el('button','Open photos');button.type='button';
-          button.onclick=()=>{hide();fieldApp.openSet(o.photo_id);};photos.append(button);
+          photos.append(fieldPhotoButton(o,'Open photos'));
         }else{
           const link=el('a','Open PT Photos');
           link.href='/photos?set='+encodeURIComponent(o.photo_id);
