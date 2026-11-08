@@ -29,6 +29,7 @@ body.pt-orders-open #ptOrders{display:block!important}
 #ptOrders .od-summary small{display:inline;flex:none;max-width:55%;font-weight:500}
 #ptOrders .od-schedule{display:flex;flex-wrap:wrap;column-gap:.8em}
 #ptOrders article button time{font-size:.8rem;font-weight:400;color:#53696c;margin-top:3px}
+#ptOrders .od-schedule time + time{color:#7035a1;font-weight:700}
 #ptOrders article:has([aria-current=true]){background:#e7f2ef}
 #od-details{position:sticky;top:1rem;max-height:calc(100dvh - 2rem);overflow:auto;border-left:1px solid #d6e1df;padding:0 12px 14px 20px;box-sizing:border-box}
 #ptOrders #od-details header{margin:0}
