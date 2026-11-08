@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const VERSION=6;
+  const VERSION=7;
   if((window.__pricingAccountToolbarV||0)>=VERSION)return;
   window.__pricingAccountToolbarV=VERSION;
   const SUPABASE_URL='https://lmaiqpkogmmsldkziggy.supabase.co';
@@ -9,7 +9,7 @@
   let activeUserId=null,planChangeControls=null;
   const reveal=()=>document.documentElement.classList.remove('pt-account-nav-pending');
   const guests=new Map();
-  function render(user,client,owner){
+  function render(user,client,owner,hasDashboard=false){
     planChangeControls?.destroy();planChangeControls=null;
     const nav=document.querySelector('.pricing-nav,[data-account-nav]');if(!nav)return;
     if(!guests.has(nav))guests.set(nav,nav.innerHTML);
@@ -22,6 +22,12 @@
     nav.dataset.accountToolbar='true';
     document.body.classList.add('pt-user-signed-in');
     nav.innerHTML='<a href="index.html?app-action=new">New Analysis</a><a href="index.html?app-action=existing">Saved Properties</a><a href="index.html?app-action=search-listings">Search Listings</a><a href="index.html?app-action=search-properties">Search Saved</a><a href="index.html?app-action=search-clients">Search Clients</a><a href="index.html?app-action=mortgage">Mortgage Tools</a><a href="glossary.html">Glossary</a>'+(owner?'':'<button type="button" data-manage-billing>Manage Subscription</button>');
+    if(hasDashboard){
+      const dashboard=document.createElement('a');
+      dashboard.textContent='Dashboard';
+      dashboard.href='index.html?orders=1';
+      nav.prepend(dashboard);
+    }
     nav.querySelectorAll('a').forEach(link=>{if(new URL(link.href).pathname===location.pathname){link.classList.add('active');link.setAttribute('aria-current','page');}});
     if(document.querySelector('.topin')){
       let identity=document.querySelector('[data-account-identity]');
@@ -46,9 +52,11 @@
     activeUserId=user?.id||null;
     const current=++request;
     if(!user){render(null,client,false);document.querySelectorAll('.sample-next-step>a').forEach(link=>{link.textContent='Start My Free Analysis →';link.href='index.html?from=guides';});return;}
+    const membership=client.from('order_members').select('user_id').eq('user_id',user.id).maybeSingle();
     let owner=false;
     try{const {data}=await client.rpc('get_account_access');owner=data?.owner===true;}catch(_e){}
-    if(current===request)render(user,client,owner);
+    const {data:member}=await membership;
+    if(current===request)render(user,client,owner,Boolean(member));
   }
   async function start(){
     try{

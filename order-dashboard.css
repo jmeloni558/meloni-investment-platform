@@ -7,7 +7,10 @@ body.pt-orders-open #ptOrders{display:block!important}
 #ptOrders small{font-weight:700;color:#486567}
 #ptOrders button,#ptOrders a{cursor:pointer}
 #ptOrders button{border:1px solid #a9c1bc;border-radius:8px;padding:9px 14px;color:#144c45;background:white;font:inherit;font-weight:650}
-#ptOrders button[aria-pressed=true],#ptOrders #od-new,#ptOrders #od-save,body.pt-orders-open #ptOrderNav{background:#185e54;color:white}
+#ptOrders button[aria-pressed=true],#ptOrders #od-save{background:#185e54;color:white}
+body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color:#175c92!important;color:#fff!important}
+#ptOrders #od-new{background:#99420f;color:white;border-color:#99420f}
+#ptOrders #od-count{margin:0;color:#486567;font-weight:600}
 #ptOrders article{display:flex;align-items:flex-start;gap:12px;padding:16px 0;border-top:1px solid #dbe4e1}
 #ptOrders article input{width:19px;height:19px;margin:3px}
 #ptOrders article button{padding:0;border:0;text-align:left;color:#184f66}
