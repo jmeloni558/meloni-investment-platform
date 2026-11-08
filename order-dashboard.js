@@ -259,6 +259,66 @@
       field('client').append(savedOption);
     }
   }
+  const contactMethods=[['phone1','Phone 1','tel'],['phone2','Phone 2','tel'],['email','Email','email']];
+  function phoneTarget(value){
+    const parts=value.trim().match(/^(\+?[\d\s().-]+?)(?:\s*(?:ext\.?|x|#)\s*(\d+))?$/i);
+    if(!parts)return null;
+    const number=parts[1].replace(/[^\d+]/g,'');
+    if(!/^\+?\d{3,15}$/.test(number))return null;
+    return {dial:number+(parts[2]?';ext='+parts[2]:''),sms:number};
+  }
+  function renderContacts(contacts=[]){
+    const root=field('contacts');
+    root.replaceChildren();
+    for(let index=0;index<2;index++){
+      const saved=contacts?.[index] || {},poc='POC '+(index+1);
+      const group=el('fieldset'),name=el('input'),label=el('label',poc+' name');
+      group.append(el('legend',poc));name.type='text';name.className='od-poc-name';
+      name.value=saved.name || '';label.append(name);group.append(label);
+      for(const [key,title,type] of contactMethods){
+        const method=saved[key] || {},row=el('div'),entry=el('div'),input=el('input');
+        row.className='od-contact-row';input.type=type;input.id='od-contact-'+index+'-'+key;
+        input.value=method.value || '';input.setAttribute('aria-label',poc+' '+title);
+        const caption=el('label',title);caption.htmlFor=input.id;
+        const action=el(type==='tel'?'button':'a'),editValue=el('button','Edit');
+        editValue.type='button';editValue.setAttribute('aria-label','Edit '+poc+' '+title);
+        if(type==='tel')action.type='button';
+        function showValue(){
+          const value=input.value.trim(),target=type==='tel'?phoneTarget(value):null;
+          const usable=!!value && (type==='tel'?!!target:input.validity.valid);
+          input.hidden=usable;action.hidden=editValue.hidden=!usable;action.textContent=value;
+          if(type==='email' && usable)action.href='mailto:'+encodeURIComponent(value).replace('%40','@');
+          if(type==='tel' && usable)action.onclick=()=>{
+            field('phone-number').textContent=value;
+            field('call-number').href='tel:'+target.dial;
+            field('text-number').href='sms:'+target.sms;
+            field('phone-dialog').showModal();
+          };
+        }
+        editValue.onclick=()=>{action.hidden=editValue.hidden=true;input.hidden=false;input.focus();};
+        input.onchange=showValue;
+        entry.append(caption,input,action,editValue);showValue();
+        const attempts=el('fieldset');attempts.className='od-contact-attempts';attempts.append(el('legend','Attempts'));
+        for(let n=0;n<3;n++){
+          const check=el('input'),attempt=el('label',String(n+1));check.type='checkbox';
+          check.checked=method.attempts?.[n]===true;
+          check.setAttribute('aria-label',poc+' '+title+' attempt '+(n+1));attempt.append(check);attempts.append(attempt);
+        }
+        row.append(entry,attempts);group.append(row);
+      }
+      root.append(group);
+    }
+  }
+  function readContacts(){
+    return Array.from(field('contacts').children,group=>{
+      const contact={name:group.querySelector('.od-poc-name').value.trim()};
+      group.querySelectorAll('.od-contact-row').forEach((row,i)=>{
+        contact[contactMethods[i][0]]={value:row.querySelector('input').value.trim(),
+          attempts:Array.from(row.querySelectorAll('input[type=checkbox]'),check=>check.checked)};
+      });
+      return contact;
+    });
+  }
   function updateOrderLink(){
     const input=field('order-link'),link=field('open-order-link'),value=input.value.trim();
     let href='';
@@ -317,6 +377,7 @@
     field('source').hidden=!o?.todo_title;
     if(o?.todo_title)field('source').textContent='Microsoft To Do: '+o.todo_title+' · Completed '+new Date(o.todo_completed_at).toLocaleDateString();
     for(const k of ['address','kind','client','purpose','due','notes'])field(k).value=o?.[k]||'';
+    renderContacts(o?.points_of_contact);
     field('fee').value=o?.fee ?? '';
     field('invoice-lines').replaceChildren();updateRequirements();
     field('photos').checked=!!o?.needs_photos;
@@ -349,7 +410,7 @@
     try{
       const client=field('client').value, address=field('address').value.trim();
       if((!client && field('client').required)||!address)throw Error('Enter the address and client.');
-      const changes={address,purpose:field('purpose').value.trim()||null,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
+      const changes={address,points_of_contact:readContacts(),purpose:field('purpose').value.trim()||null,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
       if(original)await update(original,{...changes,complete:field('state').value==='completed',on_hold:field('state').value==='hold',needs_photos:field('photos').checked});
       else {
         if(!field('billing').disabled){
@@ -393,6 +454,7 @@
       <label>Order type<select id="od-kind" required></select></label>
       <label>Client<select id="od-client" required></select></label>
       <label>Purpose of Order<input id="od-purpose" type="text"></label>
+      <div id="od-contacts"></div>
       <label>Order fee ($)<input type="number" id="od-fee" inputmode="decimal" min="0" max="9999999999.99" step="0.01"></label>
       <fieldset id="od-billing"><legend>QuickBooks invoice</legend><p id="od-monthly" hidden>This BPO uses the date entered as its service date on the client's monthly invoice.</p>
       <label>Existing open invoice number (optional)<input id="od-invoice-target" maxlength="21"></label><div id="od-invoice-lines"></div><button type="button" id="od-add-line">Add invoice line</button></fieldset>
@@ -406,7 +468,11 @@
       <label>Lockbox Code<input id="od-lockbox-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
       <p id="od-error" role="alert"></p>
-      <button id="od-save">Save order</button></form></aside></div>`;
+      <button id="od-save">Save order</button></form></aside></div>
+      <dialog id="od-phone-dialog" aria-labelledby="od-phone-number" closedby="any">
+      <h2 id="od-phone-number"></h2><a id="od-call-number">Call</a> <a id="od-text-number">Text</a>
+      <button id="od-phone-cancel" type="button">Cancel</button></dialog>`;
+    for(const id of ['call-number','text-number','phone-cancel'])field(id).onclick=()=>field('phone-dialog').close();
     if(fieldApp){
       document.getElementById('fieldDashboardHost').append(panel);
       const photosTab=document.getElementById('fieldPhotos');
