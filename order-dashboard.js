@@ -1,6 +1,8 @@
 // The two enrolled sign-ins share one order list and the realty account's field photo library.
 (() => {
   const kinds = ['Int BPO','Ext BPO','Int PCR','Ext PCR','PDCR','Desktop BPO','Marketing Photos','Inspection Photos'];
+  const kindLabels = new Map([['Int BPO','Interior BPO'],['Ext BPO','Exterior BPO'],['PDCR','Data Collection Report']]);
+  const kindLabel = kind => kindLabels.get(kind) ?? kind;
   const autoLand = (!location.search && !location.hash) || new URLSearchParams(location.search).get('orders')==='1';
   let db, account, membership, panel, menu, generation=0, request=0, landing=autoLand, currentList='open', orders=[], clients=[];
   let selectedList='', namedLists=[];
@@ -117,7 +119,7 @@
       summary.className='od-summary';
       const address=el('strong',o.address);
       address.title=o.address;
-      summary.append(address,el('small',[o.kind,o.client].filter(Boolean).join(' · ')));
+      summary.append(address,el('small',[kindLabel(o.kind),o.client].filter(Boolean).join(' · ')));
       const schedule=el('span');
       schedule.className='od-schedule';
       schedule.append(due);
@@ -186,7 +188,7 @@
     const row=el('fieldset');
     row.innerHTML='<legend>Additional invoice line</legend><label>Service<select required></select></label><label>Address or description<input required maxlength="500"></label><label>Fee ($)<input required type="number" min="0.01" step="0.01" max="9999999999.99"></label><label>Service date<input required type="date"></label><button type="button">Remove line</button>';
     const service=row.querySelector('select'), inputs=row.querySelectorAll('input');
-    for(const name of kinds.filter(k=>!k.endsWith('Photos')))service.add(new Option(name,name));
+    for(const name of kinds.filter(k=>!k.endsWith('Photos')))service.add(new Option(kindLabel(name),name));
     service.value=field('kind').value;
     inputs[2].value=monthlyBpo()?new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()):field('due').value;
     row.querySelector('button').onclick=()=>{row.remove();dirty=true;};
@@ -313,7 +315,7 @@
     field('form').oninput=()=>{dirty=true;};
     field('notes').oninput=showNoteLinks;
     field('photos').onchange=()=>{photosOverridden=true;};
-    field('kind').append(new Option('Choose order type',''),...kinds.map(k=>new Option(k==='PDCR'?'PDCR (Property Data Collection Report)':k,k)));
+    field('kind').append(new Option('Choose order type',''),...kinds.map(k=>new Option(kindLabel(k),k)));
     field('new').onclick=()=>edit(null);field('cancel').onclick=()=>{if(canLeave())closeDetails();};field('form').onsubmit=submit;
     function switchList(status,name=''){
       if(!canLeave())return false;
