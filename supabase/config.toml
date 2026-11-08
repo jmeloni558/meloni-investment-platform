@@ -43,3 +43,6 @@ verify_jwt = false
 
 [functions.outlook-write]
 verify_jwt = false
+
+[functions.qbo]
+verify_jwt = false
