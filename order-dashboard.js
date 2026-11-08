@@ -45,7 +45,12 @@
       title.setAttribute('aria-current',String(!field('details').hidden && editing?.id===o.id));
       title.onclick=()=>edit(o);
       due.dateTime=o.due;
-      title.append(el('span',o.address),due);
+      const summary=el('span');
+      summary.className='od-summary';
+      const address=el('strong',o.address);
+      address.title=o.address;
+      summary.append(address,el('small',o.kind+' · '+o.client));
+      title.append(summary,due);
       row.append(check,title);
       field('list').append(row);
     }
