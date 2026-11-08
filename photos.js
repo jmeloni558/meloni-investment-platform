@@ -657,7 +657,9 @@ $('updateApp').onclick=async()=>{
 };
 if(window===parent){
   // Keep the photo workspace mounted so tab switches preserve the open set and file queue.
+  const launchParams=new URLSearchParams(location.search);
   window.PropertyThesisFieldApp={
+    startOnDashboard:!stewartMode && !launchParams.get('address') && !launchParams.get('set'),
     canShowDashboard(){
       if(!busy)return true;
       status('Wait for the current photo operation to finish before switching views.');return false;
@@ -687,5 +689,5 @@ if(window===parent){
     }
   };
   const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=three-line-orders-1';document.head.append(sheet);
-  import('./order-dashboard.js?v=field-app-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  import('./order-dashboard.js?v=field-dashboard-first').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }
