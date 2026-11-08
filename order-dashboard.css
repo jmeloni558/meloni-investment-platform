@@ -41,6 +41,6 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-note:not([hidden]){padding:10px;background:#f5f8f7;border-radius:6px}
 @media(max-width:760px){
   #ptOrders .od-columns:has(aside:not([hidden])){grid-template-columns:minmax(0,1fr)}
-  #ptOrders .od-columns:has(aside:not([hidden])) #od-list{display:none}
+  #ptOrders .od-columns:has(aside:not([hidden])) > div:first-child{display:none}
   #od-details{position:static;max-height:none;border:0;padding:0}
 }

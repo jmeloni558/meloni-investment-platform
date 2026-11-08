@@ -34,22 +34,35 @@
       if(data.length<500)return rows;
     }
   }
+  const pageSize=100;
+  let page=0, searchTimer;
+  function searchText(){return field('search').value.trim();}
+  async function orderPage(term){
+    const query=term ? db.rpc('search_field_orders',{search_text:term}) :
+      db.from('field_orders').select('*').eq('complete',currentList==='completed').eq('on_hold',currentList==='hold');
+    const offset=page*pageSize;
+    const {data,error}=await query.order('due',{ascending:!term && currentList!=='completed',nullsFirst:false}).order('id').range(offset,offset+pageSize);
+    if(error)throw error;
+    return data;
+  }
   async function load(){
     const current=++request, version=generation;
     try{
-      const [rows,openRows,held]=await Promise.all([
-        fetchOrders(currentList,'*'),
-        currentList==='open'?null:fetchOrders('open','due'),
-        currentList==='hold'?null:db.from('field_orders').select('id',{count:'exact',head:true}).eq('complete',false).eq('on_hold',true)
+      const term=searchText();
+      const [batch,openRows,held]=await Promise.all([
+        orderPage(term),fetchOrders('open','due'),
+        db.from('field_orders').select('id',{count:'exact',head:true}).eq('complete',false).eq('on_hold',true)
       ]);
       if(held?.error)throw held.error;
       const result=await db.from('order_clients').select('name').order('name');
       if(result.error)throw result.error;
       if(current!==request||version!==generation)return;
-      openDates=(openRows || rows).map(order=>order.due);
-      field('hold').textContent='On Hold ('+(held?.count ?? rows.length)+')';
+      openDates=openRows.map(order=>order.due);
+      field('hold').textContent='On Hold ('+held.count+')';
       displayCounts();
-      orders=rows;clients=result.data.map(c=>c.name);
+      field('prev').hidden=page===0;
+      field('next').hidden=batch.length<=pageSize;
+      orders=batch.slice(0,pageSize);clients=result.data.map(c=>c.name);
       if(field('details').hidden) populateClients();
       render();field('status').textContent='';
     }catch(e){if(version===generation&&current===request)field('status').textContent=e.message;}
@@ -57,10 +70,10 @@
   function render(){
     field('list').replaceChildren();
     for(const list of ['open','hold','completed']){
-      field(list).setAttribute('aria-pressed',String(list===currentList));
+      field(list).setAttribute('aria-pressed',String(!searchText() && list===currentList));
     }
     for(const o of orders){
-      const row=el('article'), check=el('input'), title=el('button'), due=el('time','Due '+dateLabel(o.due));
+      const row=el('article'), check=el('input'), title=el('button'), due=el('time',o.due?'Due '+dateLabel(o.due):'No due date');
       check.type='checkbox';
       check.checked=o.complete;
       check.setAttribute('aria-label','Completed � '+o.address);
@@ -73,12 +86,12 @@
       title.dataset.order=o.id;
       title.setAttribute('aria-current',String(!field('details').hidden && editing?.id===o.id));
       title.onclick=()=>edit(o);
-      due.dateTime=o.due;
+      if(o.due)due.dateTime=o.due;
       const summary=el('span');
       summary.className='od-summary';
       const address=el('strong',o.address);
       address.title=o.address;
-      summary.append(address,el('small',o.kind+' · '+o.client));
+      summary.append(address,el('small',[o.kind,o.client].filter(Boolean).join(' · ')));
       const schedule=el('span');
       schedule.className='od-schedule';
       schedule.append(due);
@@ -87,11 +100,12 @@
         appointment.dateTime=o.appointment;
         schedule.append(appointment);
       }
+      if(searchText())schedule.append(el('small',o.complete?'Completed':o.on_hold?'On Hold':'Open'));
       title.append(summary,schedule);
       row.append(check,title);
       field('list').append(row);
     }
-    if(!orders.length)field('list').append(el('p',{open:'No open orders.',hold:'No orders on hold.',completed:'No completed orders.'}[currentList]));
+    if(!orders.length)field('list').append(el('p',searchText()?'No matching orders.':{open:'No open orders.',hold:'No orders on hold.',completed:'No completed orders.'}[currentList]));
   }
   async function update(o,changes){
     const {data,error}=await db.from('field_orders').update(changes).eq('id',o.id).eq('updated_at',o.updated_at).select('id').maybeSingle();
@@ -141,6 +155,15 @@
     field('new-client').required=false;
     editing=o;photosOverridden=false;draftId=o?.id||crypto.randomUUID();const f=field('form');f.reset();field('error').textContent='';
     field('title').textContent=o?'Order details':'New order';
+    field('kind').querySelector('[data-historical]')?.remove();
+    if(o?.kind && !kinds.includes(o.kind)){
+      const legacy=new Option(o.kind,o.kind);
+      legacy.dataset.historical='true';
+      field('kind').append(legacy);
+    }
+    for(const id of ['kind','client','due'])field(id).required=!o?.todo_title;
+    field('source').hidden=!o?.todo_title;
+    if(o?.todo_title)field('source').textContent='Microsoft To Do: '+o.todo_title+' · Completed '+new Date(o.todo_completed_at).toLocaleDateString();
     for(const k of ['address','kind','client','due','notes'])field(k).value=o?.[k]||'';
     field('photos').checked=!!o?.needs_photos;
     field('state-label').hidden=!o;
@@ -164,16 +187,16 @@
     const version=generation,original=editing;
     try{
       const name=clientName(), address=field('address').value.trim();
-      if(!name||!address)throw Error('Enter the address and client.');
+      if((!name && !original?.todo_title)||!address)throw Error('Enter the address and client.');
       let client=clients.find(c=>c.toLowerCase()===name.toLowerCase());
-      if(!client){
+      if(name && !client){
         const {error}=await db.from('order_clients').insert({name});
         if(error&&error.code!=='23505')throw error;
         const r=await db.from('order_clients').select('name').order('name');if(r.error)throw r.error;
         client=r.data.find(c=>c.name.toLowerCase()===name.toLowerCase())?.name;if(!client)throw Error('Client could not be saved.');
       }
       if(version!==generation)return;
-      const changes={address,kind:field('kind').value,client,due:field('due').value,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
+      const changes={address,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
       if(original)await update(original,{...changes,complete:field('state').value==='completed',on_hold:field('state').value==='hold',needs_photos:field('photos').checked});
       else {
         const {error}=await db.from('field_orders').insert({...changes,id:draftId,needs_photos:field('photos').checked});
@@ -192,9 +215,10 @@
       <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"><span id="od-total"></span><span id="od-today"></span><span id="od-overdue"></span></p></div></header>
       <nav><button id="od-new">New order</button><button id="od-open">Open orders</button><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><button id="od-calendar">Outlook calendar</button></nav>
       <div id="od-subscribe" hidden><p>In Outlook Calendar, choose Add calendar → Subscribe from web. Paste this private link and select Import. Outlook refreshes the appointments on its own schedule.</p><label>Private calendar URL<input id="od-url" readonly></label><button id="od-copy">Copy link</button> <a href="https://outlook.office.com/calendar/" target="_blank" rel="noopener">Open Outlook Calendar</a></div>
-      <p id="od-status" role="status"></p><div class="od-columns"><div id="od-list"></div>
+      <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
+      <p id="od-status" role="status"></p><div class="od-columns"><div><div id="od-list"></div><button id="od-prev" hidden>Previous page</button> <button id="od-next" hidden>Next page</button></div>
       <aside id="od-details" aria-labelledby="od-title" hidden><form id="od-form"><header><h2 id="od-title" tabindex="-1"></h2><button type="button" id="od-cancel">Close</button></header>
-      <label>Property address<input id="od-address" maxlength="500" required></label>
+      <p id="od-source" hidden></p><label>Property address<input id="od-address" maxlength="500" required></label>
       <label>Order type<select id="od-kind" required></select></label>
       <label>Client<select id="od-client" required></select></label>
       <label id="od-new-client-label" hidden>New client name<input id="od-new-client" maxlength="160"></label>
@@ -206,6 +230,15 @@
       <div id="od-preview" aria-label="Links in notes" hidden></div><p id="od-error" role="alert"></p>
       <button id="od-save">Save order</button></form></aside></div>`;
     document.querySelector('#appNavShell').after(panel);
+    field('search').oninput=()=>{
+      ++request;
+      clearTimeout(searchTimer);
+      page=0;
+      searchTimer=setTimeout(load,200);
+    };
+    for(const [id,direction] of [['prev',-1],['next',1]]){
+      field(id).onclick=()=>{if(!canLeave())return;closeDetails();page+=direction;field('prev').hidden=field('next').hidden=true;load();};
+    }
     field('kind').onchange=updatePhotoDefault;
     field('client').onchange=()=>{
       const adding=field('client').value==='__add__';
@@ -224,6 +257,7 @@
       field(list).onclick=()=>{
         if(!canLeave())return;
         closeDetails();
+        field('search').value='';page=0;clearTimeout(searchTimer);
         currentList=list;
         load();
       };
@@ -241,7 +275,7 @@
   }
   async function auth(session){
     const id=session?.user?.id||null;if(id===account)return;
-    clearTimeout(midnightTimer);openDates=[];
+    clearTimeout(midnightTimer);clearTimeout(searchTimer);page=0;openDates=[];
     const old=account;account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';
     if(!id){if(old)landing=true;return;}
     const {data,error}=await db.from('order_members').select('photo_owner').eq('user_id',id).maybeSingle();
