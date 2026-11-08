@@ -316,7 +316,7 @@
     updateRequirements();
     field('source').hidden=!o?.todo_title;
     if(o?.todo_title)field('source').textContent='Microsoft To Do: '+o.todo_title+' · Completed '+new Date(o.todo_completed_at).toLocaleDateString();
-    for(const k of ['address','kind','client','due','notes'])field(k).value=o?.[k]||'';
+    for(const k of ['address','kind','client','purpose','due','notes'])field(k).value=o?.[k]||'';
     field('fee').value=o?.fee ?? '';
     field('invoice-lines').replaceChildren();updateRequirements();
     field('photos').checked=!!o?.needs_photos;
@@ -349,7 +349,7 @@
     try{
       const client=field('client').value, address=field('address').value.trim();
       if((!client && field('client').required)||!address)throw Error('Enter the address and client.');
-      const changes={address,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
+      const changes={address,purpose:field('purpose').value.trim()||null,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
       if(original)await update(original,{...changes,complete:field('state').value==='completed',on_hold:field('state').value==='hold',needs_photos:field('photos').checked});
       else {
         if(!field('billing').disabled){
@@ -392,6 +392,7 @@
       <div id="od-invoice" role="status" hidden></div><p id="od-source" hidden></p><label>List<select id="od-destination"></select></label><label><span id="od-address-label">Property address</span><input id="od-address" maxlength="500" required></label>
       <label>Order type<select id="od-kind" required></select></label>
       <label>Client<select id="od-client" required></select></label>
+      <label>Purpose of Order<input id="od-purpose" type="text"></label>
       <label>Order fee ($)<input type="number" id="od-fee" inputmode="decimal" min="0" max="9999999999.99" step="0.01"></label>
       <fieldset id="od-billing"><legend>QuickBooks invoice</legend><p id="od-monthly" hidden>This BPO uses the date entered as its service date on the client's monthly invoice.</p>
       <label>Existing open invoice number (optional)<input id="od-invoice-target" maxlength="21"></label><div id="od-invoice-lines"></div><button type="button" id="od-add-line">Add invoice line</button></fieldset>
