@@ -252,7 +252,12 @@
     if(panel)return;
     panel=el('section');panel.id='ptOrders';panel.innerHTML=`
       <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"><span id="od-total"></span><span id="od-today"></span><span id="od-overdue"></span></p></div></header>
-      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><button type="button" id="od-main-open">Open orders</button><span class="od-open-picker" id="od-picker" hidden><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-rename-list" hidden>Rename list</button><button id="od-delete-list" hidden>Delete list</button><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Outlook calendar</a></nav>
+      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><button type="button" id="od-main-open">Open orders</button><span class="od-open-picker" id="od-picker" hidden><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-rename-list" hidden>Rename list</button><button id="od-delete-list" hidden>Delete list</button><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><button type="button" id="od-manage-clients">Manage clients</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Outlook calendar</a></nav>
+      <dialog id="od-clients-dialog" aria-labelledby="od-clients-title">
+      <h2 id="od-clients-title">Manage clients</h2><p>Remove a client from the dropdown. Saved orders keep their client name.</p>
+      <label>Client to remove<select id="od-client-choice"></select></label>
+      <button type="button" id="od-remove-client" disabled>Remove from dropdown</button>
+      <button type="button" id="od-close-clients">Close</button><p id="od-client-message" role="status"></p></dialog>
       <form id="od-list-form" hidden><label>List name<input id="od-name" maxlength="80" required></label>
       <button id="od-create-list">Create list</button> <button type="button" id="od-cancel-list">Cancel</button></form>
       <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
@@ -356,6 +361,41 @@
         switchList('open',name);
       }catch(e){if(version===generation)field('status').textContent=e.message;}
       finally{button.disabled=false;}
+    };
+    const clientChoice=field('client-choice'),removeClient=field('remove-client');
+    function showClientChoices(){
+      clientChoice.replaceChildren(new Option('Choose client',''),
+        ...clients.filter(c=>c.listed!==false).map(c=>new Option(c.name,c.name)));
+      removeClient.disabled=true;
+    }
+    field('manage-clients').onclick=()=>{
+      showClientChoices();
+      field('client-message').textContent='';
+      field('clients-dialog').showModal();
+    };
+    field('close-clients').onclick=()=>field('clients-dialog').close();
+    clientChoice.onchange=()=>{removeClient.disabled=!clientChoice.value;};
+    removeClient.onclick=async()=>{
+      const name=clientChoice.value,version=generation;
+      if(!name || removeClient.disabled)return;
+      removeClient.disabled=clientChoice.disabled=true;
+      try{
+        const {error}=await db.from('order_clients').update({listed:false}).eq('name',name).select('name').single();
+        if(version!==generation)return;
+        if(error)throw error;
+        ++request;
+        const client=clients.find(c=>c.name===name);
+        if(client)client.listed=false;
+        const selected=field('client').value;
+        populateClients(editing?.client);
+        field('client').value=selected;
+        showClientChoices();
+        field('client-message').textContent=name+' removed from the dropdown.';
+      }catch(e){if(version===generation)field('client-message').textContent=e.message;}
+      finally{
+        clientChoice.disabled=false;
+        removeClient.disabled=!clientChoice.value;
+      }
     };
     field('calendar').onclick=event=>{
       if(event.defaultPrevented || !/Edg\//.test(navigator.userAgent))return;
