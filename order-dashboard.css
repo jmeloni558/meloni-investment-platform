@@ -81,6 +81,6 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-field-order:has(.od-row-photos) button[data-order]{grid-column:2}
 #ptOrders .od-field-order .od-schedule{grid-column:2 / -1;align-items:center;gap:2px 8px;font-size:.8rem;color:#53696c}
 #ptOrders .od-field-order .od-schedule time:not(:first-child){color:#7035a1;font-weight:700}
-#ptOrders article :is(.od-directions,.od-row-photos){box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;flex:none;width:6rem;height:44px;padding:0;border:0;border-radius:8px;color:white;font-size:.875rem;font-weight:650;line-height:1.2;text-decoration:none}
+#ptOrders article :is(.od-directions,.od-row-photos){box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;flex:none;width:6rem;height:46px;padding:0;border:0;border-radius:8px;color:white;font-size:.875rem;font-weight:650;line-height:1.2;text-decoration:none}
 #ptOrders article .od-directions{background:#185c96}
 #ptOrders article .od-row-photos{background:#17634d}
