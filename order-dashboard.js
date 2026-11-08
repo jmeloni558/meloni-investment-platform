@@ -149,15 +149,12 @@
     render();
   }
   function populateClients(savedName){
-    field('client').replaceChildren(new Option('Choose client',''),...clients.filter(c=>c.listed!==false).map(c=>new Option(c.name,c.name)),new Option('Add new client…','__add__'));
+    field('client').replaceChildren(new Option('Choose client',''),...clients.filter(c=>c.listed!==false).map(c=>new Option(c.name,c.name)));
     if(savedName && !Array.from(field('client').options).some(option=>option.value===savedName)){
       const savedOption=new Option(savedName,savedName);
       savedOption.hidden=true;
       field('client').append(savedOption);
     }
-  }
-  function clientName(){
-    return (field('client').value==='__add__'?field('new-client').value:field('client').value).trim();
   }
   function showNoteLinks(){
     const preview=field('preview'), notes=field('notes').value;
@@ -175,7 +172,7 @@
   function updatePhotoDefault(){
     if(editing || photosOverridden)return;
     const kind=field('kind').value;
-    const nvmsInterior=kind==='Int PCR' && clientName().toLowerCase()==='nvms';
+    const nvmsInterior=kind==='Int PCR' && field('client').value.toLowerCase()==='nvms';
     field('photos').checked=Boolean(kind) && kind!=='PDCR' && kind!=='Desktop BPO' && !nvmsInterior;
   }
   function updateRequirements(){
@@ -187,8 +184,6 @@
     if(!canLeave())return;
     dirty=false;
     populateClients(o?.client);
-    field('new-client-label').hidden=true;
-    field('new-client').required=false;
     editing=o;photosOverridden=false;draftId=o?.id||crypto.randomUUID();const f=field('form');f.reset();field('error').textContent='';
     const destination=o?o.list_name:(currentList==='open'?selectedList:'');
     field('destination').replaceChildren(new Option('Main dashboard',''),...namedLists.map(name=>new Option(name,name)));
@@ -225,16 +220,8 @@
     event.preventDefault();const save=field('save');if(save.disabled)return;save.disabled=true;
     const version=generation,original=editing;
     try{
-      const name=clientName(), address=field('address').value.trim();
-      if((!name && field('client').required)||!address)throw Error('Enter the address and client.');
-      let client=clients.find(c=>c.name.toLowerCase()===name.toLowerCase())?.name;
-      if(name && !client){
-        const {error}=await db.from('order_clients').insert({name});
-        if(error&&error.code!=='23505')throw error;
-        const r=await db.from('order_clients').select('name').order('name');if(r.error)throw r.error;
-        client=r.data.find(c=>c.name.toLowerCase()===name.toLowerCase())?.name;if(!client)throw Error('Client could not be saved.');
-      }
-      if(version!==generation)return;
+      const client=field('client').value, address=field('address').value.trim();
+      if((!client && field('client').required)||!address)throw Error('Enter the address and client.');
       const changes={address,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
       if(original)await update(original,{...changes,complete:field('state').value==='completed',on_hold:field('state').value==='hold',needs_photos:field('photos').checked});
       else {
@@ -254,7 +241,9 @@
       <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"><span id="od-total"></span><span id="od-today"></span><span id="od-overdue"></span></p></div></header>
       <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><button type="button" id="od-main-open">Open orders</button><span class="od-open-picker" id="od-picker" hidden><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-rename-list" hidden>Rename list</button><button id="od-delete-list" hidden>Delete list</button><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><button type="button" id="od-manage-clients">Manage clients</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Outlook calendar</a></nav>
       <dialog id="od-clients-dialog" aria-labelledby="od-clients-title">
-      <h2 id="od-clients-title">Manage clients</h2><p>Remove a client from the dropdown. Saved orders keep their client name.</p>
+      <h2 id="od-clients-title">Manage clients</h2>
+      <form id="od-add-client-form"><label>New client name<input id="od-new-client" maxlength="160" required></label>
+      <button id="od-add-client">Add client</button></form><p>Remove a client from the dropdown. Saved orders keep their client name.</p>
       <label>Client to remove<select id="od-client-choice"></select></label>
       <button type="button" id="od-remove-client" disabled>Remove from dropdown</button>
       <button type="button" id="od-close-clients">Close</button><p id="od-client-message" role="status"></p></dialog>
@@ -266,7 +255,6 @@
       <p id="od-source" hidden></p><label>List<select id="od-destination"></select></label><label><span id="od-address-label">Property address</span><input id="od-address" maxlength="500" required></label>
       <label>Order type<select id="od-kind" required></select></label>
       <label>Client<select id="od-client" required></select></label>
-      <label id="od-new-client-label" hidden>New client name<input id="od-new-client" maxlength="160"></label>
       <label>Due date<input type="date" id="od-due" required></label>
       <label>Appointment (optional, local time)<input type="datetime-local" id="od-appointment"></label>
       <label><input type="checkbox" id="od-photos"> Photos needed</label>
@@ -285,14 +273,7 @@
       field(id).onclick=()=>{if(!canLeave())return;closeDetails();page+=direction;field('prev').hidden=field('next').hidden=true;load();};
     }
     field('kind').onchange=updatePhotoDefault;
-    field('client').onchange=()=>{
-      const adding=field('client').value==='__add__';
-      field('new-client-label').hidden=!adding;
-      field('new-client').required=adding;
-      if(adding)field('new-client').focus();
-      updatePhotoDefault();
-    };
-    field('new-client').oninput=updatePhotoDefault;
+    field('client').onchange=updatePhotoDefault;
     field('form').oninput=()=>{dirty=true;};
     field('notes').oninput=showNoteLinks;
     field('photos').onchange=()=>{photosOverridden=true;};
@@ -368,6 +349,35 @@
         ...clients.filter(c=>c.listed!==false).map(c=>new Option(c.name,c.name)));
       removeClient.disabled=true;
     }
+    function refreshClientDropdowns(){
+      const selected=field('client').value;
+      populateClients(editing?.client);
+      field('client').value=selected;
+      showClientChoices();
+    }
+    field('add-client-form').onsubmit=async event=>{
+      event.preventDefault();
+      const name=field('new-client').value.trim(),button=field('add-client'),version=generation;
+      if(button.disabled)return;
+      if(!name){field('client-message').textContent='Enter a client name.';return;}
+      button.disabled=true;
+      try{
+        const {data,error}=await db.rpc('add_order_client',{client_name:name});
+        if(version!==generation)return;
+        if(error)throw error;
+        ++request;
+        const existing=clients.find(c=>c.name===data);
+        if(existing)existing.listed=true;
+        else{
+          clients.push({name:data,listed:true});
+          clients.sort((a,b)=>a.name.localeCompare(b.name));
+        }
+        refreshClientDropdowns();
+        field('add-client-form').reset();
+        field('client-message').textContent=data+' is available in the client dropdown.';
+      }catch(e){if(version===generation)field('client-message').textContent=e.message;}
+      finally{button.disabled=false;}
+    };
     field('manage-clients').onclick=()=>{
       showClientChoices();
       field('client-message').textContent='';
@@ -386,10 +396,7 @@
         ++request;
         const client=clients.find(c=>c.name===name);
         if(client)client.listed=false;
-        const selected=field('client').value;
-        populateClients(editing?.client);
-        field('client').value=selected;
-        showClientChoices();
+        refreshClientDropdowns();
         field('client-message').textContent=name+' removed from the dropdown.';
       }catch(e){if(version===generation)field('client-message').textContent=e.message;}
       finally{
