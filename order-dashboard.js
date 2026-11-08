@@ -59,7 +59,7 @@
       if(held?.error)throw held.error;
       if(completed.error)throw completed.error;
       const [result,lists]=await Promise.all([
-        db.from('order_clients').select('name').order('name'),
+        db.from('order_clients').select('name,listed').order('name'),
         db.from('order_lists').select('name').order('name')
       ]);
       if(lists.error)throw lists.error;
@@ -86,7 +86,7 @@
       displayCounts();
       field('prev').hidden=page===0;
       field('next').hidden=batch.length<=pageSize;
-      orders=batch.slice(0,pageSize);clients=result.data.map(c=>c.name);
+      orders=batch.slice(0,pageSize);clients=result.data;
       if(field('details').hidden) populateClients();
       render();field('status').textContent='';
     }catch(e){if(version===generation&&current===request)field('status').textContent=e.message;}
@@ -148,8 +148,13 @@
     dirty=false;
     render();
   }
-  function populateClients(){
-    field('client').replaceChildren(new Option('Choose client',''),...clients.map(c=>new Option(c,c)),new Option('Add new client…','__add__'));
+  function populateClients(savedName){
+    field('client').replaceChildren(new Option('Choose client',''),...clients.filter(c=>c.listed!==false).map(c=>new Option(c.name,c.name)),new Option('Add new client…','__add__'));
+    if(savedName && !Array.from(field('client').options).some(option=>option.value===savedName)){
+      const savedOption=new Option(savedName,savedName);
+      savedOption.hidden=true;
+      field('client').append(savedOption);
+    }
   }
   function clientName(){
     return (field('client').value==='__add__'?field('new-client').value:field('client').value).trim();
@@ -181,7 +186,7 @@
   function edit(o){
     if(!canLeave())return;
     dirty=false;
-    populateClients();
+    populateClients(o?.client);
     field('new-client-label').hidden=true;
     field('new-client').required=false;
     editing=o;photosOverridden=false;draftId=o?.id||crypto.randomUUID();const f=field('form');f.reset();field('error').textContent='';
@@ -222,7 +227,7 @@
     try{
       const name=clientName(), address=field('address').value.trim();
       if((!name && field('client').required)||!address)throw Error('Enter the address and client.');
-      let client=clients.find(c=>c.toLowerCase()===name.toLowerCase());
+      let client=clients.find(c=>c.name.toLowerCase()===name.toLowerCase())?.name;
       if(name && !client){
         const {error}=await db.from('order_clients').insert({name});
         if(error&&error.code!=='23505')throw error;
