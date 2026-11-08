@@ -10,10 +10,11 @@
   const field=id=>panel.querySelector('#od-'+id);
   const dateLabel=value=>new Date(value+'T12:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
   const appointmentLabel=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
-  function hide(){document.body.classList.remove('pt-orders-open');menu?.removeAttribute('aria-current');}
+  function hide(){stopInvoiceWatch();document.body.classList.remove('pt-orders-open');menu?.removeAttribute('aria-current');}
   function open(){
     if(!membership||!panel)return;
     document.body.classList.add('pt-orders-open');menu.setAttribute('aria-current','page');window.AppNavigationToolbar?.refresh();load();
+    if(editing && !field('details').hidden)showOrderInvoice(editing.id);
   }
   let openDates=[], midnightTimer;
   function displayCounts(){
@@ -150,7 +151,34 @@
   function canLeave(){
     return !field('save').disabled && (field('details').hidden || !dirty || window.confirm('Discard your unsaved order changes?'));
   }
+  let invoiceTimer,invoiceVersion=0;
+  function stopInvoiceWatch(){
+    clearTimeout(invoiceTimer);
+    ++invoiceVersion;
+  }
+  function showOrderInvoice(orderId){
+    stopInvoiceWatch();
+    const version=invoiceVersion,box=field('invoice');
+    box.replaceChildren();
+    box.hidden=!orderId;
+    if(!orderId)return;
+    async function refresh(){
+      const {data,error}=await db.rpc('dashboard_order_invoice',{target_order:orderId}).maybeSingle();
+      if(version!==invoiceVersion)return;
+      box.replaceChildren('QuickBooks invoice: ');
+      if(data?.invoice_id){
+        const link=el('a',data.invoice_number?'#'+data.invoice_number:'Open invoice');
+        link.href='https://qbo.intuit.com/app/invoice?txnId='+encodeURIComponent(data.invoice_id);
+        link.target='_blank';link.rel='noopener';box.append(link);
+      }else{
+        box.append(error?'Unable to check invoice status':data?.pending?'Pending':'No linked invoice');
+        if(error || data?.pending)invoiceTimer=setTimeout(refresh,error?30000:10000);
+      }
+    }
+    refresh();
+  }
   function closeDetails(){
+    stopInvoiceWatch();
     field('details').hidden=true;
     editing=null;
     dirty=false;
@@ -239,7 +267,7 @@
     }
     showNoteLinks();
     if(o?.appointment){const t=new Date(o.appointment);field('appointment').value=new Date(t-t.getTimezoneOffset()*60000).toISOString().slice(0,16);}
-    field('details').hidden=false;render();field(o?'title':'address').focus();
+    field('details').hidden=false;showOrderInvoice(o?.id);render();field(o?'title':'address').focus();
   }
   async function submit(event){
     event.preventDefault();const save=field('save');if(save.disabled)return;save.disabled=true;
@@ -287,7 +315,7 @@
       <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
       <p id="od-status" role="status"></p><div class="od-columns"><div><div id="od-list"></div><button id="od-prev" hidden>Previous page</button> <button id="od-next" hidden>Next page</button></div>
       <aside id="od-details" aria-labelledby="od-title" hidden><form id="od-form"><header><h2 id="od-title" tabindex="-1"></h2><button type="button" id="od-cancel">Close</button></header>
-      <p id="od-source" hidden></p><label>List<select id="od-destination"></select></label><label><span id="od-address-label">Property address</span><input id="od-address" maxlength="500" required></label>
+      <p id="od-invoice" role="status" hidden></p><p id="od-source" hidden></p><label>List<select id="od-destination"></select></label><label><span id="od-address-label">Property address</span><input id="od-address" maxlength="500" required></label>
       <label>Order type<select id="od-kind" required></select></label>
       <label>Client<select id="od-client" required></select></label>
       <label>Order fee ($)<input type="number" id="od-fee" inputmode="decimal" min="0" max="9999999999.99" step="0.01"></label>
