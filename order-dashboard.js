@@ -432,6 +432,7 @@
     }
     field('order-link').value=o?.order_link || '';
     field('lockbox-code').value=o?.lockbox_code || '';
+    field('gate-code').value=o?.gate_code || '';
     updateOrderLink();
     if(o?.appointment){const t=new Date(o.appointment);field('appointment').value=new Date(t-t.getTimezoneOffset()*60000).toISOString().slice(0,16);}
     field('details').hidden=false;showOrderInvoice(o?.id);render();field(o?'title':'address').focus();fieldApp?.recordView();
@@ -442,7 +443,7 @@
     try{
       const client=field('client').value, address=field('address').value.trim();
       if((!client && field('client').required)||!address)throw Error('Enter the address and client.');
-      const changes={address,points_of_contact:readContacts(),purpose:field('purpose').value.trim()||null,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
+      const changes={address,points_of_contact:readContacts(),purpose:field('purpose').value.trim()||null,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,gate_code:field('gate-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
       if(original)await update(original,{...changes,complete:field('state').value==='completed',on_hold:field('state').value==='hold',needs_photos:field('photos').checked});
       else {
         if(!field('billing').disabled){
@@ -498,6 +499,7 @@
       <label>Order Link<input id="od-order-link" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://"></label>
       <a id="od-open-order-link" target="_blank" rel="noopener noreferrer" hidden>Open order link</a>
       <label>Lockbox Code<input id="od-lockbox-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+      <label>Gate Code<input id="od-gate-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
       <p id="od-error" role="alert"></p>
       <button id="od-save">Save order</button></form></aside></div>

@@ -742,5 +742,5 @@ if(window===parent){
     }finally{restoring=false;}
   });
   const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=contact-attempt-type-1';document.head.append(sheet);
-  import('./order-dashboard.js?v=contact-attempt-type-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  import('./order-dashboard.js?v=gate-code-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }
