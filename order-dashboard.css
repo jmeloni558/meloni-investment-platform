@@ -55,3 +55,4 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-needs-appointment .od-summary{grid-column:1 / -1}
 #ptOrders .od-needs-appointment .od-schedule{grid-column:1}
 #ptOrders .od-appointment-warning{grid-column:2;grid-row:2;align-self:baseline;color:#af2029;font-weight:700;text-align:right;font-size:.85rem}
+#ptOrders article .od-row-photos{flex:0 0 auto;min-height:44px;padding:6px 12px;border:1px solid #145d54;color:#145d54}
