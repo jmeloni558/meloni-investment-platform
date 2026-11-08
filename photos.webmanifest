@@ -1,8 +1,8 @@
 {
   "id": "/photos.html",
-  "name": "PT Photos",
-  "short_name": "PT Photos",
-  "description": "Upload property photos in the field and download them at the office.",
+  "name": "PT Field App",
+  "short_name": "PT Field App",
+  "description": "Manage field orders and property photos.",
   "start_url": "/photos.html",
   "scope": "/",
   "display": "standalone",

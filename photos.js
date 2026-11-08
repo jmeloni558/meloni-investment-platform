@@ -655,3 +655,37 @@ $('updateApp').onclick=async()=>{
     setBusy(false);
   }finally{clearTimeout(timeout);}
 };
+if(window===parent){
+  // Keep the photo workspace mounted so tab switches preserve the open set and file queue.
+  window.PropertyThesisFieldApp={
+    canShowDashboard(){
+      if(!busy)return true;
+      status('Wait for the current photo operation to finish before switching views.');return false;
+    },
+    resumePhotos(){
+      if(!user||busy||$('library').hidden)return;
+      if(!selected){refreshFieldList();return;}
+      const id=selected.id;
+      loadProperties().then(()=>{
+        if(selected?.id!==id)return;
+        const updated=properties.find(p=>p.id===id);
+        if(!updated){showList();return;}
+        selected=updated;listMode=propertyList(updated);
+        $('uploadControls').hidden=!!updated.completed_at||!!updated.deleting_at;
+        $('complete').hidden=$('uploadControls').hidden;
+        $('reopen').hidden=!updated.completed_at||!!updated.deleting_at;
+        $('completedNote').hidden=!updated.completed_at;
+        $('completedNote').textContent=updated.archived_at?'This photo set is archived.':'This upload set is completed.';
+      }).catch(e=>status(e.message,true));
+    },
+    openSet(id){
+      if(selected?.id===id){this.resumePhotos();return;}
+      run(async()=>{await loadProperties();const p=properties.find(row=>row.id===id);
+        if(!p)throw Error('This photo set is unavailable.');
+        await openProperty(p);if(selected?.id===id)listMode=propertyList(p);
+      });
+    }
+  };
+  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=three-line-orders-1';document.head.append(sheet);
+  import('./order-dashboard.js?v=field-app-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+}

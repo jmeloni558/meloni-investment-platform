@@ -3,16 +3,18 @@
   const kinds = ['Int BPO','Ext BPO','Int PCR','Ext PCR','PDCR','Desktop BPO','Marketing Photos','Inspection Photos'];
   const kindLabels = new Map([['Int BPO','Interior BPO'],['Ext BPO','Exterior BPO'],['PDCR','Data Collection Report']]);
   const kindLabel = kind => kindLabels.get(kind) ?? kind;
-  const autoLand = (!location.search && !location.hash) || new URLSearchParams(location.search).get('orders')==='1';
+  const fieldApp=window.PropertyThesisFieldApp;
+  const autoLand = !fieldApp && ( (!location.search && !location.hash) || new URLSearchParams(location.search).get('orders')==='1');
   let db, account, membership, panel, menu, generation=0, request=0, landing=autoLand, currentList='open', orders=[], clients=[];
   let selectedList='', namedLists=[];
   const el=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text||''});
   const field=id=>panel.querySelector('#od-'+id);
   const dateLabel=value=>new Date(value+'T12:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
   const appointmentLabel=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
-  function hide(){stopInvoiceWatch();document.body.classList.remove('pt-orders-open');menu?.removeAttribute('aria-current');}
+  function hide(){stopInvoiceWatch();document.body.classList.remove('pt-orders-open');menu?.removeAttribute('aria-current');if(fieldApp){menu?.setAttribute('aria-pressed','false');document.getElementById('fieldPhotos').setAttribute('aria-pressed','true');}}
   function open(){
-    if(!membership||!panel)return;
+    if(!membership||!panel || (fieldApp && !fieldApp.canShowDashboard()))return;
+    if(fieldApp){menu.setAttribute('aria-pressed','true');document.getElementById('fieldPhotos').setAttribute('aria-pressed','false');}
     document.body.classList.add('pt-orders-open');menu.setAttribute('aria-current','page');window.AppNavigationToolbar?.refresh();load();
     if(editing && !field('details').hidden)showOrderInvoice(editing.id);
   }
@@ -311,10 +313,15 @@
     photos.replaceChildren();
     if(o?.photo_id){
       if(account===membership.photo_owner){
-        const link=el('a','Open PT Photos');
-        link.href='/photos?set='+encodeURIComponent(o.photo_id);
-        link.target='_blank';link.rel='noopener';
-        photos.append(link);
+        if(fieldApp){
+          const button=el('button','Open photos');button.type='button';
+          button.onclick=()=>{hide();fieldApp.openSet(o.photo_id);};photos.append(button);
+        }else{
+          const link=el('a','Open PT Photos');
+          link.href='/photos?set='+encodeURIComponent(o.photo_id);
+          link.target='_blank';link.rel='noopener';
+          photos.append(link);
+        }
       }else photos.textContent='Photo set in PT Photos · realty sign-in';
     }
     showNoteLinks();
@@ -346,7 +353,7 @@
     }catch(e){if(version===generation)field('error').textContent=e.message;}finally{save.disabled=false;}
   }
   function mount(){
-    const anchor=document.querySelector('#appNavNew');if(!membership||!anchor)return;
+    const anchor=document.querySelector(fieldApp?'#fieldPhotos':'#appNavNew');if(!membership||!anchor)return;
     if(!menu){menu=el('button','Dashboard');menu.id='ptOrderNav';menu.className='app-nav-action';menu.onclick=open;}
     if(menu.nextElementSibling!==anchor)anchor.before(menu);
     if(panel)return;
@@ -381,7 +388,13 @@
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
       <div id="od-preview" aria-label="Links in notes" hidden></div><p id="od-error" role="alert"></p>
       <button id="od-save">Save order</button></form></aside></div>`;
-    document.querySelector('#appNavShell').after(panel);
+    if(fieldApp){
+      document.getElementById('fieldDashboardHost').append(panel);
+      const photosTab=document.getElementById('fieldPhotos');
+      photosTab.parentElement.hidden=false;
+      menu.setAttribute('aria-pressed','false');
+      photosTab.onclick=()=>{if(document.body.classList.contains('pt-orders-open')){hide();fieldApp.resumePhotos();}};
+    }else document.querySelector('#appNavShell').after(panel);
     field('search').oninput=()=>{
       ++request;
       clearTimeout(searchTimer);
@@ -584,7 +597,8 @@
     const id=session?.user?.id||null;if(id===account)return;
     clearTimeout(midnightTimer);clearTimeout(searchTimer);page=0;openDates=[];
     const old=account;account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';selectedList='';namedLists=[];
-    if(!id){if(old)landing=true;return;}
+    if(fieldApp)document.getElementById('fieldViews').hidden=true;
+    if(!id){if(old)landing=!fieldApp;return;}
     const {data,error}=await db.from('order_members').select('photo_owner').eq('user_id',id).maybeSingle();
     if(version!==generation||error||!data)return;membership=data;mount();
   }
