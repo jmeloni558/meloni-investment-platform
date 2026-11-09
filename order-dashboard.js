@@ -192,7 +192,7 @@
       const desktopPhotos=!fieldApp && o.photo_id && account===membership.photo_owner;
       const desktopActions=desktopFolder || desktopPhotos;
       if(desktopFolder)dueActions.append(rowFolderButton(o));
-      if(desktopPhotos)dueActions.append(desktopPhotoLink(o,'PT Photos'));
+      if(desktopPhotos)dueActions.append(desktopPhotoLink(o,'Photos'));
       if(o.appointment){
         const appointment=el('time','Appt '+appointmentLabel.format(new Date(o.appointment))+(o.appointment_window?' \u2013 '+endTimeLabel.format(appointmentEnd(o)):''));
         appointment.className='od-order-appointment';
@@ -566,9 +566,9 @@
         if(fieldApp){
           photos.append(fieldPhotoButton(o,'Open photos'));
         }else{
-          photos.append(desktopPhotoLink(o,'Open PT Photos'));
+          photos.append(desktopPhotoLink(o,'Photos'));
         }
-      }else photos.textContent='Photo set in PT Photos · realty sign-in';
+      }else photos.textContent='Photo set in Photos · realty sign-in';
     }
     field('order-link').value=o?.order_link || '';
     field('lockbox-code').value=o?.lockbox_code || '';
@@ -855,6 +855,13 @@
         removeClient.disabled=!clientChoice.value;
       }
     };
+    if(!fieldApp)panel.addEventListener('click',event=>{
+      if(event.target.closest('#ptPhotoLibrary') && !event.ctrlKey && !event.metaKey && !event.shiftKey){
+        if(!canLeave()){event.preventDefault();return;}
+        if(!field('details').hidden)closeDetails();
+        hide();
+      }
+    });
     field('calendar').onclick=event=>{
       if(event.defaultPrevented || !/Edg\//.test(navigator.userAgent))return;
       event.preventDefault();

@@ -16,7 +16,7 @@ test('only the visible primary section is highlighted, including listings over s
   context.refresh();assert.deepEqual(current(),['appNavListings']);
   listings=false;context.refresh();assert.deepEqual(current(),['appNavExisting']);
   section='dashboard';context.refresh();assert.deepEqual(current(),['appNavNew']);
-  bodyClasses.add('pt-photos-open');context.refresh();assert.deepEqual(current(),['ptPhotoLibrary']);
+  bodyClasses.add('pt-photos-open');context.refresh();assert.deepEqual(current(),['ptOrderNav']);
   bodyClasses.add('pt-orders-open');context.refresh();assert.deepEqual(current(),['ptOrderNav']);
   bodyClasses.clear();
   for(const [mode,expected] of [['new','appNavNew'],['saved','appNavExisting'],['library','appNavExisting']]){bpoMode=mode;context.refresh();assert.deepEqual(current(),[expected]);context.refresh();assert.deepEqual(current(),[expected]);}

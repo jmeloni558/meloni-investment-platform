@@ -27,7 +27,7 @@ function updateStewartRequest(){
   $('copyResult').textContent='';
   if(!selected||$('stewartPhotos').hidden){$('stewartRequest').value='';return;}
   const repair=$('stewartNo').checked?' Mark No for repair items on every subject photo.':'';
-  $('stewartRequest').value='Run $stewart-order-photos for '+selected.address+' using Completed photos in PT Photos. Upload upright copies and label each subject photo in the matching Stewart order.'+repair;
+  $('stewartRequest').value='Run $stewart-order-photos for '+selected.address+' using the completed set in Photos. Upload upright copies and label each subject photo in the matching Stewart order.'+repair;
 }
 $('stewartNo').onchange=updateStewartRequest;
 $('copyStewart').onclick=async()=>{
@@ -742,5 +742,5 @@ if(window===parent){
     }finally{restoring=false;}
   });
   const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=appointment-row-1';document.head.append(sheet);
-  import('./order-dashboard.js?v=appointment-row-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  import('./order-dashboard.js?v=dashboard-photos-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }
