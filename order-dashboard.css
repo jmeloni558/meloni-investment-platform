@@ -36,7 +36,6 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-schedule{display:flex;flex-wrap:wrap;column-gap:.8em}
 #ptOrders article button time{font-size:.8rem;font-weight:400;color:#53696c;margin-top:3px}
 #ptOrders .od-schedule time + time{color:#7035a1;font-weight:700}
-#ptOrders article:has([aria-current=true]){background:#e7f2ef}
 #od-details{position:sticky;top:1rem;max-height:calc(100dvh - 2rem);overflow:auto;border-left:1px solid #d6e1df;padding:0 12px 14px 20px;box-sizing:border-box}
 #ptOrders #od-details header{margin:0}
 #ptOrders .od-note:not([hidden]){padding:10px;background:#f5f8f7;border-radius:6px}
@@ -87,10 +86,10 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders article .od-directions{background:#185c96}
 #ptOrders article .od-row-photos{background:#17634d}
 
-#ptOrders #od-list article[data-due-status="today"]{background:#e4f4e8}
+#ptOrders #od-list article[data-due-status="today"]{background:#fff4ba}
 #ptOrders #od-list article[data-due-status="overdue"]{background:#fce7e7}
-#ptOrders #od-list article[data-due-status] button[data-order]{background:transparent}
-#ptOrders #od-list article[data-due-status]:has([aria-current=true]){box-shadow:inset 3px 0 #185e54}
+#ptOrders #od-list article button[data-order]{background:transparent}
+#ptOrders #od-list article:has(button[data-order][aria-current=true]){background:#75ef83}
 
 #ptOrders .od-desktop-order-info{flex:1;min-width:0;padding:4px 8px}
 #ptOrders .od-desktop-order-info button[data-order]{width:100%;padding:0;text-align:left}
