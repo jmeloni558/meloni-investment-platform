@@ -461,27 +461,16 @@
       const url=new URL(data.url);
       if(url.protocol!=='https:' || !url.hostname.endsWith('.sharepoint.com'))return;
       const link=el('a','Open OneDrive property folder');
-      const path=url.searchParams.get('id');
-      if(!path)return;
-      const bytes=new TextEncoder().encode(path);
-      const token=btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-      link.href='pt-order-folder:'+token;
+      link.href='#';
       link.onclick=async event=>{
         event.preventDefault();
-        const message=el('span');
-        container.replaceChildren(link,message);
-        try{
-          const response=await fetch('http://127.0.0.1:45273/property-folder',{
-            method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({path}),signal:AbortSignal.timeout(10000)
-          });
-          if(!response.ok)throw Error();
-          message.textContent=' Opening in File Explorer.';
-        }catch{
-          const fallback=el('a','Start Windows folder opener');
-          fallback.href=link.href;
-          message.replaceChildren(' Local connection unavailable. ',fallback);
+        const {data:ticket,error}=await db.rpc('issue_desktop_folder_ticket',{job_id:order.id});
+        if(editing?.id!==order.id || !container.isConnected)return;
+        if(error || !ticket){
+          container.replaceChildren(link,document.createTextNode(' Unable to open folder. Try again.'));
+          return;
         }
+        window.location.assign('http://127.0.0.1:45273/open/'+encodeURIComponent(ticket));
       };
       container.append(link);
     }else{
