@@ -186,6 +186,8 @@
         directions.className='od-directions';directions.setAttribute('aria-label','Driving directions to '+o.address);
         actions.append(directions);
       }
+      const desktopFolder=!fieldApp && hasOrderFolder(o);
+      if(desktopFolder)schedule.append(rowFolderButton(o));
       if(o.appointment){
         const appointment=el('time','Appt '+appointmentLabel.format(new Date(o.appointment))+(o.appointment_window?' \u2013 '+endTimeLabel.format(appointmentEnd(o)):''));
         if(fieldApp)appointment.className='od-field-appointment';
@@ -195,14 +197,19 @@
       if(searchText())schedule.append(el('small',o.complete?'Completed':o.on_hold?'On Hold':'Open'));
       title.append(summary);
       if(fieldOrder)row.className='od-field-order';
-      else title.append(schedule);
+      else if(!desktopFolder)title.append(schedule);
       if(o.appointment_needed && !o.appointment){
         if(!fieldOrder)title.classList.add('od-needs-appointment');
         const reminder=el('span','Appointment Needed');
         reminder.className='od-appointment-warning';
         (fieldOrder?schedule:title).append(reminder);
       }
-      row.append(check,title);
+      if(desktopFolder){
+        const info=el('div');
+        info.className='od-desktop-order-info';
+        info.append(title,schedule);
+        row.append(check,info);
+      }else row.append(check,title);
       if(fieldApp && o.needs_photos && o.hasActivePhotoSet){
         const button=fieldPhotoButton(o,'Photos');
         button.className='od-row-photos';
@@ -447,12 +454,43 @@
     for(const id of ['kind','client','due'])field(id).required=!task && !editing?.todo_title;
   }
   let folderTimer;
+  function hasOrderFolder(order){
+    return order?.id && !order.list_name && !order.former_list_task &&
+      ['Int BPO','Ext BPO','Desktop BPO','Int PCR','Ext PCR','PDCR'].includes(order.kind);
+  }
+  async function launchOrderFolder(orderId){
+    const {data:ticket,error}=await db.rpc('issue_desktop_folder_ticket',{job_id:orderId});
+    if(error || !ticket)throw Error('Unable to open folder.');
+    window.location.assign('http://127.0.0.1:45273/open/'+encodeURIComponent(ticket));
+  }
+  function rowFolderButton(order){
+    const button=el('button','Folder');
+    button.type='button';
+    button.className='od-folder-button';
+    button.setAttribute('aria-label','Open folder for '+order.address);
+    button.onclick=async()=>{
+      button.disabled=true;
+      const status=field('status');
+      try{
+        const {data,error}=await db.rpc('desktop_order_folder',{job_id:order.id});
+        if(error)throw error;
+        if(!data?.url){
+          status.textContent=data?.pending?'OneDrive folder pending. Try again shortly.':'OneDrive folder not found.';
+          return;
+        }
+        await launchOrderFolder(order.id);
+        status.textContent='';
+      }catch{status.textContent='Unable to open the OneDrive folder. Try again.';}
+      finally{button.disabled=false;}
+    };
+    return button;
+  }
   async function showFolder(order){
     clearTimeout(folderTimer);
     const container=field('folder-link');
     if(!container)return;
     container.replaceChildren();
-    if(!order?.id || order.list_name || order.former_list_task || !['Int BPO','Ext BPO','Desktop BPO','Int PCR','Ext PCR','PDCR'].includes(order.kind))return;
+    if(!hasOrderFolder(order))return;
     const {data,error}=await db.rpc('desktop_order_folder',{job_id:order.id});
     if(editing?.id!==order.id || !container.isConnected || field('details').hidden)return;
     if(error){container.textContent='OneDrive folder unavailable.';return;}
@@ -471,10 +509,7 @@
         message.setAttribute('role','status');
         container.replaceChildren(link,message);
         try{
-          const {data:ticket,error}=await db.rpc('issue_desktop_folder_ticket',{job_id:order.id});
-          if(editing?.id!==order.id || !message.isConnected)return;
-          if(error || !ticket)throw Error();
-          window.location.assign('http://127.0.0.1:45273/open/'+encodeURIComponent(ticket));
+          await launchOrderFolder(order.id);
           setTimeout(()=>message.remove(),4000);
         }catch{
           message.textContent=' Unable to open folder. Try again.';

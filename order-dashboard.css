@@ -91,3 +91,9 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders #od-list article[data-due-status="overdue"]{background:#fce7e7}
 #ptOrders #od-list article[data-due-status] button[data-order]{background:transparent}
 #ptOrders #od-list article[data-due-status]:has([aria-current=true]){box-shadow:inset 3px 0 #185e54}
+
+#ptOrders .od-desktop-order-info{flex:1;min-width:0;padding:4px 8px}
+#ptOrders .od-desktop-order-info button[data-order]{width:100%;padding:0;text-align:left}
+#ptOrders .od-desktop-order-info .od-schedule{align-items:center;font-size:.8rem;color:#53696c}
+#ptOrders .od-desktop-order-info time[datetime]:last-of-type:not(:first-child){color:#7035a1;font-weight:700}
+#ptOrders article .od-folder-button{flex:none;width:auto;padding:2px 8px;border:1px solid #8fafa7;border-radius:5px;background:#fff;color:#18564b;font-size:.78rem}
