@@ -466,6 +466,23 @@
       const bytes=new TextEncoder().encode(path);
       const token=btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
       link.href='pt-order-folder:'+token;
+      link.onclick=async event=>{
+        event.preventDefault();
+        const message=el('span');
+        container.replaceChildren(link,message);
+        try{
+          const response=await fetch('http://127.0.0.1:45273/property-folder',{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({path}),signal:AbortSignal.timeout(10000)
+          });
+          if(!response.ok)throw Error();
+          message.textContent=' Opening in File Explorer.';
+        }catch{
+          const fallback=el('a','Start Windows folder opener');
+          fallback.href=link.href;
+          message.replaceChildren(' Local connection unavailable. ',fallback);
+        }
+      };
       container.append(link);
     }else{
       container.textContent=data.pending?'OneDrive folder pending':'OneDrive folder not found';
