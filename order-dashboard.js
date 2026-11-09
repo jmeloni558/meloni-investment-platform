@@ -446,6 +446,28 @@
     field('address-label').textContent=task?'Task or property address':'Property address';
     for(const id of ['kind','client','due'])field(id).required=!task && !editing?.todo_title;
   }
+  let folderTimer;
+  async function showFolder(order){
+    clearTimeout(folderTimer);
+    const container=field('folder-link');
+    if(!container)return;
+    container.replaceChildren();
+    if(!order?.id || order.list_name || order.former_list_task || !['Int BPO','Ext BPO','Desktop BPO','Int PCR','Ext PCR','PDCR'].includes(order.kind))return;
+    const {data,error}=await db.rpc('desktop_order_folder',{job_id:order.id});
+    if(editing?.id!==order.id || !container.isConnected || field('details').hidden)return;
+    if(error){container.textContent='OneDrive folder unavailable.';return;}
+    if(!data)return;
+    if(data.url){
+      const url=new URL(data.url);
+      if(url.protocol!=='https:' || !url.hostname.endsWith('.sharepoint.com'))return;
+      const link=el('a','Open OneDrive property folder');
+      link.href=url.href;link.target='_blank';link.rel='noopener';
+      container.append(link);
+    }else{
+      container.textContent=data.pending?'OneDrive folder pending':'OneDrive folder not found';
+      if(data.pending)folderTimer=setTimeout(()=>{if(editing?.id===order.id && !field('details').hidden)showFolder(order);},10000);
+    }
+  }
   function edit(o){
     if(!canLeave())return;
     dirty=false;
@@ -496,7 +518,7 @@
       field('appointment-end').value=String(end.getHours()).padStart(2,'0')+':'+String(end.getMinutes()).padStart(2,'0');
     }
     syncEndTimeField();
-    field('details').hidden=false;showOrderInvoice(o?.id);render();field(o?'title':'address').focus();fieldApp?.recordView();
+    field('details').hidden=false;showOrderInvoice(o?.id);if(!fieldApp)showFolder(o);render();field(o?'title':'address').focus();fieldApp?.recordView();
   }
   async function submit(event){
     event.preventDefault();const save=field('save');if(save.disabled)return;save.disabled=true;
@@ -557,7 +579,7 @@
       <label hidden id="od-appointment-end-label">End time (optional)<input type="time" id="od-appointment-end"></label>
       <label><input type="checkbox" id="od-photos"> Photos needed</label>
       <label><input type="checkbox" id="od-appointment-needed"> Appointment Needed</label>
-      <div id="od-photo-link"></div><label id="od-state-label">Order status<select id="od-state"><option value="open">Open orders</option><option value="hold">On Hold</option><option value="completed">Completed</option></select></label>
+      <div id="od-photo-link"></div>${fieldApp?'':'<div id="od-folder-link"></div>'}<label id="od-state-label">Order status<select id="od-state"><option value="open">Open orders</option><option value="hold">On Hold</option><option value="completed">Completed</option></select></label>
       <label>Order Link<input id="od-order-link" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://"></label>
       <a id="od-open-order-link" target="_blank" rel="noopener noreferrer" hidden>Open order link</a>
       <div class="od-entry-codes"><label>Lockbox Code<input id="od-lockbox-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label>

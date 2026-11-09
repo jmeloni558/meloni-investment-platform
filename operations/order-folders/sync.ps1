@@ -56,6 +56,17 @@ function OrderParent($Job) {
     return Join-Path $folder "$direction BPOs"
 }
 
+$drive = Get-ItemProperty 'HKCU:/Software/Microsoft/OneDrive/Accounts/Business*' | Where-Object {
+    $_.UserFolder -and $root.FullName.StartsWith($_.UserFolder.TrimEnd('\')+'\',[StringComparison]::OrdinalIgnoreCase)
+} | Select-Object -First 1
+if (!$drive.ServiceEndpointUri) {throw 'Cannot identify the synced OneDrive library.'}
+$site = $drive.ServiceEndpointUri -replace '/_api/?$',''
+function FolderUrl([string]$Path) {
+    $relative = $Path.Substring($drive.UserFolder.TrimEnd('\').Length).Replace('\','/')
+    $libraryPath = ([uri]$site).AbsolutePath.TrimEnd('/')+'/Documents'+$relative
+    return $site+'/_layouts/15/onedrive.aspx?id='+[uri]::EscapeDataString($libraryPath)
+}
+
 $secure = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'worker.key') | ConvertTo-SecureString
 $key = [Net.NetworkCredential]::new('', $secure).Password
 function Rpc([string]$Name, [hashtable]$Body) {
@@ -69,7 +80,9 @@ for ($i=0; $i -lt 50; $i++) {
     try {
         $target = [IO.Path]::GetFullPath((Join-Path (OrderParent $job) (SafeName $job.address)))
         if (!$target.StartsWith($root.FullName+'\',[StringComparison]::OrdinalIgnoreCase)) {throw 'Invalid destination.'}
-        [void][IO.Directory]::CreateDirectory($target)
+        if (!$job.lookup_only) {[void][IO.Directory]::CreateDirectory($target)}
+        $link = if ([IO.Directory]::Exists($target)) {FolderUrl $target} else {$null}
+        Rpc 'record_order_folder' @{job_id=$job.id;folder_link=$link} | Out-Null
     } catch { $failure = $_.Exception.Message }
-    Rpc 'finish_order_folder' @{job_id=$job.id;failure=$failure} | Out-Null
+    if ($failure) {Rpc 'finish_order_folder' @{job_id=$job.id;failure=$failure} | Out-Null}
 }
