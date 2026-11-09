@@ -36,7 +36,10 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-schedule{display:grid;grid-template-columns:minmax(0,1fr) fit-content(46%);align-items:baseline;column-gap:.65em}
 #ptOrders article button time{font-size:.8rem;font-weight:400;color:#53696c;margin-top:3px}
 #od-details{position:sticky;top:1rem;max-height:calc(100dvh - 2rem);overflow:auto;border-left:1px solid #d6e1df;padding:0 12px 14px 20px;box-sizing:border-box}
-#ptOrders #od-details header{margin:0}
+#ptOrders .od-address-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px}
+#ptOrders .od-address-row label{margin:0;min-width:0}
+#ptOrders #od-cancel{background:#dbe6ed;border-color:#8da1b0;color:#243f50}
+#ptOrders #od-cancel:hover{background:#cadae5}
 #ptOrders .od-note:not([hidden]){padding:10px;background:#f5f8f7;border-radius:6px}
 @media(max-width:760px){
   #ptOrders .od-columns:has(aside:not([hidden])){grid-template-columns:minmax(0,1fr)}

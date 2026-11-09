@@ -512,7 +512,7 @@
     editing=o;photosOverridden=false;draftId=o?.id||crypto.randomUUID();const f=field('form');f.reset();field('error').textContent='';
     const destination=o?o.list_name:(currentList==='open'?selectedList:'');
     syncListField(destination);
-    field('title').textContent=o?'Details':destination?'New task':'New order';
+    field('details').setAttribute('aria-label',o?'Order for '+o.address:destination?'New task':'New order');
     field('kind').querySelector('[data-historical]')?.remove();
     if(o?.kind && !kinds.includes(o.kind)){
       const legacy=new Option(o.kind,o.kind);
@@ -538,7 +538,7 @@
       field('appointment-end').value=String(end.getHours()).padStart(2,'0')+':'+String(end.getMinutes()).padStart(2,'0');
     }
     syncEndTimeField();
-    field('details').hidden=false;showOrderInvoice(o?.id);render();field(o?'title':'address').focus();fieldApp?.recordView();
+    field('details').hidden=false;showOrderInvoice(o?.id);render();field(o?'details':'address').focus();fieldApp?.recordView();
   }
   async function submit(event){
     event.preventDefault();const save=field('save');if(save.disabled)return;save.disabled=true;
@@ -585,18 +585,19 @@
       <button id="od-create-list">Create list</button> <button type="button" id="od-cancel-list">Cancel</button></form>
       <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
       <p id="od-status" role="status"></p><div class="od-columns"><div><div id="od-list"></div><button id="od-prev" hidden>Previous page</button> <button id="od-next" hidden>Next page</button></div>
-      <aside id="od-details" aria-labelledby="od-title" hidden><form id="od-form"><header><h2 id="od-title" tabindex="-1"></h2><button type="button" id="od-cancel">Close</button></header>
-      <label id="od-destination-label" hidden>List<select id="od-destination"></select></label>
+      <aside id="od-details" aria-label="Order" tabindex="-1" hidden><form id="od-form">
+      <div class="od-address-row"><label><span id="od-address-label">Property address</span><input id="od-address" maxlength="500" required></label><button type="button" id="od-cancel">Close</button></div>
+      <div class="od-needs-flags">
+      <label><input type="checkbox" id="od-photos"> Photos needed</label>
+      <label><input type="checkbox" id="od-appointment-needed"> Appointment Needed</label>
+      </div>
       <div class="od-fee-invoice od-entry-codes">
       <label>Order fee ($)<input type="number" id="od-fee" inputmode="decimal" min="0" max="9999999999.99" step="0.01"></label>
       <div id="od-invoice-group" role="group" aria-labelledby="od-invoice-title" hidden><label id="od-invoice-title">QuickBooks invoice</label><div id="od-invoice" role="status"></div></div></div>
       <fieldset id="od-billing"><legend>QuickBooks invoice</legend><p id="od-monthly" hidden>This BPO uses the date entered as its service date on the client's monthly invoice.</p>
       <label>Existing open invoice number (optional)<input id="od-invoice-target" maxlength="21"></label><div id="od-invoice-lines"></div><button type="button" id="od-add-line">Add invoice line</button></fieldset>
-      <p id="od-source" hidden></p><label><span id="od-address-label">Property address</span><input id="od-address" maxlength="500" required></label>
-      <div class="od-needs-flags">
-      <label><input type="checkbox" id="od-photos"> Photos needed</label>
-      <label><input type="checkbox" id="od-appointment-needed"> Appointment Needed</label>
-      </div>
+      <label id="od-destination-label" hidden>List<select id="od-destination"></select></label>
+      <p id="od-source" hidden></p>
       <label>Order type<select id="od-kind" required></select></label>
       <label>Client<select id="od-client" required></select></label>
       <label>Purpose of Order<input id="od-purpose" type="text"></label>
