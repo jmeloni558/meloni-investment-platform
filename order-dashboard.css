@@ -33,9 +33,8 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-summary strong,#ptOrders .od-summary small{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #ptOrders .od-summary small{font-weight:500}
 #ptOrders .od-summary small:empty{display:none}
-#ptOrders .od-schedule{display:flex;flex-wrap:wrap;column-gap:.8em}
+#ptOrders .od-schedule{display:grid;grid-template-columns:minmax(0,1fr) fit-content(46%);align-items:baseline;column-gap:.65em}
 #ptOrders article button time{font-size:.8rem;font-weight:400;color:#53696c;margin-top:3px}
-#ptOrders .od-schedule time + time{color:#7035a1;font-weight:700}
 #od-details{position:sticky;top:1rem;max-height:calc(100dvh - 2rem);overflow:auto;border-left:1px solid #d6e1df;padding:0 12px 14px 20px;box-sizing:border-box}
 #ptOrders #od-details header{margin:0}
 #ptOrders .od-note:not([hidden]){padding:10px;background:#f5f8f7;border-radius:6px}
@@ -49,10 +48,6 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-open-picker select{margin:0;width:auto;max-width:18em;min-width:9em;padding:9px 12px;border-radius:8px;color:#144c45;font-weight:650;cursor:pointer}
 #ptOrders .od-open-picker select[data-active=true]{background:#185e54;color:white}
 
-#ptOrders article button.od-needs-appointment{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:.65em}
-#ptOrders .od-needs-appointment .od-summary{grid-column:1 / -1}
-#ptOrders .od-needs-appointment .od-schedule{grid-column:1}
-#ptOrders .od-appointment-warning{grid-column:2;grid-row:2;align-self:baseline;color:#af2029;font-weight:700;text-align:right;font-size:.85rem}
 
 #od-contacts>fieldset{margin:6px 0;padding:4px 9px 7px;border:1px solid #bdcecb;border-radius:8px;min-width:0}
 #ptOrders .od-contact-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
@@ -77,11 +72,10 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-entry-codes label{min-width:0;margin:6px 0}
 #ptOrders article.od-field-order{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:0 8px;padding:4px 0}
 #ptOrders .od-field-order button[data-order]{grid-column:2 / -1;padding:3px 0}
-#ptOrders .od-due-actions{display:flex;align-items:center;gap:6px;max-width:100%}
+#ptOrders .od-due-actions{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;min-width:0}
 #ptOrders .od-due-actions time{white-space:nowrap}
 #ptOrders .od-field-actions{display:inline-flex;gap:4px;flex:none}
-#ptOrders .od-field-order .od-schedule{grid-column:2 / -1;align-items:center;gap:2px 8px;font-size:.8rem;color:#53696c}
-#ptOrders .od-schedule .od-field-appointment{color:#7035a1;font-weight:700;white-space:nowrap}
+#ptOrders .od-field-order .od-schedule{grid-column:2 / -1;align-items:baseline;gap:2px 8px;font-size:.8rem;color:#53696c}
 #ptOrders article :is(.od-directions,.od-row-photos){box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;flex:none;width:4.5rem;height:34px;min-height:34px;padding:0;border:0;border-radius:8px;color:white;font-size:.8rem;font-weight:650;line-height:1.2;text-decoration:none}
 #ptOrders article .od-directions{background:#185c96}
 #ptOrders article .od-row-photos{background:#17634d}
@@ -93,9 +87,12 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 
 #ptOrders .od-desktop-order-info{flex:1;min-width:0;padding:4px 8px}
 #ptOrders .od-desktop-order-info button[data-order]{width:100%;padding:0;text-align:left}
-#ptOrders .od-desktop-order-info .od-schedule{align-items:center;font-size:.8rem;color:#53696c}
-#ptOrders .od-desktop-order-info time[datetime]:last-of-type:not(:first-child){color:#7035a1;font-weight:700}
+#ptOrders .od-desktop-order-info .od-schedule{align-items:baseline;font-size:.8rem;color:#53696c}
 #ptOrders article .od-folder-button,#ptOrders .od-desktop-order-info .od-schedule a{flex:none;width:auto;padding:2px 8px;border:1px solid #8fafa7;border-radius:5px;background:#fff;color:#18564b;font-size:.78rem}
 
 #ptOrders .od-desktop-order-info .od-schedule a{text-decoration:none;font-weight:650;line-height:1.2}
 #ptOrders #od-list article:has(button[data-order][aria-current=true]) :is(.od-summary small,.od-schedule){color:#3e5659}
+
+#ptOrders .od-schedule :is(.od-appointment-warning,.od-order-appointment){grid-column:2;grid-row:1;text-align:right;justify-self:end;font-weight:700;line-height:1.2}
+#ptOrders .od-schedule .od-appointment-warning{color:#af2029}
+#ptOrders .od-schedule .od-order-appointment{color:#7035a1}
