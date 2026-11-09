@@ -15,10 +15,10 @@
 
  function render(){
   let menu=document.getElementById('ptPhotoLibrary');
-  const signOut=document.getElementById('signOutBtn'),toolbar=document.querySelector('#appNavShell .app-nav-toolbar');
-  if(allowed&&desktop()&&signOut&&toolbar?.contains(signOut)){
-   if(!menu){menu=document.createElement('a');menu.id='ptPhotoLibrary';menu.className='app-nav-action';menu.href='/photos';menu.textContent='Photos';}
-   if(menu.nextElementSibling!==signOut)signOut.before(menu);
+  const calendar=document.querySelector('#ptOrders nav #od-calendar');
+  if(allowed&&desktop()&&calendar){
+   if(!menu){menu=document.createElement('a');menu.id='ptPhotoLibrary';menu.href='/photos';menu.textContent='Photos';}
+   if(calendar.nextElementSibling!==menu)calendar.after(menu);
   }else menu?.remove();
 
   if(!allowed){document.querySelectorAll('[data-saved-photos]').forEach(el=>el.remove());return;}
