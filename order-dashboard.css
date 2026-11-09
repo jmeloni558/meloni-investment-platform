@@ -89,7 +89,7 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders #od-list article[data-due-status="today"]{background:#fff4ba}
 #ptOrders #od-list article[data-due-status="overdue"]{background:#fce7e7}
 #ptOrders #od-list article button[data-order]{background:transparent}
-#ptOrders #od-list article:has(button[data-order][aria-current=true]){background:#75ef83}
+#ptOrders #od-list article:has(button[data-order][aria-current=true]){background:#a8e5a8}
 
 #ptOrders .od-desktop-order-info{flex:1;min-width:0;padding:4px 8px}
 #ptOrders .od-desktop-order-info button[data-order]{width:100%;padding:0;text-align:left}
