@@ -462,15 +462,23 @@
       if(url.protocol!=='https:' || !url.hostname.endsWith('.sharepoint.com'))return;
       const link=el('a','Open OneDrive property folder');
       link.href='#';
+      let opening=false;
       link.onclick=async event=>{
         event.preventDefault();
-        const {data:ticket,error}=await db.rpc('issue_desktop_folder_ticket',{job_id:order.id});
-        if(editing?.id!==order.id || !container.isConnected)return;
-        if(error || !ticket){
-          container.replaceChildren(link,document.createTextNode(' Unable to open folder. Try again.'));
-          return;
-        }
-        window.location.assign('http://127.0.0.1:45273/open/'+encodeURIComponent(ticket));
+        if(opening)return;
+        opening=true;
+        const message=el('span',' Opening in File Explorer...');
+        message.setAttribute('role','status');
+        container.replaceChildren(link,message);
+        try{
+          const {data:ticket,error}=await db.rpc('issue_desktop_folder_ticket',{job_id:order.id});
+          if(editing?.id!==order.id || !message.isConnected)return;
+          if(error || !ticket)throw Error();
+          window.location.assign('http://127.0.0.1:45273/open/'+encodeURIComponent(ticket));
+          setTimeout(()=>message.remove(),4000);
+        }catch{
+          message.textContent=' Unable to open folder. Try again.';
+        }finally{opening=false;}
       };
       container.append(link);
     }else{
