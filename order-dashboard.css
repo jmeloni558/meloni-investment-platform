@@ -86,3 +86,8 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders article :is(.od-directions,.od-row-photos){box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;flex:none;width:4.5rem;height:34px;min-height:34px;padding:0;border:0;border-radius:8px;color:white;font-size:.8rem;font-weight:650;line-height:1.2;text-decoration:none}
 #ptOrders article .od-directions{background:#185c96}
 #ptOrders article .od-row-photos{background:#17634d}
+
+#ptOrders #od-list article[data-due-status="today"]{background:#e4f4e8}
+#ptOrders #od-list article[data-due-status="overdue"]{background:#fce7e7}
+#ptOrders #od-list article[data-due-status] button[data-order]{background:transparent}
+#ptOrders #od-list article[data-due-status]:has([aria-current=true]){box-shadow:inset 3px 0 #185e54}

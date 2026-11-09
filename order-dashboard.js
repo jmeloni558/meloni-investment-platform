@@ -41,17 +41,20 @@
     fieldApp?.recordView();
   }
   let openDates=[], midnightTimer;
+  function localDateKey(now){
+    return [now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+  }
   function displayCounts(){
     clearTimeout(midnightTimer);
     if(!panel || !membership)return;
     const now=new Date();
-    const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+    const today=localDateKey(now);
     const total=openDates.length;
     field('total').textContent=total+' open '+(total===1?'order':'orders');
     field('today').textContent=openDates.filter(date=>date===today).length+' due today';
     field('overdue').textContent=openDates.filter(date=>date && date<today).length+' overdue';
     const midnight=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
-    midnightTimer=setTimeout(displayCounts,midnight-now+100);
+    midnightTimer=setTimeout(()=>{displayCounts();if(panel && membership)render();},midnight-now+100);
   }
   async function fetchOrders(list,columns){
     const rows=[];
@@ -146,8 +149,10 @@
     for(const list of ['hold','completed']){
       field(list).setAttribute('aria-pressed',String(!searchText() && list===currentList));
     }
+    const today=localDateKey(new Date());
     for(const o of orders){
       const row=el('article'), check=el('input'), title=el('button'), due=el('time',o.due?'Due '+dateLabel(o.due):'No due date');
+      if(!o.complete && o.due && o.due<=today)row.dataset.dueStatus=o.due===today?'today':'overdue';
       check.type='checkbox';
       check.checked=o.complete;
       check.setAttribute('aria-label','Completed · '+o.address);
