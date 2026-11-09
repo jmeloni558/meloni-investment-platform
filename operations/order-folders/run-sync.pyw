@@ -9,4 +9,7 @@ powershell = Path(os.environ["SystemRoot"]) / "System32/WindowsPowerShell/v1.0/p
 result = subprocess.run([str(powershell), "-NoProfile", "-NonInteractive", "-ExecutionPolicy",
                          "Bypass", "-File", str(script)], creationflags=subprocess.CREATE_NO_WINDOW,
                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+if result.returncode == 0:
+    from export_photos import run
+    run()
 sys.exit(result.returncode)
