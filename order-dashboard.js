@@ -11,6 +11,27 @@
   const field=id=>panel.querySelector('#od-'+id);
   const dateLabel=value=>fieldApp ? value.slice(5,7)+'/'+value.slice(8,10)+'/'+value.slice(2,4) : new Date(value+'T12:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
   const appointmentLabel=fieldApp ? new Intl.DateTimeFormat('en-US',{month:'2-digit',day:'2-digit',year:'2-digit',hour:'numeric',minute:'2-digit',hour12:true}) : new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  const endTimeLabel=new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'});
+  function appointmentEnd(order){
+    return new Date(new Date(order.appointment).getTime()+order.appointment_minutes*60000);
+  }
+  function syncEndTimeField(){
+    const hasStart=Boolean(field('appointment').value);
+    field('appointment-end-label').hidden=!hasStart;
+    if(!hasStart)field('appointment-end').value='';
+  }
+  function appointmentChanges(original){
+    const startValue=field('appointment').value;
+    const endValue=field('appointment-end').value;
+    const start=startValue ? new Date(startValue) : null;
+    let minutes=original?.appointment && !original.appointment_window && start ? original.appointment_minutes : 60;
+    if(start && endValue){
+      const end=new Date(startValue.slice(0,10)+'T'+endValue);
+      minutes=(end-start)/60000;
+      if(!Number.isInteger(minutes) || minutes<=0)throw Error('Choose an end time later than the start time on the same day.');
+    }
+    return {appointment:start?.toISOString() || null,appointment_minutes:minutes,appointment_window:Boolean(start && endValue)};
+  }
   function hide(){stopInvoiceWatch();document.body.classList.remove('pt-orders-open');menu?.removeAttribute('aria-current');if(fieldApp){menu?.setAttribute('aria-pressed','false');document.getElementById('fieldPhotos').setAttribute('aria-pressed','true');}}
   function open(){
     if(!membership||!panel || (fieldApp && !fieldApp.canShowDashboard()))return;
@@ -161,7 +182,7 @@
         actions.append(directions);
       }
       if(o.appointment){
-        const appointment=el('time','Appt '+appointmentLabel.format(new Date(o.appointment)));
+        const appointment=el('time','Appt '+appointmentLabel.format(new Date(o.appointment))+(o.appointment_window?' \u2013 '+endTimeLabel.format(appointmentEnd(o)):''));
         if(fieldApp)appointment.className='od-field-appointment';
         appointment.dateTime=o.appointment;
         schedule.append(appointment);
@@ -465,6 +486,11 @@
     field('gate-code').value=o?.gate_code || '';
     updateOrderLink();
     if(o?.appointment){const t=new Date(o.appointment);field('appointment').value=new Date(t-t.getTimezoneOffset()*60000).toISOString().slice(0,16);}
+    if(o?.appointment && o.appointment_window){
+      const end=appointmentEnd(o);
+      field('appointment-end').value=String(end.getHours()).padStart(2,'0')+':'+String(end.getMinutes()).padStart(2,'0');
+    }
+    syncEndTimeField();
     field('details').hidden=false;showOrderInvoice(o?.id);render();field(o?'title':'address').focus();fieldApp?.recordView();
   }
   async function submit(event){
@@ -473,7 +499,7 @@
     try{
       const client=field('client').value, address=field('address').value.trim();
       if((!client && field('client').required)||!address)throw Error('Enter the address and client.');
-      const changes={address,points_of_contact:readContacts(),purpose:field('purpose').value.trim()||null,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,gate_code:field('gate-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,appointment:field('appointment').value?new Date(field('appointment').value).toISOString():null};
+      const changes={address,points_of_contact:readContacts(),purpose:field('purpose').value.trim()||null,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,gate_code:field('gate-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,...appointmentChanges(original)};
       if(original)await update(original,{...changes,complete:field('state').value==='completed',on_hold:field('state').value==='hold',needs_photos:field('photos').checked});
       else {
         if(!field('billing').disabled){
@@ -522,7 +548,8 @@
       <fieldset id="od-billing"><legend>QuickBooks invoice</legend><p id="od-monthly" hidden>This BPO uses the date entered as its service date on the client's monthly invoice.</p>
       <label>Existing open invoice number (optional)<input id="od-invoice-target" maxlength="21"></label><div id="od-invoice-lines"></div><button type="button" id="od-add-line">Add invoice line</button></fieldset>
       <label>Due date<input type="date" id="od-due" required></label>
-      <label>Appointment (optional, local time)<input type="datetime-local" id="od-appointment"></label>
+      <label>Appointment date and start time (optional)<input type="datetime-local" id="od-appointment"></label>
+      <label hidden id="od-appointment-end-label">End time (optional)<input type="time" id="od-appointment-end"></label>
       <label><input type="checkbox" id="od-photos"> Photos needed</label>
       <label><input type="checkbox" id="od-appointment-needed"> Appointment Needed</label>
       <div id="od-photo-link"></div><label id="od-state-label">Order status<select id="od-state"><option value="open">Open orders</option><option value="hold">On Hold</option><option value="completed">Completed</option></select></label>
@@ -559,6 +586,7 @@
     field('kind').onchange=()=>{updatePhotoDefault();updateRequirements();};
     field('client').onchange=()=>{updatePhotoDefault();updateRequirements();};
     field('add-line').onclick=addInvoiceLine;
+    field('appointment').oninput=syncEndTimeField;
     field('form').oninput=()=>{dirty=true;};
     field('order-link').oninput=updateOrderLink;
     field('photos').onchange=()=>{photosOverridden=true;};
