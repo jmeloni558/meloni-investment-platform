@@ -53,13 +53,12 @@
     if(error)throw error;
     return data;
   }
-  async function activePhotoSets(batch){
-    const ids=batch.filter(order=>order.needs_photos && order.photo_id).map(order=>order.photo_id);
-    if(!fieldApp || account!==membership?.photo_owner || !ids.length)return new Set();
-    const {data,error}=await db.from('photo_properties').select('id').in('id',ids)
-      .is('completed_at',null).is('archived_at',null).is('deleting_at',null);
+  async function fieldPhotoSets(batch){
+    const ids=batch.map(order=>order.photo_id).filter(Boolean);
+    if(!fieldApp || account!==membership?.photo_owner || !ids.length)return new Map();
+    const {data,error}=await db.from('photo_properties').select('id,completed_at,archived_at,deleting_at').in('id',ids);
     if(error)throw error;
-    return new Set(data.map(set=>set.id));
+    return new Map(data.map(set=>[set.id,set]));
   }
   async function load(){
     const current=++request, version=generation;
@@ -72,10 +71,10 @@
       ]);
       if(held?.error)throw held.error;
       if(completed.error)throw completed.error;
-      const [result,lists,activeSets]=await Promise.all([
+      const [result,lists,photoSets]=await Promise.all([
         db.from('order_clients').select('name,listed,monthly_bpo').order('name'),
         db.from('order_lists').select('name').order('name'),
-        activePhotoSets(batch)
+        fieldPhotoSets(batch)
       ]);
       if(lists.error)throw lists.error;
       if(result.error)throw result.error;
@@ -102,7 +101,11 @@
       field('prev').hidden=page===0;
       field('next').hidden=batch.length<=pageSize;
       orders=batch.slice(0,pageSize);
-      for(const order of orders)order.hasActivePhotoSet=activeSets.has(order.photo_id);
+      for(const order of orders){
+        const set=photoSets.get(order.photo_id);
+        order.photosFinished=Boolean(set?.completed_at || set?.archived_at);
+        order.hasActivePhotoSet=Boolean(set && !order.photosFinished && !set.deleting_at);
+      }
       clients=result.data;
       if(field('details').hidden) populateClients();
       render();field('status').textContent='';
@@ -145,8 +148,8 @@
       const schedule=el('span');
       schedule.className='od-schedule';
       schedule.append(due);
-      const showDirections=fieldApp && o.address?.trim() && !o.list_name && !o.former_list_task;
-      const actions=showDirections?el('span'):null;
+      const fieldOrder=fieldApp && o.address?.trim() && !o.list_name && !o.former_list_task;
+      const actions=fieldOrder && !o.photosFinished?el('span'):null;
       if(actions){
         actions.className='od-field-actions';
         const dueActions=el('span');dueActions.className='od-due-actions';
@@ -165,13 +168,13 @@
       }
       if(searchText())schedule.append(el('small',o.complete?'Completed':o.on_hold?'On Hold':'Open'));
       title.append(summary);
-      if(showDirections)row.className='od-field-order';
+      if(fieldOrder)row.className='od-field-order';
       else title.append(schedule);
       if(o.appointment_needed && !o.appointment){
-        if(!showDirections)title.classList.add('od-needs-appointment');
+        if(!fieldOrder)title.classList.add('od-needs-appointment');
         const reminder=el('span','Appointment Needed');
         reminder.className='od-appointment-warning';
-        (showDirections?schedule:title).append(reminder);
+        (fieldOrder?schedule:title).append(reminder);
       }
       row.append(check,title);
       if(fieldApp && o.needs_photos && o.hasActivePhotoSet){
@@ -179,7 +182,7 @@
         button.className='od-row-photos';
         (actions || row).append(button);
       }
-      if(showDirections)row.append(schedule);
+      if(fieldOrder)row.append(schedule);
       field('list').append(row);
     }
     if(!orders.length)field('list').append(el('p',searchText()?'No matching orders.':{open:'No open orders.',hold:'No orders on hold.',completed:'No completed orders.'}[currentList]));
