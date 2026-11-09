@@ -187,7 +187,10 @@
         actions.append(directions);
       }
       const desktopFolder=!fieldApp && hasOrderFolder(o);
+      const desktopPhotos=!fieldApp && o.photo_id && account===membership.photo_owner;
+      const desktopActions=desktopFolder || desktopPhotos;
       if(desktopFolder)schedule.append(rowFolderButton(o));
+      if(desktopPhotos)schedule.append(desktopPhotoLink(o,'PT Photos'));
       if(o.appointment){
         const appointment=el('time','Appt '+appointmentLabel.format(new Date(o.appointment))+(o.appointment_window?' \u2013 '+endTimeLabel.format(appointmentEnd(o)):''));
         if(fieldApp)appointment.className='od-field-appointment';
@@ -197,14 +200,14 @@
       if(searchText())schedule.append(el('small',o.complete?'Completed':o.on_hold?'On Hold':'Open'));
       title.append(summary);
       if(fieldOrder)row.className='od-field-order';
-      else if(!desktopFolder)title.append(schedule);
+      else if(!desktopActions)title.append(schedule);
       if(o.appointment_needed && !o.appointment){
         if(!fieldOrder)title.classList.add('od-needs-appointment');
         const reminder=el('span','Appointment Needed');
         reminder.className='od-appointment-warning';
         (fieldOrder?schedule:title).append(reminder);
       }
-      if(desktopFolder){
+      if(desktopActions){
         const info=el('div');
         info.className='od-desktop-order-info';
         info.append(title,schedule);
@@ -463,6 +466,14 @@
     if(error || !ticket)throw Error('Unable to open folder.');
     window.location.assign('http://127.0.0.1:45273/open/'+encodeURIComponent(ticket));
   }
+  function desktopPhotoLink(order,label){
+    const link=el('a',label);
+    link.href='/photos?set='+encodeURIComponent(order.photo_id);
+    link.target='_blank';
+    link.rel='noopener';
+    link.setAttribute('aria-label',label+' for '+order.address);
+    return link;
+  }
   function rowFolderButton(order){
     const button=el('button','Folder');
     button.type='button';
@@ -554,10 +565,7 @@
         if(fieldApp){
           photos.append(fieldPhotoButton(o,'Open photos'));
         }else{
-          const link=el('a','Open PT Photos');
-          link.href='/photos?set='+encodeURIComponent(o.photo_id);
-          link.target='_blank';link.rel='noopener';
-          photos.append(link);
+          photos.append(desktopPhotoLink(o,'Open PT Photos'));
         }
       }else photos.textContent='Photo set in PT Photos · realty sign-in';
     }
