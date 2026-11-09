@@ -143,6 +143,8 @@
     return button;
   }
   function render(){
+    field('toggle-hold').hidden=!editing || editing.complete || field('details').hidden;
+    field('toggle-hold').textContent=editing?.on_hold?'Return to open orders':'Put on hold';
     field('list').replaceChildren();
     field('main-open').setAttribute('aria-pressed',String(currentList==='open' && !searchText()));
     field('open').dataset.active=String(currentList==='open' && !searchText());
@@ -457,7 +459,6 @@
     field('address-label').textContent=task?'Task or property address':'Property address';
     for(const id of ['kind','client','due'])field(id).required=!task && !editing?.todo_title;
   }
-  let folderTimer;
   function hasOrderFolder(order){
     return order?.id && !order.list_name && !order.former_list_task &&
       ['Int BPO','Ext BPO','Desktop BPO','Int PCR','Ext PCR','PDCR'].includes(order.kind);
@@ -497,42 +498,6 @@
     };
     return button;
   }
-  async function showFolder(order){
-    clearTimeout(folderTimer);
-    const container=field('folder-link');
-    if(!container)return;
-    container.replaceChildren();
-    if(!hasOrderFolder(order))return;
-    const {data,error}=await db.rpc('desktop_order_folder',{job_id:order.id});
-    if(editing?.id!==order.id || !container.isConnected || field('details').hidden)return;
-    if(error){container.textContent='OneDrive folder unavailable.';return;}
-    if(!data)return;
-    if(data.url){
-      const url=new URL(data.url);
-      if(url.protocol!=='https:' || !url.hostname.endsWith('.sharepoint.com'))return;
-      const link=el('a','Open OneDrive property folder');
-      link.href='#';
-      let opening=false;
-      link.onclick=async event=>{
-        event.preventDefault();
-        if(opening)return;
-        opening=true;
-        const message=el('span',' Opening in File Explorer...');
-        message.setAttribute('role','status');
-        container.replaceChildren(link,message);
-        try{
-          await launchOrderFolder(order.id);
-          setTimeout(()=>message.remove(),4000);
-        }catch{
-          message.textContent=' Unable to open folder. Try again.';
-        }finally{opening=false;}
-      };
-      container.append(link);
-    }else{
-      container.textContent=data.pending?'OneDrive folder pending':'OneDrive folder not found';
-      if(data.pending)folderTimer=setTimeout(()=>{if(editing?.id===order.id && !field('details').hidden)showFolder(order);},10000);
-    }
-  }
   function edit(o){
     if(!canLeave())return;
     dirty=false;
@@ -557,19 +522,6 @@
     field('invoice-lines').replaceChildren();updateRequirements();
     field('photos').checked=!!o?.needs_photos;
     field('appointment-needed').checked=!!o?.appointment_needed;
-    field('state-label').hidden=!o;
-    field('state').value=o?.on_hold?'hold':o?.complete?'completed':'open';
-    const photos=field('photo-link');
-    photos.replaceChildren();
-    if(o?.photo_id){
-      if(account===membership.photo_owner){
-        if(fieldApp){
-          photos.append(fieldPhotoButton(o,'Open photos'));
-        }else{
-          photos.append(desktopPhotoLink(o,'Photos'));
-        }
-      }else photos.textContent='Photo set in Photos · realty sign-in';
-    }
     field('order-link').value=o?.order_link || '';
     field('lockbox-code').value=o?.lockbox_code || '';
     field('gate-code').value=o?.gate_code || '';
@@ -580,7 +532,7 @@
       field('appointment-end').value=String(end.getHours()).padStart(2,'0')+':'+String(end.getMinutes()).padStart(2,'0');
     }
     syncEndTimeField();
-    field('details').hidden=false;showOrderInvoice(o?.id);if(!fieldApp)showFolder(o);render();field(o?'title':'address').focus();fieldApp?.recordView();
+    field('details').hidden=false;showOrderInvoice(o?.id);render();field(o?'title':'address').focus();fieldApp?.recordView();
   }
   async function submit(event){
     event.preventDefault();const save=field('save');if(save.disabled)return;save.disabled=true;
@@ -589,7 +541,7 @@
       const client=field('client').value, address=field('address').value.trim();
       if((!client && field('client').required)||!address)throw Error('Enter the address and client.');
       const changes={address,points_of_contact:readContacts(),purpose:field('purpose').value.trim()||null,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,gate_code:field('gate-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,...appointmentChanges(original)};
-      if(original)await update(original,{...changes,complete:field('state').value==='completed',on_hold:field('state').value==='hold',needs_photos:field('photos').checked});
+      if(original)await update(original,{...changes,needs_photos:field('photos').checked});
       else {
         if(!field('billing').disabled){
           changes.invoice_target=field('invoice-target').value.trim()||null;
@@ -613,7 +565,7 @@
     if(panel)return;
     panel=el('section');panel.id='ptOrders';panel.innerHTML=`
       <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"><span id="od-total"></span><span id="od-today"></span><span id="od-overdue"></span></p></div></header>
-      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><button type="button" id="od-main-open">Open orders</button><span class="od-open-picker" id="od-picker" hidden><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-rename-list" hidden>Rename list</button><button id="od-delete-list" hidden>Delete list</button><button id="od-hold">On Hold</button><button id="od-completed">Completed</button><button type="button" id="od-manage-clients">Manage clients</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Outlook calendar</a></nav>
+      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><button type="button" id="od-main-open">Open orders</button><span class="od-open-picker" id="od-picker" hidden><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-rename-list" hidden>Rename list</button><button id="od-delete-list" hidden>Delete list</button><button id="od-hold">On Hold</button><button id="od-toggle-hold" type="button" hidden></button><button id="od-completed">Completed</button><button type="button" id="od-manage-clients">Manage clients</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Outlook calendar</a></nav>
       <dialog closedby="any" id="od-clients-dialog" aria-labelledby="od-clients-title">
       <h2 id="od-clients-title">Manage clients</h2>
       <form id="od-add-client-form"><label>New client name<input id="od-new-client" maxlength="160" required></label>
@@ -628,24 +580,26 @@
       <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
       <p id="od-status" role="status"></p><div class="od-columns"><div><div id="od-list"></div><button id="od-prev" hidden>Previous page</button> <button id="od-next" hidden>Next page</button></div>
       <aside id="od-details" aria-labelledby="od-title" hidden><form id="od-form"><header><h2 id="od-title" tabindex="-1"></h2><button type="button" id="od-cancel">Close</button></header>
-      <div id="od-invoice" role="status" hidden></div><p id="od-source" hidden></p><label>List<select id="od-destination"></select></label><label><span id="od-address-label">Property address</span><input id="od-address" maxlength="500" required></label>
-      <label>Order type<select id="od-kind" required></select></label>
-      <label>Client<select id="od-client" required></select></label>
-      <label>Purpose of Order<input id="od-purpose" type="text"></label>
-      <div id="od-contacts"></div>
+      <div id="od-invoice" role="status" hidden></div>
       <label>Order fee ($)<input type="number" id="od-fee" inputmode="decimal" min="0" max="9999999999.99" step="0.01"></label>
       <fieldset id="od-billing"><legend>QuickBooks invoice</legend><p id="od-monthly" hidden>This BPO uses the date entered as its service date on the client's monthly invoice.</p>
       <label>Existing open invoice number (optional)<input id="od-invoice-target" maxlength="21"></label><div id="od-invoice-lines"></div><button type="button" id="od-add-line">Add invoice line</button></fieldset>
+      <p id="od-source" hidden></p><label>List<select id="od-destination"></select></label><label><span id="od-address-label">Property address</span><input id="od-address" maxlength="500" required></label>
+      <div class="od-needs-flags">
+      <label><input type="checkbox" id="od-photos"> Photos needed</label>
+      <label><input type="checkbox" id="od-appointment-needed"> Appointment Needed</label>
+      </div>
+      <label>Order type<select id="od-kind" required></select></label>
+      <label>Client<select id="od-client" required></select></label>
+      <label>Purpose of Order<input id="od-purpose" type="text"></label>
+      <div class="od-entry-codes"><label>Lockbox Code<input id="od-lockbox-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+      <label>Gate Code<input id="od-gate-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label></div>
+      <label>Order Link<input id="od-order-link" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://"></label>
+      <a id="od-open-order-link" target="_blank" rel="noopener noreferrer" hidden>Open order link</a>
       <label>Due date<input type="date" id="od-due" required></label>
       <label>Appointment date and start time (optional)<input type="datetime-local" id="od-appointment"></label>
       <label hidden id="od-appointment-end-label">End time (optional)<input type="time" id="od-appointment-end"></label>
-      <label><input type="checkbox" id="od-photos"> Photos needed</label>
-      <label><input type="checkbox" id="od-appointment-needed"> Appointment Needed</label>
-      <div id="od-photo-link"></div>${fieldApp?'':'<div id="od-folder-link"></div>'}<label id="od-state-label">Order status<select id="od-state"><option value="open">Open orders</option><option value="hold">On Hold</option><option value="completed">Completed</option></select></label>
-      <label>Order Link<input id="od-order-link" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://"></label>
-      <a id="od-open-order-link" target="_blank" rel="noopener noreferrer" hidden>Open order link</a>
-      <div class="od-entry-codes"><label>Lockbox Code<input id="od-lockbox-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
-      <label>Gate Code<input id="od-gate-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label></div>
+      <div id="od-contacts"></div>
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
       <p id="od-error" role="alert"></p>
       <button id="od-save">Save order</button></form></aside></div>
@@ -676,6 +630,16 @@
     field('client').onchange=()=>{updatePhotoDefault();updateRequirements();};
     field('add-line').onclick=addInvoiceLine;
     field('appointment').oninput=syncEndTimeField;
+    field('toggle-hold').onclick=async()=>{
+      const order=editing,button=field('toggle-hold');
+      if(!order || order.complete || button.disabled || !canLeave())return;
+      button.disabled=true;
+      try{
+        await update(order,{on_hold:!order.on_hold});
+        closeDetails();await load();
+      }catch(error){field('status').textContent=error.message;}
+      finally{button.disabled=false;}
+    };
     field('form').oninput=()=>{dirty=true;};
     field('order-link').oninput=updateOrderLink;
     field('photos').onchange=()=>{photosOverridden=true;};
