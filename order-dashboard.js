@@ -104,6 +104,7 @@
       if(result.error)throw result.error;
       if(current!==request||version!==generation)return;
       namedLists=lists.data.map(list=>list.name);
+      syncListField(field('destination').value);
       if(selectedList && !namedLists.includes(selectedList)){
         selectedList='';page=0;await load();return;
       }
@@ -295,12 +296,12 @@
     stopInvoiceWatch();
     const version=invoiceVersion,box=field('invoice');
     box.replaceChildren();
-    box.hidden=!orderId;
+    field('invoice-group').hidden=!orderId;
     if(!orderId)return;
     async function refresh(){
       const {data,error}=await db.rpc('dashboard_order_invoice',{target_order:orderId}).maybeSingle();
       if(version!==invoiceVersion)return;
-      box.replaceChildren('QuickBooks invoice: ');
+      box.replaceChildren();
       if(data?.invoice_id){
         const link=el('a',data.invoice_number?'#'+data.invoice_number:'Open invoice');
         link.href='https://qbo.intuit.com/app/invoice?txnId='+encodeURIComponent(data.invoice_id);
@@ -498,14 +499,19 @@
     };
     return button;
   }
+  function syncListField(value){
+    const select=field('destination');
+    field('destination-label').hidden=namedLists.length===0;
+    select.replaceChildren(new Option('Main dashboard',''),...namedLists.map(name=>new Option(name,name)));
+    select.value=namedLists.includes(value)?value:'';
+  }
   function edit(o){
     if(!canLeave())return;
     dirty=false;
     populateClients(o?.client);
     editing=o;photosOverridden=false;draftId=o?.id||crypto.randomUUID();const f=field('form');f.reset();field('error').textContent='';
     const destination=o?o.list_name:(currentList==='open'?selectedList:'');
-    field('destination').replaceChildren(new Option('Main dashboard',''),...namedLists.map(name=>new Option(name,name)));
-    field('destination').value=destination || '';
+    syncListField(destination);
     field('title').textContent=o?'Details':destination?'New task':'New order';
     field('kind').querySelector('[data-historical]')?.remove();
     if(o?.kind && !kinds.includes(o.kind)){
@@ -580,9 +586,10 @@
       <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
       <p id="od-status" role="status"></p><div class="od-columns"><div><div id="od-list"></div><button id="od-prev" hidden>Previous page</button> <button id="od-next" hidden>Next page</button></div>
       <aside id="od-details" aria-labelledby="od-title" hidden><form id="od-form"><header><h2 id="od-title" tabindex="-1"></h2><button type="button" id="od-cancel">Close</button></header>
-      <label>List<select id="od-destination"></select></label>
-      <div id="od-invoice" role="status" hidden></div>
+      <label id="od-destination-label" hidden>List<select id="od-destination"></select></label>
+      <div class="od-fee-invoice od-entry-codes">
       <label>Order fee ($)<input type="number" id="od-fee" inputmode="decimal" min="0" max="9999999999.99" step="0.01"></label>
+      <div id="od-invoice-group" role="group" aria-labelledby="od-invoice-title" hidden><label id="od-invoice-title">QuickBooks invoice</label><div id="od-invoice" role="status"></div></div></div>
       <fieldset id="od-billing"><legend>QuickBooks invoice</legend><p id="od-monthly" hidden>This BPO uses the date entered as its service date on the client's monthly invoice.</p>
       <label>Existing open invoice number (optional)<input id="od-invoice-target" maxlength="21"></label><div id="od-invoice-lines"></div><button type="button" id="od-add-line">Add invoice line</button></fieldset>
       <p id="od-source" hidden></p><label><span id="od-address-label">Property address</span><input id="od-address" maxlength="500" required></label>
