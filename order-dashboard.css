@@ -98,3 +98,4 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders article .od-folder-button,#ptOrders .od-desktop-order-info .od-schedule a{flex:none;width:auto;padding:2px 8px;border:1px solid #8fafa7;border-radius:5px;background:#fff;color:#18564b;font-size:.78rem}
 
 #ptOrders .od-desktop-order-info .od-schedule a{text-decoration:none;font-weight:650;line-height:1.2}
+#ptOrders #od-list article:has(button[data-order][aria-current=true]) :is(.od-summary small,.od-schedule){color:#3e5659}
