@@ -88,9 +88,14 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-desktop-order-info{flex:1;min-width:0;padding:4px 8px}
 #ptOrders .od-desktop-order-info button[data-order]{width:100%;padding:0;text-align:left}
 #ptOrders .od-desktop-order-info .od-schedule{align-items:baseline;font-size:.8rem;color:#53696c}
-#ptOrders article .od-folder-button,#ptOrders .od-desktop-order-info .od-schedule a{flex:none;width:auto;padding:2px 8px;border:1px solid #8fafa7;border-radius:5px;background:#fff;color:#18564b;font-size:.78rem}
+#ptOrders #od-list .od-desktop-order-info .od-due-actions :is(button.od-folder-button,a){
+  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  flex:0 0 4rem;width:4rem;min-width:4rem;max-width:4rem;height:1.5rem;min-height:1.5rem;max-height:1.5rem;
+  margin:0;padding:0;border:1px solid #8fafa7;border-radius:5px;background:#fff;color:#18564b;
+  font:inherit;font-size:.78rem;font-weight:650;line-height:1;text-decoration:none;white-space:nowrap;
+}
 
-#ptOrders .od-desktop-order-info .od-schedule a{text-decoration:none;font-weight:650;line-height:1.2}
+
 #ptOrders #od-list article:has(button[data-order][aria-current=true]) :is(.od-summary small,.od-schedule){color:#3e5659}
 
 #ptOrders .od-schedule :is(.od-appointment-warning,.od-order-appointment){grid-column:2;grid-row:1;text-align:right;justify-self:end;font-weight:700;line-height:1.2}
