@@ -742,5 +742,5 @@ if(window===parent){
     }finally{restoring=false;}
   });
   const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=order-details-layout-1';document.head.append(sheet);
-  import('./order-dashboard.js?v=order-details-layout-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  import('./order-dashboard.js?v=list-first-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }
