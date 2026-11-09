@@ -461,7 +461,11 @@
       const url=new URL(data.url);
       if(url.protocol!=='https:' || !url.hostname.endsWith('.sharepoint.com'))return;
       const link=el('a','Open OneDrive property folder');
-      link.href=url.href;link.target='_blank';link.rel='noopener';
+      const path=url.searchParams.get('id');
+      if(!path)return;
+      const bytes=new TextEncoder().encode(path);
+      const token=btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+      link.href='pt-order-folder:'+token;
       container.append(link);
     }else{
       container.textContent=data.pending?'OneDrive folder pending':'OneDrive folder not found';
