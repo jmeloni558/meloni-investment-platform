@@ -53,6 +53,14 @@
     if(error)throw error;
     return data;
   }
+  async function activePhotoSets(batch){
+    const ids=batch.filter(order=>order.needs_photos && order.photo_id).map(order=>order.photo_id);
+    if(!fieldApp || account!==membership?.photo_owner || !ids.length)return new Set();
+    const {data,error}=await db.from('photo_properties').select('id').in('id',ids)
+      .is('completed_at',null).is('archived_at',null).is('deleting_at',null);
+    if(error)throw error;
+    return new Set(data.map(set=>set.id));
+  }
   async function load(){
     const current=++request, version=generation;
     try{
@@ -64,9 +72,10 @@
       ]);
       if(held?.error)throw held.error;
       if(completed.error)throw completed.error;
-      const [result,lists]=await Promise.all([
+      const [result,lists,activeSets]=await Promise.all([
         db.from('order_clients').select('name,listed,monthly_bpo').order('name'),
-        db.from('order_lists').select('name').order('name')
+        db.from('order_lists').select('name').order('name'),
+        activePhotoSets(batch)
       ]);
       if(lists.error)throw lists.error;
       if(result.error)throw result.error;
@@ -92,7 +101,9 @@
       displayCounts();
       field('prev').hidden=page===0;
       field('next').hidden=batch.length<=pageSize;
-      orders=batch.slice(0,pageSize);clients=result.data;
+      orders=batch.slice(0,pageSize);
+      for(const order of orders)order.hasActivePhotoSet=activeSets.has(order.photo_id);
+      clients=result.data;
       if(field('details').hidden) populateClients();
       render();field('status').textContent='';
     }catch(e){if(version===generation&&current===request)field('status').textContent=e.message;}
@@ -163,7 +174,7 @@
         (showDirections?schedule:title).append(reminder);
       }
       row.append(check,title);
-      if(fieldApp && o.needs_photos && o.photo_id && account===membership.photo_owner){
+      if(fieldApp && o.needs_photos && o.hasActivePhotoSet){
         const button=fieldPhotoButton(o,'Photos');
         button.className='od-row-photos';
         (actions || row).append(button);
