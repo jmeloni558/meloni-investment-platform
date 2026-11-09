@@ -22,15 +22,44 @@ async function mapsPage(job,step){
     if(location.origin!=='https://www.google.com' || !location.pathname.startsWith('/maps'))throw Error('Sign in to Google Maps in Edge.');
     const account=await wait(()=>document.querySelector('[aria-label*="Google Account"]'));
     if(!account.getAttribute('aria-label').toLowerCase().includes('('+job.account.toLowerCase()+')'))throw Error('Check the Google Maps account in Edge.');
-    if(step==='list'){
+    if(['list','remove','confirmRemoval'].includes(step)){
       await wait(()=>Array.from(document.querySelectorAll('h1')).some(e=>e.textContent.trim()===job.listName));
       if(!location.href.includes(new URL(job.listUrl).pathname.split('!2s').pop().split('!')[0]))throw Error('Unexpected Maps list.');
-      return {ok:true};
+      if(step==='list')return {ok:true};
     }
     const normalize=s=>s.toLowerCase().replace(/(?:\s+#\s*|\s+(?:apt\.?|unit)\s+)[a-z0-9-]+\b/g,' ').replace(/[.,'’]/g,'')
-      .replace(/\b(street|avenue|drive|road|lane|court|place|circle|trail|boulevard|terrace|parkway|north|south|east|west)\b/g,
-        w=>({street:'st',avenue:'ave',drive:'dr',road:'rd',lane:'ln',court:'ct',place:'pl',circle:'cir',trail:'trl',boulevard:'blvd',terrace:'ter',parkway:'pkwy',north:'n',south:'s',east:'e',west:'w'})[w])
+      .replace(/\b(street|avenue|drive|road|lane|court|place|circle|trail|boulevard|terrace|parkway|loop|north|south|east|west)\b/g,
+        w=>({street:'st',avenue:'ave',drive:'dr',road:'rd',lane:'ln',court:'ct',place:'pl',circle:'cir',trail:'trl',boulevard:'blvd',terrace:'ter',parkway:'pkwy',loop:'lp',north:'n',south:'s',east:'e',west:'w'})[w])
       .replace(/\s+/g,' ').trim();
+    if(step==='remove' || step==='confirmRemoval'){
+      const main=document.querySelector('main,[role="main"]');
+      const entries=await wait(()=>{
+        const countText=Array.from(main.querySelectorAll('h2,[role="heading"]')).map(el=>el.textContent).join(' ');
+        const match=countText.match(/(?:^|[^\d,])([\d,]+) places?\b/i);
+        if(!match)return false;
+        const buttons=Array.from(main.querySelectorAll('button'));
+        const rows=buttons.filter(b=>b.parentElement?.parentElement?.querySelector('button[aria-label="Delete"]') &&
+          !['Delete','Add note'].includes(b.getAttribute('aria-label')) && b.innerText.split('\n').filter(Boolean).length>=2);
+        return rows.length===Number(match[1].replace(/,/g,''))?{rows}:false;
+      }).catch(()=>null);
+      if(!entries){
+        if(step==='remove')return {ok:true,missing:true};
+        throw Error('Could not verify the reloaded Inspections list.');
+      }
+      const matches=entries.rows.filter(b=>normalize(b.innerText)===normalize(job.address));
+      if(matches.length>1)throw Error('More than one saved place matches this address.');
+      if(!matches.length){
+        // A Maps alias can change the city or street spelling. Verify through
+        // the place details instead of treating a missing text match as success.
+        return {ok:true,missing:true};
+      }
+      if(step==='confirmRemoval')throw Error('Google Maps has not confirmed the change.');
+      const removes=matches[0].parentElement.parentElement.querySelectorAll('button[aria-label="Delete"]');
+      if(removes.length!==1)throw Error('Cannot identify the saved place removal button.');
+      removes[0].click();
+      await wait(()=>!main.contains(matches[0]) || normalize(matches[0].innerText)!==normalize(job.address));
+      return {ok:true};
+    }
     const address=await wait(()=>document.querySelector('button[data-item-id="address"],button[aria-label^="Address:"],[role="button"][data-tooltip="Copy address"]'));
     const displayed=address.getAttribute('aria-label')?.replace(/^Address:?\s*/i,'') || address.innerText.split("\n").find(line=>/\d{5}/.test(line)) || "";
     if(normalize(displayed)!==normalize(job.address))throw Error('Maps address differs. Verify the full saved order address.');
@@ -60,16 +89,11 @@ async function loaded(id,expected){
 }
 async function syncInspections(){
   if(!(await chrome.storage.local.get("inspectionSync")).inspectionSync)return;
-  let tabs=await chrome.tabs.query({url:'https://propertythesis.com/*'});
-  if(!tabs.length){
-    const tab=await chrome.tabs.create({url:syncPage,active:false});
-    await loaded(tab.id,syncPage);tabs=[tab];
-  }
-  let pt,job;
-  for(const tab of tabs){
-    const result=await onTab(tab.id,dashboardRpc,'claim_inspection_place',{}).catch(()=>null);
-    if(result && 'data' in result){pt=tab.id;job=result.data;break;}
-  }
+  const [existing]=await chrome.tabs.query({url:syncPage});
+  const bridge=existing || await chrome.tabs.create({url:syncPage,active:false});
+  const pt=bridge.id;
+  await loaded(pt,syncPage);
+  const {data:job}=await onTab(pt,dashboardRpc,'claim_inspection_place',{});
   if(!job)return;
   let tab,error;
   try{
@@ -80,21 +104,29 @@ async function syncInspections(){
     const check=async step=>{
       const res=await onTab(tab.id,mapsPage,job,step);
       if(!res?.ok)throw Error(res?.error||'Could not inspect Maps.');
+      return res;
     };
-    await check('list');
-    await chrome.tabs.update(tab.id,{url:'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(job.address.replace(/(?:\s+#\s*|\s+(?:apt\.?|unit)\s+)[a-z0-9-]+\b/ig,''))+'&hl=en'});
-    await loaded(tab.id,'https://www.google.com/maps/');
-    await check('sync');
-    await delay(1200);
-    await chrome.tabs.reload(tab.id);
-    await loaded(tab.id,'https://www.google.com/maps/');
-    await check('verify');
+    if(!job.wanted && !(await check('remove')).missing){
+      await chrome.tabs.reload(tab.id);
+      await loaded(tab.id,'https://www.google.com/maps/');
+      await check('confirmRemoval');
+    }else{
+      await check('list');
+      await chrome.tabs.update(tab.id,{url:'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(job.address.replace(/(?:\s+#\s*|\s+(?:apt\.?|unit)\s+)[a-z0-9-]+\b/ig,''))+'&hl=en'});
+      await loaded(tab.id,'https://www.google.com/maps/');
+      await check('sync');
+      await delay(1200);
+      await chrome.tabs.reload(tab.id);
+      await loaded(tab.id,'https://www.google.com/maps/');
+      await check('verify');
+    }
   }catch(e){error=e.message;}
   finally{if(tab)await chrome.tabs.remove(tab.id).catch(()=>{});}
-  await onTab(pt,dashboardRpc,'finish_inspection_place',{job_lease:job.lease,observed:job.wanted,failure:error||null});
+  const finished=await onTab(pt,dashboardRpc,'finish_inspection_place',{job_lease:job.lease,observed:job.wanted,failure:error||null});
+  return finished && 'data' in finished;
 }
 function startInspectionSync(){
-  inspectionRun??=syncInspections().catch(()=>{}).finally(()=>{inspectionRun=null;});
+  inspectionRun??=(async()=>{for(let i=0;i<12 && await syncInspections();i++){} })().catch(e=>console.warn('Inspections sync:',e.message)).finally(()=>{inspectionRun=null;});
   return inspectionRun;
 }
 chrome.alarms.onAlarm.addListener(alarm=>{if(alarm.name==='inspection-sync')startInspectionSync();});
