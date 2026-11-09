@@ -173,13 +173,15 @@
       summary.append(address,el('small',[kindLabel(o.kind),o.client].filter(Boolean).join(' · ')));
       const schedule=el('span');
       schedule.className='od-schedule';
-      schedule.append(due);
+      const dueActions=el('span');
+      dueActions.className='od-due-actions';
+      dueActions.append(due);
+      schedule.append(dueActions);
       const fieldOrder=fieldApp && o.address?.trim() && !o.list_name && !o.former_list_task;
       const actions=fieldOrder && !o.photosFinished?el('span'):null;
       if(actions){
         actions.className='od-field-actions';
-        const dueActions=el('span');dueActions.className='od-due-actions';
-        dueActions.append(due,actions);schedule.append(dueActions);
+        dueActions.append(actions);
         const directions=el('a','Directions'),url=new URL('https://www.google.com/maps/dir/');
         url.search=new URLSearchParams({api:'1',destination:o.address.trim(),travelmode:'driving'}).toString();
         directions.href=url.href;directions.target='_blank';directions.rel='noopener noreferrer';
@@ -189,23 +191,22 @@
       const desktopFolder=!fieldApp && hasOrderFolder(o);
       const desktopPhotos=!fieldApp && o.photo_id && account===membership.photo_owner;
       const desktopActions=desktopFolder || desktopPhotos;
-      if(desktopFolder)schedule.append(rowFolderButton(o));
-      if(desktopPhotos)schedule.append(desktopPhotoLink(o,'PT Photos'));
+      if(desktopFolder)dueActions.append(rowFolderButton(o));
+      if(desktopPhotos)dueActions.append(desktopPhotoLink(o,'PT Photos'));
       if(o.appointment){
         const appointment=el('time','Appt '+appointmentLabel.format(new Date(o.appointment))+(o.appointment_window?' \u2013 '+endTimeLabel.format(appointmentEnd(o)):''));
-        if(fieldApp)appointment.className='od-field-appointment';
+        appointment.className='od-order-appointment';
         appointment.dateTime=o.appointment;
         schedule.append(appointment);
       }
-      if(searchText())schedule.append(el('small',o.complete?'Completed':o.on_hold?'On Hold':'Open'));
+      if(searchText())dueActions.append(el('small',o.complete?'Completed':o.on_hold?'On Hold':'Open'));
       title.append(summary);
       if(fieldOrder)row.className='od-field-order';
       else if(!desktopActions)title.append(schedule);
       if(o.appointment_needed && !o.appointment){
-        if(!fieldOrder)title.classList.add('od-needs-appointment');
         const reminder=el('span','Appointment Needed');
         reminder.className='od-appointment-warning';
-        (fieldOrder?schedule:title).append(reminder);
+        schedule.append(reminder);
       }
       if(desktopActions){
         const info=el('div');
