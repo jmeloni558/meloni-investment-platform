@@ -5,7 +5,7 @@ function request(op,props){
  const id=crypto.randomUUID();return new Promise((resolve,reject)=>{
  const clean=()=>{clearTimeout(timer);window.removeEventListener('message',on)};
  function on(e){if(e.source!==window||e.origin!==location.origin||e.data?.kind!=='pt-photo-result'||e.data.id!==id)return;clean();e.data.response?.ok?resolve(e.data.response.value):reject(Error(e.data.response?.error||'Extension unavailable.'))}
- const timer=setTimeout(()=>{clean();reject(Error(op==='find'?'Load or reload PropertyThesis Importers 1.4.1 or newer in Edge, then refresh this page.':'Stewart did not respond. Check Photos/Files and retry; existing filenames will be skipped.'))},op==='find'?9000:75000);
+ const timer=setTimeout(()=>{clean();reject(Error(op==='find'?'Load or reload PropertyThesis Importers 1.4.2 or newer in Edge, then refresh this page.':'Stewart did not respond. Check Photos/Files and retry; existing filenames will be skipped.'))},op==='find'?9000:75000);
  window.addEventListener('message',on);window.postMessage({kind:'pt-photos',id,op,...props},location.origin);
  });}
 function elem(tag,text){const e=document.createElement(tag);if(text)e.textContent=text;return e}
@@ -19,7 +19,7 @@ export async function reviewTransfer({address,source,items,read,no,guard,progres
  const cmd=async(op,args={})=>{guard();return request(op,{address,target,...args})};let target;target=await cmd('find');
  const existing=new Map(await cmd('begin'));
  const d=elem('dialog'),title=elem('h2','Review photos for Stewart'),desc=elem('p',address+' · '+items.length+' photos'+(source?' from '+source:'')+'. Check orientation and choose labels. Existing filenames will keep their images and any saved labels.'),
- form=elem('form'),grid=elem('div'),cancel=elem('button','Cancel'),send=elem('button','Upload to Stewart'),repair=elem('label'),check=elem('input');check.type='checkbox';check.checked=no;repair.append(check,' Mark No for repair items on each photo');cancel.type='button';send.type='submit';
+ form=elem('form'),grid=elem('div'),cancel=elem('button','Cancel'),send=elem('button','Upload to Stewart'),repair=elem('label'),check=elem('input');check.type='checkbox';check.checked=no;repair.append(check,' Mark No for repair items or documented improvements on each photo');cancel.type='button';send.type='submit';
  Object.assign(d.style,{maxWidth:'90vw',maxHeight:'90vh',overflow:'auto'});Object.assign(grid.style,{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(175px,1fr))',gap:'12px'});form.append(grid,repair,send,cancel);d.append(title,desc,form);document.body.append(d);
  try{const rows=[];
  for(const [i,item] of items.entries()){guard();progress('Preparing preview '+(i+1)+' of '+items.length+'…');const preview=await canvasFor(await read(item),item.name,0,180),isExisting=existing.has(item.name.toLowerCase()),row=elem('section'),sel=elem('select'),rot=elem('button','Rotate 90°');rot.type='button';let angle=0;rot.onclick=()=>{angle=(angle+1)%4;preview.style.transform='rotate('+angle*90+'deg)'};rot.disabled=isExisting;const box=elem('div');Object.assign(box.style,{height:'182px',display:'grid',placeItems:'center'});box.append(preview);
@@ -29,5 +29,5 @@ export async function reviewTransfer({address,source,items,read,no,guard,progres
  for(const [i,r] of rows.entries()){guard();progress('Sending '+(i+1)+' of '+rows.length+': '+r.item.name);
  let data;if(!r.isExisting){const canvas=await canvasFor(await read(r.item),r.item.name,r.angle(),2400);data=canvas.toDataURL('image/jpeg',0.93).split(',')[1]}
  await cmd('file',{name:r.item.name,label:r.sel.value,no:check.checked,data});}
- const n=await cmd('finish',{names:items.map(x=>x.name),labels:rows.map(r=>existing.get(r.item.name.toLowerCase())||r.sel.value),no:check.checked});progress(n+' photos verified in Stewart'+(check.checked?' with Repair Item set to No':'')+'.');
+ const n=await cmd('finish',{names:items.map(x=>x.name),labels:rows.map(r=>existing.get(r.item.name.toLowerCase())||r.sel.value),no:check.checked});progress(n+' photos verified in Stewart'+(check.checked?' with the photo question set to No':'')+'.');
  }finally{d.remove()}}
