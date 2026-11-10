@@ -42,7 +42,8 @@ function readStewartGrid(fannie=false){
   for(const [kind,prefix] of [['sold','CompSale'],['active','CompListing']]){
     for(let slot=1;slot<=3;slot++){
       const read=key=>{
-        const id=(key.startsWith('Adjustment:')?prefix+'Adjustments':prefix)+'_'+key.replace(/^Adjustment:/,'')+'_'+slot+'_field';
+        const room=fannie&&/^(Unit(?:Room|Bedroom|Bath|HalfBath)Count)_1$/.exec(key);
+        const id=room?prefix+'_'+room[1]+'_'+slot+'_1_field':(key.startsWith('Adjustment:')?prefix+'Adjustments':prefix)+'_'+key.replace(/^Adjustment:/,'')+'_'+slot+'_field';
         const nodes=document.querySelectorAll('#'+id+', [name="'+id+'"]');
         if(nodes.length!==1)return null;
         const node=nodes[0].matches('input,textarea,select')?nodes[0]:nodes[0].querySelector('input:not([type=hidden]),textarea,select');
@@ -54,7 +55,7 @@ function readStewartGrid(fannie=false){
       const fields={};
       for(const key of ['ConditionType','LocationType','ViewType','Stories','GarageType','GarageBayCount','HeatingType','CoolingType','WaterSource','WasteDisposal','FuelType','UnitsInProperty','FinancingConcessions',...['SalesConcessions','FinancingConcessions','LocationType','LotSize','AdjustedViewPrice','YearBuilt','ConditionType','LivingArea','GarageBayCount','AdjustedPoolAndSpaPrice'].map(k=>'Adjustment:'+k),'Comments','BedroomCount','BathroomCount','HalfBathCount','LivingArea','TotalRooms','DaysOnMarket','YearBuilt','LotSize'].concat(kind==='sold'?'SalePrice':'CurrentListPrice'))fields[key]=read(key);
       if(fannie)for(const key of ['UnitBedroomCount_1','UnitBathCount_1','UnitHalfBathCount_1','UnitRoomCount_1','SalesConcessions','SaleDate','FannieMaePropertyType','FnmaConditionType','FloorLocationIfCondoTownhouse','NumberOfFloorsInBuildingIfCondoTownhouse'])fields[key]=read(key);
-      slots.push({kind,slot,address,unit:fannie?read('UnitNumber'):null,address2:read('Address2'),mls:read('MlsNumber'),fields});
+      slots.push({kind,slot,address,zip:fannie?read('Zip'):null,unit:fannie?read('UnitNumber'):null,address2:read('Address2'),mls:read('MlsNumber'),fields});
     }
   }
   if(!slots.length)throw Error('Open the Selected Comparables grid on the Stewart HomeSteps form.');
@@ -91,6 +92,15 @@ function verifiedUnit(slot,comp){
   const unit=v=>canonical(v).replace(/(?:#\s*|\b(?:unit|apt|apartment|suite)\s+)/g,'').trim();
   return [slot.address,slot.address+' '+slot.unit].some(a=>unit(a)===unit(comp.address))&&unit(comp.address).endsWith(' '+unit(slot.unit));
 }
+function fannieMlsMatch(slot,c){
+  if(!c.mls||canonical(c.mls)!==canonical(slot.mls)||!c.zip||c.zip.slice(0,5)!==slot.zip?.slice(0,5))return false;
+  const addr=canonical(c.address).replace(/#\s*|\bapt\s+/g,'unit ');
+  const unit=addr.match(/\bunit\s+(\S+)$/);
+  if(unit&&unit[1]!==canonical(slot.unit).replace(/^unit\s*/,''))return false;
+  if(slot.address2&&![canonical(c.locality),canonical(slot.unit)].includes(canonical(slot.address2)))return false;
+  const base=addr.replace(/\s+unit\s+\S+$/,''),street=canonical(slot.address),d=/^(\d+[a-z]?) (?:n|s|e|w|ne|nw|se|sw) (.+)$/;
+  return base===street||(!d.test(street)&&base.replace(d,'$1 $2')===street)||(!d.test(base)&&street.replace(d,'$1 $2')===base);
+}
 function candidatesFor(slot,comps){
   const address=canonical(slot.address),full=canonical([slot.address,slot.address2].filter(Boolean).join(' '));
   const mls=canonical(slot.mls);
@@ -111,8 +121,8 @@ function reviewStewart(payload,slots,fannie=false){
     const full=canonical(slot.address+' '+(slot.address2||''));
     // Without a verified meaning for Address2, require it to corroborate the street
     // (including unit) or the prepared comp's locality. Otherwise require manual review.
-    const matches=comp&&(!slot.unit||verifiedUnit(slot,comp))&&(verifiedUnit(slot,comp)||canonical(comp.address)===full||
-      (canonical(comp.address)===address&&canonical(comp.locality)===canonical(slot.address2)));
+    const matches=comp&&(fannie&&fannieMlsMatch(slot,comp)||(!slot.unit||verifiedUnit(slot,comp))&&(verifiedUnit(slot,comp)||canonical(comp.address)===full||
+      (canonical(comp.address)===address&&canonical(comp.locality)===canonical(slot.address2))));
     if(!address||duplicates||candidates.length!==1||!matches||mls&&comp.mls&&canonical(comp.mls)!==mls){
       rows.push(label+' · '+(!address?'Use Add Address and wait for listing data.':
         'Review identity · Stewart: '+[slot.address,slot.address2,slot.mls].filter(Boolean).join(' / ')+

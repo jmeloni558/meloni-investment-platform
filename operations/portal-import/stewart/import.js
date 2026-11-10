@@ -30,7 +30,8 @@ async function importStewartComps(payload) {
   }
   function control(kind,slot,key) {
     const prefix = kind==='sold'?'CompSale':'CompListing';
-    const id = (key.startsWith('Adjustment:')?prefix+'Adjustments':prefix)+'_'+key.replace(/^Adjustment:/,'')+'_'+slot+'_field';
+    const room=fannie&&/^(Unit(?:Room|Bedroom|Bath|HalfBath)Count)_1$/.exec(key);
+    const id = room?prefix+'_'+room[1]+'_'+slot+'_1_field':(key.startsWith('Adjustment:')?prefix+'Adjustments':prefix)+'_'+key.replace(/^Adjustment:/,'')+'_'+slot+'_field';
     const nodes = document.querySelectorAll('#'+id+', [name="'+id+'"]');
     return nodes.length===1 && visible(nodes[0]) && /^(INPUT|TEXTAREA|SELECT)$/.test(nodes[0].tagName)?nodes[0]:null;
   }
@@ -54,6 +55,15 @@ async function importStewartComps(payload) {
     const unitOK=!unit||address.endsWith('unit '+unit)||(fannie&&address.endsWith(' '+unit));
     const addressOK=address===street||extras.some(extra=>norm(s.address+' '+extra)===address)||unit&&address===norm(s.address+' unit '+unit);
     const secondOK=!s.second||norm(s.second)===norm(c.locality)||address.endsWith(norm(s.second))||norm(s.second)===unit;
+    // Feed addresses can omit the directional or append a unit absent from the export.
+    // Require exact MLS, ZIP, house number, street and any unit explicitly supplied.
+    const explicit=address.match(/\bunit\s+(\S+)$/);
+    if(fannie&&c.mls&&norm(c.mls)===norm(s.mls)&&zipcode(c)&&zipcode(c).slice(0,5)===s.zip.slice(0,5)&&secondOK){
+      const base=address.replace(/\s+unit\s+\S+$/,'');
+      const direction=/^(\d+[a-z]?) (?:n|s|e|w|ne|nw|se|sw) (.+)$/;
+      const streetOK=base===street||(!direction.test(street)&&base.replace(direction,'$1 $2')===street)||(!direction.test(base)&&street.replace(direction,'$1 $2')===base);
+      if(streetOK&&(!explicit||explicit[1]===unit))return true;
+    }
     return addressOK && secondOK && unitOK && (!s.mls||!c.mls||norm(s.mls)===norm(c.mls)) && (!s.zip||!zipcode(c)||zipcode(c).slice(0,5)===s.zip.slice(0,5));
   }
   function set(el,value) {
@@ -236,10 +246,22 @@ async function importStewartComps(payload) {
     if(!vacant(c,slotData(c,i)))stop('The slot was populated during lookup. Run again to match it.');
     addButton.click();
   }
+  function fillOrder(){
+    const orderFields={...payload.orderFields};
+    if(fannie)orderFields.Subject_UnitCountType??="1";
+    if(fannie&&orderFields.Subject_FnmaConditionType)orderFields.SubjectCondition_ConditionType=orderFields.Subject_FnmaConditionType;
+    for(const [key,value] of Object.entries(orderFields)){
+      checkOrder();
+      const nodes=[...document.querySelectorAll('[id="'+key+'_field"]')].filter(visible);
+      if(!nodes.length){rows.push(key+' · unavailable');continue;}
+      if(nodes.some(n=>valueOf(n)&&norm(valueOf(n))!==norm(value))){rows.push(key+' · kept existing entry');continue;}
+      for(const node of nodes)if(fill(node,value,key))rows.push(key+' · filled');
+    }
+  }
   try {
     checkOrder();
     // These subject fields are independent of whether Stewart can resolve every comparable.
-    if(!fannie){subjectDefaults();conditionDefaults();}
+    if(fannie)fillOrder();else{subjectDefaults();conditionDefaults();}
     for(const c of payload.comps){
       checkOrder();
       const slots=[1,2,3].filter(i=>control(c.kind,i,'Address')).map(i=>slotData(c,i));
@@ -260,6 +282,10 @@ async function importStewartComps(payload) {
       checkOrder();
       if(!matches(c,slotData(c,selected.i)))stop('Slot identity changed. Review '+c.address+'.');
       if(!fannie)concessionDefaults(c,selected.i);
+      if(fannie&&c.mls&&norm(slotData(c,selected.i).mls)===norm(c.mls)){
+        const source=control(c.kind,selected.i,'InformationSourceType');
+        if(source&&!valueOf(source)&&fill(source,'Multiple Listing Service',c.address+' data source'))filled++;
+      }
       for(const [key,value] of Object.entries(fannie?{UnitsInProperty:"1"}:defaults)){
         if(c.fields[key]===undefined && fill(control(c.kind,selected.i,key),value,c.address+' '+key))filled++;
       }
@@ -273,13 +299,7 @@ async function importStewartComps(payload) {
     }
     checkOrder();
     if(!fannie)await repairs();
-    for(const [key,value] of Object.entries(payload.orderFields||{})){
-      checkOrder();
-      const nodes=[...document.querySelectorAll('[id="'+key+'_field"]')].filter(visible);
-      if(!nodes.length){rows.push(key+' · unavailable');continue;}
-      if(nodes.some(n=>valueOf(n)&&norm(valueOf(n))!==norm(value))){rows.push(key+' · kept existing entry');continue;}
-      for(const node of nodes)if(fill(node,value,key))rows.push(key+' · filled');
-    }
+    if(!fannie)fillOrder();
   } catch(error) { rows.push('Stopped: '+error.message); }
   finally { globalThis.stewartImportBusy=false; }
   return rows;
