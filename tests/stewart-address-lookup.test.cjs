@@ -4,7 +4,7 @@ const {chromium}=require('playwright');
 const {importStewartComps}=require('../operations/portal-import/stewart/import');
 const {exportStewart}=require('../operations/portal-import/stewart-export.cjs');
 const transfer=exportStewart({_clientTemplate:'stewart','sold.0.address':'10 Oak Street','sold.0.city':'Tampa','sold.0.state':'FL','sold.0.zip':'33617',
-  'sold.1.address':'20 Maple Rd','sold.1.zip':'33618','sold.1.source':'MLS A123456','sold.1.beds':4,'sold.1.baths':2.5,'sold.1.gla':1300,'stewart.sold.1.comments':'Similar site.',
+  'sold.1.address':'20 Maple Rd','sold.1.zip':'33618','sold.1.source':'MLS A123456','sold.1.beds':4,'sold.1.baths':2.5,'sold.1.gla':1300,'stewart.sold.1.comments':'Similar site.','sold.1.adj_year':-1200,'sold.1.adj_gla':500,'sold.1.condition':'Good',
   'active.1.address':'30 Pine Rd','active.1.zip':'33619','active.1.beds':2,'active.1.gla':900});
 test('adds sale and listing through their lookup dialogs, preserves late listing data and reuses populated slots',async()=>{
   const browser=await chromium.launch({channel:'msedge',headless:true});
@@ -12,7 +12,7 @@ test('adds sale and listing through their lookup dialogs, preserves late listing
     const page=await browser.newPage();
     const groups=[['saleCompsSection','CompSale'],['listingCompsSection','CompListing']];
     const html=groups.map(([section,group])=>'<section id="'+section+'"><a href="#">Add Address</a>'+
-      ['Address','Zip','MlsNumber','LivingArea','BedroomCount','BathroomCount','HalfBathCount','Comments'].map(k=>'<input id="'+group+'_'+k+'_1_field">').join('')+'</section>').join('');
+      ['Address','Zip','MlsNumber','LivingArea','BedroomCount','BathroomCount','HalfBathCount','Comments'].map(k=>'<input id="'+group+'_'+k+'_1_field">').join('')+'<input id="'+group+'Adjustments_YearBuilt_1_field"><input value="0" id="'+group+'Adjustments_LivingArea_1_field"><select id="'+group+'_ConditionType_1_field"><option value="99"></option><option value="2">Good</option></select></section>').join('');
     const url='https://www.protk.com/ProTeck.Fulfillment.Case.Forms/CaseFormPortal/DataEntry/123';
     await page.route(url,r=>r.fulfill({contentType:'text/html',body:'<h1>10 OAK ST TAMPA, FL 33617 (Case #123)</h1>'+html+
       '<div id="manual-comparable-select-modal" hidden><select id="ComparableSlot"></select><input id="ComparableZipCode"><input id="ComparableMlsNumber"><input id="ComparableAddress"><button id="addComparableBtn">Add Comparable</button></div>'}));
@@ -43,6 +43,22 @@ test('adds sale and listing through their lookup dialogs, preserves late listing
     assert.equal(await page.inputValue('#CompListing_LivingArea_1_field'),'1500');
     assert.equal(await page.inputValue('#CompSale_HalfBathCount_1_field'),'1');
     assert.match((await page.evaluate(importStewartComps,transfer)).join('\n'),/0 blank fields filled/);
+    assert.equal(await page.evaluate(()=>calls.length),2);
+    assert.equal(await page.inputValue('#CompSaleAdjustments_YearBuilt_1_field'),'-1200');
+    assert.equal(await page.inputValue('#CompSaleAdjustments_LivingArea_1_field'),'0');
+    assert.equal(await page.inputValue('#CompSale_ConditionType_1_field'),'2');
+    const {preparedStewart}=require('../operations/portal-import/stewart/adapter');
+    const old=structuredClone(transfer),c=old.comps[0];
+    delete c.adjustments;c.fields.Comments='Similar site. Year built -$1,200, Living area +$500';
+    await page.fill('#CompSale_Comments_1_field',c.fields.Comments);
+    await page.fill('#CompSaleAdjustments_YearBuilt_1_field','');
+    preparedStewart(old);
+    await page.evaluate(importStewartComps,old);
+    assert.equal(await page.inputValue('#CompSale_Comments_1_field'),'Similar site.');
+    assert.equal(await page.inputValue('#CompSaleAdjustments_YearBuilt_1_field'),'-1200');
+    await page.fill('#CompSale_Comments_1_field','User edited note.');
+    await page.evaluate(importStewartComps,old);
+    assert.equal(await page.inputValue('#CompSale_Comments_1_field'),'User edited note.');
     assert.equal(await page.evaluate(()=>calls.length),2);
     const wrong={...transfer,subject:{...transfer.subject,address:'12 Oak St'}};
     assert.match((await page.evaluate(importStewartComps,wrong)).join('\n'),/does not match/);

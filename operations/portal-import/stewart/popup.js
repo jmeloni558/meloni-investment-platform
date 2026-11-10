@@ -14,7 +14,7 @@ $('file').onchange=async()=>{
     const next=JSON.parse(await file.text());
     if(file!==$('file').files[0])return;
     validateStewart(next);
-    payload=next;
+    payload=preparedStewart(next);
     const {address,city,state,zip}=next.subject;
     photoWorkflow.searchParams.set('address',[address,city,[state,zip].filter(Boolean).join(' ')].filter(Boolean).join(', '));
     $('photoWorkflow').href=photoWorkflow.href;
