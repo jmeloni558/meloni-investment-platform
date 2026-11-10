@@ -721,7 +721,7 @@ if(window===parent){
       if(!busy && view.screen==='dashboard' && app.dashboard)ok=await app.dashboard.restore(view);
       if(!busy && view.screen==='photos'){
         if(dirtyDescriptions.size)await flushDescriptions();
-        app.dashboard?.hide();
+        if(app.dashboard && !await app.dashboard.hide()){if(previous)history.go(previous.index-target.index);return;}
         if(view.set && selected?.id!==view.set){
           await run(async()=>{
             await loadProperties();
@@ -742,5 +742,5 @@ if(window===parent){
     }finally{restoring=false;}
   });
   const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=inline-invoice-1';document.head.append(sheet);
-  import('./order-dashboard.js?v=showingtime-position-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  import('./order-dashboard.js?v=order-autosave-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }

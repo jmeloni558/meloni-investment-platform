@@ -140,7 +140,7 @@
     const button=el('button',label);
     button.type='button';
     button.setAttribute('aria-label',label+' for '+order.address);
-    button.onclick=()=>{hide();fieldApp.openSet(order.photo_id);};
+    button.onclick=async()=>{if(!await canLeave())return;hide();fieldApp.openSet(order.photo_id);};
     return button;
   }
   function render(){
@@ -160,9 +160,9 @@
       check.checked=o.complete;
       check.setAttribute('aria-label','Completed � '+o.address);
       check.onchange=async()=>{
-        if(!canLeave()){check.checked=o.complete;return;}
+        if(!await canLeave()){check.checked=o.complete;return;}
         check.disabled=true;
-        try{await update(o,{complete:check.checked,on_hold:false});closeDetails();await load();}
+        try{await update(editing?.id===o.id?editing:o,{complete:check.checked,on_hold:false});closeDetails();await load();}
         catch(e){check.checked=o.complete;check.disabled=false;field('status').textContent=e.message;}
       };
       title.dataset.order=o.id;
@@ -228,13 +228,75 @@
     if(!orders.length)field('list').append(el('p',searchText()?'No matching orders.':{open:'No open orders.',hold:'No orders on hold.',completed:'No completed orders.'}[currentList]));
   }
   async function update(o,changes){
-    const {data,error}=await db.from('field_orders').update(changes).eq('id',o.id).eq('updated_at',o.updated_at).select('id').maybeSingle();
+    const {data,error}=await db.from('field_orders').update(changes).eq('id',o.id).eq('updated_at',o.updated_at).select('*').maybeSingle();
     if(error)throw error;if(!data)throw Error('This order changed on another device. Close the editor and refresh the dashboard.');
+    return data;
   }
   let editing, draftId, photosOverridden;
   let dirty=false;
-  function canLeave(){
-    return !field('save').disabled && (field('details').hidden || !dirty || window.confirm('Discard your unsaved order changes?'));
+  let autosaveTimer,saveInFlight=null,editRevision=0,baseline=null;
+  function markChanged(){
+    dirty=true;
+    if(!editing)return;
+    editRevision++;
+    field('autosave-status').textContent='Unsaved changes';
+    field('retry-save').hidden=true;
+    clearTimeout(autosaveTimer);
+    autosaveTimer=setTimeout(flushExisting,650);
+  }
+  async function flushExisting(){
+    clearTimeout(autosaveTimer);
+    if(saveInFlight)return saveInFlight;
+    if(!editing || !dirty)return true;
+    const version=generation,orderId=editing.id;
+    saveInFlight=(async()=>{
+      try{
+        while(dirty && generation===version && editing?.id===orderId){
+          const revision=editRevision;
+          const changes=orderValues(editing);
+          if(!changes.address)throw Error('Enter the property address.');
+          const patch=Object.fromEntries(Object.entries(changes).filter(([key,value])=>
+            JSON.stringify(value)!==JSON.stringify(baseline[key])));
+          if(Object.keys(patch).length){
+            if(!field('form').checkValidity()){
+              const invalid=field('form').querySelector(':invalid');
+              throw Error(invalid?.validationMessage || 'Check the highlighted field.');
+            }
+            field('autosave-status').textContent='Saving...';
+            const saved=await update(editing,patch);
+            if(generation!==version || editing?.id!==orderId)return false;
+            editing=saved;
+            const row=orders.find(order=>order.id===saved.id);
+            if(row)Object.assign(row,saved);
+          }
+          baseline=changes;
+          dirty=revision!==editRevision;
+        }
+        if(version!==generation || editing?.id!==orderId)return false;
+        field('autosave-status').textContent='Saved';
+        field('error').textContent='';
+        field('retry-save').hidden=true;
+        load();
+        return true;
+      }catch(error){
+        if(version===generation && editing?.id===orderId){
+          field('autosave-status').textContent='Changes not saved';
+          field('error').textContent=error.message;
+          field('retry-save').hidden=false;
+        }
+        return false;
+      }
+    })();
+    try{return await saveInFlight;}finally{saveInFlight=null;}
+  }
+  async function canLeave(){
+    if(field('save').disabled)return false;
+    if(field('details').hidden || !dirty)return true;
+    if(editing && await flushExisting())return true;
+    if(!window.confirm('Discard your unsaved order changes?'))return false;
+    clearTimeout(autosaveTimer);
+    dirty=false;
+    return true;
   }
   async function qbo(action,values={}){
     const {data,error}=await db.functions.invoke('qbo',{body:{action,...values}});
@@ -315,6 +377,7 @@
     refresh();
   }
   function closeDetails(){
+    clearTimeout(autosaveTimer);
     stopInvoiceWatch();
     field('details').hidden=true;
     editing=null;
@@ -351,7 +414,7 @@
       field('attempt-context').textContent=description;
       for(const type of ['Call','Text']){
         field('attempt-'+type.toLowerCase()).onclick=()=>{
-          check.checked=true;display(type);dirty=true;dialog.close();
+          check.checked=true;display(type);markChanged();dialog.close();
         };
       }
       dialog.showModal();
@@ -449,8 +512,8 @@
     for(const name of kinds.filter(k=>!k.endsWith('Photos')))service.add(new Option(kindLabel(name),name));
     service.value=field('kind').value;
     inputs[2].value=monthlyBpo()?new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()):field('due').value;
-    row.querySelector('button').onclick=()=>{row.remove();dirty=true;};
-    field('invoice-lines').append(row);dirty=true;inputs[0].focus();
+    row.querySelector('button').onclick=()=>{row.remove();markChanged();};
+    field('invoice-lines').append(row);markChanged();inputs[0].focus();
   }
   function setInvoiceOptions(expanded){
     const toggle=field('invoice-summary'),number=field('invoice-target').value.trim();
@@ -512,8 +575,9 @@
     select.replaceChildren(new Option('Main dashboard',''),...namedLists.map(name=>new Option(name,name)));
     select.value=namedLists.includes(value)?value:'';
   }
-  function edit(o){
-    if(!canLeave())return;
+  async function edit(o){
+    if(!await canLeave())return;
+    if(o && editing?.id===o.id)o=editing;
     dirty=false;
     populateClients(o?.client);
     editing=o;photosOverridden=false;draftId=o?.id||crypto.randomUUID();const f=field('form');f.reset();setInvoiceOptions(false);field('error').textContent='';
@@ -547,32 +611,37 @@
       field('appointment-end').value=String(end.getHours()).padStart(2,'0')+':'+String(end.getMinutes()).padStart(2,'0');
     }
     syncEndTimeField();
+    baseline=o?orderValues(o):null;
+    field('save').hidden=!!o;
+    field('retry-save').hidden=true;
+    field('autosave-status').textContent='';
     field('details').hidden=false;showOrderInvoice(o?.id);render();field(o?'details':'address').focus();fieldApp?.recordView();
+  }
+  function orderValues(original){
+      const client=field('client').value, address=field('address').value.trim();
+      return {address,needs_photos:field('photos').checked,
+        showingtime_requested:field('showingtime-requested').checked,
+        showingtime_confirmed:field('showingtime-confirmed').checked,
+        points_of_contact:readContacts(),purpose:field('purpose').value.trim()||null,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,gate_code:field('gate-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,...appointmentChanges(original)};
   }
   async function submit(event){
     event.preventDefault();const save=field('save');if(save.disabled)return;save.disabled=true;
     const version=generation,original=editing;
     try{
-      const client=field('client').value, address=field('address').value.trim();
-      if((!client && field('client').required)||!address)throw Error('Enter the address and client.');
-      const changes={address,
-        showingtime_requested:field('showingtime-requested').checked,
-        showingtime_confirmed:field('showingtime-confirmed').checked,
-        points_of_contact:readContacts(),purpose:field('purpose').value.trim()||null,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,gate_code:field('gate-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,...appointmentChanges(original)};
-      if(original)await update(original,{...changes,needs_photos:field('photos').checked});
-      else {
-        if(!field('billing').disabled){
-          changes.invoice_target=field('invoice-target').value.trim()||null;
-          changes.invoice_extra_lines=Array.from(field('invoice-lines').children,row=>{
-            const [description,amount,date]=row.querySelectorAll('input');
-            if(!description.value.trim())throw Error('Enter a description for each invoice line.');
-            return {kind:row.querySelector('select').value,description:description.value.trim(),amount:Number(amount.value),date:date.value};
-          });
-        }
-        const {error}=await db.from('field_orders').insert({...changes,id:draftId,needs_photos:field('photos').checked});
-        if(error&&error.code!=='23505')throw error;
-        if(error){const r=await db.from('field_orders').select('id').eq('id',draftId).maybeSingle();if(!r.data)throw error;}
+      if(original){await flushExisting();return;}
+      const changes=orderValues(null);
+      if(!changes.address)throw Error('Enter the address.');
+      if(!field('billing').disabled){
+        changes.invoice_target=field('invoice-target').value.trim()||null;
+        changes.invoice_extra_lines=Array.from(field('invoice-lines').children,row=>{
+          const [description,amount,date]=row.querySelectorAll('input');
+          if(!description.value.trim())throw Error('Enter a description for each invoice line.');
+          return {kind:row.querySelector('select').value,description:description.value.trim(),amount:Number(amount.value),date:date.value};
+        });
       }
+      const {error}=await db.from('field_orders').insert({...changes,id:draftId});
+      if(error&&error.code!=='23505')throw error;
+      if(error){const r=await db.from('field_orders').select('id').eq('id',draftId).maybeSingle();if(!r.data)throw error;}
       if(version===generation){closeDetails();await load();}
     }catch(e){if(version===generation)field('error').textContent=e.message;}finally{save.disabled=false;}
   }
@@ -628,7 +697,7 @@
       <div id="od-contacts"></div>
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
       <p id="od-error" role="alert"></p>
-      <button id="od-save">Save order</button></form></aside></div>
+      <span id="od-autosave-status" role="status"></span><button type="button" id="od-retry-save" hidden>Retry save</button><button id="od-save">Save order</button></form></aside></div>
       <dialog id="od-attempt-dialog" aria-labelledby="od-attempt-title" closedby="any"><h2 id="od-attempt-title">Record contact attempt</h2><p id="od-attempt-context"></p>
       <button type="button" id="od-attempt-call">Call</button> <button type="button" id="od-attempt-text">Text</button> <button type="button" id="od-attempt-cancel">Cancel</button></dialog>
       <dialog id="od-phone-dialog" aria-labelledby="od-phone-number" closedby="any">
@@ -650,7 +719,7 @@
       searchTimer=setTimeout(load,200);
     };
     for(const [id,direction] of [['prev',-1],['next',1]]){
-      field(id).onclick=()=>{if(!canLeave())return;closeDetails();page+=direction;field('prev').hidden=field('next').hidden=true;load();};
+      field(id).onclick=async()=>{if(!await canLeave())return;closeDetails();page+=direction;field('prev').hidden=field('next').hidden=true;load();};
     }
     field('kind').onchange=()=>{updatePhotoDefault();updateRequirements();};
     field('client').onchange=()=>{updatePhotoDefault();updateRequirements();};
@@ -658,23 +727,26 @@
     field('appointment').oninput=syncEndTimeField;
     field('toggle-hold').onclick=async()=>{
       const order=editing,button=field('toggle-hold');
-      if(!order || order.complete || button.disabled || !canLeave())return;
+      if(!order || order.complete || button.disabled || !await canLeave())return;
       button.disabled=true;
       try{
-        await update(order,{on_hold:!order.on_hold});
+        await update(editing,{on_hold:!order.on_hold});
         closeDetails();await load();
       }catch(error){field('status').textContent=error.message;}
       finally{button.disabled=false;}
     };
     field('invoice-summary').onclick=()=>setInvoiceOptions(field('invoice-options').hidden);
     field('invoice-options').addEventListener('invalid',()=>setInvoiceOptions(true),true);
-    field('form').oninput=()=>{dirty=true;};
+    field('form').oninput=field('form').onchange=event=>{
+      if(!event.target.closest('#od-invoice-group'))markChanged();
+    };
+    field('retry-save').onclick=flushExisting;
     field('order-link').oninput=updateOrderLink;
     field('photos').onchange=()=>{photosOverridden=true;};
     field('kind').append(new Option('Choose order type',''),...kinds.map(k=>new Option(kindLabel(k),k)));
-    field('new').onclick=()=>edit(null);field('cancel').onclick=()=>{if(canLeave())closeDetails();};field('form').onsubmit=submit;
-    function switchList(status,name=''){
-      if(!canLeave())return false;
+    field('new').onclick=()=>edit(null);field('cancel').onclick=async()=>{if(await canLeave())closeDetails();};field('form').onsubmit=submit;
+    async function switchList(status,name=''){
+      if(!await canLeave())return false;
       closeDetails();
       field('search').value='';page=0;clearTimeout(searchTimer);
       field('list-form').hidden=true;
@@ -684,15 +756,15 @@
     }
     field('destination').onchange=updateRequirements;
     field('main-open').onclick=()=>switchList('open');
-    field('open').onchange=()=>{
-      if(!switchList('open',field('open').value)){
+    field('open').onchange=async()=>{
+      if(!await switchList('open',field('open').value)){
         field('open').selectedIndex=currentList==='open' && !searchText()?namedLists.indexOf(selectedList)+2:0;
       }
     };
     for(const status of ['hold','completed'])field(status).onclick=()=>switchList(status);
     let renameFrom=null;
-    function openListForm(originalName){
-      if(!canLeave())return;
+    async function openListForm(originalName){
+      if(!await canLeave())return;
       closeDetails();
       renameFrom=originalName;
       field('create-list').textContent=originalName?'Save name':'Create list';
@@ -705,7 +777,7 @@
     field('rename-list').onclick=()=>openListForm(selectedList);
     field('delete-list').onclick=async()=>{
       const name=selectedList,button=field('delete-list'),version=generation;
-      if(!name || button.disabled || !canLeave())return;
+      if(!name || button.disabled || !await canLeave())return;
       if(!window.confirm('Delete “'+name+'”? Its open tasks will move to Open orders. Held and completed tasks will keep their status.'))return;
       closeDetails();
       button.disabled=true;
@@ -849,7 +921,6 @@
     };
     if(!fieldApp)panel.addEventListener('click',event=>{
       if(event.target.closest('#ptPhotoLibrary') && !event.ctrlKey && !event.metaKey && !event.shiftKey){
-        if(!canLeave()){event.preventDefault();return;}
         if(!field('details').hidden)closeDetails();
         hide();
       }
@@ -863,10 +934,10 @@
       fieldApp.dashboard={
         view:()=>({screen:'dashboard',list:currentList,name:selectedList,page,search:searchText(),
           detail:field('details').hidden?null:editing?.id || 'new'}),
-        hide,
+        hide:async()=>{if(!await canLeave())return false;hide();return true;},
         restore:async view=>{
           const sameDetail=!field('details').hidden && (editing?.id || 'new')===view.detail;
-          if(!sameDetail && !canLeave())return false;
+          if(!sameDetail && !await canLeave())return false;
           if(!sameDetail)closeDetails();
           currentList=view.list;selectedList=view.name;page=view.page;field('search').value=view.search;
           open();
@@ -887,6 +958,7 @@
   async function auth(session){
     const id=session?.user?.id||null;if(id===account)return;
     clearTimeout(midnightTimer);clearTimeout(searchTimer);page=0;openDates=[];
+    clearTimeout(autosaveTimer);dirty=false;editing=null;baseline=null;
     const old=account;account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';selectedList='';namedLists=[];
     if(fieldApp)document.getElementById('fieldViews').hidden=true;
     if(!id){if(old)landing=fieldApp ? fieldApp.startOnDashboard : true;return;}
@@ -898,6 +970,17 @@
     db.auth.onAuthStateChange((_e,s)=>setTimeout(()=>auth(s),0));
     db.auth.getSession().then(({data})=>auth(data.session));
     new MutationObserver(mount).observe(document.body,{childList:true,subtree:true});
+    // Wait for the final write before other toolbar handlers navigate away.
+    window.addEventListener('click',event=>{
+      if(!panel || !dirty || field('details').hidden || event.defaultPrevented)return;
+      const target=event.target.closest('#appNavShell button,#appNavShell a,#ptBpoMenu button,#ptPhotoLibrary,#fieldPhotos');
+      if(!target || target===menu || target.target==='_blank')return;
+      event.preventDefault();event.stopImmediatePropagation();
+      canLeave().then(ok=>{if(ok && target.isConnected)target.click();});
+    },true);
+    window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
+    document.addEventListener('visibilitychange',()=>{if(document.hidden && editing && dirty)flushExisting();});
+    window.addEventListener('online',()=>{if(editing && dirty)flushExisting();});
     document.addEventListener('click',e=>{const target=e.target.closest('#appNavShell button,#appNavShell a,#ptBpoMenu button');if(target && target!==menu && target.target!=='_blank'){landing=false;hide();}},true);
     function refreshVisibleOrders(){
       if(!document.hidden && document.body.classList.contains('pt-orders-open') && field('details').hidden &&
