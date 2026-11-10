@@ -14,11 +14,11 @@ async function canvasFor(blob,name,rotation,max){
  try{const scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height)),w=Math.round(bitmap.width*scale),h=Math.round(bitmap.height*scale),c=document.createElement('canvas');c.width=rotation%2?h:w;c.height=rotation%2?w:h;
  const ctx=c.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,c.width,c.height);ctx.translate(c.width/2,c.height/2);ctx.rotate(rotation*Math.PI/2);ctx.drawImage(bitmap,-w/2,-h/2,w,h);return c;
  }finally{bitmap.close()}}
-export async function reviewTransfer({address,items,read,no,guard,progress}){
+export async function reviewTransfer({address,source,items,read,no,guard,progress}){
  if(!items.length)throw Error('This set has no photos.');
  const cmd=async(op,args={})=>{guard();return request(op,{address,target,...args})};let target;target=await cmd('find');
  const existing=new Map(await cmd('begin'));
- const d=elem('dialog'),title=elem('h2','Review photos for Stewart'),desc=elem('p',address+' · '+items.length+' photos. Check orientation and choose labels. Existing filenames will keep their images and any saved labels.'),
+ const d=elem('dialog'),title=elem('h2','Review photos for Stewart'),desc=elem('p',address+' · '+items.length+' photos'+(source?' from '+source:'')+'. Check orientation and choose labels. Existing filenames will keep their images and any saved labels.'),
  form=elem('form'),grid=elem('div'),cancel=elem('button','Cancel'),send=elem('button','Upload to Stewart'),repair=elem('label'),check=elem('input');check.type='checkbox';check.checked=no;repair.append(check,' Mark No for repair items on each photo');cancel.type='button';send.type='submit';
  Object.assign(d.style,{maxWidth:'90vw',maxHeight:'90vh',overflow:'auto'});Object.assign(grid.style,{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(175px,1fr))',gap:'12px'});form.append(grid,repair,send,cancel);d.append(title,desc,form);document.body.append(d);
  try{const rows=[];

@@ -36,13 +36,35 @@ $('copyStewart').onclick=async()=>{
 };
 const launchAddress=new URLSearchParams(location.search).get('address')?.trim();
 const launchTransfer=stewartMode&&!!launchAddress&&new URLSearchParams(location.search).get('transfer')==='1';
+async function localStewartExport(property, rows) {
+  if (!rows.length || !window.JSZip) return null;
+  try {
+    let result=await client.from('field_orders').select('id').eq('photo_id',property.id).limit(2);
+    if(!result.error && !result.data?.length){
+      result=await client.from('field_orders').select('id').eq('address',property.address).is('photo_id',null).limit(2);
+    }
+    if(result.error || result.data?.length!==1) return null;
+    const [order]=result.data;
+    const {data:ticket,error:ticketError}=await client.rpc('issue_desktop_folder_ticket',{job_id:order.id});
+    if(ticketError || !ticket) return null;
+    const response=await fetch('http://127.0.0.1:45273/stewart-photos',{
+      method:'POST',credentials:'omit',cache:'no-store',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ticket,photos:rows.map(p=>({name:p.name,description:p.description,size:Number(p.metadata?.size),taken:p.takenOn}))}),
+      signal:AbortSignal.timeout(120000)
+    });
+    if(!response.ok) return null;
+    const zip=await window.JSZip.loadAsync(await response.arrayBuffer());
+    if(Object.keys(zip.files).length!==rows.length || rows.some(p=>!zip.file(p.name))) return null;
+    return zip;
+  } catch {return null;}
+}
 async function transferSet(){
  const version=epoch,property=selected;
  if(!property||propertyList(property)!=='completed'||property.deleting_at)throw Error('Choose a completed property first.');
  const guard=()=>{check(version);if(selected?.id!==property.id)throw Error('Photo set changed.');};
  const {ordered}=await orderForDownload([...photos],version,0);
  const items=ordered.map((photo,i)=>{const original=originalName(photo.name);return {photo,description:photo.description,name:String(i+1).padStart(Math.max(3,String(ordered.length).length),'0')+'-'+(photo.description?safeName(photo.description)+'-':'')+safeName(original.replace(/\.[^.]+$/,'')).slice(0,18)+'.jpg'}});
- const {reviewTransfer}=await import('./stewart-photo-transfer.mjs');await reviewTransfer({address:property.address,items,read:item=>getPhoto(item.photo,version),guard,no:$('stewartNo').checked,progress:status});
+ const {reviewTransfer}=await import('./stewart-photo-transfer.mjs?v=local-first-1');await reviewTransfer({address:property.address,source:ordered.every(p=>p.localEntry)?'OneDrive':'Photos',items,read:item=>getPhoto(item.photo,version),guard,no:$('stewartNo').checked,progress:status});
 }
 $('transferStewart').onclick=()=>run(transferSet);
 $('stewartFolderInput').onchange=e=>{const files=[...e.target.files];e.target.value='';run(async()=>{
@@ -50,7 +72,7 @@ $('stewartFolderInput').onchange=e=>{const files=[...e.target.files];e.target.va
  if(files.some(f=>allowed.test(f.name)&&f.webkitRelativePath.split('/').length!==2))throw Error('Choose a single PT Photos folder, without nested photo folders.');
  const items=files.filter(f=>allowed.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true})).map(file=>({file,name:file.name.replace(allowed,'.jpg')}));
  if(new Set(items.map(x=>x.name.toLowerCase())).size!==items.length)throw Error('Two images have the same JPEG filename. Use distinct names.');
- const {reviewTransfer}=await import('./stewart-photo-transfer.mjs');await reviewTransfer({address:launchAddress,items,read:item=>item.file,guard:()=>check(version),no:true,progress:status});
+ const {reviewTransfer}=await import('./stewart-photo-transfer.mjs?v=local-first-1');await reviewTransfer({address:launchAddress,items,read:item=>item.file,guard:()=>check(version),no:true,progress:status});
  });};
 const bucket=client?.storage.from(BUCKET);
 const selectedPhotos=new Set();
@@ -239,6 +261,12 @@ async function refreshPhotos(limitSignal){
     const stored=dateResult?.[photo.id];
     if(stored){try{captureDates.set(prefix+'/'+photo.name,dateParts(stored).label);photo.takenOn=stored;}catch{/* Read the original if metadata is invalid. */}}
   }
+  if(stewartMode && propertyList(p)==='completed' && !p.deleting_at){
+    status('Checking the OneDrive property folder…');
+    const zip=await localStewartExport(p,rows);
+    check(version);if(p.id!==selected?.id)return;
+    if(zip)for(const photo of rows)photo.localEntry=zip.file(photo.name);
+  }
   let incomplete=false;
   for(let offset=0;offset<rows.length;offset+=4){
     limitSignal?.throwIfAborted();check(version);if(p.id!==selected?.id)return;
@@ -359,6 +387,7 @@ function clearTransferCache(){recentBlobs.clear();pendingReads.clear();retainedB
 async function getPhoto(photo,version){
   check(version);
   const property=selected.id,path=user.id+'/'+property+'/'+photo.name;
+  if(photo.localEntry)return photo.localEntry.async('blob');
   const local=queue.find(item=>item.name===photo.name&&item.state==='Uploaded');
   if(local)return local.file;
   if(recentBlobs.has(path))return recentBlobs.get(path);
@@ -507,7 +536,7 @@ $('dateDownloadDialog').addEventListener('cancel',()=>datedRequest=null);
 $('dateDownloadForm').onsubmit=e=>{e.preventDefault();const request=datedRequest,date=$('stampDate').value;if(!request)return;try{dateParts(date);check(request.version);if(selected?.id!==request.property)throw Error('Reopen the property and try again.');}catch(error){status(error.message,true);return;}$('dateDownloadDialog').close();datedRequest=null;run(()=>downloadPhotos(request.items,date));};
 async function readOrderTimestamp(photo,version,signal){
   const path=user.id+'/'+selected.id+'/'+photo.name;
-  if(!recentBlobs.has(path)&&!pendingReads.has(path)&&!queue.some(item=>item.name===photo.name)){
+  if(!photo.localEntry&&!recentBlobs.has(path)&&!pendingReads.has(path)&&!queue.some(item=>item.name===photo.name)){
     // Read only the camera header of larger JPEGs before sorting.
     if(/\.jpe?g$/i.test(photo.name)&&Number(photo.metadata?.size)>262144){
       const {data,error}=await bucket.download(path,undefined,{headers:{Range:'bytes=0-262143'},signal});
