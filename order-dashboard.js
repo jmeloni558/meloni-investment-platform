@@ -19,15 +19,7 @@
     const hasStart=Boolean(field('appointment').value);
     field('appointment-end-label').hidden=!hasStart;
     if(!hasStart)field('appointment-end').value='';
-    const endLabel=field('appointment-end-label');
-    const flags=field('showingtime-flags');
-    const hasRange=Boolean(field('appointment-end').value);
-    endLabel.parentElement.classList.toggle('od-has-range',hasRange);
-    if(hasRange){
-      if(endLabel.nextElementSibling!==flags)endLabel.after(flags);
-    }else if(endLabel.previousElementSibling!==flags){
-      endLabel.before(flags);
-    }
+    field('appointment-end-label').parentElement.classList.toggle('od-has-range',hasStart);
   }
   function appointmentChanges(original){
     const startValue=field('appointment').value;
@@ -733,11 +725,11 @@
       <label>Due date<input type="date" id="od-due" required></label>
       <div class="od-appointment-fields">
       <label>Appointment date and start time (optional)<input type="datetime-local" id="od-appointment"></label>
+      <label hidden id="od-appointment-end-label">End time (optional)<input type="time" id="od-appointment-end"></label>
       <div class="od-needs-flags" id="od-showingtime-flags">
         <label><input id="od-showingtime-requested" type="checkbox"> Requested via ShowingTime</label>
         <label><input id="od-showingtime-confirmed" type="checkbox"> Confirmed via ShowingTime</label>
       </div>
-      <label hidden id="od-appointment-end-label">End time (optional)<input type="time" id="od-appointment-end"></label>
       </div>
       <div id="od-contacts"></div>
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
@@ -778,8 +770,7 @@
     field('client').onchange=()=>{updatePhotoDefault();updateRequirements();};
     field('add-line').onclick=addInvoiceLine;
     field('appointment').oninput=syncEndTimeField;
-    field('appointment-end').oninput=syncEndTimeField;
-    field('appointment-end').onchange=syncEndTimeField;
+    field('appointment').onchange=syncEndTimeField;
     field('toggle-hold').onclick=async()=>{
       const order=editing,button=field('toggle-hold');
       if(!order || order.complete || button.disabled || !await canLeave())return;
