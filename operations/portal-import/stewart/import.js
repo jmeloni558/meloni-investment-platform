@@ -14,8 +14,17 @@ async function importStewartComps(payload) {
   const sleep = ms => new Promise(resolve=>setTimeout(resolve,ms));
   const modal = () => document.getElementById('manual-comparable-select-modal');
   const subject = payload.subject;
+  const fannie=payload.format==='propertythesis-stewart-fannie';
   function checkOrder() {
+    const isFannie=[...document.querySelectorAll('h1,h2,h3')].some(el=>el.textContent.trim()==='FM MIT Interior BPO');
+    if(fannie!==isFannie)stop('The open Stewart form does not match the selected importer.');
     const heading = [...document.querySelectorAll('h1')].map(el=>norm(el.textContent.split(/\(\s*case\s*#/i)[0]));
+    if(fannie){
+      const full=norm([subject.address,subject.city,subject.state,subject.zip].join(' '));
+      const canonicalUnit=s=>s.replace(/\bunit\s+(?=[a-z0-9]+\b)/g,'');
+      if(!heading.some(h=>canonicalUnit(h)===canonicalUnit(full)))stop('Check the subject address, unit, city, state and ZIP on the open Fannie Mae order.');
+      return;
+    }
     if (!heading.some(h=>h.startsWith(norm(subject.address)+' ') && h.endsWith(norm(subject.state+' '+subject.zip))))
       stop('The open order does not match the transfer subject street, state and ZIP.');
   }
@@ -42,7 +51,7 @@ async function importStewartComps(payload) {
     const extras=[s.second,s.unit].filter(Boolean);
     const address=norm(c.address),street=norm(s.address);
     const unit=norm(s.unit).replace(/^unit\s*/,'');
-    const unitOK=!unit||address.endsWith('unit '+unit);
+    const unitOK=!unit||address.endsWith('unit '+unit)||(fannie&&address.endsWith(' '+unit));
     const addressOK=address===street||extras.some(extra=>norm(s.address+' '+extra)===address)||unit&&address===norm(s.address+' unit '+unit);
     const secondOK=!s.second||norm(s.second)===norm(c.locality)||address.endsWith(norm(s.second))||norm(s.second)===unit;
     return addressOK && secondOK && unitOK && (!s.mls||!c.mls||norm(s.mls)===norm(c.mls)) && (!s.zip||!zipcode(c)||zipcode(c).slice(0,5)===s.zip.slice(0,5));
@@ -230,19 +239,19 @@ async function importStewartComps(payload) {
   try {
     checkOrder();
     // These subject fields are independent of whether Stewart can resolve every comparable.
-    subjectDefaults();
-    conditionDefaults();
+    if(!fannie){subjectDefaults();conditionDefaults();}
     for(const c of payload.comps){
       checkOrder();
       const slots=[1,2,3].filter(i=>control(c.kind,i,'Address')).map(i=>slotData(c,i));
-      const nearby=slots.filter(s=>s.address&&(matches(c,s)||norm(c.address)===norm(s.address)||c.mls&&norm(c.mls)===norm(s.mls)));
+      const exact=slots.filter(s=>s.address&&matches(c,s));
+      const nearby=fannie&&exact.length?exact:slots.filter(s=>s.address&&(matches(c,s)||norm(c.address)===norm(s.address)||c.mls&&norm(c.mls)===norm(s.mls)));
       if(nearby.length>1||nearby.length===1&&!matches(c,nearby[0]))stop('Review the existing Stewart slot for '+c.address+'. Its identity is ambiguous.');
       const selected=nearby[0]||slots.find(s=>vacant(c,s));
       if(!selected)stop('No empty '+c.kind+' slot for '+c.address+'.');
       if(!nearby.length)await add(c,selected.i);
       await settled(c,selected.i);
       let filled=0;
-      const adjustments=Object.entries(c.adjustments||{}).filter(([k])=>k!=='FinancingConcessions'&&k!=='SalesConcessions').map(([k,v])=>['Adjustment:'+k,v]);
+      const adjustments=fannie?[]:Object.entries(c.adjustments||{}).filter(([k])=>k!=='FinancingConcessions'&&k!=='SalesConcessions').map(([k,v])=>['Adjustment:'+k,v]);
       for(const [key,value] of [...Object.entries(c.fields),...adjustments]){
         checkOrder();
         if(!matches(c,slotData(c,selected.i)))stop('Slot identity changed. Review '+c.address+'.');
@@ -250,8 +259,8 @@ async function importStewartComps(payload) {
       }
       checkOrder();
       if(!matches(c,slotData(c,selected.i)))stop('Slot identity changed. Review '+c.address+'.');
-      concessionDefaults(c,selected.i);
-      for(const [key,value] of Object.entries(defaults)){
+      if(!fannie)concessionDefaults(c,selected.i);
+      for(const [key,value] of Object.entries(fannie?{UnitsInProperty:"1"}:defaults)){
         if(c.fields[key]===undefined && fill(control(c.kind,selected.i,key),value,c.address+' '+key))filled++;
       }
       const note=control(c.kind,selected.i,'Comments');
@@ -263,11 +272,13 @@ async function importStewartComps(payload) {
       rows.push(c.address+' · '+(nearby.length?'Matched':'Added')+' in '+c.kind+' '+selected.i+' · '+filled+' blank fields filled.');
     }
     checkOrder();
-    await repairs();
+    if(!fannie)await repairs();
     for(const [key,value] of Object.entries(payload.orderFields||{})){
       checkOrder();
-      const node=document.getElementById(key+'_field');
-      if(fill(visible(node)?node:null,value,key))rows.push(key+' · filled');
+      const nodes=[...document.querySelectorAll('[id="'+key+'_field"]')].filter(visible);
+      if(!nodes.length){rows.push(key+' · unavailable');continue;}
+      if(nodes.some(n=>valueOf(n)&&norm(valueOf(n))!==norm(value))){rows.push(key+' · kept existing entry');continue;}
+      for(const node of nodes)if(fill(node,value,key))rows.push(key+' · filled');
     }
   } catch(error) { rows.push('Stopped: '+error.message); }
   finally { globalThis.stewartImportBusy=false; }
