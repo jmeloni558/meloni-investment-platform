@@ -6,7 +6,20 @@
  const panels=()=>Array.from(manager()?.querySelectorAll('.photoPanel')||[]);
  const name=p=>p.querySelector('h3')?.textContent.trim().toLowerCase();
  const card=n=>{const matches=panels().filter(p=>name(p)===n.toLowerCase());if(matches.length>1)throw Error('Duplicate gallery filename: '+n);return matches[0]};
- const select=p=>p?.querySelector('select.photoAndFileLabel'), repair=p=>p?.querySelector('input[type="radio"][value="false"]');
+ const select=p=>p?.querySelector('select.photoAndFileLabel');
+ function photoAnswer(panel){
+   if(!panel)return;
+   const improvement=/photo shows documented improvement/i, repair=/repair item/i;
+   const controls=[...panel.querySelectorAll('input[type="radio"][value="false"]')].filter(visible);
+   // Walk up from the radio through Stewart's styled wrappers to its question.
+   for(const radio of controls){
+     for(let group=radio.parentElement;group&&panel.contains(group);group=group.parentElement){
+       if(group.querySelectorAll('input[type="radio"][value="false"]').length!==1)break;
+       const text=group.innerText;
+       if(improvement.test(text)||repair.test(text))return radio;
+     }
+   }
+ }
  async function open(){if(!visible(manager())){document.querySelector('#PhotoAndFileLink a, a#PhotoAndFileLink')?.click();}
  return wait(()=>visible(manager())&&manager().querySelector('input[type=file]'),'Open Photos/Files in the Stewart order and retry.');}
  async function handle(m){
@@ -25,14 +38,14 @@
  if(!s.selectedOptions[0]?.textContent.trim()){let opt=[...s.options].find(o=>o.textContent.trim()===m.label&&!o.disabled);
  if(!opt)throw Error('Choose another label for '+m.name+'; '+m.label+' is unavailable.');
  s.value=opt.value;s.dispatchEvent(new Event('change',{bubbles:true}));}
- if(m.no){const r=await wait(()=>repair(card(m.name)),'Missing repair control: '+m.name);if(!r.checked)r.click();if(!repair(card(m.name))?.checked)throw Error('Repair answer was not selected for '+m.name);}
+ if(m.no){const r=await wait(()=>photoAnswer(card(m.name)),'Missing repair or documented-improvement question: '+m.name);if(!r.checked)r.click();if(!photoAnswer(card(m.name))?.checked)throw Error('No was not selected for '+m.name);}
  return true;
  }
  if(m.op==='finish'){
  const link=[...manager().querySelectorAll('a')].find(a=>a.textContent.trim().toLowerCase()==='save and exit'&&visible(a));if(!link)throw Error('Save and Exit is unavailable.');link.click();
  await wait(()=>!visible(manager()),'Stewart did not close the gallery after saving.');await open();
  await wait(()=>card(m.names[0]),'Saved photos could not be verified.');
- for(const [i,n] of m.names.entries()){const p=card(n);if(!p||select(p)?.selectedOptions[0]?.textContent.trim()!==m.labels[i]||(m.no&&!repair(p)?.checked))throw Error('Saved settings could not be verified for '+n);}
+ for(const [i,n] of m.names.entries()){const p=card(n);if(!p||select(p)?.selectedOptions[0]?.textContent.trim()!==m.labels[i]||(m.no&&!photoAnswer(p)?.checked))throw Error('Saved settings could not be verified for '+n);}
  return m.names.length;
  }
  throw Error('Unknown photo action');}

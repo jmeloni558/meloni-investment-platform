@@ -26,7 +26,7 @@ const stewartMode=new URLSearchParams(location.search).get('stewart')==='1';
 function updateStewartRequest(){
   $('copyResult').textContent='';
   if(!selected||$('stewartPhotos').hidden){$('stewartRequest').value='';return;}
-  const repair=$('stewartNo').checked?' Mark No for repair items on every subject photo.':'';
+  const repair=$('stewartNo').checked?' Mark No for repair items or documented improvements on every subject photo.':'';
   $('stewartRequest').value='Run $stewart-order-photos for '+selected.address+' using the completed set in Photos. Upload upright copies and label each subject photo in the matching Stewart order.'+repair;
 }
 $('stewartNo').onchange=updateStewartRequest;
@@ -64,7 +64,7 @@ async function transferSet(){
  const guard=()=>{check(version);if(selected?.id!==property.id)throw Error('Photo set changed.');};
  const {ordered}=await orderForDownload([...photos],version,0);
  const items=ordered.map((photo,i)=>{const original=originalName(photo.name);return {photo,description:photo.description,name:String(i+1).padStart(Math.max(3,String(ordered.length).length),'0')+'-'+(photo.description?safeName(photo.description)+'-':'')+safeName(original.replace(/\.[^.]+$/,'')).slice(0,18)+'.jpg'}});
- const {reviewTransfer}=await import('./stewart-photo-transfer.mjs?v=local-first-1');await reviewTransfer({address:property.address,source:ordered.every(p=>p.localEntry)?'OneDrive':'Photos',items,read:item=>getPhoto(item.photo,version),guard,no:$('stewartNo').checked,progress:status});
+ const {reviewTransfer}=await import('./stewart-photo-transfer.mjs?v=photo-questions-1');await reviewTransfer({address:property.address,source:ordered.every(p=>p.localEntry)?'OneDrive':'Photos',items,read:item=>getPhoto(item.photo,version),guard,no:$('stewartNo').checked,progress:status});
 }
 $('transferStewart').onclick=()=>run(transferSet);
 $('stewartFolderInput').onchange=e=>{const files=[...e.target.files];e.target.value='';run(async()=>{
@@ -72,7 +72,7 @@ $('stewartFolderInput').onchange=e=>{const files=[...e.target.files];e.target.va
  if(files.some(f=>allowed.test(f.name)&&f.webkitRelativePath.split('/').length!==2))throw Error('Choose a single PT Photos folder, without nested photo folders.');
  const items=files.filter(f=>allowed.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true})).map(file=>({file,name:file.name.replace(allowed,'.jpg')}));
  if(new Set(items.map(x=>x.name.toLowerCase())).size!==items.length)throw Error('Two images have the same JPEG filename. Use distinct names.');
- const {reviewTransfer}=await import('./stewart-photo-transfer.mjs?v=local-first-1');await reviewTransfer({address:launchAddress,items,read:item=>item.file,guard:()=>check(version),no:true,progress:status});
+ const {reviewTransfer}=await import('./stewart-photo-transfer.mjs?v=photo-questions-1');await reviewTransfer({address:launchAddress,items,read:item=>item.file,guard:()=>check(version),no:true,progress:status});
  });};
 const bucket=client?.storage.from(BUCKET);
 const selectedPhotos=new Set();
