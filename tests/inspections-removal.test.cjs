@@ -35,3 +35,22 @@ test('removes only full address from named list and checks again after reload',a
   assert.equal((await maps(job,'confirmRemoval')).missing,true);
   assert.match((await maps({...job,account:'other@example.com'},'remove')).error,/account/);
 });
+
+test('tries unique building-address variants and rejects unverified results before opening Save',async()=>{
+  const job={address:'4519 South Cooper Place Apt. 8, Tampa, FL 33611',account:'test@example.com'};
+  let displayed;
+  const document={querySelector(selector){
+    if(selector.includes('Google Account'))return {getAttribute:()=>'(test@example.com)'};
+    if(selector.includes('data-item-id'))return {getAttribute:()=>displayed};
+    throw Error('Reached save controls');
+  }};
+  const maps=vm.runInNewContext(source+';mapsPage',{document,location:new URL('https://www.google.com/maps/search/'),URL,setTimeout});
+  const queries=Array.from(await maps(job,'queries'));
+  assert.deepEqual(queries,[job.address,'4519 South Cooper Place, Tampa, FL 33611','4519 s Cooper pl, Tampa, FL 33611']);
+  for(displayed of ['4518 S Cooper Pl Tampa FL 33611','4519 S Cooper Pl Tampa FL 33610','4519 S Copper Pl Tampa FL 33611','4519 S Cooper Pl Tampa FL']){
+    assert.equal((await maps(job,'sync')).retryAddress,true);
+  }
+  displayed='4519 S Cooper Pl, Tampa FL 33611-1234';
+  assert.equal((await maps(job,'sync')).error,'Reached save controls');
+  await assert.rejects(maps({...job,address:'4519 S Cooper Pl Tampa FL'},'queries'),/ZIP/);
+});
