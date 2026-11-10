@@ -19,6 +19,13 @@
     const hasStart=Boolean(field('appointment').value);
     field('appointment-end-label').hidden=!hasStart;
     if(!hasStart)field('appointment-end').value='';
+    const endLabel=field('appointment-end-label');
+    const flags=field('showingtime-flags');
+    if(field('appointment-end').value){
+      if(endLabel.nextElementSibling!==flags)endLabel.after(flags);
+    }else if(endLabel.previousElementSibling!==flags){
+      endLabel.before(flags);
+    }
   }
   function appointmentChanges(original){
     const startValue=field('appointment').value;
@@ -723,7 +730,7 @@
       <a id="od-open-order-link" target="_blank" rel="noopener noreferrer" hidden>Open order link</a>
       <label>Due date<input type="date" id="od-due" required></label>
       <label>Appointment date and start time (optional)<input type="datetime-local" id="od-appointment"></label>
-      <div class="od-needs-flags">
+      <div class="od-needs-flags" id="od-showingtime-flags">
         <label><input id="od-showingtime-requested" type="checkbox"> Requested via ShowingTime</label>
         <label><input id="od-showingtime-confirmed" type="checkbox"> Confirmed via ShowingTime</label>
       </div>
@@ -767,6 +774,8 @@
     field('client').onchange=()=>{updatePhotoDefault();updateRequirements();};
     field('add-line').onclick=addInvoiceLine;
     field('appointment').oninput=syncEndTimeField;
+    field('appointment-end').oninput=syncEndTimeField;
+    field('appointment-end').onchange=syncEndTimeField;
     field('toggle-hold').onclick=async()=>{
       const order=editing,button=field('toggle-hold');
       if(!order || order.complete || button.disabled || !await canLeave())return;
