@@ -538,6 +538,8 @@
     field('order-link').value=o?.order_link || '';
     field('lockbox-code').value=o?.lockbox_code || '';
     field('gate-code').value=o?.gate_code || '';
+    field('showingtime-requested').checked=!!o?.showingtime_requested;
+    field('showingtime-confirmed').checked=!!o?.showingtime_confirmed;
     updateOrderLink();
     if(o?.appointment){const t=new Date(o.appointment);field('appointment').value=new Date(t-t.getTimezoneOffset()*60000).toISOString().slice(0,16);}
     if(o?.appointment && o.appointment_window){
@@ -553,7 +555,10 @@
     try{
       const client=field('client').value, address=field('address').value.trim();
       if((!client && field('client').required)||!address)throw Error('Enter the address and client.');
-      const changes={address,points_of_contact:readContacts(),purpose:field('purpose').value.trim()||null,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,gate_code:field('gate-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,...appointmentChanges(original)};
+      const changes={address,
+        showingtime_requested:field('showingtime-requested').checked,
+        showingtime_confirmed:field('showingtime-confirmed').checked,
+        points_of_contact:readContacts(),purpose:field('purpose').value.trim()||null,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,gate_code:field('gate-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,...appointmentChanges(original)};
       if(original)await update(original,{...changes,needs_photos:field('photos').checked});
       else {
         if(!field('billing').disabled){
@@ -611,6 +616,10 @@
       <label>Purpose of Order<input id="od-purpose" type="text"></label>
       <div class="od-entry-codes"><label>Lockbox Code<input id="od-lockbox-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
       <label>Gate Code<input id="od-gate-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label></div>
+      <div class="od-needs-flags">
+        <label><input id="od-showingtime-requested" type="checkbox"> Requested via ShowingTime</label>
+        <label><input id="od-showingtime-confirmed" type="checkbox"> Confirmed via ShowingTime</label>
+      </div>
       <label>Order Link<input id="od-order-link" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://"></label>
       <a id="od-open-order-link" target="_blank" rel="noopener noreferrer" hidden>Open order link</a>
       <label>Due date<input type="date" id="od-due" required></label>
