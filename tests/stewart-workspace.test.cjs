@@ -19,6 +19,8 @@ test('Stewart workspace exports a saved comp and the packaged popup previews the
     await page.goto('https://fixture.test/');
     await page.evaluate(()=>PropertyThesisBPO.open('fixture'));
     assert.equal(await page.locator('[data-step]').count(),5);
+    const photoURL=new URL(await page.getByRole('link',{name:'Upload photos to Stewart'}).getAttribute('href'),'https://fixture.test');
+    assert.equal(photoURL.searchParams.get('address'),'1 Main St, Tampa, FL 33601');assert.equal(photoURL.searchParams.get('transfer'),'1');
     const dl=page.waitForEvent('download');
     await page.click('[data-export-stewart]');
     const transfer=await (await dl).path();
