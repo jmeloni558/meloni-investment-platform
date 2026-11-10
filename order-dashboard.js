@@ -618,7 +618,7 @@
     field('details').hidden=false;showOrderInvoice(o?.id);render();field(o?'details':'address').focus();fieldApp?.recordView();
   }
   function orderValues(original){
-      const client=field('client').value, address=field('address').value.trim();
+      const client=field('client').value, address=field('address').value.replace(/[\r\n]+/g,' ').trim();
       return {address,needs_photos:field('photos').checked,
         showingtime_requested:field('showingtime-requested').checked,
         showingtime_confirmed:field('showingtime-confirmed').checked,
@@ -667,7 +667,7 @@
       <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
       <p id="od-status" role="status"></p><div class="od-columns"><div><div id="od-list"></div><button id="od-prev" hidden>Previous page</button> <button id="od-next" hidden>Next page</button></div>
       <aside id="od-details" aria-label="Order" tabindex="-1" hidden><form id="od-form">
-      <div class="od-address-row"><label><span id="od-address-label">Property address</span><input id="od-address" maxlength="500" required></label><button type="button" id="od-cancel">Close</button></div>
+      <div class="od-address-row"><label><span id="od-address-label">Property address</span>${fieldApp?'<textarea id="od-address" rows="2" maxlength="500" required></textarea>':'<input id="od-address" maxlength="500" required>'}</label><button type="button" id="od-cancel">Close</button></div>
       <div class="od-needs-flags">
       <label><input type="checkbox" id="od-photos"> Photos needed</label>
       <label><input type="checkbox" id="od-appointment-needed"> Appointment Needed</label>
@@ -707,6 +707,14 @@
     for(const id of ['call-number','text-number','phone-cancel'])field(id).onclick=()=>field('phone-dialog').close();
     if(fieldApp){
       document.getElementById('fieldDashboardHost').append(panel);
+      menu.onclick=async()=>{
+        if(!fieldApp.canShowDashboard() || !await canLeave())return;
+        currentList='open';selectedList='';page=0;clearTimeout(searchTimer);
+        field('search').value='';field('list-form').hidden=true;
+        closeDetails();
+        open();
+        window.scrollTo(0,0);
+      };
       const photosTab=document.getElementById('fieldPhotos');
       photosTab.parentElement.hidden=false;
       menu.setAttribute('aria-pressed','false');

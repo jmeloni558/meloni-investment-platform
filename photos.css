@@ -56,3 +56,10 @@ body.pt-orders-open #fieldPhotoPane{display:none}
   #fieldDashboardHost #od-search{padding:6px 8px;margin:2px 0 0}
   #fieldDashboardHost #od-status:empty{display:none}
 }
+
+#fieldDashboardHost #ptOrders:has(#od-details:not([hidden])) > :is(header,nav,label,#od-list-form,#od-status){display:none}
+#fieldDashboardHost .od-columns:has(#od-details:not([hidden])){grid-template-columns:minmax(0,1fr)}
+#fieldDashboardHost .od-columns:has(#od-details:not([hidden])) > div:first-child{display:none}
+#fieldDashboardHost #od-details{position:static;overflow:visible;max-height:none;padding:0;border:0}
+#fieldDashboardHost #od-details .od-address-row{position:sticky;top:0;z-index:2;background:white;padding:4px 0 6px;border-bottom:1px solid #d6e1df}
+#fieldDashboardHost #od-address{field-sizing:content;min-height:2.4em;resize:none;line-height:1.3}
