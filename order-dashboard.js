@@ -452,10 +452,17 @@
     row.querySelector('button').onclick=()=>{row.remove();dirty=true;};
     field('invoice-lines').append(row);dirty=true;inputs[0].focus();
   }
+  function setInvoiceOptions(expanded){
+    const toggle=field('invoice-summary'),number=field('invoice-target').value.trim();
+    toggle.setAttribute('aria-expanded',String(expanded));
+    toggle.textContent=!expanded && number?'Invoice options (#'+number+')':'Invoice options';
+    field('invoice-options').hidden=!expanded;
+  }
   function updateRequirements(){
     const task=Boolean(field('destination').value || editing?.former_list_task);
     field('fee').required=!editing && !task && !['Marketing Photos','Inspection Photos'].includes(field('kind').value);
     field('billing').disabled=field('billing').hidden=!field('fee').required;
+    field('invoice-summary').hidden=!field('fee').required;
     field('monthly').hidden=!monthlyBpo();
     field('address-label').textContent=task?'Task or property address':'Property address';
     for(const id of ['kind','client','due'])field(id).required=!task && !editing?.todo_title;
@@ -509,7 +516,7 @@
     if(!canLeave())return;
     dirty=false;
     populateClients(o?.client);
-    editing=o;photosOverridden=false;draftId=o?.id||crypto.randomUUID();const f=field('form');f.reset();field('invoice-options').open=false;field('invoice-summary').textContent='Invoice options';field('error').textContent='';
+    editing=o;photosOverridden=false;draftId=o?.id||crypto.randomUUID();const f=field('form');f.reset();setInvoiceOptions(false);field('error').textContent='';
     const destination=o?o.list_name:(currentList==='open'?selectedList:'');
     syncListField(destination);
     field('details').setAttribute('aria-label',o?'Order for '+o.address:destination?'New task':'New order');
@@ -593,9 +600,10 @@
       </div>
       <div class="od-fee-invoice od-entry-codes">
       <label>Order fee ($)<input type="number" id="od-fee" inputmode="decimal" min="0" max="9999999999.99" step="0.01"></label>
-      <div id="od-invoice-group" role="group" aria-labelledby="od-invoice-title" hidden><label id="od-invoice-title">QuickBooks invoice</label><div id="od-invoice" role="status"></div></div></div>
+      <div id="od-invoice-group" role="group" aria-labelledby="od-invoice-title" hidden><label id="od-invoice-title">QuickBooks invoice</label><div id="od-invoice" role="status"></div></div>
+      <button id="od-invoice-summary" type="button" aria-expanded="false" aria-controls="od-invoice-options" hidden>Invoice options</button></div>
       <fieldset id="od-billing" aria-label="QuickBooks invoice options"><p id="od-monthly" hidden>This BPO uses the date entered as its service date on the client's monthly invoice.</p>
-      <details id="od-invoice-options"><summary id="od-invoice-summary">Invoice options</summary><label>Existing open invoice number (optional)<input id="od-invoice-target" maxlength="21"></label><div id="od-invoice-lines"></div><button type="button" id="od-add-line">Add invoice line</button></details></fieldset>
+      <div id="od-invoice-options" hidden><label>Existing open invoice number (optional)<input id="od-invoice-target" maxlength="21"></label><div id="od-invoice-lines"></div><button type="button" id="od-add-line">Add invoice line</button></div></fieldset>
       <label id="od-destination-label" hidden>List<select id="od-destination"></select></label>
       <p id="od-source" hidden></p>
       <label>Order type<select id="od-kind" required></select></label>
@@ -649,10 +657,8 @@
       }catch(error){field('status').textContent=error.message;}
       finally{button.disabled=false;}
     };
-    field('invoice-options').ontoggle=()=>{
-      const number=field('invoice-target').value.trim();
-      field('invoice-summary').textContent=!field('invoice-options').open && number?'Invoice options (#'+number+')':'Invoice options';
-    };
+    field('invoice-summary').onclick=()=>setInvoiceOptions(field('invoice-options').hidden);
+    field('invoice-options').addEventListener('invalid',()=>setInvoiceOptions(true),true);
     field('form').oninput=()=>{dirty=true;};
     field('order-link').oninput=updateOrderLink;
     field('photos').onchange=()=>{photosOverridden=true;};
