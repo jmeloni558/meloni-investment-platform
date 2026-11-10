@@ -13,6 +13,26 @@ async function dashboardRpc(name,args){
   return error?{error:true}:{data};
 }
 async function mapsPage(job,step){
+  // This function also runs by itself inside the Maps tab. Keep lookup and
+  // comparison rules together so every search is checked against the original.
+  const words={gardens:'gdns',street:'st',avenue:'ave',drive:'dr',road:'rd',lane:'ln',court:'ct',place:'pl',
+    circle:'cir',trail:'trl',boulevard:'blvd',terrace:'ter',parkway:'pkwy',loop:'lp',highway:'hwy',
+    square:'sq',crossing:'xing',heights:'hts',ridge:'rdg',point:'pt',center:'ctr',way:'way',
+    north:'n',south:'s',east:'e',west:'w',northeast:'ne',northwest:'nw',southeast:'se',southwest:'sw'};
+  const expanded=Object.fromEntries(Object.entries(words).map(([long,short])=>[short,long]));
+  const withoutUnit=text=>text.replace(/(?:\s*#\s*|\b(?:apt|apartment|unit|suite|ste|condo)\.?\s*#?\s+)(?:[a-z](?=[\s,]|$)|[a-z]*\d[a-z\d-]*|[a-z]+-\d[a-z\d-]*)\b/gi,' ')
+    .replace(/\s*,\s*,/g,',').replace(/\s+,/g,',').replace(/\s+/g,' ').trim();
+  const substitute=(text,dictionary)=>text.replace(/\b[a-z]+\b\.?/gi,word=>dictionary[word.toLowerCase().replace(/\.$/,'')] || word);
+  const normalize=text=>substitute(withoutUnit(text).toLowerCase(),words)
+    .replace(/\b(\d{5})-\d{4}\s*$/,'$1').replace(/[.,'’]/g,' ').replace(/\s+/g,' ').trim();
+  const expected=normalize(job.address);
+  const hasNumberAndZip=/^\d+[a-z]?(?:-\d+[a-z]?)?\s+.+\s+\d{5}$/.test(expected);
+  if(step==='queries'){
+    if(!hasNumberAndZip)throw Error('A street number and ZIP code are required to verify this address.');
+    const base=withoutUnit(job.address);
+    const queries=[job.address,base,substitute(base,words),substitute(base,expanded)];
+    return queries.filter((q,i)=>queries.findIndex(other=>other.toLowerCase()===q.toLowerCase())===i);
+  }
   const wait=async fn=>{
     const end=Date.now()+18000;
     do{const value=fn();if(value)return value;await new Promise(r=>setTimeout(r,250));}while(Date.now()<end);
@@ -27,10 +47,6 @@ async function mapsPage(job,step){
       if(!location.href.includes(new URL(job.listUrl).pathname.split('!2s').pop().split('!')[0]))throw Error('Unexpected Maps list.');
       if(step==='list')return {ok:true};
     }
-    const normalize=s=>s.toLowerCase().replace(/(?:\s+#\s*|\s+(?:apt\.?|unit|condo(?=\s+(?:[a-z]-?\d|\d)))\s+)[a-z0-9-]+\b/g,' ').replace(/[.,'â€™]/g,'')
-      .replace(/\b(gardens|street|avenue|drive|road|lane|court|place|circle|trail|boulevard|terrace|parkway|loop|north|south|east|west)\b/g,
-        w=>({gardens:'gdns',street:'st',avenue:'ave',drive:'dr',road:'rd',lane:'ln',court:'ct',place:'pl',circle:'cir',trail:'trl',boulevard:'blvd',terrace:'ter',parkway:'pkwy',loop:'lp',north:'n',south:'s',east:'e',west:'w'})[w])
-      .replace(/\s+/g,' ').trim();
     if(['remove','confirmRemoval','membership'].includes(step)){
       const main=document.querySelector('main,[role="main"]');
       const entries=await wait(()=>{
@@ -66,9 +82,10 @@ async function mapsPage(job,step){
       await wait(()=>!main.contains(matches[0]) || !matchesAddress(matches[0]));
       return {ok:true};
     }
-    const address=await wait(()=>document.querySelector('button[data-item-id="address"],button[aria-label^="Address:"],[role="button"][data-tooltip="Copy address"]'));
+    const address=await wait(()=>document.querySelector('button[data-item-id="address"],button[aria-label^="Address:"],[role="button"][data-tooltip="Copy address"]')).catch(()=>null);
+    if(!address)return {retryAddress:true};
     const displayed=address.getAttribute('aria-label')?.replace(/^Address:?\s*/i,'') || address.innerText.split("\n").find(line=>/\d{5}/.test(line)) || "";
-    if(normalize(displayed)!==normalize(job.address))throw Error('Maps address differs. Verify the full saved order address.');
+    if(!hasNumberAndZip || normalize(displayed)!==expected)return {retryAddress:true};
     const actions=await wait(()=>document.querySelector('[role="region"][aria-label^="Actions for"],[role="group"][aria-label^="Actions for"]'));
     const save=await wait(()=>Array.from(actions.querySelectorAll('button')).find(b=>/^(save|saved)$/i.test(b.getAttribute('aria-label')||b.innerText.trim())));
     save.click();
@@ -118,9 +135,19 @@ async function syncInspections(){
       await check('confirmRemoval');
     }else if(!job.wanted || !(await check('membership')).found){
       await check('list');
-      await chrome.tabs.update(tab.id,{url:'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(job.address.replace(/(?:\s+#\s*|\s+(?:apt\.?|unit|condo(?=\s+(?:[a-z]-?\d|\d)))\s+)[a-z0-9-]+\b/ig,''))+'&hl=en'});
-      await loaded(tab.id,'https://www.google.com/maps/');
-      await check('sync');
+      const queries=await mapsPage(job,'queries');
+      let matched=false;
+      for(const query of queries){
+        const url='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(query)+'&hl=en';
+        await chrome.tabs.update(tab.id,{url});
+        await loaded(tab.id,'https://www.google.com/maps/');
+        const result=await onTab(tab.id,mapsPage,job,'sync');
+        if(result?.retryAddress)continue;
+        if(!result?.ok)throw Error(result?.error || 'Could not inspect Maps.');
+        matched=true;
+        break;
+      }
+      if(!matched)throw Error('Google Maps could not verify the street address and ZIP after trying address variations.');
       await delay(1200);
       if(job.wanted){
         await chrome.tabs.update(tab.id,{url:list.href});
