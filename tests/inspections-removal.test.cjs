@@ -22,7 +22,13 @@ test('removes only full address from named list and checks again after reload',a
     assert.equal((await maps({...job,address},'membership')).found,true);
   }
   assert.equal((await maps({...job,address:'4350 Cambio Gardens Court Tampa, FL 33611'},'membership')).found,undefined);
-  rows.splice(2);
+  const cooper=make('4519 S Cooper Pl\nTampa, FL 33611');
+  rows.push(cooper);
+  for(const address of ['4350 Cambio Gardens Ct Tampa, FL 33610','4519 S Cooper Pl Tampa, FL 33611','2500 Winding Creek Blvd Condo I-106 Clearwater, FL 33761']){
+    assert.equal((await maps({...job,address},'remove')).ok,true);
+    assert.equal((await maps({...job,address},'confirmRemoval')).missing,true);
+  }
+  assert.deepEqual(rows,[target,other]);
   assert.match((await maps(job,'confirmRemoval')).error,/not confirmed/);
   assert.equal((await maps(job,'remove')).ok,true);
   assert.deepEqual(rows,[other]);
