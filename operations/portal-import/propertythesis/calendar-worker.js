@@ -26,3 +26,10 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
 });
 
 importScripts('inspection-worker.js','photo-worker.js');
+
+chrome.runtime.onInstalled.addListener(async () => {
+  const tabs = await chrome.tabs.query({url: 'https://propertythesis.com/*'});
+  await Promise.allSettled(tabs.map(tab => chrome.scripting.executeScript({
+    target: {tabId: tab.id}, files: ['calendar-launcher.js']
+  })));
+});
