@@ -25,4 +25,4 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   return true;
 });
 
-importScripts('inspection-worker.js');
+importScripts('inspection-worker.js','photo-worker.js');

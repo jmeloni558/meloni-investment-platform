@@ -34,6 +34,24 @@ $('copyStewart').onclick=async()=>{
   try{await navigator.clipboard.writeText($('stewartRequest').value);$('copyResult').textContent=' Copied. Paste into Codex.';}
   catch{$('stewartRequest').select();$('copyResult').textContent=' Select Copy to copy this request.';}
 };
+const launchAddress=new URLSearchParams(location.search).get('address')?.trim();
+const launchTransfer=stewartMode&&!!launchAddress&&new URLSearchParams(location.search).get('transfer')==='1';
+async function transferSet(){
+ const version=epoch,property=selected;
+ if(!property||propertyList(property)!=='completed'||property.deleting_at)throw Error('Choose a completed property first.');
+ const guard=()=>{check(version);if(selected?.id!==property.id)throw Error('Photo set changed.');};
+ const {ordered}=await orderForDownload([...photos],version,0);
+ const items=ordered.map((photo,i)=>{const original=originalName(photo.name);return {photo,description:photo.description,name:String(i+1).padStart(Math.max(3,String(ordered.length).length),'0')+'-'+(photo.description?safeName(photo.description)+'-':'')+safeName(original.replace(/\.[^.]+$/,'')).slice(0,18)+'.jpg'}});
+ const {reviewTransfer}=await import('./stewart-photo-transfer.mjs');await reviewTransfer({address:property.address,items,read:item=>getPhoto(item.photo,version),guard,no:$('stewartNo').checked,progress:status});
+}
+$('transferStewart').onclick=()=>run(transferSet);
+$('stewartFolderInput').onchange=e=>{const files=[...e.target.files];e.target.value='';run(async()=>{
+ const version=epoch;check(version);const allowed=/\.(jpe?g|png|webp|heic|heif)$/i;
+ if(files.some(f=>allowed.test(f.name)&&f.webkitRelativePath.split('/').length!==2))throw Error('Choose a single PT Photos folder, without nested photo folders.');
+ const items=files.filter(f=>allowed.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true})).map(file=>({file,name:file.name.replace(allowed,'.jpg')}));
+ if(new Set(items.map(x=>x.name.toLowerCase())).size!==items.length)throw Error('Two images have the same JPEG filename. Use distinct names.');
+ const {reviewTransfer}=await import('./stewart-photo-transfer.mjs');await reviewTransfer({address:launchAddress,items,read:item=>item.file,guard:()=>check(version),no:true,progress:status});
+ });};
 const bucket=client?.storage.from(BUCKET);
 const selectedPhotos=new Set();
 const cameraTimes=new Map();
@@ -204,7 +222,7 @@ async function openProperty(p){
   if(queue.some(x=>x.state!=='Uploaded')&&!confirm('Leave the selected photos? Photos not uploaded will need to be selected again.'))return;
   selectedPhotos.clear();selected=p;
   $('stewartPhotos').hidden=!stewartMode||propertyList(p)!=='completed'||!!p.deleting_at;
-  $('stewartNo').checked=false;updateStewartRequest();
+  $('stewartNo').checked=!!launchTransfer;updateStewartRequest();
   photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();$('workspace').hidden=false;$('addressList').hidden=true;$('uploadControls').hidden=!!p.completed_at||!!p.deleting_at;$('complete').hidden=!!p.completed_at||!!p.deleting_at;$('reopen').hidden=!p.completed_at||!!p.deleting_at;$('completedNote').hidden=!p.completed_at;$('completedNote').textContent=p.archived_at?'This photo set is archived.':'This upload set is completed.';$('propertyTitle').textContent=p.address;renderProperties();window.PropertyThesisFieldApp?.recordView();await refreshPhotos();$('propertyTitle').focus();
 }
 async function refreshPhotos(limitSignal){
@@ -604,16 +622,17 @@ async function openRequestedAddress(){
  const address=raw.trim().replace(/\s+/g,' ');if(!address||address.length>500){status('Enter a valid property address of 500 characters or fewer.',true);return;}
  await run(async()=>{
   const version=epoch;let property=properties.find(p=>p.address.toLowerCase()===address.toLowerCase());
+  if(stewartMode){const key=a=>a.replace(/[.,]/g,' ').replace(/\s+/g,' ').trim().toLowerCase();const exact=properties.filter(row=>propertyList(row)==='completed'&&!row.deleting_at&&key(row.address)===key(address));property=exact.length===1?exact[0]:null;}
   if(stewartMode&&!property){
     // A BPO may supply only the street line. Keep the unit and require one completed match.
     const matches=properties.filter(row=>propertyList(row)==='completed'&&!row.deleting_at&&row.address.split(',')[0].trim().toLowerCase()===address.toLowerCase());
     if(matches.length===1)property=matches[0];
   }
   if(stewartMode&&(!property||propertyList(property)!=='completed'||property.deleting_at)){
-   status('Choose the matching address from Completed photos for the Stewart workflow.');
+   $('stewartFolder').hidden=!launchTransfer;status(launchTransfer?'No unique completed set matched. Select this property’s PT Photos folder below.':'Choose the matching address from Completed photos for the Stewart workflow.');
   }else if(!property){
    $('address').value=address;status('No photo address exists for this property. Click Create only when you are ready to add photos.');$('address').focus();
-  }else{check(version);listMode=propertyList(property);await openProperty(property);}
+  }else{check(version);listMode=propertyList(property);await openProperty(property);if(launchTransfer)await transferSet();}
   requestedAddressHandled=true;url.searchParams.delete('address');history.replaceState(history.state,'',url);
  });
 }
