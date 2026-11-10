@@ -110,9 +110,12 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-needs-flags input{flex:none;margin:0}
 
 #ptOrders .od-fee-invoice{align-items:start}
-#ptOrders .od-fee-invoice:not(:has(#od-invoice-group:not([hidden]))){grid-template-columns:minmax(0,1fr)}
+#ptOrders .od-fee-invoice:not(:has(#od-invoice-group:not([hidden]),#od-invoice-summary:not([hidden]))){grid-template-columns:minmax(0,1fr)}
 #ptOrders #od-invoice-group{min-width:0;overflow-wrap:anywhere}
 #ptOrders #od-invoice-group select,#ptOrders #od-invoice-group button{max-width:100%}
 
 #ptOrders #od-billing{border:0;padding:0;margin:2px 0 4px;min-width:0}
-#ptOrders #od-invoice-options summary{width:fit-content;cursor:pointer;color:#405b63;font-size:.82rem;line-height:1.4;padding:2px 0}
+#ptOrders #od-invoice-summary{align-self:end;justify-self:start;margin:0 0 6px;padding:4px 6px;min-width:0;max-width:100%;border:0;background:transparent;color:#405b63;font-size:.82rem;text-align:left;overflow-wrap:anywhere}
+#ptOrders #od-invoice-summary::before{content:'\25B8';margin-right:.3em}
+#ptOrders #od-invoice-summary[aria-expanded=true]::before{content:'\25BE'}
+#ptOrders #od-billing:has(#od-monthly[hidden]):has(#od-invoice-options[hidden]){display:none}
