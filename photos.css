@@ -34,3 +34,25 @@ body.pt-orders-open #fieldPhotoPane{display:none}
 #fieldDashboardHost #ptOrders header{background:none;color:inherit;padding:0}
 #fieldDashboardHost #ptOrders input[type=checkbox]{display:inline-block;width:20px;height:20px;padding:0;vertical-align:middle}
 #fieldDashboardHost #ptOrders article input[type=checkbox]{margin:0 5px}
+
+/* Field dashboard: reserve the date/action row for field work. */
+#fieldDashboardHost #ptOrders .od-field-order .od-schedule{grid-template-columns:minmax(0,1fr);gap:2px}
+#fieldDashboardHost #ptOrders .od-field-order :is(.od-appointment-warning,.od-order-appointment){grid-column:1;grid-row:auto;justify-self:start;text-align:left}
+#fieldDashboardHost :is(#od-new-list,#od-manage-clients){display:none}
+
+@media(max-width:760px){
+  body.pt-orders-open>header{padding:6px 12px}
+  body.pt-orders-open main{margin:8px auto;padding:0 8px}
+  body.pt-orders-open #fieldViews{gap:5px;margin-bottom:6px}
+  body.pt-orders-open #fieldViews button{min-height:34px;padding:5px 12px}
+  #fieldDashboardHost #ptOrders{padding:10px}
+  #fieldDashboardHost #ptOrders>header{margin:0 0 6px}
+  #fieldDashboardHost #ptOrders>header small{display:none}
+  #fieldDashboardHost #ptOrders h1{font-size:1.4rem;letter-spacing:normal;margin:0}
+  #fieldDashboardHost #od-count{font-size:.85rem;line-height:1.4;gap:0 10px}
+  #fieldDashboardHost #ptOrders>nav{gap:4px}
+  #fieldDashboardHost #ptOrders>nav :is(button,a,select){min-height:32px;padding:4px 8px;font-size:.82rem;line-height:1.2}
+  #fieldDashboardHost #ptOrders>label{margin:6px 0}
+  #fieldDashboardHost #od-search{padding:6px 8px;margin:2px 0 0}
+  #fieldDashboardHost #od-status:empty{display:none}
+}
