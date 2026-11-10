@@ -15,6 +15,14 @@ test('removes only full address from named list and checks again after reload',a
   const main={contains:b=>rows.includes(b),querySelectorAll:s=>s==='button'?rows:[{textContent:'Private ? '+rows.length+' places'}]};
   const document={querySelector:s=>s.startsWith('main')?main:{getAttribute:()=>'(test@example.com)'},querySelectorAll:()=>[{textContent:'Inspections'}]};
   const maps=vm.runInNewContext(source+';mapsPage',{document,location:new URL(job.listUrl),URL,setTimeout});
+  const condo=make('The Fountains at Countryside\n2500 Winding Creek Blvd\nClearwater, FL 33761');
+  const cambio=make('4350 Cambio Gdns Ct\nTampa, FL 33610');
+  rows.push(condo,cambio);
+  for(const address of ['2500 Winding Creek Blvd Condo I-106 Clearwater, FL 33761','4350 Cambio Gardens Court Tampa, FL 33610']){
+    assert.equal((await maps({...job,address},'membership')).found,true);
+  }
+  assert.equal((await maps({...job,address:'4350 Cambio Gardens Court Tampa, FL 33611'},'membership')).found,undefined);
+  rows.splice(2);
   assert.match((await maps(job,'confirmRemoval')).error,/not confirmed/);
   assert.equal((await maps(job,'remove')).ok,true);
   assert.deepEqual(rows,[other]);
