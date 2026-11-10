@@ -616,14 +616,14 @@
       <label>Purpose of Order<input id="od-purpose" type="text"></label>
       <div class="od-entry-codes"><label>Lockbox Code<input id="od-lockbox-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
       <label>Gate Code<input id="od-gate-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label></div>
-      <div class="od-needs-flags">
-        <label><input id="od-showingtime-requested" type="checkbox"> Requested via ShowingTime</label>
-        <label><input id="od-showingtime-confirmed" type="checkbox"> Confirmed via ShowingTime</label>
-      </div>
       <label>Order Link<input id="od-order-link" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://"></label>
       <a id="od-open-order-link" target="_blank" rel="noopener noreferrer" hidden>Open order link</a>
       <label>Due date<input type="date" id="od-due" required></label>
       <label>Appointment date and start time (optional)<input type="datetime-local" id="od-appointment"></label>
+      <div class="od-needs-flags">
+        <label><input id="od-showingtime-requested" type="checkbox"> Requested via ShowingTime</label>
+        <label><input id="od-showingtime-confirmed" type="checkbox"> Confirmed via ShowingTime</label>
+      </div>
       <label hidden id="od-appointment-end-label">End time (optional)<input type="time" id="od-appointment-end"></label>
       <div id="od-contacts"></div>
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
