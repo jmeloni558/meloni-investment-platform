@@ -15,7 +15,8 @@ const slot={kind:'active',slot:3,address:'5 First St',address2:'Unit 2',mls:'A12
 test('uses the five-step client identity and exports only prepared comps',()=>{
   assert.equal(clientOf(values),'stewart');
   assert.deepEqual(payload.comps.map(c=>c.kind),['sold','active']);
-  assert.equal(payload.comps[1].fields.Comments,'Similar location. Site +$500');
+  assert.equal(payload.comps[1].fields.Comments,'Similar location.');
+  assert.equal(payload.comps[1].adjustments.LotSize,'500');
   assert.throws(()=>exportStewart({...values,'sold.0.zip':''}),/subject/);
   assert.throws(()=>exportStewart({...values,'sold.2.address':'','active.1.address':''}),/comparable/);
 });

@@ -38,7 +38,7 @@ test('Stewart workspace exports a saved comp and the packaged popup previews the
     await popup.locator('#file').setInputFiles({name:'transfer.json',mimeType:'application/json',buffer:fs.readFileSync(transfer)});
     await popup.click('#preview');
     await popup.getByText(/Mismatch — Stewart value preserved/).waitFor();
-    assert.match(await popup.locator('#rows').innerText(),/Blank — enter manually.*Prepared note/);
+    assert.match(await popup.locator('#rows').innerText(),/Blank — ready to fill.*Prepared note/);
     assert.deepEqual(await grid.locator('input,textarea').evaluateAll(nodes=>nodes.map(n=>n.value)),before);
   }finally{await browser.close();}
 });

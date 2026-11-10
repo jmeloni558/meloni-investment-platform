@@ -5,7 +5,7 @@ function request(op,props){
  const id=crypto.randomUUID();return new Promise((resolve,reject)=>{
  const clean=()=>{clearTimeout(timer);window.removeEventListener('message',on)};
  function on(e){if(e.source!==window||e.origin!==location.origin||e.data?.kind!=='pt-photo-result'||e.data.id!==id)return;clean();e.data.response?.ok?resolve(e.data.response.value):reject(Error(e.data.response?.error||'Extension unavailable.'))}
- const timer=setTimeout(()=>{clean();reject(Error(op==='find'?'Load or reload PropertyThesis Importers 1.4.0 in Edge, then refresh this page.':'Stewart did not respond. Check Photos/Files and retry; existing filenames will be skipped.'))},op==='find'?9000:75000);
+ const timer=setTimeout(()=>{clean();reject(Error(op==='find'?'Load or reload PropertyThesis Importers 1.4.1 or newer in Edge, then refresh this page.':'Stewart did not respond. Check Photos/Files and retry; existing filenames will be skipped.'))},op==='find'?9000:75000);
  window.addEventListener('message',on);window.postMessage({kind:'pt-photos',id,op,...props},location.origin);
  });}
 function elem(tag,text){const e=document.createElement(tag);if(text)e.textContent=text;return e}
