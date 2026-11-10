@@ -123,3 +123,14 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
   main.shell #od-details{scroll-padding-top:5rem}
   main.shell #od-details .od-address-row{position:sticky;top:0;z-index:2;background:#fff;padding:4px 0 6px;border-bottom:1px solid #d6e1df}
 }
+
+#ptOrders .od-appointment-fields.od-has-range{
+  display:grid;
+  grid-template-columns:minmax(0,1.8fr) minmax(0,1fr);
+  align-items:end;
+  gap:4px 8px;
+  margin:10px 0;
+}
+#ptOrders .od-has-range>label{min-width:0;margin:0}
+#ptOrders .od-has-range>label input{min-width:0;height:2.5rem;font-size:14px;padding:7px 4px}
+#ptOrders .od-has-range #od-showingtime-flags{grid-column:1/-1}
