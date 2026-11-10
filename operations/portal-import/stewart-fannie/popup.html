@@ -1,0 +1,11 @@
+<!doctype html>
+<meta name="stewart-form" content="fannie"><meta charset="utf-8">
+<title>Stewart Valuation Intelligence - Fannie Mae</title>
+<style>body{font:14px system-ui;width:490px;padding:12px;color:#172637} li{padding:4px;overflow-wrap:anywhere} button{margin-top:10px}</style>
+<h1>Stewart Valuation Intelligence - Fannie Mae</h1>
+<p><a id="photoWorkflow" href="https://propertythesis.com/photos.html?stewart=1" target="_blank" rel="noopener">Use completed Photos for Stewart</a></p>
+<p>Choose your Property Thesis transfer. Import comps looks up each property through Add Address, waits for Stewart to populate the slot, and fills supported blanks.</p>
+<label>Property Thesis transfer <input id="file" type="file" accept=".json"></label>
+<p id="subject"></p><button id="apply" disabled>Import comps and fill blanks</button> <button id="preview" disabled>Preview selected comps</button>
+<p id="status" role="status"></p><ul id="rows"></ul>
+<script src="../stewart/adapter.js"></script><script src="../stewart/import.js"></script><script src="../stewart/popup.js"></script>

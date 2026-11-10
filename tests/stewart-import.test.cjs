@@ -42,6 +42,7 @@ test('grid reader ignores unrelated fields and does not modify the page',()=>{
   const ids={CompListing_Address_2_field:'5 First St Unit 2',CompListing_MlsNumber_2_field:'A123456',
     CompListing_BedroomCount_2_field:'0',SearchResult_Address_1_field:'Unselected address'};
   global.document={querySelectorAll(selector){
+    if(selector==="h1,h2,h3")return [];
     const id=selector.match(/^#(\w+),/)[1];
     return Object.hasOwn(ids,id)?[Object.freeze({value:ids[id],matches:()=>true,getClientRects:()=>[{}]})]:[];
   }};

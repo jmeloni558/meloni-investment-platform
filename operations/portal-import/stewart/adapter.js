@@ -35,7 +35,9 @@ function preparedStewart(payload){
   return payload;
 }
 // Runs only when Jamie requests a preview. Read selected grid controls only.
-function readStewartGrid(){
+function readStewartGrid(fannie=false){
+  const isFannie=[...document.querySelectorAll('h1,h2,h3')].some(e=>e.textContent.trim()==='FM MIT Interior BPO');
+  if(fannie!==isFannie)throw Error('Open the matching Stewart form for this importer.');
   const slots=[];
   for(const [kind,prefix] of [['sold','CompSale'],['active','CompListing']]){
     for(let slot=1;slot<=3;slot++){
@@ -51,7 +53,8 @@ function readStewartGrid(){
       if(address===null)continue;
       const fields={};
       for(const key of ['ConditionType','LocationType','ViewType','Stories','GarageType','GarageBayCount','HeatingType','CoolingType','WaterSource','WasteDisposal','FuelType','UnitsInProperty','FinancingConcessions',...['SalesConcessions','FinancingConcessions','LocationType','LotSize','AdjustedViewPrice','YearBuilt','ConditionType','LivingArea','GarageBayCount','AdjustedPoolAndSpaPrice'].map(k=>'Adjustment:'+k),'Comments','BedroomCount','BathroomCount','HalfBathCount','LivingArea','TotalRooms','DaysOnMarket','YearBuilt','LotSize'].concat(kind==='sold'?'SalePrice':'CurrentListPrice'))fields[key]=read(key);
-      slots.push({kind,slot,address,address2:read('Address2'),mls:read('MlsNumber'),fields});
+      if(fannie)for(const key of ['UnitBedroomCount_1','UnitBathCount_1','UnitHalfBathCount_1','UnitRoomCount_1','SalesConcessions','SaleDate','FannieMaePropertyType','FnmaConditionType','FloorLocationIfCondoTownhouse','NumberOfFloorsInBuildingIfCondoTownhouse'])fields[key]=read(key);
+      slots.push({kind,slot,address,unit:fannie?read('UnitNumber'):null,address2:read('Address2'),mls:read('MlsNumber'),fields});
     }
   }
   if(!slots.length)throw Error('Open the Selected Comparables grid on the Stewart HomeSteps form.');
@@ -60,16 +63,20 @@ function readStewartGrid(){
 const canonical=value=>String(value??'').toLowerCase().trim().replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();
 const sharedFields=[...extraFacts,'Comments','BedroomCount','BathroomCount','HalfBathCount','LivingArea','TotalRooms','DaysOnMarket','YearBuilt','LotSize'];
 const comparableFields={sold:[...sharedFields,'FinancingConcessions','SalePrice'],active:[...sharedFields,'CurrentListPrice']};
-function validateStewart(payload){
-  if(payload?.format!=='propertythesis-stewart'||payload.version!==1||
+const fannieFacts=['FannieMaePropertyType','FnmaConditionType','FloorLocationIfCondoTownhouse','NumberOfFloorsInBuildingIfCondoTownhouse','UnitBedroomCount_1','UnitBathCount_1','UnitHalfBathCount_1','UnitRoomCount_1'];
+function validateStewart(payload,fannie=false){
+  const fieldsFor=kind=>fannie?[...fannieFacts,'LocationType','ViewType','Stories','GarageType','GarageBayCount','HeatingType','CoolingType','FuelType','UnitsInProperty','Comments','DaysOnMarket','YearBuilt','LivingArea','LotSize',...(kind==='sold'?['SalePrice','SaleDate','SalesConcessions']:['CurrentListPrice'])]:comparableFields[kind];
+  const allowedOrder=fannie?[...orderKeys,...[...fannieFacts,'LivingArea','YearBuilt','Stories','HeatingType','CoolingType','FuelType'].map(k=>'Subject_'+k)]:orderKeys;
+  if(payload?.format!==(fannie?'propertythesis-stewart-fannie':'propertythesis-stewart')||payload.version!==1||
     !['address','city','state','zip'].every(key=>typeof payload.subject?.[key]==='string'&&payload.subject[key].trim())||
     !Array.isArray(payload.comps)||!payload.comps.length||payload.comps.length>6)throw Error('Choose a Property Thesis Stewart transfer file.');
-  if(payload.orderFields && !Object.entries(payload.orderFields).every(([k,v])=>orderKeys.includes(k)&&typeof v==='string'&&v.trim()))throw Error('Invalid Stewart order fields.');
+  if(payload.orderFields && !Object.entries(payload.orderFields).every(([k,v])=>allowedOrder.includes(k)&&typeof v==='string'&&v.trim()))throw Error('Invalid Stewart order fields.');
   const seen=new Set();
   for(const comp of payload.comps){
     if(!comp||!Object.hasOwn(comparableFields,comp.kind)||typeof comp.address!=='string'||!canonical(comp.address)||
-      typeof comp.locality!=='string'||typeof comp.mls!=='string'||!comp.fields||!Object.entries(comp.fields).every(([key,value])=>comparableFields[comp.kind].includes(key)&&typeof value==='string'&&value.trim()))
+      typeof comp.locality!=='string'||typeof comp.mls!=='string'||!comp.fields||!Object.entries(comp.fields).every(([key,value])=>fieldsFor(comp.kind).includes(key)&&typeof value==='string'&&value.trim()))
       throw Error('Invalid Stewart comparable in transfer file.');
+    if(fannie&&(comp.adjustments||comp.manualAdjustments||comp.legacyComment))throw Error('Fannie Mae transfers do not include adjustments.');
     if(comp.fields.FinancingConcessions!=null&&!/^\d+(?:\.\d+)?$/.test(comp.fields.FinancingConcessions))throw Error('Invalid financing concession amount.');
     if(comp.manualAdjustments && (!Array.isArray(comp.manualAdjustments)||!comp.manualAdjustments.every(v=>typeof v==='string')))throw Error('Invalid review items.');
     if(comp.adjustments && !Object.entries(comp.adjustments).every(([k,v])=>(k==='SalesConcessions'||Object.values(adjustmentLabels).includes(k))&&typeof v==='string'&&/^-?\d+(?:\.\d+)?$/.test(v)))throw Error('Invalid Stewart adjustments.');
@@ -79,15 +86,20 @@ function validateStewart(payload){
     }
   }
 }
+function verifiedUnit(slot,comp){
+  if(!slot.unit)return false;
+  const unit=v=>canonical(v).replace(/(?:#\s*|\b(?:unit|apt|apartment|suite)\s+)/g,'').trim();
+  return [slot.address,slot.address+' '+slot.unit].some(a=>unit(a)===unit(comp.address))&&unit(comp.address).endsWith(' '+unit(slot.unit));
+}
 function candidatesFor(slot,comps){
   const address=canonical(slot.address),full=canonical([slot.address,slot.address2].filter(Boolean).join(' '));
   const mls=canonical(slot.mls);
   return comps.filter(comp=>comp.kind===slot.kind&&(
-    canonical(comp.address)===address||canonical(comp.address)===full||(mls&&canonical(comp.mls)===mls)
+    verifiedUnit(slot,comp)||canonical(comp.address)===address||canonical(comp.address)===full||(mls&&canonical(comp.mls)===mls)
   ));
 }
-function reviewStewart(payload,slots){
-  validateStewart(payload);
+function reviewStewart(payload,slots,fannie=false){
+  validateStewart(payload,fannie);
   const rows=[];
   const matched=new Set();
   for(const slot of slots){
@@ -99,7 +111,7 @@ function reviewStewart(payload,slots){
     const full=canonical(slot.address+' '+(slot.address2||''));
     // Without a verified meaning for Address2, require it to corroborate the street
     // (including unit) or the prepared comp's locality. Otherwise require manual review.
-    const matches=comp&&(canonical(comp.address)===full||
+    const matches=comp&&(!slot.unit||verifiedUnit(slot,comp))&&(verifiedUnit(slot,comp)||canonical(comp.address)===full||
       (canonical(comp.address)===address&&canonical(comp.locality)===canonical(slot.address2)));
     if(!address||duplicates||candidates.length!==1||!matches||mls&&comp.mls&&canonical(comp.mls)!==mls){
       rows.push(label+' · '+(!address?'Use Add Address and wait for listing data.':

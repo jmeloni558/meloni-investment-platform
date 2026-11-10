@@ -1,5 +1,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
+const fannie=!!document.querySelector('meta[name="stewart-form"][content="fannie"]');
+const formName=fannie?'Stewart Fannie Mae':'Stewart HomeSteps';
 let payload;
 $('file').onchange=async()=>{
   payload=null;
@@ -13,8 +15,8 @@ $('file').onchange=async()=>{
     if(!file||file.size>200000)throw Error('Choose a Stewart transfer smaller than 200 KB.');
     const next=JSON.parse(await file.text());
     if(file!==$('file').files[0])return;
-    validateStewart(next);
-    payload=preparedStewart(next);
+    validateStewart(next,fannie);
+    payload=fannie?next:preparedStewart(next);
     const {address,city,state,zip}=next.subject;
     photoWorkflow.searchParams.set('address',[address,city,[state,zip].filter(Boolean).join(' ')].filter(Boolean).join(', '));
     $('photoWorkflow').href=photoWorkflow.href;
@@ -30,12 +32,12 @@ async function run(apply){
   $('rows').replaceChildren();
   try{
     const [tab]=await chrome.tabs.query({active:true,currentWindow:true});
-    if(!tab?.url?.startsWith('https://'))throw Error('Open the Stewart HomeSteps form.');
-    if(apply && !/^https:\/\/www\.protk\.com\/ProTeck\.Fulfillment\.Case\.Forms\/CaseFormPortal\/DataEntry\/\d+\/?(?:[?#].*)?$/i.test(tab.url))throw Error('Open a Stewart HomeSteps order.');
+    if(!tab?.url?.startsWith('https://'))throw Error('Open the '+formName+' form.');
+    if(apply && !/^https:\/\/www\.protk\.com\/ProTeck\.Fulfillment\.Case\.Forms\/CaseFormPortal\/DataEntry\/\d+\/?(?:[?#].*)?$/i.test(tab.url))throw Error('Open a '+formName+' order.');
     $('status').textContent=apply?'Looking up comps and waiting for Stewart to populate each slot...':'Reading selected comps...';
-    const [response]=await chrome.scripting.executeScript({target:{tabId:tab.id},func:apply?importStewartComps:readStewartGrid,args:apply?[payload]:[]});
-    if(!response?.result)throw Error('Open the Selected Comparables grid on the Stewart HomeSteps form.');
-    const rows=apply?response.result:reviewStewart(payload,response.result);
+    const [response]=await chrome.scripting.executeScript({target:{tabId:tab.id},func:apply?importStewartComps:readStewartGrid,args:apply?[payload]:[fannie]});
+    if(!response?.result)throw Error('Open the Selected Comparables grid on the '+formName+' form.');
+    const rows=apply?response.result:reviewStewart(payload,response.result,fannie);
     for(const text of rows){
       const row=document.createElement('li');
       row.textContent=text;
