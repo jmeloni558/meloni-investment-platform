@@ -54,3 +54,20 @@ test('tries unique building-address variants and rejects unverified results befo
   assert.equal((await maps(job,'sync')).error,'Reached save controls');
   await assert.rejects(maps({...job,address:'4519 S Cooper Pl Tampa FL'},'queries'),/ZIP/);
 });
+
+test('matches an omitted Florida state only while preserving street, city and ZIP',async()=>{
+  const job={address:'4603 River Close Blvd, Valrico, 33596',account:'test@example.com'};
+  let displayed;
+  const document={querySelector(s){
+    if(s.includes('Google Account'))return {getAttribute:()=>'(test@example.com)'};
+    if(s.includes('data-item-id'))return {getAttribute:()=>displayed};
+    throw Error('Matched address');
+  }};
+  const maps=vm.runInNewContext(source+';mapsPage',{document,location:new URL('https://www.google.com/maps/'),URL,setTimeout});
+  for(displayed of ['4603 River Close Boulevard, Valrico, FL 33596','4603 River Close Blvd, Valrico, Florida 33596']){
+    assert.equal((await maps(job,'sync')).error,'Matched address');
+  }
+  for(displayed of ['4605 River Close Blvd Valrico FL 33596','4603 River Close Blvd Valrico FL 33594','4603 River Close Blvd Valrico GA 33596','4603 River Glen Blvd Valrico FL 33596']){
+    assert.equal((await maps(job,'sync')).retryAddress,true);
+  }
+});

@@ -24,7 +24,9 @@ async function mapsPage(job,step){
     .replace(/\s*,\s*,/g,',').replace(/\s+,/g,',').replace(/\s+/g,' ').trim();
   const substitute=(text,dictionary)=>text.replace(/\b[a-z]+\b\.?/gi,word=>dictionary[word.toLowerCase().replace(/\.$/,'')] || word);
   const normalize=text=>substitute(withoutUnit(text).toLowerCase(),words)
-    .replace(/\b(\d{5})-\d{4}\s*$/,'$1').replace(/[.,'’]/g,' ').replace(/\s+/g,' ').trim();
+    .replace(/\b(\d{5})-\d{4}\s*$/,'$1').replace(/[.,'’]/g,' ').replace(/\s+/g,' ').trim()
+    // Ignore only the Florida state token immediately before the postal code.
+    .replace(/\s+(?:fl|florida) (?=\d{5}$)/,' ');
   const expected=normalize(job.address);
   const hasNumberAndZip=/^\d+[a-z]?(?:-\d+[a-z]?)?\s+.+\s+\d{5}$/.test(expected);
   if(step==='queries'){
@@ -115,8 +117,11 @@ async function syncInspections(){
   const [existing]=await chrome.tabs.query({url:syncPage});
   const bridge=existing || await chrome.tabs.create({url:syncPage,active:false});
   const pt=bridge.id;
+  if(bridge.discarded)await chrome.tabs.reload(pt);
   await loaded(pt,syncPage);
-  const {data:job}=await onTab(pt,dashboardRpc,'claim_inspection_place',{});
+  const claim=await onTab(pt,dashboardRpc,'claim_inspection_place',{});
+  if(claim?.unavailable || claim?.error)throw Error('The signed-in PropertyThesis sync page could not claim an address.');
+  const job=claim?.data;
   if(!job)return;
   let tab,error;
   try{
@@ -170,5 +175,8 @@ function startInspectionSync(){
 }
 chrome.alarms.onAlarm.addListener(alarm=>{if(alarm.name==='inspection-sync')startInspectionSync();});
 function scheduleInspectionSync(){chrome.alarms.create('inspection-sync',{delayInMinutes:0.2,periodInMinutes:1});}
-chrome.runtime.onInstalled.addListener(scheduleInspectionSync);
+chrome.runtime.onInstalled.addListener(()=>{
+  scheduleInspectionSync();
+  startInspectionSync();
+});
 chrome.runtime.onStartup.addListener(scheduleInspectionSync);
