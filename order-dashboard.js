@@ -84,8 +84,42 @@
     if(error)throw error;
     return new Map(data.map(set=>[set.id,set]));
   }
+  async function showMapsIssues(version,current){
+    const result=await db.rpc('inspection_sync_issues');
+    if(version!==generation || current!==request || !panel)return;
+    const box=field('maps-issues');
+    if(result.error){
+      box.hidden=false;
+      box.textContent='Google Maps sync status is unavailable. Refresh the dashboard to check again.';
+      return;
+    }
+    box.replaceChildren();
+    box.hidden=!result.data?.length;
+    if(box.hidden)return;
+    box.append(el('strong','Google Maps needs attention'));
+    for(const issue of result.data){
+      const row=el('p'), action=issue.wanted?'add':'remove';
+      row.append(el('span',issue.address+' - Could not confirm '+(issue.wanted?'addition to':'removal from')+' Inspections. '+issue.reason+' '));
+      const link=el('a','Open Inspections');
+      const url=new URL(issue.list_url);
+      if(url.origin==='https://www.google.com' && url.pathname.startsWith('/maps/')){
+        link.href=url.href;link.target='_blank';link.rel='noopener';row.append(link,' ');
+      }
+      const done=el('button',action==='add'?'I added it manually':'I removed it manually');
+      done.type='button';
+      done.onclick=async()=>{
+        done.disabled=true;
+        const saved=await db.rpc('confirm_manual_inspection',{fixed_address:issue.address,expected_wanted:issue.wanted,expected_reason:issue.reason});
+        if(version!==generation || !panel)return;
+        if(!saved.data || saved.error)field('status').textContent='The sync status changed or a retry is running. Refresh to check again.';
+        await showMapsIssues(generation,request);
+      };
+      row.append(done);box.append(row);
+    }
+  }
   async function load(){
     const current=++request, version=generation;
+    showMapsIssues(version,current).catch(()=>{});
     try{
       const term=searchText();
       const [batch,openRows,held,completed]=await Promise.all([
@@ -665,7 +699,7 @@
       <form id="od-list-form" hidden><label>List name<input id="od-name" maxlength="80" required></label>
       <button id="od-create-list">Create list</button> <button type="button" id="od-cancel-list">Cancel</button></form>
       <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
-      <p id="od-status" role="status"></p><div class="od-columns"><div><div id="od-list"></div><button id="od-prev" hidden>Previous page</button> <button id="od-next" hidden>Next page</button></div>
+      <section id="od-maps-issues" role="status" hidden></section><p id="od-status" role="status"></p><div class="od-columns"><div><div id="od-list"></div><button id="od-prev" hidden>Previous page</button> <button id="od-next" hidden>Next page</button></div>
       <aside id="od-details" aria-label="Order" tabindex="-1" hidden><form id="od-form">
       <div class="od-address-row"><label><span id="od-address-label">Property address</span>${fieldApp?'<textarea id="od-address" rows="2" maxlength="500" required></textarea>':'<input id="od-address" maxlength="500" required>'}</label><button type="button" id="od-cancel">Close</button></div>
       <div class="od-needs-flags">
