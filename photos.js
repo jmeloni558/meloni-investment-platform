@@ -742,5 +742,5 @@ if(window===parent){
     }finally{restoring=false;}
   });
   const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=inline-invoice-1';document.head.append(sheet);
-  import('./order-dashboard.js?v=order-autosave-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  import('./order-dashboard.js?v=field-detail-view-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }

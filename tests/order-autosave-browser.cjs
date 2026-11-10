@@ -26,13 +26,25 @@ async function scenario(browser,mobile){
   window.PropertyThesisSession={getClient:()=>({auth:{getSession:async()=>({data:{session:{user:{id:'u'}}}}),onAuthStateChange(){}},from:builder,rpc:()=>({maybeSingle:async()=>({data:{pending:false}})})})};
   if(mobile)window.PropertyThesisFieldApp={canShowDashboard:()=>true,startOnDashboard:true,recordView(){}};
  },mobile);
+ if(mobile){
+  await page.addStyleTag({content:fs.readFileSync('photos.css','utf8')});
+  await page.addStyleTag({content:fs.readFileSync('order-dashboard.css','utf8')});
+ }
  await page.addScriptTag({content:source});await page.locator('[data-order]').first().click();
  assert.ok(await page.locator('#od-save').isHidden());
  await page.locator('#od-notes').fill('First');await page.waitForFunction(()=>writes.length===1);
  await page.locator('#od-notes').fill('Final');await page.locator('#od-showingtime-requested').check();
  await page.waitForFunction(()=>testRow.notes==='Final' && testRow.showingtime_requested===true);
  assert.ok(await page.locator('#od-details').isVisible());
- await page.locator('#od-gate-code').fill('1234');await page.locator('#od-cancel').click();
+ await page.locator('#od-gate-code').fill('1234');
+ if(mobile){
+   assert.ok(await page.locator('#od-main-open').isHidden());
+   assert.ok(await page.locator('#od-search').isHidden());
+   await page.locator('#od-notes').scrollIntoViewIfNeeded();
+   assert.ok(Math.abs((await page.locator('.od-address-row').boundingBox()).y)<2);
+   await page.locator('#ptOrderNav').click();
+   await page.locator('#od-search').waitFor({state:'visible'});
+ }else await page.locator('#od-cancel').click();
  await page.locator('#od-details').waitFor({state:'hidden'});assert.equal(await page.evaluate(()=>testRow.gate_code),'1234');
  await page.locator('[data-order]').first().click();assert.equal(await page.locator('#od-notes').inputValue(),'Final');assert.deepEqual(await page.evaluate(()=>Object.keys(writes[0])),['notes']);
  await page.locator('#od-contact-0-phone1').fill('5551234567');await page.locator('#od-contact-0-phone1').press('Tab');
