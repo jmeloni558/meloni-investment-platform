@@ -39,6 +39,17 @@ test('Fannie Mae workspace exports without adjustments and fills only blanks on 
     assert.match((await grid.evaluate(portal,data)).join(' '),/Matched in active 1/);
     assert.equal(await grid.locator('#CompListing_UnitBedroomCount_1_1_field').inputValue(),'3');
     assert.equal(await grid.locator('textarea').inputValue(),'MLS note');
+    await grid.locator('body').evaluate(body=>body.insertAdjacentHTML('beforeend','<select id="SubjectCondition_ConditionType_field"><option></option><option>Average (Adequately Maintained)</option></select>'));
+    const blocked={...data,orderFields:{Subject_FnmaConditionType:'Average (Adequately Maintained)'},comps:[{...data.comps[0],address:'99 Another Street'}]};
+    assert.match((await grid.evaluate(portal,blocked)).join(' '),/No empty/);
+    assert.equal(await grid.locator('#SubjectCondition_ConditionType_field').inputValue(),'Average (Adequately Maintained)');
+    await grid.locator('body').evaluate(body=>body.insertAdjacentHTML('beforeend','<input id="CompListing_Address_2_field" value="22 Pine Dr"><input id="CompListing_UnitNumber_2_field" value="7"><input id="CompListing_MlsNumber_2_field" value="MLS789"><input id="CompListing_Zip_2_field" value="33601"><input id="CompListing_YearBuilt_2_field" value="1970"><input id="CompListing_UnitBedroomCount_2_1_field"><input id="CompListing_UnitBedroomCount_1_2_field">'));
+    const directional={...data,comps:[{...data.comps[0],address:'22 N Pine Dr #7',zip:'33601',mls:'MLS789'}]};
+    assert.match((await grid.evaluate(portal,directional)).join(' '),/Matched in active 2/);
+    assert.equal(await grid.inputValue('#CompListing_UnitBedroomCount_2_1_field'),'3');
+    assert.equal(await grid.inputValue('#CompListing_UnitBedroomCount_1_2_field'),'');
+    const wrongUnit={...directional,comps:[{...directional.comps[0],address:'22 N Pine Dr #8'}]};
+    assert.match((await grid.evaluate(portal,wrongUnit)).join(' '),/ambiguous/);
     const {validateStewart}=require('../operations/portal-import/stewart/adapter.js');
     validateStewart(data,true);
     assert.throws(()=>validateStewart(data,false));
