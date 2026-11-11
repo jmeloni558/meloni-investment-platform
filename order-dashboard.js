@@ -85,8 +85,44 @@
     if(error)throw error;
     return new Map(data.map(set=>[set.id,set]));
   }
-  let mapsIssueAddresses=new Set();
+  let mapsIssues=new Map();
   const mapsAddressKey=address=>address.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  function openMapsIssue(issue){
+    if(!issue)return;
+    const dialog=field('maps-dialog'), input=field('maps-address'), message=field('maps-message');
+    const submit=field('maps-retry'), cancel=field('maps-close');
+    field('maps-reason').textContent='Could not '+(issue.wanted?'add the address to':'remove the address from')+
+      ' Inspections. '+issue.reason;
+    input.value=issue.maps_address || issue.address;
+    submit.disabled=cancel.disabled=false;
+    message.textContent='';
+    dialog.oncancel=event=>{if(cancel.disabled)event.preventDefault();};
+    cancel.onclick=()=>dialog.close();
+    field('maps-form').onsubmit=async event=>{
+      event.preventDefault();
+      submit.disabled=cancel.disabled=true;
+      message.textContent='Queuing retry...';
+      try{
+        const {error}=await db.rpc('retry_inspection_address',{
+          original_address:issue.address,previous_lookup:issue.maps_address || issue.address,
+          expected_wanted:issue.wanted,expected_reason:issue.reason,corrected_address:input.value.trim()
+        });
+        if(error)throw error;
+        if(!dialog.isConnected)return;
+        // Keep the acknowledgement in the dialog across list refreshes.
+        message.textContent='Retry queued. Your Edge work extension will check Google Maps.';
+        cancel.textContent='Close';
+        input.readOnly=true;
+        await showMapsIssues(generation,request);
+      }catch(error){
+        message.textContent=error.message || 'Could not queue the retry.';
+        submit.disabled=false;
+      }finally{cancel.disabled=false;}
+    };
+    input.readOnly=false;
+    cancel.textContent='Cancel';
+    dialog.showModal();
+  }
   async function showMapsIssues(version,current){
     const result=await db.rpc('inspection_sync_issues');
     if(version!==generation || current!==request || !panel)return;
@@ -96,9 +132,9 @@
       box.textContent='Google Maps sync status is unavailable. Refresh the dashboard to check again.';
       return;
     }
-    mapsIssueAddresses=new Set((result.data || []).map(issue=>mapsAddressKey(issue.address)));
+    mapsIssues=new Map((result.data || []).map(issue=>[mapsAddressKey(issue.address),issue]));
     for(const flag of field('list').querySelectorAll('[data-maps-address]')){
-      flag.hidden=!mapsIssueAddresses.has(flag.dataset.mapsAddress);
+      flag.hidden=!mapsIssues.has(flag.dataset.mapsAddress);
     }
     box.replaceChildren();
     box.hidden=!result.data?.length;
@@ -121,7 +157,10 @@
         if(!saved.data || saved.error)field('status').textContent='The sync status changed or a retry is running. Refresh to check again.';
         await showMapsIssues(generation,request);
       };
-      row.append(done);box.append(row);
+      const retry=el('button','Address Issue');
+      retry.type='button';
+      retry.onclick=()=>openMapsIssue(issue);
+      row.append(retry,' ',done);box.append(row);
     }
   }
   async function load(){
@@ -220,13 +259,6 @@
       for(const [checked,label] of [[o.vacant,'Vacant'],[o.velocity,'Velocity'],[o.missing_loe,'Missing LOE']]){
         if(checked){const flag=el('b',label);flag.className='od-order-flag';metadata.append(flag);}
       }
-      if(o.address && !o.list_name && !o.former_list_task){
-        const flag=el('b','Address Issue');
-        flag.className='od-order-flag';
-        flag.dataset.mapsAddress=mapsAddressKey(o.address);
-        flag.hidden=!mapsIssueAddresses.has(flag.dataset.mapsAddress);
-        metadata.append(flag);
-      }
       summary.append(address,metadata);
       const schedule=el('span');
       schedule.className='od-schedule';
@@ -277,6 +309,15 @@
         (actions || row).append(button);
       }
       if(fieldOrder)row.append(schedule);
+      if(o.address && !o.list_name && !o.former_list_task){
+        const flag=el('button','Address Issue');
+        flag.type='button';
+        flag.className='od-address-issue';
+        flag.dataset.mapsAddress=mapsAddressKey(o.address);
+        flag.hidden=!mapsIssues.has(flag.dataset.mapsAddress);
+        flag.onclick=()=>openMapsIssue(mapsIssues.get(flag.dataset.mapsAddress));
+        row.append(flag);
+      }
       field('list').append(row);
     }
     if(!orders.length)field('list').append(el('p',searchText()?'No matching orders.':{open:'No open orders.',hold:'No orders on hold.',completed:'No completed orders.'}[currentList]));
@@ -760,6 +801,11 @@
       <label>Notes<textarea id="od-notes" rows="5"></textarea></label>
       <p id="od-error" role="alert"></p>
       <span id="od-autosave-status" role="status"></span><button type="button" id="od-retry-save" hidden>Retry save</button><button id="od-save">Save order</button></form></aside></div>
+      <dialog id="od-maps-dialog" aria-labelledby="od-maps-title">
+        <form id="od-maps-form"><h2 id="od-maps-title">Address Issue</h2><p id="od-maps-reason"></p>
+        <label>Address for Google Maps<input id="od-maps-address" required maxlength="500"></label>
+        <button id="od-maps-retry" type="submit">Retry Google Maps</button> <button id="od-maps-close" type="button">Cancel</button>
+        <p id="od-maps-message" role="status"></p></form></dialog>
       <dialog id="od-attempt-dialog" aria-labelledby="od-attempt-title" closedby="any"><h2 id="od-attempt-title">Record contact attempt</h2><p id="od-attempt-context"></p>
       <button type="button" id="od-attempt-call">Call</button> <button type="button" id="od-attempt-text">Text</button> <button type="button" id="od-attempt-cancel">Cancel</button></dialog>
       <dialog id="od-phone-dialog" aria-labelledby="od-phone-number" closedby="any">
@@ -1030,7 +1076,7 @@
     const id=session?.user?.id||null;if(id===account)return;
     clearTimeout(midnightTimer);clearTimeout(searchTimer);page=0;openDates=[];
     clearTimeout(autosaveTimer);dirty=false;editing=null;baseline=null;
-    const old=account;mapsIssueAddresses.clear();account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';selectedList='';namedLists=[];
+    const old=account;mapsIssues.clear();account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';selectedList='';namedLists=[];
     if(fieldApp)document.getElementById('fieldViews').hidden=true;
     if(!id){if(old)landing=fieldApp ? fieldApp.startOnDashboard : true;return;}
     const {data,error}=await db.from('order_members').select('photo_owner').eq('user_id',id).maybeSingle();
