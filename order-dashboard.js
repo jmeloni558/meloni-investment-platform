@@ -279,9 +279,17 @@
       if(actions){
         actions.className='od-field-actions';
         dueActions.append(actions);
-        const directions=el('a','Directions'),url=new URL('https://www.google.com/maps/dir/');
-        url.search=new URLSearchParams({api:'1',destination:o.address.trim(),travelmode:'driving'}).toString();
-        directions.href=url.href;directions.target='_blank';directions.rel='noopener noreferrer';
+        const directions=el('a','Directions');
+        const destination=encodeURIComponent(o.address.trim().replace(/\s+/g,' '));
+        const route='//www.google.com/maps/dir/?api=1&destination='+destination+'&travelmode=driving';
+        const webUrl='https:'+route;
+        if(/Android/i.test(navigator.userAgent)){
+          directions.href='intent:'+route+'#Intent;scheme=https;package=com.google.android.apps.maps;S.browser_fallback_url='+encodeURIComponent(webUrl)+';end';
+        }else{
+          directions.href=webUrl;
+          directions.target='_blank';
+          directions.rel='noopener noreferrer';
+        }
         directions.className='od-directions';directions.setAttribute('aria-label','Driving directions to '+o.address);
         actions.append(directions);
       }
