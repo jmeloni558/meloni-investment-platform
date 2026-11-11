@@ -208,7 +208,13 @@
       summary.className='od-summary';
       const address=el('strong',o.address);
       address.title=o.address;
-      summary.append(address,el('small',[kindLabel(o.kind),o.client].filter(Boolean).join(' · ')));
+      const metadata=el('small'),clientInfo=[kindLabel(o.kind),o.client].filter(Boolean).join(' · ');
+      metadata.className='od-order-metadata';
+      if(clientInfo)metadata.append(el('span',clientInfo));
+      for(const [checked,label] of [[o.vacant,'Vacant'],[o.velocity,'Velocity']]){
+        if(checked){const flag=el('b',label);flag.className='od-order-flag';metadata.append(flag);}
+      }
+      summary.append(address,metadata);
       const schedule=el('span');
       schedule.className='od-schedule';
       const dueActions=el('span');
@@ -634,6 +640,8 @@
     field('invoice-lines').replaceChildren();updateRequirements();
     field('photos').checked=!!o?.needs_photos;
     field('appointment-needed').checked=!!o?.appointment_needed;
+    field('vacant').checked=!!o?.vacant;
+    field('velocity').checked=!!o?.velocity;
     field('order-link').value=o?.order_link || '';
     field('lockbox-code').value=o?.lockbox_code || '';
     field('gate-code').value=o?.gate_code || '';
@@ -655,6 +663,7 @@
   function orderValues(original){
       const client=field('client').value, address=field('address').value.replace(/[\r\n]+/g,' ').trim();
       return {address,needs_photos:field('photos').checked,
+        vacant:field('vacant').checked,velocity:field('velocity').checked,
         showingtime_requested:field('showingtime-requested').checked,
         showingtime_confirmed:field('showingtime-confirmed').checked,
         points_of_contact:readContacts(),purpose:field('purpose').value.trim()||null,order_link:updateOrderLink(),lockbox_code:field('lockbox-code').value.trim()||null,gate_code:field('gate-code').value.trim()||null,fee:field('fee').value || null,appointment_needed:field('appointment-needed').checked,list_name:field('destination').value||null,kind:field('kind').value||null,client:client||null,due:field('due').value||null,notes:field('notes').value,...appointmentChanges(original)};
@@ -706,6 +715,8 @@
       <div class="od-needs-flags">
       <label><input type="checkbox" id="od-photos"> Photos needed</label>
       <label><input type="checkbox" id="od-appointment-needed"> Appointment Needed</label>
+      <label><input type="checkbox" id="od-vacant"> Vacant</label>
+      <label><input type="checkbox" id="od-velocity"> Velocity</label>
       </div>
       <div class="od-fee-invoice od-entry-codes">
       <label>Order fee ($)<input type="number" id="od-fee" inputmode="decimal" min="0" max="9999999999.99" step="0.01"></label>
