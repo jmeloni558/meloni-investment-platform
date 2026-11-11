@@ -28,7 +28,9 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  await page.reload();await frame.locator('#properties button').first().waitFor();
  await page.waitForFunction(()=>{const f=document.querySelector('#ptDesktopPhotos iframe');return f.clientHeight>1000&&f.contentDocument.documentElement.scrollHeight<=f.clientHeight+1;});
  await frame.getByText('1 B in your photos · 99.75 GB left of 100 GB',{exact:true}).waitFor();
- await frame.locator('#completedTab').click();
+ await frame.locator('#completedTab').press('Enter');
+ assert.equal(await frame.locator('#completedTab').getAttribute('aria-pressed'),'true');
+ assert.equal(await frame.locator('#addressList h2:visible').count(),0);
  assert.equal(await frame.locator('#status').isHidden(),true);
  const countLabel=frame.locator('#properties .address-photo-count');
  assert.equal(await countLabel.innerText(),'1 photo');
@@ -48,5 +50,10 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  await page.evaluate(()=>{window.mutations=0;new MutationObserver(rows=>window.mutations+=rows.length).observe(document.querySelector('.app-nav-toolbar'),{subtree:true,childList:true});});await page.waitForTimeout(250);assert.ok(await page.evaluate(()=>window.mutations<5));
  await frame.locator('#files').setInputFiles([]);await page.click('#signOutBtn');await page.waitForFunction(()=>!document.getElementById('ptDesktopPhotos'));assert.equal(await page.locator('#ptPhotoLibrary').count(),0);
  const mobile=await context.newPage();await mobile.setViewportSize({width:390,height:844});await mobile.goto(base+'/photos');await mobile.waitForURL(/photos.html/);await mobile.locator('#fieldPhotos').click();await mobile.locator('#library').waitFor({state:'visible'});assert.equal(await mobile.locator('#updateApp').isVisible(),true);assert.equal(await mobile.locator('#ptPhotoLibrary').count(),0);assert.equal(await mobile.locator('#appNavShell').count(),0);
+ for(const id of ['completedTab','archiveTab','activeTab']){
+   await mobile.locator('#'+id).press('Enter');
+   assert.equal(await mobile.locator('#'+id).getAttribute('aria-pressed'),'true');
+   assert.equal(await mobile.locator('#addressList h2:visible').count(),0);
+ }
  assert.deepEqual(errors,[]);console.log('PASS: desktop /photos route, site wrapper, exact menu order, shared client, separate explicit creation, retained pending selections, navigation cancellation, stable observers, signout clearing and isolated phone route');
 }finally{await browser.close();server.close();}})().catch(e=>{console.error(e);server.close();process.exitCode=1;});

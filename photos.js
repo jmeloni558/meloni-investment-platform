@@ -446,9 +446,8 @@ function showList(mode=listMode){
   clearCaptions();clearTransferCache();selectedPhotos.clear();listMode=mode;selected=null;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();
   $('workspace').hidden=true;$('addressList').hidden=false;$('newProperty').hidden=mode!=='active';
   refreshStorage();window.PropertyThesisFieldApp?.recordView();
-  $('listTitle').textContent=stewartMode&&mode==='completed'?'Stewart photo workflow — choose a completed property':listTitles[mode];
   $('activeTab').setAttribute('aria-pressed',String(mode==='active'));$('completedTab').setAttribute('aria-pressed',String(mode==='completed'));$('archiveTab').setAttribute('aria-pressed',String(mode==='archive'));
-  renderProperties();$('listTitle').focus({preventScroll:embedded});status('');
+  renderProperties();$(mode+'Tab').focus({preventScroll:embedded});status(stewartMode && mode==='completed'?'Choose a completed property for the Stewart photo workflow.':'');
 }
 $('backToList').onclick=()=>dirtyDescriptions.size?run(()=>showList()):showList();
 $('activeTab').onclick=()=>showList('active');
