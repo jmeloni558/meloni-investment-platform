@@ -2,7 +2,7 @@
 body.pt-orders-open main.shell > :not(#appNavShell):not(#ptOrders):not(.footer){display:none!important}
 body.pt-orders-open #ptOrders{display:block!important}
 #ptOrders header,#ptOrders nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-#ptOrders header{justify-content:space-between;margin-bottom:20px}
+#ptOrders header{justify-content:center;text-align:center;margin-bottom:20px}
 #ptOrders h1,#ptOrders h2{margin:4px 0}
 #ptOrders small{font-weight:700;color:#486567}
 #ptOrders button,#ptOrders a{cursor:pointer}
@@ -12,7 +12,7 @@ body.pt-orders-open #ptOrders{display:block!important}
 body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color:#175c92!important;color:#fff!important}
 #ptOrders #od-new{background:#99420f;color:white;border-color:#99420f}
 #ptOrders #od-overdue{color:#af2029}
-#ptOrders #od-count{display:flex;flex-wrap:wrap;gap:.25em 1em;margin:0;color:#486567;font-weight:600}
+#ptOrders #od-count{display:flex;justify-content:center;flex-wrap:wrap;gap:.25em 1em;margin:0;color:#486567;font-weight:600}
 #ptOrders article{display:flex;align-items:flex-start;gap:12px;padding:16px 0;border-top:1px solid #dbe4e1}
 #ptOrders article input{width:19px;height:19px;margin:3px}
 #ptOrders article button{padding:0;border:0;text-align:left;color:#184f66}
