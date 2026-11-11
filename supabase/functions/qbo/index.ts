@@ -1,5 +1,6 @@
 import postgres from "npm:postgres@3.4.7";
 import { saleLine, invoiceBody } from "./invoice-lines.mjs";
+import { engagementHandler } from "./engagement.ts";
 
 const sql = postgres(Deno.env.get("SUPABASE_DB_URL")!, { max: 1, prepare: false, idle_timeout: 4 });
 const site = "https://propertythesis.com";
@@ -293,6 +294,7 @@ Deno.serve(async req => {
       return redirect("connected");
     }
     if (req.method !== "POST") return json({},405);
+    if (url.searchParams.has("loe")) return await engagementHandler(sql,customerAccessToken,company)(req);
     const auth = req.headers.get("Authorization");
     if (!auth) return json({},401);
     if (url.searchParams.has("worker")) {

@@ -211,7 +211,7 @@
       const metadata=el('small'),clientInfo=[kindLabel(o.kind),o.client].filter(Boolean).join(' · ');
       metadata.className='od-order-metadata';
       if(clientInfo)metadata.append(el('span',clientInfo));
-      for(const [checked,label] of [[o.vacant,'Vacant'],[o.velocity,'Velocity']]){
+      for(const [checked,label] of [[o.vacant,'Vacant'],[o.velocity,'Velocity'],[o.missing_loe,'Missing LOE']]){
         if(checked){const flag=el('b',label);flag.className='od-order-flag';metadata.append(flag);}
       }
       summary.append(address,metadata);
@@ -624,6 +624,7 @@
     editing=o;photosOverridden=false;draftId=o?.id||crypto.randomUUID();const f=field('form');f.reset();setInvoiceOptions(false);field('error').textContent='';
     const destination=o?o.list_name:(currentList==='open'?selectedList:'');
     syncListField(destination);
+    field('loe-handled').hidden=!o?.missing_loe;
     field('details').setAttribute('aria-label',o?'Order for '+o.address:destination?'New task':'New order');
     field('kind').querySelector('[data-historical]')?.remove();
     if(o?.kind && !kinds.includes(o.kind)){
@@ -720,7 +721,7 @@
       </div>
       <div class="od-fee-invoice od-entry-codes">
       <label>Order fee ($)<input type="number" id="od-fee" inputmode="decimal" min="0" max="9999999999.99" step="0.01"></label>
-      <div id="od-invoice-group" role="group" aria-labelledby="od-invoice-title" hidden><label id="od-invoice-title">QuickBooks invoice</label><div id="od-invoice" role="status"></div></div>
+      <div id="od-invoice-group" role="group" aria-labelledby="od-invoice-title" hidden><label id="od-invoice-title">QuickBooks invoice</label><div id="od-invoice" role="status"></div><button id="od-loe-handled" type="button" hidden>I handled the missing LOE</button></div>
       <button id="od-invoice-summary" type="button" aria-expanded="false" aria-controls="od-invoice-options" hidden>Invoice options</button></div>
       <fieldset id="od-billing" aria-label="QuickBooks invoice options"><p id="od-monthly" hidden>This BPO uses the date entered as its service date on the client's monthly invoice.</p>
       <div id="od-invoice-options" hidden><label>Existing open invoice number (optional)<input id="od-invoice-target" maxlength="21"></label><div id="od-invoice-lines"></div><button type="button" id="od-add-line">Add invoice line</button></div></fieldset>
@@ -1039,6 +1040,16 @@
     document.addEventListener('visibilitychange',()=>{if(document.hidden && editing && dirty)flushExisting();});
     window.addEventListener('online',()=>{if(editing && dirty)flushExisting();});
     document.addEventListener('click',e=>{const target=e.target.closest('#appNavShell button,#appNavShell a,#ptBpoMenu button');if(target && target!==menu && target.target!=='_blank'){landing=false;hide();}},true);
+    field('loe-handled').onclick=async()=>{
+      if(!editing?.missing_loe)return;
+      try{
+        if(!await flushExisting())return;
+        const saved=await update(editing,{missing_loe:false});
+        if(editing?.id===saved.id){editing=saved;field('loe-handled').hidden=true;}
+        await load();
+      }
+      catch(e){field('error').textContent=e.message;}
+    };
     function refreshVisibleOrders(){
       if(!document.hidden && document.body.classList.contains('pt-orders-open') && field('details').hidden &&
          field('list-form').hidden && !field('open').matches(':focus'))load();

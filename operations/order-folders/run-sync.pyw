@@ -10,6 +10,10 @@ result = subprocess.run([str(powershell), "-NoProfile", "-NonInteractive", "-Exe
                          "Bypass", "-File", str(script)], creationflags=subprocess.CREATE_NO_WINDOW,
                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 if result.returncode == 0:
+    from engagement import run as attach_letters
     from export_photos import run
-    run()
+    try:
+        attach_letters()
+    finally:
+        run()
 sys.exit(result.returncode)
