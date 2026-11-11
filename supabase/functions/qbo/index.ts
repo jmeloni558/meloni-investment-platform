@@ -1,6 +1,7 @@
 import postgres from "npm:postgres@3.4.7";
 import { saleLine, invoiceBody } from "./invoice-lines.mjs";
 import { engagementHandler } from "./engagement.ts";
+import { companyRequest } from "./company-request.mjs";
 
 const sql = postgres(Deno.env.get("SUPABASE_DB_URL")!, { max: 1, prepare: false, idle_timeout: 4 });
 const site = "https://propertythesis.com";
@@ -26,7 +27,7 @@ async function tokens(values: Record<string, string>) {
   return result;
 }
 async function api(token: string, route: string, body?: unknown) {
-  const res = await fetch(company + route, { method: body ? "POST" : "GET", headers: {
+  const res = await companyRequest(company, route, { method: body ? "POST" : "GET", headers: {
     Authorization: "Bearer " + token, Accept: "application/json", "Content-Type": "application/json"
   }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(12000) });
   if (!res.ok) {
