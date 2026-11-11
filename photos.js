@@ -790,5 +790,5 @@ if(window===parent){
     }finally{restoring=false;}
   });
   const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=maps-address-retry-2';document.head.append(sheet);
-  import('./order-dashboard.js?v=maps-address-retry-2').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  import('./order-dashboard.js?v=completed-photo-appointment-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }

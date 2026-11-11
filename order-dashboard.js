@@ -78,12 +78,12 @@
     if(error)throw error;
     return data;
   }
-  async function fieldPhotoSets(batch){
-    const ids=batch.map(order=>order.photo_id).filter(Boolean);
-    if(!fieldApp || account!==membership?.photo_owner || !ids.length)return new Map();
-    const {data,error}=await db.from('photo_properties').select('id,completed_at,archived_at,deleting_at').in('id',ids);
+  async function orderPhotoSets(batch){
+    const orderIds=batch.filter(order=>order.photo_id).map(order=>order.id);
+    if(!orderIds.length)return new Map();
+    const {data,error}=await db.rpc('order_photo_set_status',{order_ids:orderIds});
     if(error)throw error;
-    return new Map(data.map(set=>[set.id,set]));
+    return new Map(data.map(set=>[set.order_id,set]));
   }
   let mapsIssues=new Map();
   const mapsAddressKey=address=>address.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
@@ -178,7 +178,7 @@
       const [result,lists,photoSets]=await Promise.all([
         db.from('order_clients').select('name,listed,monthly_bpo').order('name'),
         db.from('order_lists').select('name').order('name'),
-        fieldPhotoSets(batch)
+        orderPhotoSets(batch)
       ]);
       if(lists.error)throw lists.error;
       if(result.error)throw result.error;
@@ -207,9 +207,9 @@
       field('next').hidden=batch.length<=pageSize;
       orders=batch.slice(0,pageSize);
       for(const order of orders){
-        const set=photoSets.get(order.photo_id);
-        order.photosFinished=Boolean(set?.completed_at || set?.archived_at);
-        order.hasActivePhotoSet=Boolean(set && !order.photosFinished && !set.deleting_at);
+        const set=photoSets.get(order.id);
+        order.photosFinished=Boolean(set?.finished);
+        order.hasActivePhotoSet=Boolean(account===membership?.photo_owner && set?.active);
       }
       clients=result.data;
       if(field('details').hidden) populateClients();
@@ -282,7 +282,7 @@
       const desktopActions=desktopFolder || desktopPhotos;
       if(desktopFolder)dueActions.append(rowFolderButton(o));
       if(desktopPhotos)dueActions.append(desktopPhotoLink(o,'Photos'));
-      if(o.appointment){
+      if(o.appointment && !o.photosFinished){
         const appointment=el('time','Appt '+appointmentLabel.format(new Date(o.appointment))+(o.appointment_window?' \u2013 '+endTimeLabel.format(appointmentEnd(o)):''));
         appointment.className='od-order-appointment';
         appointment.dateTime=o.appointment;
@@ -292,7 +292,7 @@
       title.append(summary);
       if(fieldOrder)row.className='od-field-order';
       else if(!desktopActions)title.append(schedule);
-      if(o.appointment_needed && !o.appointment){
+      if(o.appointment_needed && !o.appointment && !o.photosFinished){
         const reminder=el('span','Appointment Needed');
         reminder.className='od-appointment-warning';
         schedule.append(reminder);
