@@ -37,7 +37,7 @@ test('phone uploads overlap and gallery and ZIP follow capture time after out-of
  Object.assign(f.context,{
    $:id=>controls[id]??={},run:fn=>fn(),user:{id:'owner'},selected:{id:'property',address:'Test'},
    queue,photos:[],properties:[],cameraTimes,client:{auth:{}},createUploadClient(){},
-   matchMedia:()=>({matches:true}),AbortController,renderQueue(){},setItemState:(item,state)=>item.state=state,
+   navigator:{connection:{effectiveType:'3g'}},matchMedia:()=>({matches:true}),AbortController,renderQueue(){},setItemState:(item,state)=>item.state=state,
    cameraTimestamp:async file=>'2026-11-11T'+times[file.name]+':00',
    sendQueuedPhoto:async({file,takenDate})=>{
      active++;peak=Math.max(active,peak);await takenDate(file);
@@ -55,4 +55,11 @@ test('phone uploads overlap and gallery and ZIP follow capture time after out-of
  assert.deepEqual(Array.from(f.context.sortByCaptureTime(rows),row=>row.name),expected);
  await f.context.downloadPhotos(rows);
  assert.deepEqual(f.saved[0].files.map(entry=>entry.blob.name),expected);
+ f.context.navigator.connection.effectiveType='4g';
+ f.context.queue=['one','two','three','four','five'].map(name=>({file:{name},state:'Ready'}));
+ f.context.sendQueuedPhoto=async({file})=>{
+   active++;peak=Math.max(peak,active);await new Promise(resolve=>setTimeout(resolve,5));active--;return file.name;
+ };
+ await controls.upload.onclick();
+ assert.equal(peak,4);assert.ok(f.context.queue.every(item=>item.state==='Uploaded'));
 });
