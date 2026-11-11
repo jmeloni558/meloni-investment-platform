@@ -63,3 +63,19 @@ body.pt-orders-open #fieldPhotoPane{display:none}
 
 #status:empty{display:none}
 .list-tabs, #fieldDashboardHost #ptOrders > nav { justify-content: center; }
+
+html:not(.photos-embedded) .list-tabs {
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+html:not(.photos-embedded) .list-tabs button {
+  white-space: nowrap;
+  padding: 6px clamp(3px, 1vw, 10px);
+  font-size: clamp(12px, 3.3vw, 15px);
+  min-height: 44px;
+}
+@media (max-width: 380px) {
+  html:not(.photos-embedded) main { padding-inline: 8px; }
+  html:not(.photos-embedded) #addressList { padding-inline: 10px; }
+}

@@ -794,6 +794,6 @@ if(window===parent){
       if(previous)history.go(previous.index-target.index);
     }finally{restoring=false;}
   });
-  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=maps-address-retry-2';document.head.append(sheet);
+  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=center-title-1';document.head.append(sheet);
   import('./order-dashboard.js?v=android-directions-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }
