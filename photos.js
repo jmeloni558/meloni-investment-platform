@@ -427,7 +427,7 @@ function formatStorage(bytes){
 }
 async function refreshStorage(){
   const version=epoch,request=++storageRequest;
-  const label=$('storageUsage'),meter=$('storageMeter');
+  const label=$('storageUsage');
   try{
     const {data,error}=await client.from('photo_storage_usage').select('photo_bytes,project_bytes,included_bytes').single();
     if(version!==epoch||request!==storageRequest)return;
@@ -435,11 +435,11 @@ async function refreshStorage(){
     const {photo_bytes,project_bytes,included_bytes}=data;
     if(![photo_bytes,project_bytes,included_bytes].every(Number.isSafeInteger)||included_bytes<=0)throw Error('Invalid storage totals');
     const left=Math.max(0,included_bytes-project_bytes);
-    label.textContent=formatStorage(photo_bytes)+' in your photos · '+formatStorage(left)+' left of '+formatStorage(included_bytes);
-    meter.max=included_bytes;meter.value=Math.min(project_bytes,included_bytes);meter.hidden=false;
+    label.textContent='Photo storage: '+formatStorage(photo_bytes)+' used · '+formatStorage(left)+' left';
+
   }catch{
     if(version!==epoch||request!==storageRequest)return;
-    label.textContent='Storage usage is unavailable.';meter.hidden=true;
+    label.textContent='Photo storage is unavailable.';
   }
 }
 function showList(mode=listMode){
@@ -636,7 +636,7 @@ $('install').onclick=async()=>{
 };
 async function sessionChanged(session){
   const next=session?.user;if(next?.id===user?.id&&user)return;
-  $('storageUsage').textContent='Checking storage…';$('storageMeter').hidden=true;
+  $('storageUsage').textContent='Checking storage…';
   dirtyDescriptions.clear();batchController?.abort();clearCaptions();clearTransferCache();cameraTimes.clear();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
   $('files').value='';$('photos').replaceChildren();$('properties').replaceChildren();$('queue').replaceChildren();$('account').textContent='';$('library').hidden=true;$('workspace').hidden=true;$('addressList').hidden=false;$('signedOut').hidden=!!user;
   if(!user){initPhotoCaptcha();status('Sign in to upload and download your property photos.');return;}

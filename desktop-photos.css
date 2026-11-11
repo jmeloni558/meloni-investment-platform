@@ -8,3 +8,5 @@ body.pt-photos-open #ptOrders > :not(header):not(nav){display:none!important}
 body.pt-photos-open #ptOrders #ptPhotoLibrary{background:#185e54;color:white}
 body.pt-photos-open #ptOrders nav [aria-pressed=true]{background:white;color:#144c45}
 body.pt-photos-open main.shell > #ptDesktopPhotos{display:block!important;border-radius:0 0 16px 16px}
+
+#ptOrders nav{justify-content:center}
