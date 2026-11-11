@@ -6,7 +6,11 @@
 
 @media(max-width:760px),(display-mode:standalone){.desktop-download{display:none!important}}
 
-header{align-items:center}#updateApp{background:transparent;color:white;border-color:#8eb5b1;white-space:nowrap;font-size:13px;min-height:40px;padding:8px 12px}
+header{align-items:center}
+body>header{justify-content:center;text-align:center}
+body>header .brand{font-size:1.5rem}
+#updateApp{background:white;color:#145d54;white-space:nowrap}
+.photos-embedded .field-controls{display:none}
 
 .delete-photo{background:white;color:#9c3025;border-color:#c88178}
 
@@ -24,7 +28,8 @@ header{align-items:center}#updateApp{background:transparent;color:white;border-c
 .storage-summary { padding: 12px 16px; margin-top: 18px; background: #f0f5f3; border-radius: 9px; }
 .address-photo-count { color: #80ff84; background: #164830; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
 
-#fieldViews{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.field-controls{display:flex;align-items:center;justify-content:center;gap:6px;margin:0 0 12px}
+#fieldViews{display:flex;align-items:center;gap:6px}
 #fieldViews button[aria-pressed=false]{background:white;color:#145d54}
 body.pt-orders-open #fieldPhotoPane{display:none}
 #fieldDashboardHost #ptOrders{margin:0}
@@ -40,8 +45,8 @@ body.pt-orders-open #fieldPhotoPane{display:none}
 @media(max-width:760px){
   body.pt-orders-open>header{padding:6px 12px}
   body.pt-orders-open main{margin:8px auto;padding:0 8px}
-  body.pt-orders-open #fieldViews{gap:5px;margin-bottom:6px}
-  body.pt-orders-open #fieldViews button{min-height:34px;padding:5px 12px}
+  .field-controls{margin-bottom:6px}
+  .field-controls button{min-height:38px;padding:5px 9px;font-size:.9rem}
   #fieldDashboardHost #ptOrders{padding:10px}
   #fieldDashboardHost #ptOrders>header{margin:0 0 6px}
   #fieldDashboardHost #ptOrders>header small{display:none}
