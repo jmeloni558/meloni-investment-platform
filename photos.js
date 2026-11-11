@@ -448,7 +448,7 @@ function showList(mode=listMode){
   refreshStorage();window.PropertyThesisFieldApp?.recordView();
   $('listTitle').textContent=stewartMode&&mode==='completed'?'Stewart photo workflow — choose a completed property':listTitles[mode];
   $('activeTab').setAttribute('aria-pressed',String(mode==='active'));$('completedTab').setAttribute('aria-pressed',String(mode==='completed'));$('archiveTab').setAttribute('aria-pressed',String(mode==='archive'));
-  renderProperties();$('listTitle').focus({preventScroll:embedded});status(mode==='active'?'Choose a property or enter an address.':'');
+  renderProperties();$('listTitle').focus({preventScroll:embedded});status('');
 }
 $('backToList').onclick=()=>dirtyDescriptions.size?run(()=>showList()):showList();
 $('activeTab').onclick=()=>showList('active');
