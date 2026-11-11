@@ -5,7 +5,17 @@ function valid(f){if(!f||!['subject','comparables'].includes(f.section)||typeof 
 function validate(p){if(p?.format!=='propertythesis-rrr'||p.version!==1||p.client!=='rrr'||!Array.isArray(p.fields)||p.fields.length>400||!p.fields.every(valid)||new Set(p.fields.map(f=>f.section+f.id)).size!==p.fields.length)throw Error('Unsupported or invalid RRR transfer file.');if(!p.subject||['address','city','state','zip'].some(k=>typeof p.subject[k]!=='string'||!p.subject[k].trim()))throw Error('Missing subject identity.');}
 const norm=s=>String(s||'').toUpperCase().replace(/\bSTREET\b/g,'ST').replace(/\bDRIVE\b/g,'DR').replace(/\bAVENUE\b/g,'AVE').replace(/\bROAD\b/g,'RD').replace(/[^A-Z0-9]/g,'');
 function identity(doc){return {address:doc.getElementById('rrrSubject_txtAddress')?.value,city:doc.getElementById('rrrSubject_txtCity')?.value,state:doc.getElementById('rrrSubject_ddlState')?.value,zip:doc.getElementById('rrrSubject_txtZip')?.value};}
-function matches(a,b){return ['address','city','state','zip'].every(k=>norm(a?.[k])&&norm(a[k])===norm(b?.[k]));}
+function identityPart(subject,key){
+ const value=subject?.[key];
+ if(key==='city' && /^(?:st[.]?|saint)\s+petersburg$/i.test(String(value||'').trim()))return 'STPETERSBURG';
+ return norm(value);
+}
+function matches(a,b){
+ return ['address','city','state','zip'].every(key=>{
+  const value=identityPart(a,key);
+  return Boolean(value)&&value===identityPart(b,key);
+ });
+}
 const current=e=>e.type==='radio'||e.type==='checkbox'?String(e.checked):String(e.value||'');
 function equivalent(e,value){
  const actual=current(e);
