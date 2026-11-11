@@ -53,6 +53,7 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  for(const id of ['completedTab','archiveTab','activeTab']){
    await mobile.locator('#'+id).press('Enter');
    assert.equal(await mobile.locator('#'+id).getAttribute('aria-pressed'),'true');
+   assert.equal(await mobile.locator('#storageSummary').isHidden(),true);
    assert.equal(await mobile.locator('#addressList h2:visible').count(),0);
  }
  assert.deepEqual(errors,[]);console.log('PASS: desktop /photos route, site wrapper, exact menu order, shared client, separate explicit creation, retained pending selections, navigation cancellation, stable observers, signout clearing and isolated phone route');

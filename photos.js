@@ -5,6 +5,7 @@ const $=id=>document.getElementById(id);
 let embedded=false;try{embedded=parent!==window&&parent.location.origin===location.origin&&!!parent.PropertyThesisDesktopPhotos;}catch(_){}
 if(embedded){
   document.documentElement.classList.add('photos-embedded');
+  $('storageSummary').hidden=false;
   const frame=window.frameElement;
   const resize=()=>{frame.style.height=Math.ceil(document.body.getBoundingClientRect().height)+'px';};
   new ResizeObserver(resize).observe(document.body);
@@ -117,7 +118,7 @@ function loadPreview(card,caption,img,photo,version){
           });
           caption.after(add);
         }
-      }catch(_){if(version===epoch&&card.isConnected&&!captureDates.get(path))caption.textContent='Taken: Could not read date â€” refresh to retry';}
+      }catch(_){if(version===epoch&&card.isConnected&&!captureDates.get(path))caption.textContent='Taken: Could not read date — refresh to retry';}
     });
     drainCaptions();
   });
@@ -157,7 +158,7 @@ function renderProperties(){
   for(const p of properties.filter(p=>propertyList(p)===listMode&&p.address.toLowerCase().includes(search))){
     const address=node('button',p.address);
     if(p.photo_count>0){
-      address.append(' Â· ',node('span',photoLabel(p.photo_count),'address-photo-count'));
+      address.append(' · ',node('span',photoLabel(p.photo_count),'address-photo-count'));
     }
     address.disabled=busy;
     if(p.id===selected?.id)address.setAttribute('aria-current','true');
@@ -174,10 +175,10 @@ function renderProperties(){
   if(!list.children.length)list.append(node('p',empty[listMode],'hint'));
 }
 function setItemState(item,state){
-  item.state=state;if(item.row)item.row.textContent=item.file.name+' â€” '+state;
+  item.state=state;if(item.row)item.row.textContent=item.file.name+' — '+state;
 }
 function renderQueue(){
-  $('queue').replaceChildren(...queue.map(x=>(x.row=node('div',x.file.name+' â€” '+x.state,'queue-row'))));
+  $('queue').replaceChildren(...queue.map(x=>(x.row=node('div',x.file.name+' — '+x.state,'queue-row'))));
   $('upload').textContent=queue.some(x=>x.state.startsWith('Failed'))?'Retry remaining photos':'Upload photos';
   $('upload').disabled=busy||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);
 }
@@ -199,7 +200,7 @@ function descriptionEditor(photo,property,version){
         check(version);
         const value=input.value.trim();
         if(value!==photo.description){
-          note.textContent='Savingâ€¦';
+          note.textContent='Saving…';
           const {error}=await client.rpc('set_photo_description',{p_property:property.id,p_object:photo.id,p_description:value});
           check(version);if(error)throw error;
           photo.description=value;
@@ -249,20 +250,20 @@ async function openProperty(p){
 }
 async function refreshPhotos(limitSignal){
   const version=epoch,p=selected;if(!p)return;const prefix=user.id+'/'+p.id;
-  status('Loading photosâ€¦');const [rows,dateResult,labels]=await Promise.all([
+  status('Loading photos…');const [rows,dateResult,labels]=await Promise.all([
     listPhotos(bucket,prefix),
     client.rpc('photo_dates_for_property',{p_property:p.id}).then(result=>result.data,()=>null),
     client.rpc('get_photo_descriptions',{p_property:p.id})
   ]);limitSignal?.throwIfAborted();check(version);if(p.id!==selected?.id)return;
   if(labels.error)throw Error('Could not load photo descriptions. Refresh photos to retry.');
-  status('Arranging photos in capture orderâ€¦');
+  status('Arranging photos in capture order…');
   for(const photo of rows){
     photo.description=labels.data?.[photo.id]||'';
     const stored=dateResult?.[photo.id];
     if(stored){try{captureDates.set(prefix+'/'+photo.name,dateParts(stored).label);photo.takenOn=stored;}catch{/* Read the original if metadata is invalid. */}}
   }
   if(stewartMode && propertyList(p)==='completed' && !p.deleting_at){
-    status('Checking the OneDrive property folderâ€¦');
+    status('Checking the OneDrive property folder…');
     const zip=await localStewartExport(p,rows);
     check(version);if(p.id!==selected?.id)return;
     if(zip)for(const photo of rows)photo.localEntry=zip.file(photo.name);
@@ -295,14 +296,14 @@ async function refreshPhotos(limitSignal){
     const path=prefix+'/'+photo.name;
     if(!captureDates.has(path)&&photo.cameraTime)captureDates.set(path,dateParts(photo.cameraTime.slice(0,10)).label);
     const known=captureDates.get(path);
-    const caption=node('div',null,'photo-caption'),date=node('p',known?'Taken: '+known:'Taken: Reading dateâ€¦','taken-date');caption.append(node('p',originalName(photo.name)),date);card.append(caption);
+    const caption=node('div',null,'photo-caption'),date=node('p',known?'Taken: '+known:'Taken: Reading date…','taken-date');caption.append(node('p',originalName(photo.name)),date);card.append(caption);
     if(p.completed_at&&!p.deleting_at)caption.append(descriptionEditor(photo,p,version));
     else if(photo.description)caption.append(node('p',photo.description));
     const remove=node('button','Delete photo','delete-photo');
     remove.setAttribute('aria-label','Delete '+originalName(photo.name));
     remove.onclick=()=>run(async()=>{
       if(!confirm('Delete '+originalName(photo.name)+' from '+p.address+'? This permanently removes the uploaded copy from your photo library. The original on your phone is not changed.'))return;
-      check(version);status('Deleting photoâ€¦');
+      check(version);status('Deleting photo…');
       const {data,error}=await bucket.remove([prefix+'/'+photo.name]);check(version);
       if(error)throw Error('Photo could not be deleted: '+error.message);
       if(!data?.length)throw Error('Deletion could not be confirmed. Refresh photos and try again.');
@@ -344,7 +345,7 @@ $('deleteSelectedPhotos').onclick=()=>run(async()=>{
   // Bounded requests accommodate large selections without imposing a selection limit.
   for(let offset=0;offset<names.length;offset+=100){
     check(version);const batch=names.slice(offset,offset+100);
-    status('Deleting selected photosâ€¦ '+offset+' of '+names.length+' processed.');
+    status('Deleting selected photos… '+offset+' of '+names.length+' processed.');
     let result;
     try{result=await bucket.remove(batch.map(name=>prefix+name));}catch(error){check(version);failed+=batch.length;continue;}
     check(version);
@@ -358,7 +359,7 @@ $('deleteSelectedPhotos').onclick=()=>run(async()=>{
 $('deleteProperty').onclick=()=>run(async()=>{
  const p=selected;if(!p)return;
  if(!confirm('Permanently delete '+p.address+' and ALL its uploaded photos from the photo app? This cannot be undone. Photos on your phone or PC and your saved BPO are not deleted.'))return;
- const version=epoch,prefix=user.id+'/'+p.id;status('Starting property deletionâ€¦');
+ const version=epoch,prefix=user.id+'/'+p.id;status('Starting property deletion…');
  const started=await client.rpc('delete_photo_property',{p_id:p.id,p_finish:false});check(version);
  if(started.error||started.data!==true)throw Error(started.error?.message||'Could not start property deletion. No photos were removed.');
  p.deleting_at=new Date().toISOString();queue=[];$('files').value='';renderQueue();$('uploadControls').hidden=true;$('complete').hidden=true;$('reopen').hidden=true;
@@ -366,7 +367,7 @@ $('deleteProperty').onclick=()=>run(async()=>{
   const remaining=await listPhotos(bucket,prefix);check(version);
   for(let offset=0;offset<remaining.length;offset+=100){
    const batch=remaining.slice(offset,offset+100),paths=batch.map(photo=>prefix+'/'+photo.name);
-   status('Deleting property photosâ€¦ '+offset+' of '+remaining.length+' processed.');
+   status('Deleting property photos… '+offset+' of '+remaining.length+' processed.');
    const {data,error}=await bucket.remove(paths);check(version);if(error)throw error;
    const confirmed=new Set((data||[]).map(item=>item.name));
    const removed=batch.filter(photo=>confirmed.has(prefix+'/'+photo.name)||confirmed.has(photo.name)).map(photo=>photo.name);removeConfirmedPhotos(removed);
@@ -434,7 +435,7 @@ async function refreshStorage(){
     const {photo_bytes,project_bytes,included_bytes}=data;
     if(![photo_bytes,project_bytes,included_bytes].every(Number.isSafeInteger)||included_bytes<=0)throw Error('Invalid storage totals');
     const left=Math.max(0,included_bytes-project_bytes);
-    label.textContent=formatStorage(photo_bytes)+' in your photos Â· '+formatStorage(left)+' left of '+formatStorage(included_bytes);
+    label.textContent=formatStorage(photo_bytes)+' in your photos · '+formatStorage(left)+' left of '+formatStorage(included_bytes);
     meter.max=included_bytes;meter.value=Math.min(project_bytes,included_bytes);meter.hidden=false;
   }catch{
     if(version!==epoch||request!==storageRequest)return;
@@ -445,7 +446,8 @@ function showList(mode=listMode){
   if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Return to addresses without uploading the selected photos?'))return;
   clearCaptions();clearTransferCache();selectedPhotos.clear();listMode=mode;selected=null;photos=[];queue=[];$('files').value='';renderQueue();$('photos').replaceChildren();
   $('workspace').hidden=true;$('addressList').hidden=false;$('newProperty').hidden=mode!=='active';
-  refreshStorage();window.PropertyThesisFieldApp?.recordView();
+  if(embedded)refreshStorage();
+  window.PropertyThesisFieldApp?.recordView();
   $('activeTab').setAttribute('aria-pressed',String(mode==='active'));$('completedTab').setAttribute('aria-pressed',String(mode==='completed'));$('archiveTab').setAttribute('aria-pressed',String(mode==='archive'));
   renderProperties();$(mode+'Tab').focus({preventScroll:embedded});status(stewartMode && mode==='completed'?'Choose a completed property for the Stewart photo workflow.':'');
 }
@@ -484,7 +486,7 @@ $('upload').onclick=()=>run(async()=>{
     while(next<waiting.length&&!controller.signal.aborted&&!interruption){
       check(version);
       const item=waiting[next++];
-      setItemState(item,'Uploadingâ€¦');
+      setItemState(item,'Uploading…');
       try{
         item.name=await sendQueuedPhoto({file:item.file,prefix,auth:client.auth,
           takenDate:async file=>{
@@ -492,7 +494,7 @@ $('upload').onclick=()=>run(async()=>{
             return item.cameraTime?.slice(0,10)||null;
           },
           createClient:createUploadClient,knownNames:confirmed,signal:controller.signal,
-          onRetry:(number,kind)=>setItemState(item,(kind==='auth'?'Renewing sign-in':'Connection interrupted')+' Â· retry '+number+' of 2')
+          onRetry:(number,kind)=>setItemState(item,(kind==='auth'?'Renewing sign-in':'Connection interrupted')+' · retry '+number+' of 2')
         });
         check(version);if(item.cameraTime!==undefined)cameraTimes.set(prefix+'/'+item.name,item.cameraTime);
         confirmed.add(item.name);setItemState(item,'Uploaded');uploaded++;
@@ -587,7 +589,7 @@ async function downloadPhotos(items,date=''){
  if(!items.length)throw Error('Select photos to download.');
  if(!window.JSZip)throw Error('The ZIP tool did not load. Refresh the page and try again.');
  const version=epoch,name=safeName(selected.address.split(',')[0].slice(0,18))+'-ready',limit=128*1024*1024;let zip=new window.JSZip(),bytes=0,part=1,done=0;
- status('Sorting photos by the time they were takenâ€¦');
+ status('Sorting photos by the time they were taken…');
  const {ordered,originals}=await orderForDownload(items,version,limit);
  const digits=Math.max(3,String(ordered.length).length);
  const flush=async(final)=>{const blob=await zip.generateAsync({type:'blob',compression:'STORE'});check(version);save(blob,name+(date?'-dated-'+date:'')+(part>1||!final?'-part-'+part:'')+'.zip');part++;zip=new window.JSZip();bytes=0;};
@@ -597,7 +599,7 @@ async function downloadPhotos(items,date=''){
   const blobs=await Promise.all(batch.map(photo=>originals.get(photo.name)||getPhoto(photo,version)));
   check(version);
   for(const [index,photo] of batch.entries()){
-    check(version);status('Preparing '+(date?'dated ':'')+'photo '+(done+1)+' of '+items.length+'â€¦');
+    check(version);status('Preparing '+(date?'dated ':'')+'photo '+(done+1)+' of '+items.length+'…');
     let blob=blobs[index];originals.delete(photo.name);
     const original=originalName(photo.name),dot=original.lastIndexOf('.');
     const stem=safeName(original.slice(0,dot)).slice(0,18);
@@ -634,7 +636,7 @@ $('install').onclick=async()=>{
 };
 async function sessionChanged(session){
   const next=session?.user;if(next?.id===user?.id&&user)return;
-  $('storageUsage').textContent='Checking storageâ€¦';$('storageMeter').hidden=true;
+  $('storageUsage').textContent='Checking storage…';$('storageMeter').hidden=true;
   dirtyDescriptions.clear();batchController?.abort();clearCaptions();clearTransferCache();cameraTimes.clear();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
   $('files').value='';$('photos').replaceChildren();$('properties').replaceChildren();$('queue').replaceChildren();$('account').textContent='';$('library').hidden=true;$('workspace').hidden=true;$('addressList').hidden=false;$('signedOut').hidden=!!user;
   if(!user){initPhotoCaptcha();status('Sign in to upload and download your property photos.');return;}
@@ -661,7 +663,7 @@ async function openRequestedAddress(){
     if(matches.length===1)property=matches[0];
   }
   if(stewartMode&&(!property||propertyList(property)!=='completed'||property.deleting_at)){
-   $('stewartFolder').hidden=!launchTransfer;status(launchTransfer?'No unique completed set matched. Select this propertyâ€™s PT Photos folder below.':'Choose the matching address from Completed photos for the Stewart workflow.');
+   $('stewartFolder').hidden=!launchTransfer;status(launchTransfer?'No unique completed set matched. Select this property’s PT Photos folder below.':'Choose the matching address from Completed photos for the Stewart workflow.');
   }else if(!property){
    $('address').value=address;status('No photo address exists for this property. Click Create only when you are ready to add photos.');$('address').focus();
   }else{check(version);listMode=propertyList(property);await openProperty(property);if(launchTransfer)await transferSet();}
@@ -678,7 +680,7 @@ function initPhotoCaptcha(){
 $('photoSignIn').onsubmit=async event=>{
   event.preventDefault();if(!client)return;
   if(!captchaToken){initPhotoCaptcha();$('authStatus').textContent='Complete the security verification before signing in.';return;}
-  $('signin').disabled=true;$('authStatus').textContent='Signing inâ€¦';
+  $('signin').disabled=true;$('authStatus').textContent='Signing in…';
   try{const {data,error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value,options:{captchaToken}});if(error)throw error;$('password').value='';$('authStatus').textContent='';await sessionChanged(data.session);}
   catch(error){$('authStatus').textContent=error.message||'Unable to sign in. Please try again.';}
   finally{captchaToken='';if(captchaWidget!==null)window.turnstile.reset(captchaWidget);$('signin').disabled=false;}
@@ -690,7 +692,7 @@ else {client.auth.onAuthStateChange((_event,session)=>setTimeout(()=>sessionChan
 $('updateApp').onclick=async()=>{
   if(busy)return;
   if(queue.some(x=>x.state!=='Uploaded'&&!x.invalid)&&!confirm('Updating will clear photos you selected but have not uploaded. Your uploaded photos are safe. Update now?'))return;
-  setBusy(true);status('Checking for the latest appâ€¦');
+  setBusy(true);status('Checking for the latest app…');
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
   try{
     if(dirtyDescriptions.size)await flushDescriptions();
@@ -699,7 +701,7 @@ $('updateApp').onclick=async()=>{
     if(!response.ok)throw Error('Update unavailable. Please try again shortly.');
     const html=await response.text();
     if(!html.includes('id="updateApp"')||!html.includes('photos.js'))throw Error('Update unavailable. Please try again shortly.');
-    queue=[];setBusy(false);status('Opening the latest appâ€¦');
+    queue=[];setBusy(false);status('Opening the latest app…');
     location.replace(url.href);
   }catch(error){
     status(error.name==='AbortError'?'Update timed out. Your selected photos are still here. Try again when connected.':'Could not update the app. Your selected photos are still here. Check your connection and try again.',true);
