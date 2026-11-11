@@ -1,4 +1,4 @@
-import {BUCKET,objectName,uploadPhoto} from './photo-library.mjs?v=3';
+import {BUCKET,objectName,uploadPhoto} from './photo-library.mjs?v=4';
 
 // Cover Android file-provider reads, token lookups and network requests with one deadline.
 export async function bounded(task, parent, ms){
@@ -38,12 +38,16 @@ export async function sendQueuedPhoto({file,prefix,takenDate,auth,createClient,k
     return result.data.session;
   }
   // Snapshot one original so Android only has to read the picker file once.
-  const local=await bounded(async()=>new File([await file.arrayBuffer()],file.name,{type:file.type,lastModified:file.lastModified}),signal,60000);
+  const {local,name}=await bounded(async requestSignal=>{
+    const bytes=await file.arrayBuffer();
+    requestSignal.throwIfAborted();
+    const local=new File([bytes],file.name,{type:file.type,lastModified:file.lastModified});
+    return {local,name:await objectName(file,bytes)};
+  },signal,90000);
   const takenOn=await bounded(()=>takenDate(local,true).catch(()=>null),signal,15000).catch(error=>{
     if(error.name==='TimeoutError')return null;
     throw error;
   });
-  const name=await bounded(()=>objectName(local),signal,30000);
   let force=false;
   for(let attempt=0;;attempt++){
     try{
