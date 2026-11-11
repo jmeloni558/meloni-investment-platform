@@ -137,3 +137,6 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-has-range>label{min-width:0;margin:0}
 #ptOrders .od-has-range>label input{min-width:0;height:2.5rem;font-size:14px;padding:7px 4px}
 #ptOrders .od-has-range #od-showingtime-flags{grid-column:1/-1}
+
+#ptOrders article .od-address-issue{flex:none;background:transparent;color:#ab1826;text-decoration:underline;font-weight:700;padding:5px 8px}
+#ptOrders .od-field-order .od-address-issue{grid-column:2/-1;justify-self:start;padding-left:0}
