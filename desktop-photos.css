@@ -1,4 +1,10 @@
-body.pt-photos-open main.shell > :not(#appNavShell):not(#ptDesktopPhotos):not(.footer){display:none!important}
+body.pt-photos-open main.shell > :not(#appNavShell):not(#ptOrders):not(#ptDesktopPhotos):not(.footer){display:none!important}
 body.pt-photos-open #ptDesktopPhotos{display:block!important}
 #ptDesktopPhotos{display:none;background:#f3f6f5;border-radius:14px;overflow:hidden;margin-bottom:24px}
 #ptDesktopPhotos iframe{width:100%;height:1px;border:0;display:block}
+
+body.pt-photos-open main.shell > #ptOrders{display:block!important;margin-bottom:0;border-radius:16px 16px 0 0}
+body.pt-photos-open #ptOrders > :not(header):not(nav){display:none!important}
+body.pt-photos-open #ptOrders #ptPhotoLibrary{background:#185e54;color:white}
+body.pt-photos-open #ptOrders nav [aria-pressed=true]{background:white;color:#144c45}
+body.pt-photos-open main.shell > #ptDesktopPhotos{display:block!important;border-radius:0 0 16px 16px}
