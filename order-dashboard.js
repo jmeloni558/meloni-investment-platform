@@ -78,6 +78,13 @@
     if(error)throw error;
     return data;
   }
+  async function linkedHistoryFolders(batch){
+    const ids=batch.filter(order=>order.todo_title).map(order=>order.id);
+    if(fieldApp || !ids.length)return new Set();
+    const {data,error}=await db.rpc('linked_history_folders',{order_ids:ids});
+    if(error)throw error;
+    return new Set(data.map(row=>row.order_id));
+  }
   async function orderPhotoSets(batch){
     const orderIds=batch.filter(order=>order.photo_id).map(order=>order.id);
     if(!orderIds.length)return new Map();
@@ -175,10 +182,10 @@
       ]);
       if(held?.error)throw held.error;
       if(completed.error)throw completed.error;
-      const [result,lists,photoSets]=await Promise.all([
+      const [result,lists,photoSets,historyFolders]=await Promise.all([
         db.from('order_clients').select('name,listed,monthly_bpo').order('name'),
         db.from('order_lists').select('name').order('name'),
-        orderPhotoSets(batch)
+        orderPhotoSets(batch),linkedHistoryFolders(batch)
       ]);
       if(lists.error)throw lists.error;
       if(result.error)throw result.error;
@@ -207,6 +214,7 @@
       field('next').hidden=batch.length<=pageSize;
       orders=batch.slice(0,pageSize);
       for(const order of orders){
+        order.linkedHistoryFolder=historyFolders.has(order.id);
         const set=photoSets.get(order.id);
         order.photosFinished=Boolean(set?.finished);
         order.hasActivePhotoSet=Boolean(account===membership?.photo_owner && set?.active);
@@ -626,6 +634,7 @@
     for(const id of ['kind','client','due'])field(id).required=!task && !editing?.todo_title;
   }
   function hasOrderFolder(order){
+    if(order?.todo_title)return order.linkedHistoryFolder;
     return order?.id && !order.list_name && !order.former_list_task &&
       ['Int BPO','Ext BPO','Desktop BPO','Int PCR','Ext PCR','PDCR'].includes(order.kind);
   }
