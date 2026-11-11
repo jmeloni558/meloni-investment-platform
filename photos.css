@@ -62,4 +62,4 @@ body.pt-orders-open #fieldPhotoPane{display:none}
 #fieldDashboardHost #od-address{field-sizing:content;min-height:2.4em;resize:none;line-height:1.3}
 
 #status:empty{display:none}
-.photos-embedded .list-tabs { justify-content: center; }
+.list-tabs, #fieldDashboardHost #ptOrders > nav { justify-content: center; }
