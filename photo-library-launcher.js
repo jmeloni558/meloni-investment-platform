@@ -2,14 +2,14 @@
 (()=>{
  let allowed=false,account=null,requested=false;
  const desktop=()=>matchMedia('(min-width: 761px)').matches&&!matchMedia('(display-mode: standalone)').matches;
- function close(){document.body.classList.remove('pt-photos-open');const q=new URL(location.href);q.searchParams.delete('photos');history.replaceState(history.state,'',q);window.AppNavigationToolbar?.refresh?.();}
+ function close(){document.body.classList.remove('pt-photos-open');document.getElementById('ptPhotoLibrary')?.removeAttribute('aria-current');const q=new URL(location.href);q.searchParams.delete('photos');history.replaceState(history.state,'',q);window.AppNavigationToolbar?.refresh?.();}
  function open(address='',stewart=false,set=''){
   if(!allowed||!desktop())return false;
   let panel=document.getElementById('ptDesktopPhotos'),frame=panel?.querySelector('iframe');
   if(frame&&(set&&frame.dataset.set!==set||address&&frame.dataset.address!==address)&&frame.contentWindow.PropertyThesisPhotos?.canNavigate?.()===false)return true;
   if(!panel){panel=document.createElement('section');panel.id='ptDesktopPhotos';panel.setAttribute('aria-label','Property photos');frame=document.createElement('iframe');frame.title='PropertyThesis Photos';panel.append(frame);const shell=document.querySelector('main.shell')||document.querySelector('main');if(!shell)return false;shell.insertBefore(panel,shell.querySelector(':scope > .footer'));}
   if(!frame.getAttribute('src')||((set&&frame.dataset.set!==set||address&&frame.dataset.address!==address))){frame.dataset.set=set;frame.dataset.address=address;frame.src='photos.html?embedded=1&cb='+Date.now()+(set?'&set='+encodeURIComponent(set):'')+(stewart?'&stewart=1':'')+(address?'&address='+encodeURIComponent(address):'');}
-  document.body.classList.add('pt-photos-open');const q=new URL(location.href);q.searchParams.set('photos','1');q.searchParams.delete('address');history.replaceState(history.state,'',q);window.AppNavigationToolbar?.refresh?.();panel.scrollIntoView({block:'start'});return true;
+  document.body.classList.add('pt-photos-open');document.getElementById('ptPhotoLibrary')?.setAttribute('aria-current','page');const q=new URL(location.href);q.searchParams.set('photos','1');q.searchParams.delete('address');history.replaceState(history.state,'',q);window.AppNavigationToolbar?.refresh?.();(document.getElementById('ptOrders')||panel).scrollIntoView({block:'start'});return true;
  }
  window.PropertyThesisDesktopPhotos={open,close};
 

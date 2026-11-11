@@ -1055,6 +1055,18 @@
         removeClient.disabled=!clientChoice.value;
       }
     };
+    if(!fieldApp){
+      const returnToOrders=event=>{
+        if(!document.body.classList.contains('pt-photos-open'))return;
+        const control=event.target.closest('nav button,nav select');
+        if(!control || (control.tagName==='SELECT' && event.type!=='change'))return;
+        window.PropertyThesisDesktopPhotos.close();
+        document.body.classList.add('pt-orders-open');
+        window.AppNavigationToolbar?.refresh();
+      };
+      panel.addEventListener('click',returnToOrders,true);
+      panel.addEventListener('change',returnToOrders,true);
+    }
     if(!fieldApp)panel.addEventListener('click',event=>{
       if(event.target.closest('#ptPhotoLibrary') && !event.ctrlKey && !event.metaKey && !event.shiftKey){
         if(!field('details').hidden)closeDetails();
@@ -1090,6 +1102,7 @@
       };
     }
     if(landing){landing=false;open();}
+    else if(!fieldApp && new URLSearchParams(location.search).get('photos')==='1')load();
   }
   async function auth(session){
     const id=session?.user?.id||null;if(id===account)return;
