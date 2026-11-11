@@ -811,6 +811,16 @@
       <dialog id="od-phone-dialog" aria-labelledby="od-phone-number" closedby="any">
       <h2 id="od-phone-number"></h2><a id="od-call-number">Call</a> <a id="od-text-number">Text</a>
       <button id="od-phone-cancel" type="button">Cancel</button></dialog>`;
+    field('loe-handled').onclick=async()=>{
+      if(!editing?.missing_loe)return;
+      try{
+        if(!await flushExisting())return;
+        const saved=await update(editing,{missing_loe:false});
+        if(editing?.id===saved.id){editing=saved;field('loe-handled').hidden=true;}
+        await load();
+      }
+      catch(e){field('error').textContent=e.message;}
+    };
     field('attempt-cancel').onclick=()=>field('attempt-dialog').close();
     for(const id of ['call-number','text-number','phone-cancel'])field(id).onclick=()=>field('phone-dialog').close();
     if(fieldApp){
@@ -1099,16 +1109,6 @@
     document.addEventListener('visibilitychange',()=>{if(document.hidden && editing && dirty)flushExisting();});
     window.addEventListener('online',()=>{if(editing && dirty)flushExisting();});
     document.addEventListener('click',e=>{const target=e.target.closest('#appNavShell button,#appNavShell a,#ptBpoMenu button');if(target && target!==menu && target.target!=='_blank'){landing=false;hide();}},true);
-    field('loe-handled').onclick=async()=>{
-      if(!editing?.missing_loe)return;
-      try{
-        if(!await flushExisting())return;
-        const saved=await update(editing,{missing_loe:false});
-        if(editing?.id===saved.id){editing=saved;field('loe-handled').hidden=true;}
-        await load();
-      }
-      catch(e){field('error').textContent=e.message;}
-    };
     function refreshVisibleOrders(){
       if(!document.hidden && document.body.classList.contains('pt-orders-open') && field('details').hidden &&
          field('list-form').hidden && !field('open').matches(':focus'))load();
