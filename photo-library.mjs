@@ -12,8 +12,8 @@ export function validateFile(file) {
   if(!file.size || file.size>MAX_BYTES)throw Error('Each photo must be between 1 byte and 25 MB.');
   return type;
 }
-export async function objectName(file) {
-  const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await file.arrayBuffer())),b=>b.toString(16).padStart(2,'0')).join('');
+export async function objectName(file,bytes) {
+  const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes??await file.arrayBuffer())),b=>b.toString(16).padStart(2,'0')).join('');
   const dot=file.name.lastIndexOf('.'),stem=safeName(file.name.slice(0,dot)).slice(0,110).replace(/[^a-zA-Z0-9._-]/g,'_');
   return hash+'--'+stem+'.'+file.name.slice(dot+1).toLowerCase();
 }

@@ -1,6 +1,6 @@
 import {cameraTimestamp,stampPhoto,dateParts,uprightJpeg} from './photo-dates.mjs?v=5';
-import {BUCKET,safeName,validateFile,originalName,listPhotos} from './photo-library.mjs?v=3';
-import {bounded,sendQueuedPhoto,uploadFailure} from './photo-upload-queue.mjs?v=1';
+import {BUCKET,safeName,validateFile,originalName,listPhotos} from './photo-library.mjs?v=4';
+import {bounded,sendQueuedPhoto,uploadFailure} from './photo-upload-queue.mjs?v=2';
 const $=id=>document.getElementById(id);
 let embedded=false;try{embedded=parent!==window&&parent.location.origin===location.origin&&!!parent.PropertyThesisDesktopPhotos;}catch(_){}
 if(embedded){
@@ -509,7 +509,7 @@ $('upload').onclick=()=>run(async()=>{
     }
   }
   try{
-    const workers=matchMedia('(pointer: coarse), (max-width: 760px)').matches?1:3;
+    const workers=matchMedia('(pointer: coarse), (max-width: 760px)').matches?2:3;
     await Promise.all(Array.from({length:Math.min(workers,waiting.length)},worker));
     check(version);
     const paused=controller.signal.aborted||interruption;

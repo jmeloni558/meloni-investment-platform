@@ -28,3 +28,31 @@ test('preview and ZIP reads share one request; just-uploaded files are read loca
  assert.equal(await ctx.getPhoto(photo,1),remote);assert.equal(calls,1);
  ctx.clearTransferCache();ctx.queue=[{name:photo.name,state:'Uploaded',file:local}];assert.equal(await ctx.getPhoto(photo,1),local);assert.equal(calls,1);
 });
+
+test('phone uploads overlap and gallery and ZIP follow capture time after out-of-order arrivals',{timeout:3000},async()=>{
+ const f=fixture(),controls={},arrivals=[],queue=['first','third','second'].map(name=>({file:{name:name+'.jpg'},state:'Ready'}));
+ const cameraTimes=new Map(),times={'third.jpg':'10:30','first.jpg':'10:10','second.jpg':'10:20'};
+ let active=0,peak=0,release;
+ const firstRequest=new Promise(resolve=>{release=resolve;});
+ Object.assign(f.context,{
+   $:id=>controls[id]??={},run:fn=>fn(),user:{id:'owner'},selected:{id:'property',address:'Test'},
+   queue,photos:[],properties:[],cameraTimes,client:{auth:{}},createUploadClient(){},
+   matchMedia:()=>({matches:true}),AbortController,renderQueue(){},setItemState:(item,state)=>item.state=state,
+   cameraTimestamp:async file=>'2026-11-11T'+times[file.name]+':00',
+   sendQueuedPhoto:async({file,takenDate})=>{
+     active++;peak=Math.max(active,peak);await takenDate(file);
+     if(file.name==='first.jpg')await firstRequest;
+     arrivals.push(file.name);active--;if(file.name==='second.jpg')release();
+     return file.name;
+   },
+   bounded:fn=>fn(),refreshPhotos:async()=>{}
+ });
+ vm.runInContext(source.slice(source.indexOf('let batchController='),source.indexOf("$('refresh').onclick")),f.context);
+ await controls.upload.onclick();
+ assert.equal(peak,2);assert.deepEqual(arrivals,['third.jpg','second.jpg','first.jpg']);
+ const rows=arrivals.map(name=>({name,cameraTime:cameraTimes.get('owner/property/'+name),size:100}));
+ const expected=['first.jpg','second.jpg','third.jpg'];
+ assert.deepEqual(Array.from(f.context.sortByCaptureTime(rows),row=>row.name),expected);
+ await f.context.downloadPhotos(rows);
+ assert.deepEqual(f.saved[0].files.map(entry=>entry.blob.name),expected);
+});
