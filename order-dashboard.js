@@ -85,6 +85,8 @@
     if(error)throw error;
     return new Map(data.map(set=>[set.id,set]));
   }
+  let mapsIssueAddresses=new Set();
+  const mapsAddressKey=address=>address.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   async function showMapsIssues(version,current){
     const result=await db.rpc('inspection_sync_issues');
     if(version!==generation || current!==request || !panel)return;
@@ -93,6 +95,10 @@
       box.hidden=false;
       box.textContent='Google Maps sync status is unavailable. Refresh the dashboard to check again.';
       return;
+    }
+    mapsIssueAddresses=new Set((result.data || []).map(issue=>mapsAddressKey(issue.address)));
+    for(const flag of field('list').querySelectorAll('[data-maps-address]')){
+      flag.hidden=!mapsIssueAddresses.has(flag.dataset.mapsAddress);
     }
     box.replaceChildren();
     box.hidden=!result.data?.length;
@@ -213,6 +219,13 @@
       if(clientInfo)metadata.append(el('span',clientInfo));
       for(const [checked,label] of [[o.vacant,'Vacant'],[o.velocity,'Velocity'],[o.missing_loe,'Missing LOE']]){
         if(checked){const flag=el('b',label);flag.className='od-order-flag';metadata.append(flag);}
+      }
+      if(o.address && !o.list_name && !o.former_list_task){
+        const flag=el('b','Address Issue');
+        flag.className='od-order-flag';
+        flag.dataset.mapsAddress=mapsAddressKey(o.address);
+        flag.hidden=!mapsIssueAddresses.has(flag.dataset.mapsAddress);
+        metadata.append(flag);
       }
       summary.append(address,metadata);
       const schedule=el('span');
@@ -1017,7 +1030,7 @@
     const id=session?.user?.id||null;if(id===account)return;
     clearTimeout(midnightTimer);clearTimeout(searchTimer);page=0;openDates=[];
     clearTimeout(autosaveTimer);dirty=false;editing=null;baseline=null;
-    const old=account;account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';selectedList='';namedLists=[];
+    const old=account;mapsIssueAddresses.clear();account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';selectedList='';namedLists=[];
     if(fieldApp)document.getElementById('fieldViews').hidden=true;
     if(!id){if(old)landing=fieldApp ? fieldApp.startOnDashboard : true;return;}
     const {data,error}=await db.from('order_members').select('photo_owner').eq('user_id',id).maybeSingle();

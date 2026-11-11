@@ -17,7 +17,12 @@ test('removes only full address from named list and checks again after reload',a
   const maps=vm.runInNewContext(source+';mapsPage',{document,location:new URL(job.listUrl),URL,setTimeout});
   const condo=make('The Fountains at Countryside\n2500 Winding Creek Blvd\nClearwater, FL 33761');
   const cambio=make('4350 Cambio Gdns Ct\nTampa, FL 33610');
-  rows.push(condo,cambio);
+  const emerald=make('4962 Emerald Acrs Wy\nZephyrhills, FL 33541');
+  rows.push(condo,cambio,emerald);
+  const emeraldJob={...job,address:'4962 Emerald Acres Way Zephyrhills, FL 33541'};
+  assert.equal((await maps(emeraldJob,'membership')).found,true);
+  assert.equal((await maps(emeraldJob,'remove')).ok,true);
+  assert.equal((await maps(emeraldJob,'confirmRemoval')).missing,true);
   for(const address of ['2500 Winding Creek Blvd Condo I-106 Clearwater, FL 33761','4350 Cambio Gardens Court Tampa, FL 33610']){
     assert.equal((await maps({...job,address},'membership')).found,true);
   }

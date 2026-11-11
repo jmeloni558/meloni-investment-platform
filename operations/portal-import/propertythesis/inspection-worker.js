@@ -17,7 +17,7 @@ async function mapsPage(job,step){
   // comparison rules together so every search is checked against the original.
   const words={gardens:'gdns',street:'st',avenue:'ave',drive:'dr',road:'rd',lane:'ln',court:'ct',place:'pl',
     circle:'cir',trail:'trl',boulevard:'blvd',terrace:'ter',parkway:'pkwy',loop:'lp',highway:'hwy',
-    square:'sq',crossing:'xing',heights:'hts',ridge:'rdg',point:'pt',center:'ctr',way:'way',
+    square:'sq',crossing:'xing',heights:'hts',ridge:'rdg',point:'pt',center:'ctr',acres:'acrs',way:'wy',
     north:'n',south:'s',east:'e',west:'w',northeast:'ne',northwest:'nw',southeast:'se',southwest:'sw'};
   const expanded=Object.fromEntries(Object.entries(words).map(([long,short])=>[short,long]));
   const withoutUnit=text=>text.replace(/(?:\s*#\s*|\b(?:apt|apartment|unit|suite|ste|condo)\.?\s*#?\s+)(?:[a-z](?=[\s,]|$)|[a-z]*\d[a-z\d-]*|[a-z]+-\d[a-z\d-]*)\b/gi,' ')
