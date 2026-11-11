@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PropertyThesis Importers",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Choose a client form to import your prepared PropertyThesis report.",
   "permissions": [
     "activeTab",

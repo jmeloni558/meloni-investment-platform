@@ -82,3 +82,16 @@ test('legacy JSON acreage is rounded in preview and every transmitted event',()=
  nodes[id].value='0.25';assert.equal(api.plan(doc,payload,'comparables').find(f=>f.id===id).status,'existing entry \u2014 preserved');
  }
 });
+
+test('Petersburg city spellings match only when the rest of the order matches',()=>{
+ const {api}=fixture();
+ const subject={address:'100 Test Ave S',state:'FL',zip:'33705'};
+ const cities=['St Petersburg','St. Petersburg','Saint Petersburg'];
+ for(const city of cities){
+  const file={...subject,city};
+  for(const other of cities)assert.equal(api.matches(file,{...subject,city:other.toUpperCase()}),true);
+  for(const mismatch of [{address:'100 Test Ave N'},{state:'VA'},{zip:'33706'},{city:'St Petersburg Beach'},{city:''}]){
+   assert.equal(api.matches(file,{...subject,city:'Saint Petersburg',...mismatch}),false);
+  }
+ }
+});
