@@ -32,6 +32,9 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-summary{display:grid;grid-template-columns:minmax(0,1fr);row-gap:2px}
 #ptOrders .od-summary strong,#ptOrders .od-summary small{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #ptOrders .od-summary small{font-weight:500}
+#ptOrders .od-summary .od-order-metadata{display:flex;align-items:baseline;gap:.45em}
+#ptOrders .od-order-metadata>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#ptOrders .od-order-flag{flex:none;color:#ab1826}
 #ptOrders .od-summary small:empty{display:none}
 #ptOrders .od-schedule{display:grid;grid-template-columns:minmax(0,1fr) fit-content(46%);align-items:baseline;column-gap:.65em}
 #ptOrders article button time{font-size:.8rem;font-weight:400;color:#53696c;margin-top:3px}

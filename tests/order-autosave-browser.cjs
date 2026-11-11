@@ -28,14 +28,24 @@ async function scenario(browser,mobile){
  },mobile);
  if(mobile){
   await page.addStyleTag({content:fs.readFileSync('photos.css','utf8')});
-  await page.addStyleTag({content:fs.readFileSync('order-dashboard.css','utf8')});
- }
+  }
+ await page.addStyleTag({content:fs.readFileSync('order-dashboard.css','utf8')});
  await page.addScriptTag({content:source});await page.locator('[data-order]').first().click();
  assert.ok(await page.locator('#od-save').isHidden());
  await page.locator('#od-notes').fill('First');await page.waitForFunction(()=>writes.length===1);
  await page.locator('#od-notes').fill('Final');await page.locator('#od-showingtime-requested').check();
  await page.waitForFunction(()=>testRow.notes==='Final' && testRow.showingtime_requested===true);
  assert.ok(await page.locator('#od-details').isVisible());
+ const flags=page.locator('.od-summary .od-order-flag');
+ assert.equal(await flags.count(),0);
+ const flagBoxes=await Promise.all(['photos','appointment-needed','vacant','velocity'].map(id=>page.locator('#od-'+id).boundingBox()));
+ assert.equal(flagBoxes[2].y,flagBoxes[3].y);assert.ok(flagBoxes[2].y>flagBoxes[0].y);
+ await page.locator('#od-vacant').check();await page.locator('#od-velocity').check();
+ await page.waitForFunction(()=>testRow.vacant && testRow.velocity);
+ assert.deepEqual(await flags.allTextContents(),['Vacant','Velocity']);
+ assert.equal(await flags.first().evaluate(e=>getComputedStyle(e).color),'rgb(171, 24, 38)');
+ await page.locator('#od-velocity').uncheck();await page.waitForFunction(()=>testRow.velocity===false);
+ assert.deepEqual(await flags.allTextContents(),['Vacant']);
  await page.locator('#od-gate-code').fill('1234');
  if(mobile){
    assert.ok(await page.locator('#od-main-open').isHidden());
@@ -57,7 +67,9 @@ async function scenario(browser,mobile){
  await page.locator('#od-new').click();await page.locator('#od-save').waitFor({state:'visible'});await page.locator('#od-address').fill('New address');
  await page.locator('#od-kind').selectOption('Marketing Photos');await page.locator('#od-client').selectOption('Client');await page.locator('#od-due').fill('2026-11-13');await page.waitForTimeout(950);
  assert.equal(await page.evaluate(()=>inserts.length),0);
+ assert.equal(await page.locator('#od-vacant').isChecked(),false);await page.locator('#od-velocity').check();
  await page.locator('#od-save').click();await page.waitForFunction(()=>inserts.length===1);
+ assert.deepEqual(await page.evaluate(()=>[inserts[0].vacant,inserts[0].velocity]),[false,true]);
  assert.deepEqual(errors,[]);await page.close();
 }
 (async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.BROWSER_PATH||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'});try{await scenario(browser,false);await scenario(browser,true);console.log('PASS: desktop and Field App autosave, rapid edits, immediate Close, and manual new order creation');}finally{await browser.close();}})().catch(err=>{console.error(err);process.exitCode=1});

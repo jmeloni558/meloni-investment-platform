@@ -789,6 +789,6 @@ if(window===parent){
       if(previous)history.go(previous.index-target.index);
     }finally{restoring=false;}
   });
-  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=appointment-row-1';document.head.append(sheet);
-  import('./order-dashboard.js?v=appointment-start-row-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=order-task-flags-1';document.head.append(sheet);
+  import('./order-dashboard.js?v=order-task-flags-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }
