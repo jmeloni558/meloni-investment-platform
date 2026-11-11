@@ -1,3 +1,4 @@
+import { companyRequest } from "./company-request.mjs";
 // Only the registered OneDrive worker can claim an order or supply its file.
 export function engagementHandler(sql: any, accessToken: () => Promise<string>, company: string) {
   return async (req: Request) => {
@@ -47,7 +48,7 @@ export function engagementHandler(sql: any, accessToken: () => Promise<string>, 
     const query="select * from Attachable where AttachableRef.EntityRef.Type = 'Invoice' and AttachableRef.EntityRef.value = '"+job.invoice_id+"'";
     let attachment;
     for(let start=1;!attachment;start+=100){
-      const response=await fetch(company+"/query?query="+encodeURIComponent(query+" STARTPOSITION "+start+" MAXRESULTS 100"),{headers:auth,signal:AbortSignal.timeout(15000)});
+      const response=await companyRequest(company,"/query?query="+encodeURIComponent(query+" STARTPOSITION "+start+" MAXRESULTS 100"),{headers:auth,signal:AbortSignal.timeout(15000)});
       if(!response.ok)throw Error("attachment_lookup_failed");
       const result=await response.json();
       if(result.Fault || !result.QueryResponse)throw Error("attachment_lookup_failed");
@@ -60,7 +61,7 @@ export function engagementHandler(sql: any, accessToken: () => Promise<string>, 
       form.append("file_metadata_01",new Blob([JSON.stringify({FileName:filename,ContentType:type,Note:marker,
         AttachableRef:[{EntityRef:{type:"Invoice",value:job.invoice_id},IncludeOnSend:false}]})],{type:"application/json"}),"metadata.json");
       form.append("file_content_01",blob,filename);
-      const response=await fetch(company+"/upload?requestid=loe-"+job.order_id,{method:"POST",headers:auth,body:form,signal:AbortSignal.timeout(45000)});
+      const response=await companyRequest(company,"/upload?requestid=loe-"+job.order_id,{method:"POST",headers:auth,body:form,signal:AbortSignal.timeout(45000)});
       if(!response.ok) throw Error("attachment_upload_failed");
       attachment=(await response.json()).AttachableResponse?.[0]?.Attachable;
       if (!linked(attachment) || !attachment.Id) throw Error("attachment_unconfirmed");
