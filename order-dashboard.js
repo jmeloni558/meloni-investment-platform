@@ -42,20 +42,25 @@
     fieldApp?.recordView();
   }
   let openDates=[], midnightTimer;
-  function localDateKey(now){
-    return [now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+  const orderDay=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'});
+  function dueStatus(order,today){
+    if(order.complete || !order.due)return 'none';
+    if(order.due===today)return 'today';
+    return order.due<today?'overdue':'future';
   }
   function displayCounts(){
     clearTimeout(midnightTimer);
     if(!panel || !membership)return;
     const now=new Date();
-    const today=localDateKey(now);
+    const today=orderDay.format(now);
     const total=openDates.length;
     field('total').textContent=total+' open '+(total===1?'order':'orders');
     field('today').textContent=openDates.filter(date=>date===today).length+' due today';
     field('overdue').textContent=openDates.filter(date=>date && date<today).length+' overdue';
-    const midnight=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
-    midnightTimer=setTimeout(()=>{displayCounts();if(panel && membership)render();},midnight-now+100);
+    midnightTimer=setTimeout(()=>{
+      displayCounts();
+      if(panel && membership && today!==orderDay.format(new Date()))render();
+    },60000-now.getSeconds()*1000-now.getMilliseconds());
   }
   async function fetchOrders(list,columns){
     const rows=[];
@@ -242,10 +247,10 @@
     for(const list of ['hold','completed']){
       field(list).setAttribute('aria-pressed',String(!searchText() && list===currentList));
     }
-    const today=localDateKey(new Date());
+    const today=orderDay.format(new Date());
     for(const o of orders){
       const row=el('article'), check=el('input'), title=el('button'), due=el('time',o.due?'Due '+dateLabel(o.due):'No due date');
-      if(!o.complete && o.due && o.due<=today)row.dataset.dueStatus=o.due===today?'today':'overdue';
+      row.dataset.dueStatus=dueStatus(o,today);
       check.type='checkbox';
       check.checked=o.complete;
       check.setAttribute('aria-label','Completed · '+o.address);
