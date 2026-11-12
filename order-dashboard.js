@@ -208,7 +208,9 @@
       field('new').textContent=currentList==='open' && selectedList?'New task':'New order';
       openDates=openRows.map(order=>order.due);
       field('hold').textContent='On Hold ('+held.count+')';
-      field('completed').textContent='Completed ('+completed.count.toLocaleString()+')';
+      const completedTotal=field('completed-total');
+      completedTotal.hidden=!!fieldApp || currentList!=='completed' || !!term;
+      if(!completedTotal.hidden)completedTotal.textContent=completed.count.toLocaleString()+' completed '+(completed.count===1?'order':'orders');
       displayCounts();
       field('prev').hidden=page===0;
       field('next').hidden=batch.length<=pageSize;
@@ -768,7 +770,7 @@
     if(panel)return;
     panel=el('section');panel.id='ptOrders';panel.innerHTML=`
       <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"><span id="od-total"></span><span id="od-today"></span><span id="od-overdue"></span></p></div></header>
-      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><button type="button" id="od-main-open">Open orders</button><span class="od-open-picker" id="od-picker" hidden><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-rename-list" hidden>Rename list</button><button id="od-delete-list" hidden>Delete list</button><button id="od-hold">On Hold</button><button id="od-toggle-hold" type="button" hidden></button><button id="od-completed">Completed</button><button type="button" id="od-manage-clients">Manage clients</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Outlook calendar</a></nav>
+      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><button type="button" id="od-main-open">Open orders</button><span class="od-open-picker" id="od-picker" hidden><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-rename-list" hidden>Rename list</button><button id="od-delete-list" hidden>Delete list</button><button id="od-hold">On Hold</button><button id="od-toggle-hold" type="button" hidden></button><button id="od-completed">Completed</button><button type="button" id="od-manage-clients">Manage clients</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Calendar</a></nav>
       <dialog closedby="any" id="od-clients-dialog" aria-labelledby="od-clients-title">
       <h2 id="od-clients-title">Manage clients</h2>
       <form id="od-add-client-form"><label>New client name<input id="od-new-client" maxlength="160" required></label>
@@ -781,7 +783,7 @@
       <form id="od-list-form" hidden><label>List name<input id="od-name" maxlength="80" required></label>
       <button id="od-create-list">Create list</button> <button type="button" id="od-cancel-list">Cancel</button></form>
       <label>Search all orders<input id="od-search" type="search" placeholder="Address, client, order type, or notes"></label>
-      <section id="od-maps-issues" role="status" hidden></section><p id="od-status" role="status"></p><div class="od-columns"><div><div id="od-list"></div><button id="od-prev" hidden>Previous page</button> <button id="od-next" hidden>Next page</button></div>
+      <section id="od-maps-issues" role="status" hidden></section><p id="od-status" role="status"></p><div class="od-columns"><div><p id="od-completed-total" hidden></p><div id="od-list"></div><button id="od-prev" hidden>Previous page</button> <button id="od-next" hidden>Next page</button></div>
       <aside id="od-details" aria-label="Order" tabindex="-1" hidden><form id="od-form">
       <div class="od-address-row"><label><span id="od-address-label">Property address</span>${fieldApp?'<textarea id="od-address" rows="2" maxlength="500" required></textarea>':'<input id="od-address" maxlength="500" required>'}</label><button type="button" id="od-cancel">Close</button></div>
       <div class="od-needs-flags">
@@ -842,6 +844,10 @@
     for(const id of ['call-number','text-number','phone-cancel'])field(id).onclick=()=>field('phone-dialog').close();
     if(fieldApp){
       document.getElementById('fieldDashboardHost').append(panel);
+      const orderButtons=el('div');
+      orderButtons.className='od-field-order-buttons';
+      field('new').before(orderButtons);
+      for(const id of ['new','main-open','picker','hold','completed'])orderButtons.append(field(id));
       menu.onclick=async()=>{
         if(!fieldApp.canShowDashboard() || !await canLeave())return;
         currentList='open';selectedList='';page=0;clearTimeout(searchTimer);

@@ -103,3 +103,20 @@ html:not(.photos-embedded) .list-tabs button {
 }
 
 @media(max-width:380px){.field-controls,.field-controls #fieldViews{gap:3px}.field-controls button{padding-inline:1px;font-size:clamp(12px,3.45vw,13px)}}
+
+#fieldDashboardHost .od-field-order-buttons {
+  flex: 0 0 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 7rem));
+  justify-content: center;
+  gap: 3px;
+}
+#fieldDashboardHost #ptOrders .od-field-order-buttons :is(button,select) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 4px 2px;
+  font-size: clamp(12px, 3.25vw, 14px);
+  line-height: 1.15;
+}
