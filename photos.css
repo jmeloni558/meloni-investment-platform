@@ -120,3 +120,22 @@ html:not(.photos-embedded) .list-tabs button {
   font-size: clamp(12px, 3.25vw, 14px);
   line-height: 1.15;
 }
+
+#fieldDashboardHost #ptOrders > header > div { width:100%; }
+.od-field-title-row {
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+}
+.od-field-title-row h1 { grid-column:2; }
+#fieldDashboardHost #od-calendar {
+  justify-self:end;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  min-height:32px;
+  padding:4px 8px;
+  font-size:.82rem;
+  line-height:1.2;
+}

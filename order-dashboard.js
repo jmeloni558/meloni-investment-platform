@@ -844,6 +844,11 @@
     for(const id of ['call-number','text-number','phone-cancel'])field(id).onclick=()=>field('phone-dialog').close();
     if(fieldApp){
       document.getElementById('fieldDashboardHost').append(panel);
+      const title=panel.querySelector('header h1');
+      const titleRow=el('div');
+      titleRow.className='od-field-title-row';
+      title.before(titleRow);
+      titleRow.append(title,field('calendar'));
       const orderButtons=el('div');
       orderButtons.className='od-field-order-buttons';
       field('new').before(orderButtons);
