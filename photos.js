@@ -800,5 +800,5 @@ if(window===parent){
     }finally{restoring=false;}
   });
   const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=center-title-1';document.head.append(sheet);
-  import('./order-dashboard.js?v=android-directions-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  import('./order-dashboard.js?v=field-order-row-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }
