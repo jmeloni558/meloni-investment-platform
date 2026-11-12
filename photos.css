@@ -160,10 +160,9 @@ html:not(.photos-embedded) .list-tabs button {
   margin-inline:auto;
 }
 .desktop-download-actions button { padding-inline:6px; }
-.field-picker-button, #fileSelection { display:none; }
-html:not(.photos-embedded) .photo-picker { display:inline-block; position:relative; }
-html:not(.photos-embedded) .field-picker-button { display:block; }
-html:not(.photos-embedded) #workspace #files {
+.photo-picker { display:inline-block; position:relative; }
+.field-picker-button { display:block; }
+#workspace #files {
   position:absolute;
   inset:0;
   width:100%;
@@ -173,7 +172,7 @@ html:not(.photos-embedded) #workspace #files {
   cursor:pointer;
 }
 .photo-picker:focus-within { outline:3px solid #d99b30; outline-offset:3px; border-radius:9px; }
-html:not(.photos-embedded) #fileSelection { display:block; margin-top:5px; overflow-wrap:anywhere; }
+#fileSelection { display:block; margin-top:5px; overflow-wrap:anywhere; }
 @media(max-width:760px),(display-mode:standalone) {
   html:not(.photos-embedded) #workspace .desktop-download-actions { display:none; }
 }
