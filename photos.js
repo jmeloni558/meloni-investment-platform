@@ -128,7 +128,7 @@ function drainCaptions(){while(!busy&&captionRunning<2&&captionQueue.length){con
 
 const status=(message,error=false)=>{$('status').textContent=message;$('status').classList.toggle('error',error);};
 function check(version){if(version!==epoch || !user)throw Error('Your session changed. Sign in again to continue.');}
-function setBusy(value){busy=value;if(!busy)drainCaptions();$('updateApp').disabled=value;document.querySelectorAll('#library button,#library input').forEach(el=>el.disabled=value);$('upload').disabled=value||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);renderPhotoSelection();}
+function setBusy(value){busy=value;if(!busy)drainCaptions();$('updateApp').disabled=value;$('signout').disabled=value;document.querySelectorAll('#library button,#library input').forEach(el=>el.disabled=value);$('upload').disabled=value||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);renderPhotoSelection();}
 function node(tag,text,className){const el=document.createElement(tag);if(text)el.textContent=text;if(className)el.className=className;return el;}
 const listTitles={active:'Active properties',completed:'Completed photos',archive:'Archive'};
 function propertyList(p){
@@ -619,7 +619,12 @@ $('downloadAll').onclick=()=>run(()=>downloadPhotos([...photos]));
 $('downloadSelected').onclick=()=>run(()=>downloadPhotos(photos.filter(p=>selectedPhotos.has(p.name))));
 $('downloadAllDated').onclick=()=>askDownloadDate(false);
 $('downloadSelectedDated').onclick=()=>askDownloadDate(true);
-$('signout').onclick=()=>run(async()=>{const {error}=await client.auth.signOut({scope:'local'});if(error)throw error;});
+$('signout').onclick=()=>run(async()=>{
+  const dashboard=window.PropertyThesisFieldApp?.dashboard;
+  if(dashboard && !await dashboard.hide())return;
+  const {error}=await client.auth.signOut({scope:'local'});
+  if(error)throw error;
+});
 addEventListener('beforeunload',e=>{if(busy||dirtyDescriptions.size||queue.some(x=>x.state!=='Uploaded'&&!x.invalid)){e.preventDefault();e.returnValue='';}});
 addEventListener('offline',()=>status('You are offline. Keep this page open and retry remaining uploads when connected.',true));
 const installedDisplay=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
@@ -638,9 +643,9 @@ async function sessionChanged(session){
   const next=session?.user;if(next?.id===user?.id&&user)return;
   $('storageUsage').textContent='Checking storage…';
   dirtyDescriptions.clear();batchController?.abort();clearCaptions();clearTransferCache();cameraTimes.clear();captureDates.clear();datedRequest=null;$('dateDownloadDialog').close();selectedPhotos.clear();epoch++;const version=epoch;user=next||null;selected=null;properties=[];photos=[];queue=[];
-  $('files').value='';$('photos').replaceChildren();$('properties').replaceChildren();$('queue').replaceChildren();$('account').textContent='';$('library').hidden=true;$('workspace').hidden=true;$('addressList').hidden=false;$('signedOut').hidden=!!user;
+  $('files').value='';$('photos').replaceChildren();$('properties').replaceChildren();$('queue').replaceChildren();$('library').hidden=true;$('workspace').hidden=true;$('addressList').hidden=false;$('signedOut').hidden=!!user;
   if(!user){initPhotoCaptcha();status('Sign in to upload and download your property photos.');return;}
-  try{const {data,error}=await client.rpc('photo_library_enabled');check(version);if(error)throw error;if(!data){$('signedOut').hidden=false;initPhotoCaptcha();status('Photo Uploads is currently available only to the pilot account.',true);return;}$('library').hidden=false;$('password').value='';$('account').textContent=user.email;await loadProperties();showList(stewartMode?'completed':'active');await openRequestedAddress();}catch(e){if(version===epoch)status(e.message,true);}
+  try{const {data,error}=await client.rpc('photo_library_enabled');check(version);if(error)throw error;if(!data){$('signedOut').hidden=false;initPhotoCaptcha();status('Photo Uploads is currently available only to the pilot account.',true);return;}$('library').hidden=false;$('password').value='';await loadProperties();showList(stewartMode?'completed':'active');await openRequestedAddress();}catch(e){if(version===epoch)status(e.message,true);}
 }
 let requestedAddressHandled=false;
 async function openRequestedAddress(){
