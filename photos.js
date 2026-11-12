@@ -316,7 +316,7 @@ async function refreshPhotos(limitSignal){
     $('photos').append(card);loadPreview(card,date,card.querySelector('img'),photo,version);
   }
   renderPhotoSelection();
-  status(p.deleting_at?'Property deletion is unfinished. Click Delete property again to finish.':incomplete?'Some capture times could not be loaded. Refresh photos to retry.':photos.length?'Photos are up to date.':embedded?'This property is ready. Select photos to upload.':'');
+  status(p.deleting_at?'Property deletion is unfinished. Click Delete property again to finish.':incomplete?'Some capture times could not be loaded. Refresh photos to retry.':photos.length?'Photos are up to date.':'');
 }
 
 function renderPhotoSelection(){
