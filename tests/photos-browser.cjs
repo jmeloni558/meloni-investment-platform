@@ -53,7 +53,7 @@ const server=http.createServer((req,res)=>{let file=path.join(root,new URL(req.u
  await office.locator('.photo input').first().check();office.once('dialog',d=>d.accept());await office.click('#deleteSelectedPhotos');await office.waitForFunction(()=>document.querySelectorAll('.photo').length===1);await office.click('#backToList');assert.equal(await office.locator('#completedTab').getAttribute('aria-pressed'),'true');
  await office.click('#properties button');await office.click('#reopen');await office.locator('#uploadControls').waitFor({state:'visible'});
  await office.click('#backToList');assert.equal(await office.locator('#activeTab').getAttribute('aria-pressed'),'true');assert.equal(await office.locator('#properties button').count(),1);
- await office.click('#signout');await office.locator('#signedOut').waitFor({state:'visible'});assert.equal(await office.locator('.photo').count(),0);assert.equal(await office.locator('#properties button').count(),0);
+ office.once('dialog',dialog=>dialog.accept()); await office.click('#signout');await office.locator('#signedOut').waitFor({state:'visible'});assert.equal(await office.locator('.photo').count(),0);assert.equal(await office.locator('#properties button').count(),0);
  await office.fill('#email','jamie@melonirealty.com');await office.fill('#password','synthetic-test');await office.click('#signin');await office.locator('#library').waitFor({state:'visible'});assert.ok(office.url().endsWith('/photos.html'));assert.equal(await office.locator('a').count(),0);
 
  // Updating never leaves Photos and protects pending file selections.

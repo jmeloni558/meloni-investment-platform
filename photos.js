@@ -619,12 +619,15 @@ $('downloadAll').onclick=()=>run(()=>downloadPhotos([...photos]));
 $('downloadSelected').onclick=()=>run(()=>downloadPhotos(photos.filter(p=>selectedPhotos.has(p.name))));
 $('downloadAllDated').onclick=()=>askDownloadDate(false);
 $('downloadSelectedDated').onclick=()=>askDownloadDate(true);
-$('signout').onclick=()=>run(async()=>{
-  const dashboard=window.PropertyThesisFieldApp?.dashboard;
-  if(dashboard && !await dashboard.hide())return;
-  const {error}=await client.auth.signOut({scope:'local'});
-  if(error)throw error;
-});
+$('signout').onclick=()=>{
+  if(!confirm('Sign out of PT Field App?'))return;
+  return run(async()=>{
+    const dashboard=window.PropertyThesisFieldApp?.dashboard;
+    if(dashboard && !await dashboard.hide())return;
+    const {error}=await client.auth.signOut({scope:'local'});
+    if(error)throw error;
+  });
+};
 addEventListener('beforeunload',e=>{if(busy||dirtyDescriptions.size||queue.some(x=>x.state!=='Uploaded'&&!x.invalid)){e.preventDefault();e.returnValue='';}});
 addEventListener('offline',()=>status('You are offline. Keep this page open and retry remaining uploads when connected.',true));
 const installedDisplay=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
