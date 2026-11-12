@@ -52,6 +52,7 @@ body.pt-orders-open #fieldPhotoPane{display:none}
 #fieldDashboardHost #ptOrders{margin:0}
 #fieldDashboardHost #ptOrders header{background:none;color:inherit;padding:0}
 #fieldDashboardHost #ptOrders input[type=checkbox]{display:inline-block;width:20px;height:20px;padding:0;vertical-align:middle}
+:where(#fieldDashboardHost) #ptOrders #od-list article{background:white}
 #fieldDashboardHost #ptOrders article input[type=checkbox]{margin:0 5px}
 
 /* Field dashboard: reserve the date/action row for field work. */
