@@ -178,6 +178,8 @@ function setItemState(item,state){
   item.state=state;if(item.row)item.row.textContent=item.file.name+' — '+state;
 }
 function renderQueue(){
+  const files=$('files').files;
+  $('fileSelection').textContent=files.length>1?files.length+' files chosen':files[0]?.name||'No file chosen';
   $('queue').replaceChildren(...queue.map(x=>(x.row=node('div',x.file.name+' — '+x.state,'queue-row'))));
   $('upload').textContent=queue.some(x=>x.state.startsWith('Failed'))?'Retry remaining photos':'Upload photos';
   $('upload').disabled=busy||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);
@@ -314,7 +316,7 @@ async function refreshPhotos(limitSignal){
     $('photos').append(card);loadPreview(card,date,card.querySelector('img'),photo,version);
   }
   renderPhotoSelection();
-  status(p.deleting_at?'Property deletion is unfinished. Click Delete property again to finish.':incomplete?'Some capture times could not be loaded. Refresh photos to retry.':photos.length?'Photos are up to date.':'This property is ready. Select photos to upload.');
+  status(p.deleting_at?'Property deletion is unfinished. Click Delete property again to finish.':incomplete?'Some capture times could not be loaded. Refresh photos to retry.':photos.length?'Photos are up to date.':embedded?'This property is ready. Select photos to upload.':'');
 }
 
 function renderPhotoSelection(){
