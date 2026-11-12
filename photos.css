@@ -28,6 +28,8 @@ body>header .brand{font-size:1.5rem}
 .storage-summary { padding: 12px 16px; margin-top: 18px; background: #f0f5f3; border-radius: 9px; }
 .address-photo-count { color: #80ff84; background: #164830; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
 
+body:not(.pt-orders-open) #signout,.photos-embedded .field-photos-title{display:none}
+.field-photos-title{text-align:center;margin:0 0 6px;font-size:1.4rem}
 .field-controls{display:flex;align-items:center;justify-content:center;gap:6px;margin:0 0 12px}
 #fieldViews{display:flex;align-items:center;gap:6px}
 #fieldViews button[aria-pressed=false]{background:white;color:#145d54}
@@ -43,11 +45,11 @@ body.pt-orders-open #fieldPhotoPane{display:none}
 #fieldDashboardHost :is(#od-new-list,#od-manage-clients){display:none}
 
 @media(max-width:760px){
-  body.pt-orders-open>header{padding:6px 12px}
-  body.pt-orders-open main{margin:8px auto;padding:0 8px}
+  html:not(.photos-embedded) body>header{padding:6px 12px}
+  html:not(.photos-embedded) main{margin:8px auto;padding:0 8px}
   .field-controls{margin-bottom:6px}
   .field-controls button{min-height:38px;padding:5px 9px;font-size:.9rem}
-  #fieldDashboardHost #ptOrders{padding:10px}
+  #fieldDashboardHost #ptOrders,html:not(.photos-embedded) :is(#addressList,#workspace){padding:10px}
   #fieldDashboardHost #ptOrders>header{margin:0 0 6px}
   #fieldDashboardHost #ptOrders>header small{display:none}
   #fieldDashboardHost #ptOrders h1{font-size:1.4rem;letter-spacing:normal;margin:0}
@@ -84,3 +86,5 @@ html:not(.photos-embedded) .list-tabs button {
   html:not(.photos-embedded) main { padding-inline: 8px; }
   html:not(.photos-embedded) #addressList { padding-inline: 10px; }
 }
+
+@media(max-width:380px){.field-controls,.field-controls #fieldViews{gap:3px}.field-controls button{padding-inline:5px;font-size:.83rem}}
