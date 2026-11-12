@@ -92,6 +92,7 @@ async function importStewartComps(payload) {
     return true;
   }
   const defaults={SellerType:'Owner',TransactionType:'Fair Market',OwnershipType:'Fee Simple (Owner)',UnitsInProperty:'1',TotalBasementArea:'0',FinishedBasementArea:'0',HeatingType:'Heat Pump',FuelType:'Electric'};
+  const fanniePropertyDefaults={LocationType:'Average',FoundationType:'None',HeatingType:'Heat Pump',FuelType:'Electric'};
   const valueOf=node=>node?.tagName==='SELECT'?(node.selectedOptions[0]?.textContent||'').trim():(node?.value||'').trim();
   function subjectDefaults(){
     const keys={UnitsInProperty:'Subject_UnitCountType',TransactionType:'MLSTransactionHistory_SubjectTransactionType'};
@@ -253,7 +254,16 @@ async function importStewartComps(payload) {
   }
   function fillOrder(){
     const orderFields={...payload.orderFields};
-    if(fannie)orderFields.Subject_UnitCountType??="1";
+    if(fannie){
+      const fallback={Subject_UnitCountType:'1',Subject_ZoningCompliance:'Legal',Subject_ZoningClassificationType:'Residential'};
+      for(const [key,value] of Object.entries(fanniePropertyDefaults))fallback['Subject_'+key]=value;
+      for(const key of ['Subject_MixedUseOrCommercial','SubjectCondition_ImmediateAttentionRequired','SubjectCondition_HealthSafetyIssues']){
+        const selected=radio(document.getElementById(key+'_field_No'));
+        if(key==='SubjectCondition_HealthSafetyIssues' && selected)
+          fallback.SubjectCondition_HealthSafetyIssuesComments='There are no health or safety concerns in the home';
+      }
+      for(const [key,value] of Object.entries(fallback))orderFields[key]??=value;
+    }
     if(fannie&&orderFields.Subject_FnmaConditionType)orderFields.SubjectCondition_ConditionType=orderFields.Subject_FnmaConditionType;
     for(const [key,value] of Object.entries(orderFields)){
       checkOrder();
@@ -291,7 +301,7 @@ async function importStewartComps(payload) {
         const source=control(c.kind,selected.i,'InformationSourceType');
         if(source&&!valueOf(source)&&fill(source,'Multiple Listing Service',c.address+' data source'))filled++;
       }
-      for(const [key,value] of Object.entries(fannie?{UnitsInProperty:"1"}:defaults)){
+      for(const [key,value] of Object.entries(fannie?{...fanniePropertyDefaults,UnitsInProperty:'1',OwnershipType:'Fee Simple (Owner)',...(c.kind==='sold'?{SaleType:'Retail Sale'}:{})}:defaults)){
         if(c.fields[key]===undefined && fill(control(c.kind,selected.i,key),value,c.address+' '+key))filled++;
       }
       const note=control(c.kind,selected.i,'Comments');

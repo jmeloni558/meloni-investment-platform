@@ -56,6 +56,14 @@ test('Fannie Mae workspace exports without adjustments and fills only blanks on 
     for(const address of ['42 Example Trail #42 Oldsmar, FL 34677','43 Example Trail','42 Example Trail Other City, FL 34677']){
       assert.match((await grid.evaluate(portal,{...streetTransfer,subject:{...streetTransfer.subject,address}})).join(' '),/Check the subject address/);
     }
+    await grid.locator('body').evaluate(body=>body.insertAdjacentHTML('beforeend',
+      '<input type="radio" name="health" id="SubjectCondition_HealthSafetyIssues_field_Yes" checked><input type="radio" name="health" id="SubjectCondition_HealthSafetyIssues_field_No"><textarea id="SubjectCondition_HealthSafetyIssuesComments_field"></textarea><select id="CompListing_FuelType_1_field"><option></option><option>Electric</option></select>'));
+    await grid.evaluate(portal,streetTransfer);
+    assert.equal(await grid.inputValue('#CompListing_FuelType_1_field'),'Electric');
+    assert.equal(await grid.inputValue('#SubjectCondition_HealthSafetyIssuesComments_field'),'');
+    await grid.locator('#SubjectCondition_HealthSafetyIssues_field_No').check();
+    await grid.evaluate(portal,streetTransfer);
+    assert.equal(await grid.inputValue('#SubjectCondition_HealthSafetyIssuesComments_field'),'There are no health or safety concerns in the home');
     const {validateStewart}=require('../operations/portal-import/stewart/adapter.js');
     validateStewart(data,true);
     assert.throws(()=>validateStewart(data,false));
