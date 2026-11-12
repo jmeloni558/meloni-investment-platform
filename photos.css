@@ -133,3 +133,22 @@ html:not(.photos-embedded) .list-tabs button {
   font-weight:650;
   text-decoration:none;
 }
+
+#workspace { text-align:center; }
+#workspace #propertyTitle { margin:0 0 16px; overflow-wrap:anywhere; }
+#workspace .actions { justify-content:center; margin-top:12px; }
+#workspace fieldset { margin:12px auto; }
+#workspace legend { margin-inline:auto; padding-inline:6px; }
+#workspace #files { width:fit-content; max-width:100%; margin:4px auto; }
+#workspace #fileLimit { margin:4px 0 10px; }
+#workspace #count { margin:20px 0 0; font-weight:650; }
+#workspace #photoSelection { padding-top:12px; border-top:1px solid #d8e4df; }
+#workspace .photo-select { justify-content:center; }
+#workspace #photos { display:flex; flex-wrap:wrap; justify-content:center; }
+#workspace .photo { box-sizing:border-box; width:calc((100% - 64px)/5); min-width:min(160px,100%); }
+@media(max-width:760px) {
+  #workspace .photo { width:calc((100% - 16px)/2); min-width:0; }
+}
+@media(max-width:760px),(display-mode:standalone) {
+  html:not(.photos-embedded) .desktop-download-actions { display:none; }
+}
