@@ -50,6 +50,12 @@ test('Fannie Mae workspace exports without adjustments and fills only blanks on 
     assert.equal(await grid.inputValue('#CompListing_UnitBedroomCount_1_2_field'),'');
     const wrongUnit={...directional,comps:[{...directional.comps[0],address:'22 N Pine Dr #8'}]};
     assert.match((await grid.evaluate(portal,wrongUnit)).join(' '),/ambiguous/);
+    await grid.locator('h1').evaluate(el=>el.textContent='42 Example TRL Oldsmar, FL 34677 (Case #123)');
+    const streetTransfer={...data,subject:{address:'42 Example Trail Oldsmar, FL 34677',city:'Oldsmar',state:'FL',zip:'34677'}};
+    assert.match((await grid.evaluate(portal,streetTransfer)).join(' '),/Matched in active 1/);
+    for(const address of ['42 Example Trail #42 Oldsmar, FL 34677','43 Example Trail','42 Example Trail Other City, FL 34677']){
+      assert.match((await grid.evaluate(portal,{...streetTransfer,subject:{...streetTransfer.subject,address}})).join(' '),/Check the subject address/);
+    }
     const {validateStewart}=require('../operations/portal-import/stewart/adapter.js');
     validateStewart(data,true);
     assert.throws(()=>validateStewart(data,false));
