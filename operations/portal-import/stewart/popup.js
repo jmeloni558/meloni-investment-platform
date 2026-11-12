@@ -15,6 +15,7 @@ $('file').onchange=async()=>{
     if(!file||file.size>200000)throw Error('Choose a Stewart transfer smaller than 200 KB.');
     const next=JSON.parse(await file.text());
     if(file!==$('file').files[0])return;
+    if(fannie && Array.isArray(next?.comps))next.comps=next.comps.map(normalizeStewartComp);
     validateStewart(next,fannie);
     payload=fannie?next:preparedStewart(next);
     const {address,city,state,zip}=next.subject;

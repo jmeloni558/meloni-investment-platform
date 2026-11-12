@@ -3,6 +3,7 @@ const {mls,baths,lotAcres,garage}=require('./rrr-facts.cjs');
 const {concession}=require('../bpo/adjustments.cjs');
 const neighborhood=require('./rrr-neighborhood.cjs').neighborhood;
 const adjKeys={financing:'FinancingConcessions',location:'LocationType',site:'LotSize',view:'AdjustedViewPrice',year:'YearBuilt',condition:'ConditionType',gla:'LivingArea',garage:'GarageBayCount',pool:'AdjustedPoolAndSpaPrice'};
+const {normalizeStewartComp}=require('./stewart/comp-address.js');
 const clean=value=>String(value??'').trim();
 
 function fannieFacts(values,prefix){
@@ -80,6 +81,6 @@ function exportStewart(values){
     const facts={...fannieFacts(values,'sold.0.'),LivingArea:s('gla'),YearBuilt:s('year'),Stories:s('stories'),UnitBedroomCount_1:s('beds'),UnitRoomCount_1:s('rooms'),UnitBathCount_1:clean(bath?.full),UnitHalfBathCount_1:clean(bath?.half),HeatingType:s('heating'),CoolingType:s('cooling'),FuelType:s('fuel')};
     for(const [k,v] of Object.entries(facts))if(v)orderFields['Subject_'+k]=v;
   }
-  return {orderFields,format:fannie?'propertythesis-stewart-fannie':'propertythesis-stewart',version:1,subject,comps};
+  return {orderFields,format:fannie?'propertythesis-stewart-fannie':'propertythesis-stewart',version:1,subject,comps:fannie?comps.map(normalizeStewartComp):comps};
 }
 module.exports={exportStewart};
