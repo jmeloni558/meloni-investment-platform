@@ -86,6 +86,7 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders article .od-directions{background:#185c96}
 #ptOrders article .od-row-photos{background:#17634d}
 
+#ptOrders #od-list article:is([data-due-status="future"],[data-due-status="none"]){background:#fff}
 #ptOrders #od-list article[data-due-status="today"]{background:#fff4ba}
 #ptOrders #od-list article[data-due-status="overdue"]{background:#fce7e7}
 #ptOrders #od-list article button[data-order]{background:transparent}
