@@ -160,7 +160,9 @@ html:not(.photos-embedded) .list-tabs button {
   margin-inline:auto;
 }
 .desktop-download-actions button { padding-inline:6px; }
-.photo-picker { display:inline-block; position:relative; }
+.photo-picker, #uploadControls #upload { display:block; width:min(100%,12rem); margin-inline:auto; font:inherit; }
+.photo-picker { position:relative; }
+#uploadControls #upload { font-weight:650; }
 .field-picker-button { display:block; }
 #workspace #files {
   position:absolute;
@@ -172,7 +174,7 @@ html:not(.photos-embedded) .list-tabs button {
   cursor:pointer;
 }
 .photo-picker:focus-within { outline:3px solid #d99b30; outline-offset:3px; border-radius:9px; }
-#fileSelection { display:block; margin-top:5px; overflow-wrap:anywhere; }
+#fileSelection { display:block; margin:6px 0; overflow-wrap:anywhere; }
 @media(max-width:760px),(display-mode:standalone) {
   html:not(.photos-embedded) #workspace .desktop-download-actions { display:none; }
 }

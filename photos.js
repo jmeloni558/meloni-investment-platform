@@ -181,7 +181,7 @@ function renderQueue(){
   const files=$('files').files;
   $('fileSelection').textContent=files.length>1?files.length+' files chosen':files[0]?.name||'No file chosen';
   $('queue').replaceChildren(...queue.map(x=>(x.row=node('div',x.file.name+' — '+x.state,'queue-row'))));
-  $('upload').textContent=queue.some(x=>x.state.startsWith('Failed'))?'Retry remaining photos':'Upload photos';
+  $('upload').textContent=queue.some(x=>x.state.startsWith('Failed'))?'Retry remaining photos':'upload';
   $('upload').disabled=busy||!queue.some(x=>x.state!=='Uploaded'&&!x.invalid);
 }
 const dirtyDescriptions=new Set();
