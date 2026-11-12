@@ -8,8 +8,8 @@
 
 header{align-items:center}
 body>header{justify-content:center;text-align:center}
-body>header .brand{font-size:1.5rem}
-#updateApp{background:white;color:#145d54;white-space:nowrap}
+body>header .brand{font-size:1.625rem;letter-spacing:.015em}
+#updateApp{background:transparent;color:inherit;border:0;padding:0 10px;min-height:38px;white-space:nowrap}
 .photos-embedded .field-controls{display:none}
 
 .delete-photo{background:white;color:#9c3025;border-color:#c88178}
@@ -39,11 +39,11 @@ body>header .brand{font-size:1.5rem}
 }
 .field-controls #fieldViews:not([hidden]){
   display:grid;
-  grid-column:span 2;
+  grid-column:span 3;
   grid-template-columns:subgrid;
   gap:inherit;
 }
-.field-controls button{
+.field-controls :is(button,#fieldCalendar){
   min-width:0;
   white-space:nowrap;
 }
@@ -63,7 +63,7 @@ body.pt-orders-open #fieldPhotoPane{display:none}
   html:not(.photos-embedded) body>header{padding:6px 12px}
   html:not(.photos-embedded) main{margin:8px auto;padding:0 8px}
   .field-controls{margin-bottom:6px}
-  .field-controls button{min-height:38px;padding:5px 9px;font-size:.9rem}
+  .field-controls :is(button,#fieldCalendar){min-height:38px;padding:5px 9px;font-size:.9rem}
   #fieldDashboardHost #ptOrders,html:not(.photos-embedded) :is(#addressList,#workspace){padding:10px}
   #fieldDashboardHost #ptOrders>header{margin:0 0 6px}
   #fieldDashboardHost #ptOrders>header small{display:none}
@@ -102,7 +102,7 @@ html:not(.photos-embedded) .list-tabs button {
   html:not(.photos-embedded) #addressList { padding-inline: 10px; }
 }
 
-@media(max-width:380px){.field-controls,.field-controls #fieldViews{gap:3px}.field-controls button{padding-inline:1px;font-size:clamp(12px,3.45vw,13px)}}
+@media(max-width:380px){.field-controls,.field-controls #fieldViews{gap:3px}.field-controls :is(button,#fieldCalendar){padding-inline:1px;font-size:clamp(12px,3.45vw,13px)}}
 
 #fieldDashboardHost .od-field-order-buttons {
   flex: 0 0 100%;
@@ -122,20 +122,14 @@ html:not(.photos-embedded) .list-tabs button {
 }
 
 #fieldDashboardHost #ptOrders > header > div { width:100%; }
-.od-field-title-row {
-  display:grid;
-  grid-template-columns:1fr auto 1fr;
-  align-items:center;
-}
-.od-field-title-row h1 { grid-column:2; }
-#fieldDashboardHost #od-calendar {
-  justify-self:end;
+#fieldCalendar{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  text-align:center;
-  min-height:32px;
-  padding:4px 8px;
-  font-size:.82rem;
-  line-height:1.2;
+  border:1px solid #145d54;
+  border-radius:9px;
+  background:white;
+  color:#145d54;
+  font-weight:650;
+  text-decoration:none;
 }
