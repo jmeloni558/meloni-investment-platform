@@ -844,11 +844,9 @@
     for(const id of ['call-number','text-number','phone-cancel'])field(id).onclick=()=>field('phone-dialog').close();
     if(fieldApp){
       document.getElementById('fieldDashboardHost').append(panel);
-      const title=panel.querySelector('header h1');
-      const titleRow=el('div');
-      titleRow.className='od-field-title-row';
-      title.before(titleRow);
-      titleRow.append(title,field('calendar'));
+      const calendar=field('calendar');
+      calendar.id='fieldCalendar';
+      document.getElementById('fieldPhotos').after(calendar);
       const orderButtons=el('div');
       orderButtons.className='od-field-order-buttons';
       field('new').before(orderButtons);
@@ -1092,7 +1090,7 @@
         hide();
       }
     });
-    field('calendar').onclick=event=>{
+    if(!fieldApp)field('calendar').onclick=event=>{
       if(event.defaultPrevented || !/Edg\//.test(navigator.userAgent))return;
       event.preventDefault();
       field('status').textContent='To open your existing Outlook tab, reload PropertyThesis Importers in Edge, then refresh this dashboard.';
@@ -1128,7 +1126,10 @@
     clearTimeout(midnightTimer);clearTimeout(searchTimer);page=0;openDates=[];
     clearTimeout(autosaveTimer);dirty=false;editing=null;baseline=null;
     const old=account;mapsIssues.clear();account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';selectedList='';namedLists=[];
-    if(fieldApp)document.getElementById('fieldViews').hidden=true;
+    if(fieldApp){
+      document.getElementById('fieldViews').hidden=true;
+      document.getElementById('fieldCalendar')?.remove();
+    }
     if(!id){if(old)landing=fieldApp ? fieldApp.startOnDashboard : true;return;}
     const {data,error}=await db.from('order_members').select('photo_owner').eq('user_id',id).maybeSingle();
     if(version!==generation||error||!data)return;membership=data;mount();
