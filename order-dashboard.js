@@ -248,8 +248,9 @@
       field(list).setAttribute('aria-pressed',String(!searchText() && list===currentList));
     }
     const today=orderDay.format(new Date());
-    for(const o of orders){
+    for(const [index,o] of orders.entries()){
       const row=el('article'), check=el('input'), title=el('button'), due=el('time',o.due?'Due '+dateLabel(o.due):'No due date');
+      if(index>0 && (orders[index-1].due || '')!==(o.due || ''))row.classList.add('od-new-due-day');
       row.dataset.dueStatus=dueStatus(o,today);
       check.type='checkbox';
       check.checked=o.complete;
