@@ -32,6 +32,21 @@ body>header .brand{font-size:1.5rem}
 #fieldViews[hidden] ~ #signout{display:none}
 .field-controls{display:flex;align-items:center;justify-content:center;gap:6px;margin:0 0 12px}
 #fieldViews{display:flex;align-items:center;gap:6px}
+.field-controls:has(#fieldViews:not([hidden])){
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,7rem));
+  align-items:stretch;
+}
+.field-controls #fieldViews:not([hidden]){
+  display:grid;
+  grid-column:span 2;
+  grid-template-columns:subgrid;
+  gap:inherit;
+}
+.field-controls button{
+  min-width:0;
+  white-space:nowrap;
+}
 #fieldViews button[aria-pressed=false]{background:white;color:#145d54}
 body.pt-orders-open #fieldPhotoPane{display:none}
 #fieldDashboardHost #ptOrders{margin:0}
@@ -87,4 +102,4 @@ html:not(.photos-embedded) .list-tabs button {
   html:not(.photos-embedded) #addressList { padding-inline: 10px; }
 }
 
-@media(max-width:380px){.field-controls,.field-controls #fieldViews{gap:3px}.field-controls button{padding-inline:5px;font-size:.83rem}}
+@media(max-width:380px){.field-controls,.field-controls #fieldViews{gap:3px}.field-controls button{padding-inline:1px;font-size:clamp(12px,3.45vw,13px)}}
