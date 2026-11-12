@@ -61,3 +61,13 @@ test('Fannie Mae workspace exports without adjustments and fills only blanks on 
     assert.throws(()=>validateStewart(data,false));
   }finally{await browser.close();}
 });
+
+test('Fannie Mae export and older transfers recover a comp ZIP from its own address',()=>{
+  const {exportStewart}=require('../operations/portal-import/stewart-export.cjs');
+  const {normalizeStewartComp}=require('../operations/portal-import/stewart/comp-address.js');
+  const report={_clientTemplate:'stewart-fannie','sold.0.address':'1 Main St','sold.0.city':'Tampa','sold.0.state':'FL','sold.0.zip':'33601','sold.1.address':'22 Example Trail, #2 Oldsmar, FL 34677'};
+  const [c]=exportStewart(report).comps;
+  assert.deepEqual([c.address,c.locality,c.zip],['22 Example Trail, #2','Oldsmar FL 34677','34677']);
+  assert.deepEqual(normalizeStewartComp(c),c);
+  assert.throws(()=>normalizeStewartComp({...c,address:report['sold.1.address'],zip:'33601'}),/Conflicting/);
+});

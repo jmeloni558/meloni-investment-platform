@@ -61,7 +61,7 @@ function readStewartGrid(fannie=false){
   if(!slots.length)throw Error('Open the Selected Comparables grid on the Stewart HomeSteps form.');
   return slots;
 }
-const canonical=value=>String(value??'').toLowerCase().trim().replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();
+const canonical=value=>String(value??'').toLowerCase().trim().replace(/\btrail\b/g,'trl').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();
 const sharedFields=[...extraFacts,'Comments','BedroomCount','BathroomCount','HalfBathCount','LivingArea','TotalRooms','DaysOnMarket','YearBuilt','LotSize'];
 const comparableFields={sold:[...sharedFields,'FinancingConcessions','SalePrice'],active:[...sharedFields,'CurrentListPrice']};
 const fannieFacts=['FannieMaePropertyType','FnmaConditionType','FloorLocationIfCondoTownhouse','NumberOfFloorsInBuildingIfCondoTownhouse','UnitBedroomCount_1','UnitBathCount_1','UnitHalfBathCount_1','UnitRoomCount_1'];

@@ -7,8 +7,8 @@ async function importStewartComps(payload) {
   if (globalThis.stewartImportBusy) return ['An import is already running on this order.'];
   globalThis.stewartImportBusy = true;
   const rows = [];
-  const norm = value => String(value || '').toLowerCase().replace(/[.,]/g,' ').replace(/\b(street|road|avenue|drive|lane|court|boulevard|terrace|circle|apartment|suite)\b/g,
-    word => ({street:'st',road:'rd',avenue:'ave',drive:'dr',lane:'ln',court:'ct',boulevard:'blvd',terrace:'ter',circle:'cir',apartment:'unit',suite:'unit'})[word])
+  const norm = value => String(value || '').toLowerCase().replace(/[.,]/g,' ').replace(/\b(trail|street|road|avenue|drive|lane|court|boulevard|terrace|circle|apartment|suite)\b/g,
+    word => ({trail:'trl',street:'st',road:'rd',avenue:'ave',drive:'dr',lane:'ln',court:'ct',boulevard:'blvd',terrace:'ter',circle:'cir',apartment:'unit',suite:'unit'})[word])
     .replace(/#\s*|\bapt\s+/g,'unit ').replace(/\s+/g,' ').trim();
   const visible = el => !!el?.getClientRects().length;
   const sleep = ms => new Promise(resolve=>setTimeout(resolve,ms));
