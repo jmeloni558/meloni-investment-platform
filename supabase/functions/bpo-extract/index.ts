@@ -2,7 +2,7 @@ import { withSupabase } from 'npm:@supabase/server@1.4.1';
 import schema from './fields.json' with { type: 'json' };
 import { extractText } from 'npm:unpdf@1.9.1';
 import { PDFDocument, StandardFonts } from 'npm:pdf-lib@1.17.1';
-import { extractionDocuments, cleanExtraction, generalSubjectInstructions, instructions, v14Instructions, marketInstructions, extractionScopes, schemaFor, fitExtraction } from './contract.mjs';
+import { subjectMlsFallback, extractionDocuments, cleanExtraction, generalSubjectInstructions, instructions, v14Instructions, marketInstructions, extractionScopes, schemaFor, fitExtraction } from './contract.mjs';
 
 export default { fetch: withSupabase({auth:'user'}, async(req,ctx)=>{
   const origin=req.headers.get('origin');
@@ -34,6 +34,7 @@ export default { fetch: withSupabase({auth:'user'}, async(req,ctx)=>{
   if(quotaError||!quota?.allowed)return json({error:'AI document usage limit reached or unavailable. Your PDFs and form remain saved.'},quotaError?503:429);
   try{
     const content:any[]=[];let total=0;
+    const subjectSheets:{index:number,pages:string[]}[]=[];
     for(let i=0;i<documents.length;i++){
       const d=documents[i];const {data:blob,error:e}=await db.storage.from('bpo-documents').download(d.path);
       if(e||!blob)return json({error:'A source PDF is unavailable. Remove the missing attachment or upload it again.'},400);
@@ -44,6 +45,7 @@ export default { fetch: withSupabase({auth:'user'}, async(req,ctx)=>{
       try{
         const extracted=await extractText(bytes.slice(),{mergePages:false});
         const pages=Array.isArray(extracted.text)?extracted.text:[extracted.text];
+        if(general && d.category==='subject' && d.sourceKind==='mls')subjectSheets.push({index:i,pages});
         content.push({type:'input_text',text:JSON.stringify({document:i,untrustedPageTranscripts:pages.slice(0,40).map((text,page)=>({page:page+1,text:text.slice(0,18000)}))})});
       }catch{ /* Scanned/unreadable text layers still have the original visual PDF input. */ }
     }
@@ -55,8 +57,19 @@ export default { fetch: withSupabase({auth:'user'}, async(req,ctx)=>{
     const text=payload.output?.flatMap((x:any)=>x.content||[]).filter((x:any)=>x.type==='output_text').map((x:any)=>x.text).join('')||'';
     return cleanExtraction(JSON.parse(text),allowed,documents,{general});
     }));
+    const extracted=results.flatMap(r=>r.fields);
+    if(subjectSheets.length===1 && documents.filter(d=>d.category==='subject'&&d.sourceKind==='mls').length===1){
+      const sheet=subjectSheets[0];
+      const expected=report.field_values?._subjectPending?null:report.field_values?.field_0008||report.address;
+      const fields=subjectMlsFallback(sheet.pages,sheet.index,expected,extracted);
+      const supplement=cleanExtraction({fields},schema,documents,{general});
+      extracted.push(...supplement.fields);
+    }
+    if(general && documents.some(d=>d.category==='subject') && !extracted.some(f=>/^(sold|active)\.0\.(beds|year|gla|source)$/.test(f.name))){
+      results[0].warnings.push('No subject MLS characteristics were recovered. Review the Subject MLS sheet in Upload Data Sources.');
+    }
     const fontDoc=await PDFDocument.create(),font=await fontDoc.embedFont(StandardFonts.Helvetica);
-    const result=fitExtraction({fields:results.flatMap(r=>r.fields),warnings:[...new Set(results.flatMap(r=>r.warnings))]},schema,(text:string)=>font.widthOfTextAtSize(text,5.5));
+    const result=fitExtraction({fields:extracted,warnings:[...new Set(results.flatMap(r=>r.warnings))]},schema,(text:string)=>font.widthOfTextAtSize(text,5.5));
     return json({...result,revision:report.revision});
   }catch(e){console.error('BPO extraction failed',{type:e?.name});return json({error:'AI extraction did not finish. Your files are saved; retry or edit the form manually.'},502);}
 })};
