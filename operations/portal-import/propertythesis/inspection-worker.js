@@ -2,8 +2,15 @@
 const syncPage='https://propertythesis.com/inspection-sync.html';
 let inspectionRun;
 async function onTab(id,func,...args){
-  const [result]=await chrome.scripting.executeScript({target:{tabId:id},world:'MAIN',func,args});
-  return result?.result;
+  let timer;
+  try{
+    const execution=chrome.scripting.executeScript({target:{tabId:id},world:'MAIN',func,args});
+    const timeout=new Promise((_,reject)=>{
+      timer=setTimeout(()=>reject(Error('The sync tab stopped responding.')),func===dashboardRpc?20000:90000);
+    });
+    const [result]=await Promise.race([execution,timeout]);
+    return result?.result;
+  }finally{clearTimeout(timer);}
 }
 async function dashboardRpc(name,args){
   if(location.origin!=='https://propertythesis.com')return {unavailable:true};
@@ -117,10 +124,19 @@ async function syncInspections(){
   const [existing]=await chrome.tabs.query({url:syncPage});
   const bridge=existing || await chrome.tabs.create({url:syncPage,active:false});
   const pt=bridge.id;
-  if(bridge.discarded)await chrome.tabs.reload(pt);
-  await loaded(pt,syncPage);
-  const claim=await onTab(pt,dashboardRpc,'claim_inspection_place',{});
-  if(claim?.unavailable || claim?.error)throw Error('The signed-in PropertyThesis sync page could not claim an address.');
+  let claim;
+  try{
+    await chrome.tabs.update(pt,{autoDiscardable:false});
+    if(bridge.discarded || bridge.frozen)await chrome.tabs.reload(pt);
+    await loaded(pt,syncPage);
+    claim=await onTab(pt,dashboardRpc,'claim_inspection_place',{});
+    if(!claim || claim.unavailable || claim.error)throw Error('Could not access the signed-in dashboard.');
+  }catch(error){
+    // Recreate the dedicated bridge on the next alarm after a failed session or stalled script.
+    const current=await chrome.tabs.get(pt).catch(()=>null);
+    if(current?.url===syncPage)await chrome.tabs.remove(pt).catch(()=>{});
+    throw error;
+  }
   const job=claim?.data;
   if(!job)return;
   let tab,error;
@@ -174,9 +190,14 @@ function startInspectionSync(){
   return inspectionRun;
 }
 chrome.alarms.onAlarm.addListener(alarm=>{if(alarm.name==='inspection-sync')startInspectionSync();});
-function scheduleInspectionSync(){chrome.alarms.create('inspection-sync',{delayInMinutes:0.2,periodInMinutes:1});}
-chrome.runtime.onInstalled.addListener(()=>{
-  scheduleInspectionSync();
-  startInspectionSync();
-});
-chrome.runtime.onStartup.addListener(scheduleInspectionSync);
+async function ensureInspectionAlarm(){
+  if(!(await chrome.alarms.get('inspection-sync'))){
+    await chrome.alarms.create('inspection-sync',{delayInMinutes:0.5,periodInMinutes:1});
+  }
+}
+function resumeInspectionSync(){
+  ensureInspectionAlarm().then(startInspectionSync).catch(e=>console.warn('Inspections sync:',e.message));
+}
+chrome.runtime.onInstalled.addListener(resumeInspectionSync);
+chrome.runtime.onStartup.addListener(resumeInspectionSync);
+ensureInspectionAlarm().catch(e=>console.warn('Inspections alarm:',e.message));
