@@ -14,3 +14,12 @@ test('unlabeled sources, partial bath counts and carports are not invented',()=>
 test('identity required; no transfer of account metadata or attachments',()=>{assert.throws(()=>exportRRR({_clientTemplate:'rrr'}),/Complete/);const p=exportRRR({...base(),_attachments:[{path:'DO-NOT-TRANSFER-PRIVATE-PATH'}],email:'secret'});assert.ok(!JSON.stringify(p).includes('DO-NOT-TRANSFER-PRIVATE-PATH'));assert.equal(p.subject.address,'100 Test Ave');});
 test('signed adjustments and explicit acre conversion, separate sale and ask',()=>{const p=exportRRR(base()),f=id=>p.fields.find(x=>x.id===id)?.value;assert.equal(f('rrrSale1_txtSalePrice'),'350000');assert.equal(f('rrrSale1_txtAdjustment'),'5000');assert.equal(f('rrrSale1_ddlPositiveNegativeSign'),'-');assert.equal(f('rrrSale1_txtLotSizeAcres'),'0.1');assert.equal(f('rrrListing1_txtCurrentListPrice'),'400000');assert.equal(f('rrrListing1_txtListPrice'),undefined);});
 test('ambiguous baths/pool/area are flagged instead of invented, identity and calculated cells skipped',()=>{const p=exportRRR(base());assert.ok(p.warnings.some(s=>s.includes('full and half')));assert.equal(p.fields.find(f=>f.id==='rrrSale1_ddlPoolSpa').value,'No');assert.ok(!p.fields.some(f=>/txtFullBaths|txtHalfBaths|txtAdjustedValue|rrrSubject_txtAddress/.test(f.id)));});
+
+test('removes only a matching repeated locality and retains the unit',()=>{
+ const values=base(),street='100 Test Ave Unit 7';
+ const exportStreet=address=>exportRRR({...values,'sold.0.address':address}).subject.address;
+ assert.equal(exportStreet(street+' TAMPA, FL 33603'),street);
+ assert.equal(exportStreet(street+', Tampa, FL, 33603'),street);
+ assert.equal(exportStreet(street),street);
+ assert.equal(exportStreet(street+' Tampa, FL 33604'),street+' Tampa, FL 33604');
+});
