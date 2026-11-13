@@ -282,27 +282,17 @@
       dueActions.className='od-due-actions';
       dueActions.append(due);
       schedule.append(dueActions);
-      const fieldOrder=fieldApp && o.address?.trim() && !o.list_name && !o.former_list_task;
+      const propertyOrder=o.address?.trim() && !o.list_name && !o.former_list_task;
+      const fieldOrder=fieldApp && propertyOrder;
       const actions=fieldOrder && !o.photosFinished?el('span'):null;
       if(actions){
         actions.className='od-field-actions';
-        const directions=el('a','Directions');
-        const destination=encodeURIComponent(o.address.trim().replace(/\s+/g,' '));
-        const route='//www.google.com/maps/dir/?api=1&destination='+destination+'&travelmode=driving';
-        const webUrl='https:'+route;
-        if(/Android/i.test(navigator.userAgent)){
-          directions.href='intent:'+route+'#Intent;scheme=https;package=com.google.android.apps.maps;S.browser_fallback_url='+encodeURIComponent(webUrl)+';end';
-        }else{
-          directions.href=webUrl;
-          directions.target='_blank';
-          directions.rel='noopener noreferrer';
-        }
-        directions.className='od-directions';directions.setAttribute('aria-label','Driving directions to '+o.address);
-        actions.append(directions);
+        actions.append(directionsLink(o.address));
       }
       const desktopFolder=!fieldApp && hasOrderFolder(o);
       const desktopPhotos=!fieldApp && o.photo_id && account===membership.photo_owner;
-      const desktopActions=desktopFolder || desktopPhotos;
+      const desktopDirections=!fieldApp && propertyOrder;
+      const desktopActions=desktopFolder || desktopDirections || desktopPhotos;
       if(o.appointment && !o.photosFinished){
         const appointment=el('time','Appt '+appointmentLabel.format(new Date(o.appointment))+(o.appointment_window?' \u2013 '+endTimeLabel.format(appointmentEnd(o)):''));
         appointment.className='od-order-appointment';
@@ -324,7 +314,9 @@
         const links=el('span');
         links.className='od-order-links';
         if(desktopFolder)links.append(rowFolderButton(o));
+        if(desktopDirections)links.append(directionsLink(o.address));
         if(desktopPhotos)links.append(desktopPhotoLink(o,'Photos'));
+        info.style.setProperty('--order-link-count',links.childElementCount);
         info.append(title,links,schedule);
         row.append(check,info);
       }else row.append(check,title);
@@ -668,6 +660,21 @@
     link.rel='noopener';
     link.setAttribute('aria-label',label+' for '+order.address);
     return link;
+  }
+  function directionsLink(address){
+    const directions=el('a','Directions');
+    const destination=encodeURIComponent(address.trim().replace(/\s+/g,' '));
+    const route='//www.google.com/maps/dir/?api=1&destination='+destination+'&travelmode=driving';
+    const webUrl='https:'+route;
+    if(fieldApp && /Android/i.test(navigator.userAgent)){
+      directions.href='intent:'+route+'#Intent;scheme=https;package=com.google.android.apps.maps;S.browser_fallback_url='+encodeURIComponent(webUrl)+';end';
+    }else{
+      directions.href=webUrl;
+      directions.target='_blank';
+      directions.rel='noopener noreferrer';
+    }
+    directions.className='od-directions';directions.setAttribute('aria-label','Driving directions to '+address);
+    return directions;
   }
   function rowFolderButton(order){
     const button=el('button','Folder');
