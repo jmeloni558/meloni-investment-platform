@@ -55,9 +55,10 @@ body.pt-orders-open #fieldPhotoPane{display:none}
 :where(#fieldDashboardHost) #ptOrders #od-list article{background:white}
 #fieldDashboardHost #ptOrders article input[type=checkbox]{margin:0 5px}
 
-/* Field dashboard: reserve the date/action row for field work. */
-#fieldDashboardHost #ptOrders .od-field-order .od-schedule{grid-template-columns:minmax(0,1fr);gap:2px}
-#fieldDashboardHost #ptOrders .od-field-order :is(.od-appointment-warning,.od-order-appointment){grid-column:1;grid-row:auto;justify-self:end;text-align:right}
+#fieldDashboardHost #ptOrders article.od-field-order{padding:6px 4px}
+#fieldDashboardHost #ptOrders .od-field-order .od-schedule{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}
+#fieldDashboardHost #ptOrders .od-field-actions{grid-column:2/-1;justify-self:start;gap:6px;margin-top:4px}
+#fieldDashboardHost #ptOrders .od-field-order :is(.od-appointment-warning,.od-order-appointment){margin-inline-start:auto;text-align:right}
 #fieldDashboardHost :is(#od-new-list,#od-manage-clients){display:none}
 
 @media(max-width:760px){
