@@ -286,7 +286,6 @@
       const actions=fieldOrder && !o.photosFinished?el('span'):null;
       if(actions){
         actions.className='od-field-actions';
-        dueActions.append(actions);
         const directions=el('a','Directions');
         const destination=encodeURIComponent(o.address.trim().replace(/\s+/g,' '));
         const route='//www.google.com/maps/dir/?api=1&destination='+destination+'&travelmode=driving';
@@ -335,6 +334,7 @@
         (actions || row).append(button);
       }
       if(fieldOrder)row.append(schedule);
+      if(actions)row.append(actions);
       if(o.address && !o.list_name && !o.former_list_task){
         const flag=el('button','Address Issue');
         flag.type='button';
