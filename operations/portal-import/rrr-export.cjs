@@ -7,6 +7,15 @@ const clientOf=v=>['rrr','boa','stewart','stewart-fannie'].includes(v._clientTem
 function exportRRR(v,sourceRows=[]){
  if(clientOf(v)!=='rrr')throw Error('Choose RRR as the client before exporting.');
  const subject={address:v['sold.0.address']||v['active.0.address'],city:v['sold.0.city'],state:v['sold.0.state'],zip:v['sold.0.zip']};
+ // Some saved drafts repeat the locality in the street field. Strip only the
+ // complete suffix confirmed by the independently supplied locality fields.
+ if(subject.city && subject.state && subject.zip){
+  const literal=text=>String(text).trim().split(/[\s,]+/).map(word=>word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('[,\\s]+');
+  const locality=[subject.city,subject.state,subject.zip].map(literal).join('[,\\s]+');
+  const street=String(subject.address||'').replace(new RegExp('[,\\s]+'+locality+'\\s*$','i'),'').trim();
+  subject.address=street;
+  v={...v,'sold.0.address':street};
+ }
  if(Object.values(subject).some(x=>!String(x||'').trim()))throw Error('Complete the subject street address, city, state and ZIP before exporting to RRR.');
  const fields=[],warnings=[];const add=(section,id,value,label)=>{if(value!==undefined&&value!==null&&String(value).trim()!=='')fields.push({section,id,value:String(value),label});};
  const num=x=>{const s=String(x??'').trim().replace(/[$,]/g,'');return s!==''&&/^-?\d+(\.\d+)?$/.test(s)?Number(s):null;};
