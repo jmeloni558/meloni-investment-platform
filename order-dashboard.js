@@ -187,11 +187,14 @@
       ]);
       if(held?.error)throw held.error;
       if(completed.error)throw completed.error;
-      const [result,lists,photoSets,historyFolders]=await Promise.all([
+      const [result,lists,photoSets,historyFolders,drafts]=await Promise.all([
         db.from('order_clients').select('name,listed,monthly_bpo').order('name'),
         db.from('order_lists').select('name').order('name'),
-        orderPhotoSets(batch),linkedHistoryFolders(batch)
+        orderPhotoSets(batch),linkedHistoryFolders(batch),
+        !fieldApp && batch.length ? db.from('order_bpo_drafts').select('order_id,report_id').in('order_id',batch.map(o=>o.id)) : {data:[]}
       ]);
+      if(drafts.error)throw drafts.error;
+      const draftIds=new Map(drafts.data.map(d=>[d.order_id,d.report_id]));
       if(lists.error)throw lists.error;
       if(result.error)throw result.error;
       if(current!==request||version!==generation)return;
@@ -221,6 +224,7 @@
       field('next').hidden=batch.length<=pageSize;
       orders=batch.slice(0,pageSize);
       for(const order of orders){
+        order.bpoId=draftIds.get(order.id);
         order.linkedHistoryFolder=historyFolders.has(order.id);
         const set=photoSets.get(order.id);
         order.photosFinished=Boolean(set?.finished);
@@ -711,7 +715,7 @@
     });
   }
   function createRrrButton(order){
-    const button=el('button','Create BPO');
+    const button=el('button',order.bpoId?'Open BPO':'Create BPO');
     button.type='button';
     button.className='od-folder-button';
     button.onclick=async()=>{
@@ -719,9 +723,21 @@
       button.disabled=true;
       try{
         if(!await canLeave())return;
+        if(order.bpoId){
+          location.assign('/?bpo='+encodeURIComponent(order.bpoId));
+          return;
+        }
         field('status').textContent='Reading BPO sources from OneDrive...';
         const sources=await readRrrSources(order.id);
-        await window.PropertyThesisBPO.createRrr(order.address,sources,hide);
+        const {data:draft,error}=await db.rpc('start_rrr_order_draft',{p_order:order.id}).single();
+        if(error)throw error;
+        order.bpoId=draft.report_id;
+        button.textContent='Open BPO';
+        if(!draft.created){
+          location.assign('/?bpo='+encodeURIComponent(order.bpoId));
+          return;
+        }
+        await window.PropertyThesisBPO.createRrr(order.bpoId,sources,hide);
         field('status').textContent='';
       }catch(error){field('status').textContent=error.message;}
       finally{button.disabled=false;}

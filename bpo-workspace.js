@@ -397,7 +397,7 @@ function renderDocuments(){if(!dialog)return;dialog.querySelectorAll('[data-docu
 async function download(token=epoch){collect();if(!(await access()))throw Error('BPO access is unavailable.');if(!(await refreshProximity(token)))return;const address=(dialog.querySelector('[data-address]')?.value||values.field_0008||'').trim();if(!address)throw Error('Enter the subject address first.');status('Preparing the two-page editable PDF…');const response=await fetch('assets/bpo/template.pdf?v=20261029-meloni');if(!response.ok)throw Error('Could not load the BPO template.');const bytes=await window.PropertyThesisBPOCore.exportPDF(await response.arrayBuffer(),values);if(token!==epoch||!dialog)return;const u=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),a=document.createElement('a');a.href=u;a.download=address.replace(/[^\w -]/g,'').slice(0,100)+'-BPO.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(u),60000);status('PDF download prepared. '+(dirty?'Your latest edits have not been saved to your account.':'Your saved BPO remains editable.'));}
 let bypass=false;
 document.addEventListener('click',e=>{if(!dialog)return;const target=e.target.closest?.('#appNavShell button,#appNavShell a');if(!target||target.id==='appNavExisting'||(target.id==='appNavNew'&&allowed&&!bypass))return;if(!close()){e.preventDefault();e.stopImmediatePropagation();}},true);
-async function createRrr(address,sources,onOpen){
+async function createRrr(reportId,sources,onOpen){
  if(!await access())throw Error('Sign in with BPO access to create this report.');
  await core();
  await prepareStellar();
@@ -406,10 +406,12 @@ async function createRrr(address,sources,onOpen){
    category,file:new File([Uint8Array.from(atob(data),c=>c.charCodeAt(0))],name,{type:'application/pdf'})
  }));
  if(!files.length)throw Error('No source PDFs are available.');
+ const {data:draft,error}=await client().from('bpo_reports').select('*').eq('id',reportId).single();
+ if(error)throw error;
  onOpen();
  frame();
- record=null;clientFilter='rrr';step=1;dirty=true;
- values={_clientTemplate:'rrr',_clientTemplateChosen:true,field_0008:address};
+ record=draft;clientFilter='rrr';step=1;dirty=false;
+ values=window.PropertyThesisBPOCore.normalize(draft.field_values);
  editor();
  for(const {category,file} of files){
    const input=dialog.querySelector('[data-upload="'+category+'"]');
