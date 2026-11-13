@@ -35,6 +35,7 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-summary small{font-weight:500}
 #ptOrders .od-summary .od-order-metadata{display:flex;align-items:baseline;gap:.45em}
 #ptOrders .od-order-metadata>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#ptOrders .od-order-metadata>.od-order-flag:first-of-type{margin-inline-start:auto}
 #ptOrders .od-order-flag{flex:none;color:#ab1826}
 #ptOrders .od-summary small:empty{display:none}
 #ptOrders .od-schedule{display:grid;grid-template-columns:minmax(0,1fr) fit-content(46%);align-items:baseline;column-gap:.65em}

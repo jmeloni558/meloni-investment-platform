@@ -10,7 +10,7 @@
   const el=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text||''});
   const field=id=>panel.querySelector('#od-'+id);
   const dateLabel=value=>fieldApp ? value.slice(5,7)+'/'+value.slice(8,10)+'/'+value.slice(2,4) : new Date(value+'T12:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
-  const appointmentLabel=fieldApp ? new Intl.DateTimeFormat('en-US',{month:'2-digit',day:'2-digit',year:'2-digit',hour:'numeric',minute:'2-digit',hour12:true}) : new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  const appointmentLabel=new Intl.DateTimeFormat('en-US',{month:'2-digit',day:'2-digit',hour:'numeric',minute:'2-digit',hour12:true});
   const endTimeLabel=new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'});
   function appointmentEnd(order){
     return new Date(new Date(order.appointment).getTime()+order.appointment_minutes*60000);
@@ -314,10 +314,10 @@
       }
       if(searchText())dueActions.append(el('small',o.complete?'Completed':o.on_hold?'On Hold':'Open'));
       title.append(summary);
-      if(fieldOrder)row.className='od-field-order';
+      if(fieldOrder)row.classList.add('od-field-order');
       else if(!desktopActions)title.append(schedule);
       if(o.appointment_needed && !o.appointment && !o.photosFinished){
-        const reminder=el('span','Appointment Needed');
+        const reminder=el('span','Appt Needed');
         reminder.className='od-appointment-warning';
         schedule.append(reminder);
       }
