@@ -107,9 +107,10 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 
 #ptOrders #od-list article:has(button[data-order][aria-current=true]) :is(.od-summary small,.od-schedule){color:#3e5659}
 
-#ptOrders .od-schedule :is(.od-appointment-warning,.od-order-appointment){grid-column:2;grid-row:1;text-align:right;justify-self:end;font-weight:700;line-height:1.2}
+#ptOrders .od-schedule :is(.od-appointment-warning,.od-order-appointment){grid-column:2;grid-row:1;text-align:right;justify-self:end}
+#ptOrders #od-list :is(.od-order-flag,.od-order-appointment,.od-appointment-warning){font:700 .8rem/1.2 system-ui,sans-serif}
 #ptOrders .od-schedule .od-appointment-warning{color:#af2029}
-#ptOrders .od-schedule .od-order-appointment{color:#7035a1}
+#ptOrders .od-schedule .od-order-appointment{color:#146437}
 
 #ptOrders .od-needs-flags{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:8px}
 #ptOrders .od-needs-flags label{display:flex;align-items:center;gap:5px;min-width:0;margin:4px 0}
