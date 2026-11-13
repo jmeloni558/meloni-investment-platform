@@ -6,7 +6,7 @@ test('General imports never fill condition or Other and remove only old unedited
  const legacy=C.recalculate({'sold.1.condition':'MLS: Good','active.1.other':'8000 sqft','sold.2.condition':'Fair',_aiFields:{'sold.1.condition':{value:'MLS: Good'},'active.1.other':{value:'8000 sqft'},'sold.2.condition':{value:'Good'}}});
  assert.equal(legacy['sold.1.condition'],'');assert.equal(legacy['active.1.other'],'');assert.equal(legacy['sold.2.condition'],'Fair');
  const {extractionScopes,cleanExtraction}=await import('../supabase/functions/bpo-extract/contract.mjs');assert.ok(!extractionScopes(C.schema,true).flat().some(f=>/\.(condition|other)$/.test(f.name)));
- assert.ok(extractionScopes(C.schema,false).flat().some(f=>f.name==='sold.1.condition'));
+ assert.ok(!extractionScopes(C.schema,false).flat().some(f=>f.name==='sold.1.condition'));
  assert.equal(cleanExtraction({fields:fields.map(f=>({...f,document:0}))},C.schema,[{category:'sold'}],{general:true}).fields.some(f=>/\.(condition|other)$/.test(f.name)),false);
 });
 test('MLS IDs and sale dates are normalized without adding labels',()=>{
@@ -30,7 +30,7 @@ test('defaults cover every comp and preserve explicit and manual choices',()=>{
  v=C.applyAI(v,{fields}).values;for(const k of ['sold','active'])for(let i=0;i<4;i++){assert.equal(v[`${k}.${i}.rooms`],'6');assert.equal(v[`${k}.${i}.design`],i%2?'2 Story':'Ranch');}
  v=C.recalculate({...v,field_0018:'Other Broker','sold.1.design':'Custom','sold.1.energy':'','sold.1.rooms':'9',bpo_type_desktop:false,field_0007:true});assert.equal(v.field_0018,'Other Broker');assert.equal(v['sold.1.energy'],'');assert.equal(v['sold.1.rooms'],'9');assert.equal(v.bpo_type_desktop,false);
  v=C.applyAI(v,{fields:[fact('sold.1.address','100 Test Lane'),fact('sold.1.design','Ranch','Stories: 1')]}).values;assert.equal(v['sold.1.design'],'Custom');
- const rrr=C.recalculate({_clientTemplate:'rrr','sold.1.source':'MLS Pending','sold.1.site':'1 acre','sold.1.date':'2026-01-02','sold.1.condition':'MLS: Good'});assert.equal(rrr['sold.1.source'],'MLS Pending');assert.equal(rrr['sold.1.site'],'1 acre');assert.equal(rrr['sold.1.date'],'2026-01-02');assert.equal(rrr.field_0018,undefined);
+ const rrr=C.recalculate({_clientTemplate:'rrr','sold.1.source':'MLS Pending','sold.1.site':'1 acre','sold.1.date':'2026-01-02','sold.1.condition':'MLS: Good'});assert.equal(rrr['sold.1.source'],'');assert.equal(rrr['sold.1.site'],'1 acre');assert.equal(rrr['sold.1.date'],'01/02/26');assert.equal(rrr.field_0018,undefined);
 });
 test('editable PDF preserves numbers, defaults and short sale dates in two pages',async()=>{
  const {PDFDocument}=require('pdf-lib');const v=C.setLotUnit(C.recalculate({'sold.0.site':'10890 sf','sold.1.site':'1 acre','sold.1.date':'2026-10-01','sold.1.beds':'3','sold.1.source':'MLS T1234567','sold.1.condition':'Good'}),'acres');

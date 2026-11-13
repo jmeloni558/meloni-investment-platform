@@ -1,4 +1,5 @@
  'use strict';
+const {saleDate,mlsNumber}=require('../bpo/general-fields.cjs');
 const facts=require('./rrr-facts.cjs');
 const source=require('./rrr-source.cjs');
 const adjustmentRemarks=require('./rrr-adjustment-remarks.cjs');
@@ -19,7 +20,7 @@ function exportRRR(v,sourceRows=[]){
  const comment=require('./rrr-neighborhood.cjs').neighborhood(v);
  if(comment)add('subject','txtNeighborhoodComments',comment,'Neighborhood and market commentary');
  const tax=require('./rrr-tax.cjs').matching(sourceRows,v);
- for(const [key,id] of [['parcel','txtParcelNumber'],['assessed','txtTaxAssessedValue'],['assessedYear','txtTaxAssessedDate'],['land','txtLandValue'],['tax','txtPropertyTax'],['lastSaleDate','txtLastSaleDate'],['lastSalePrice','txtLastSalePrice']])add('subject',id,key==='tax'&&tax[key]!==undefined?Math.round(tax[key]):tax[key],'iMapp '+key+(tax[key+'Year']?' ('+tax[key+'Year']+')':''));
+ for(const [key,id] of [['parcel','txtParcelNumber'],['assessed','txtTaxAssessedValue'],['assessedYear','txtTaxAssessedDate'],['land','txtLandValue'],['tax','txtPropertyTax'],['lastSaleDate','txtLastSaleDate'],['lastSalePrice','txtLastSalePrice']])add('subject',id,key==='lastSaleDate'?saleDate(tax[key]):key==='tax'&&tax[key]!==undefined?Math.round(tax[key]):tax[key],'iMapp '+key+(tax[key+'Year']?' ('+tax[key+'Year']+')':''));
  add('comparables','rrrSubject_txtZoningCode',tax.zoning,'Subject zoning code (tax record)');
  if(tax.taxYear||tax.assessedYear)warnings.push('iMapp assessment year: '+(tax.assessedYear||'unreported')+(tax.preliminary?' (preliminary values reported)':'')+'. Property tax uses the latest reported amount for '+(tax.taxYear||'unreported year')+'; it is not a current-year tax estimate.');
  warnings.push('Review subject occupancy, inspection date, utilities, tax/parcel facts, original listing history, inventory trend and REO percentage manually. Blank data is not assumed to be zero or No.');
@@ -28,7 +29,7 @@ function exportRRR(v,sourceRows=[]){
  if(!v[p+'address'])continue;
  const extra=source.matching(sourceRows,v,p);
  for(const [key,id] of Object.entries({address:'txtAddress',city:'txtCity',state:'ddlState',zip:'txtZip',year:'txtYearBuilt',rooms:'txtRooms',beds:'txtBeds'}))if(i||!['address','city','state','zip'].includes(key))add('comparables',pre+id,v[p+key],label+' '+key);
- if(i){const price=num(v[p+'price']);if(price!==null)add('comparables',pre+(group==='sold'?'txtSalePrice':'txtCurrentListPrice'),price,label+' price');if(group==='sold')add('comparables',pre+'txtSaleDate',v[p+'date'],label+' sale date');}
+ if(i){const price=num(v[p+'price']);if(price!==null)add('comparables',pre+(group==='sold'?'txtSalePrice':'txtCurrentListPrice'),price,label+' price');if(group==='sold')add('comparables',pre+'txtSaleDate',saleDate(v[p+'date']),label+' sale date');}
  for(const [key,id] of [['view','ddlView'],['condition','ddlConditionType']])add('comparables',pre+id,choice(key,v[p+key],label+' '+key),label+' '+key);
  if(i){add('comparables',pre+'ddlStyle',source.style(v[p+'design'])||extra.style||choice('design',v[p+'design'],label+' style'),label+' style');
  add('comparables',pre+'txtNoUnits','1',label+' units (owner default)');
@@ -39,7 +40,7 @@ function exportRRR(v,sourceRows=[]){
  }
  if(/\bMLS\b/i.test(v[p+'source']||''))add('comparables',pre+'ddlDataSource','MLS',label+' source');else if(/tax records?/i.test(v[p+'source']||''))add('comparables',pre+'ddlDataSource','Tax Records',label+' source');
  // Read source facts; only units and A/C use the owner's explicit defaults.
- const mls=facts.mls(v[p+'source']);
+ const mls=mlsNumber(v[p+'source']);
  if(mls){add('comparables',pre+'txtMLSNumber',mls,label+' MLS number');if(!fields.some(f=>f.id===pre+'ddlDataSource'))add('comparables',pre+'ddlDataSource','MLS',label+' source');}
  add('comparables',pre+'ddlPropertyType',facts.propertyType(v[p+'design']),label+' property type');
  add('comparables',pre+'lbAmenities_0','true',label+' A/C (owner default)');
