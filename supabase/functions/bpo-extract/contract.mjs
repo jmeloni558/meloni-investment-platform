@@ -84,17 +84,59 @@ export function cleanExtraction(payload, schema, documents, {general=false,now=n
 }
 export const responseSchema={type:'object',additionalProperties:false,required:['fields','warnings'],properties:{fields:{type:'array',items:{type:'object',additionalProperties:false,required:['name','value','document','page','evidence'],properties:{name:{type:'string'},value:{type:'string'},document:{type:'integer'},page:{type:'integer'},evidence:{type:'string'}}}},warnings:{type:'array',items:{type:'string'}}}};
 // A closed historical listing can still supply the subject's physical characteristics.
+const listingHeader = /\b([A-Z]{0,4}\d{5,12})\s+(\d+[A-Z]?\s+[^,]{2,100}?),\s*(?:(#\s*[\w-]+|(?:UNIT|APT)\s+[\w-]+),\s*)?([A-Z][A-Z .'-]+?),\s*([A-Z]{2})\s+(\d{5})(?:-\d{4})?\b/gi;
+const normalizeAddress = value => String(value).toLowerCase().replace(/\bpointe\b/g,'point').replace(/\bdrive\b/g,'dr').replace(/\bstreet\b/g,'st').replace(/\broad\b/g,'rd').replace(/\bavenue\b/g,'ave').replace(/\btrail\b/g,'trl').replace(/#\s*|\b(?:apt|unit)\s+/g,'unit').replace(/[^a-z0-9]/g,'');
+
+export function selectSubjectPages(pages,expected) {
+  const groups = new Map();
+  let group;
+  for (let i=0;i<pages.length;i++) {
+    const text=String(pages[i]).replace(/[\u00a0\u2007\u202f\ufffd]/g,' ').replace(/\s+/g,' ');
+    const matches=[...text.matchAll(listingHeader)];
+    if(new Set(matches.map(m=>m[1])).size>1)return {warning:'Multiple MLS listings share one page. Review the subject sheet.'};
+    if(matches.length){
+      const [,id,street,unit,city,state,zip]=matches[0];
+      const line=[street.trim(),unit?.trim()].filter(Boolean).join(' ');
+      if(!groups.has(id))groups.set(id,{line,address:[line,city,state,zip].join(' '),pages:[],text:''});
+      group=groups.get(id);
+    }
+    if(group){group.pages.push(i);group.text+=' '+text;}
+  }
+  if(groups.size<2)return {};
+  const candidates=[...groups.values()].filter(g=>!expected || [g.line,g.address].some(a=>normalizeAddress(a)===normalizeAddress(expected)));
+  if(!candidates.length || new Set(candidates.map(g=>normalizeAddress(g.address))).size!==1)return {warning:'Multiple listings found without a unique matching subject address. Review the subject sheet.'};
+  const date=(g,re)=>{
+    const m=g.text.match(re);
+    if(!m)return 0;
+    const [month,day,year]=m[1].split('/').map(Number);
+    const d=new Date(Date.UTC(year,month-1,day));
+    return d.getUTCMonth()===month-1&&d.getUTCDate()===day?d.getTime():0;
+  };
+  if(candidates.length===1)return {pages:candidates[0].pages};
+  for(const pattern of [/\b(?:On Market|List(?:ing)?) Date:\s*(\d{1,2}\/\d{1,2}\/\d{4})\b/i,/\b(?:Sold|Closed) Date:\s*(\d{1,2}\/\d{1,2}\/\d{4})\b/i]){
+    const ranked=candidates.map(g=>({g,date:date(g,pattern)})).sort((a,b)=>b.date-a.date);
+    if(ranked.every(r=>r.date)&&ranked[0].date>ranked[1].date)return {pages:ranked[0].g.pages};
+  }
+  // A current listing may have only a start date and a closed listing only a sale date.
+  // A start strictly after every other known close proves which listing came last.
+  const start=g=>date(g,/\b(?:On Market|List(?:ing)?) Date:\s*(\d{1,2}\/\d{1,2}\/\d{4})\b/i);
+  const close=g=>date(g,/\b(?:Sold|Closed) Date:\s*(\d{1,2}\/\d{1,2}\/\d{4})\b/i);
+  const newest=candidates.find(g=>start(g)&&candidates.every(other=>other===g || (close(other)&&start(g)>close(other))));
+  if(newest)return {pages:newest.pages};
+  return {warning:'Could not distinguish the latest subject MLS listing by date. Review the subject sheet.'};
+}
+
 export function subjectMlsFallback(pages, document, expectedAddress, extracted) {
   const text = page => String(page || '').replace(/[\u00a0\u2007\u202f\ufffd]/g,' ').replace(/\s+/g,' ').trim();
   const first = text(pages[0]);
   // Stellar prints the unit as a separate comma-delimited component in condo headers.
-  const header = /\b([A-Z]{1,4}\d{5,12})\s+(\d+[A-Z]?\s+[^,]{2,100}?),\s*(?:(#\s*[\w-]+|(?:UNIT|APT)\s+[\w-]+),\s*)?([A-Z][A-Z .'-]+?),\s*([A-Z]{2})\s+(\d{5})(?:-\d{4})?\b/gi;
+  const header = listingHeader;
   const listing = [...first.matchAll(header)][0];
   if (!listing) return [];
   const [, mls, street, unit, city, state, zip] = listing;
   const streetLine = [street.trim(),unit?.trim()].filter(Boolean).join(' ');
   const address = [streetLine, city.trim(), state + ' ' + zip].join(', ');
-  const normalize = value => String(value).toLowerCase().replace(/\bstreet\b/g,'st').replace(/\broad\b/g,'rd').replace(/\bavenue\b/g,'ave').replace(/\btrail\b/g,'trl').replace(/#\s*|\b(?:apt|unit)\s+/g,'unit').replace(/[^a-z0-9]/g,'');
+  const normalize = normalizeAddress;
   const candidates = [streetLine,address,street,[street,city,state+' '+zip].join(', ')].map(normalize);
   const identities = [expectedAddress, ...extracted.filter(f=>['field_0008','sold.0.address','active.0.address'].includes(f.name)).map(f=>f.value)].filter(Boolean);
   if (identities.some(value=>!candidates.includes(normalize(value)))) return [];
