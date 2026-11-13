@@ -68,7 +68,7 @@ function exportBOA(v,sourceRows=[]){
     }
     put(sale?'SALE_PRICE':'LIST_PRICE',v[p+'price']);
     // Subject dates are mirrored between the base grids. Use an explicit subject list date.
-    put(sale?'DATE_TIME_O_SALE':'LIST_DATE',sale?v[p+'date']:i?extra.originalDate||v[p+'date']:details['Original list date']);
+    put(sale?'DATE_TIME_O_SALE':'LIST_DATE',sale?require('../bpo/general-fields.cjs').saleDate(v[p+'date']):i?extra.originalDate||v[p+'date']:details['Original list date']);
     const sqft=lotSquareFeet(v[p+'site'],v._lotUnit);
     if(sqft!==null)put('LOT_SIZE',(sqft/43560).toFixed(2));
     if(privatePool(v[p+'pool'])===1)put('AMENITIES','Private');

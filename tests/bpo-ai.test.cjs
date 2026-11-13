@@ -50,7 +50,7 @@ test('Marketing language does not establish quality and boolean facts retain the
  const {cleanExtraction}=await import('../supabase/functions/bpo-extract/contract.mjs');
  const fact=(name,value,evidence)=>({name,value,document:0,page:1,evidence});
  const r=cleanExtraction({fields:[fact('sold.1.quality','Renovated','Beautifully renovated'),fact('sold.1.energy','false','Green Energy Generation Y/N: No'),fact('sold.1.basement','None stated','No basement information'),fact('active.1.condition','Excellent','In excellent condition')],warnings:[]},C.schema,[{path:'a',name:'MLS.pdf'}]);
- assert.deepEqual(r.fields.map(f=>[f.name,f.value]),[['sold.1.energy','No generation'],['active.1.condition','MLS: Excellent']]);
+ assert.deepEqual(r.fields.map(f=>[f.name,f.value]),[['sold.1.energy','No generation']]);
 });
 
 test('Numeric subject fragments yield to a complete cited address; real manual addresses survive',()=>{

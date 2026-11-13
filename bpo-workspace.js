@@ -8,7 +8,7 @@ let allowed=false,checkedUser=null,checking=false,lastCheck=0,dialog=null,record
 const user=()=>{try{return cloudUser?.id||null;}catch(_){return null;}};
 const client=()=>{try{return cloudClient;}catch(_){return null;}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function core(){return corePromise||(corePromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src="bpo-core.stewart-9e2df3224b78.js";s.onload=async()=>{try{await window.PropertyThesisBPOCore.prepareValidation();resolve(window.PropertyThesisBPOCore);}catch(e){corePromise=null;reject(e);}};s.onerror=()=>{corePromise=null;reject(Error('Could not load the BPO editor.'));};document.head.append(s);}));}
+function core(){return corePromise||(corePromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src="bpo-core.import-fields-v1.js";s.onload=async()=>{try{await window.PropertyThesisBPOCore.prepareValidation();resolve(window.PropertyThesisBPOCore);}catch(e){corePromise=null;reject(e);}};s.onerror=()=>{corePromise=null;reject(Error('Could not load the BPO editor.'));};document.head.append(s);}));}
 async function access(){if(!user())return false;const id=user();const {data,error}=await client().rpc('bpo_enabled');return !error&&data===true&&id===user();}
 function status(message){dialog?.querySelectorAll('[data-status],[data-subject-status]').forEach(n=>n.textContent=message);}
 function modified(){dirty=true;status('Unsaved changes');}
@@ -49,7 +49,14 @@ function refreshPrimaryOptions(){const C=window.PropertyThesisBPOCore;for(const 
 function showValues(){refreshPrimaryOptions();dialog.querySelectorAll('[data-comp-address]').forEach(el=>el.value=window.PropertyThesisBPOCore.comparableAddress(values,el.dataset.compAddress));dialog.querySelectorAll('[data-bpo-field]').forEach(el=>{const v=window.PropertyThesisBPOCore.formatValue(el.dataset.bpoField,values[el.dataset.bpoField]);if(el.type==='checkbox')el.checked=v===true;else if(el.value!==String(v??''))el.value=String(v??'');});dialog.querySelectorAll('[data-subject-field]').forEach(el=>el.value=values[(el.dataset.subjectField==='price'?'active':'sold')+'.0.'+el.dataset.subjectField]??'');}
 function pendingCompUploads(){return [...(dialog?.querySelectorAll('[data-upload]')||[])].some(el=>el._queuedFiles?.length);}
 function uploadBox(category,title){return '<section class="pt-bpo-upload"><h3>'+title+'</h3><label>'+title+' PDFs<input data-upload="'+category+'" type="file" accept="application/pdf,.pdf" multiple></label><p>'+(category==='tax'?(values._clientTemplate==='rrr'?'Retained for matching subject tax facts, tax years and historical sale facts in RRR export.':'Optional attachment only; never used for AI extraction.'):'Select PDFs, then use Upload &amp; Analyze Sources below.')+'</p><p data-selected-files="'+category+'"></p><div data-documents="'+category+'"></div></section>';}
-function bindConditionPickers(){dialog.querySelectorAll('[data-condition-picker]').forEach(select=>select.addEventListener('change',()=>{if(!select.value)return;const input=select.parentElement.querySelector('input');input.value=select.value;select.value='';input.dispatchEvent(new Event('input',{bubbles:true}));input.focus();}));}
+function bindConditionPickers(){
+ dialog.querySelectorAll('[data-condition-picker]').forEach(select=>{
+  const input=select.parentElement.querySelector('input');
+  const sync=()=>{const grade=Array.from(select.options).find(o=>o.value && o.value.toLowerCase()===input.value.trim().toLowerCase());select.value=grade?.value||'';};
+  sync();input.addEventListener('input',sync);
+  select.addEventListener('change',()=>{if(!select.value){sync();return;}input.value=select.value;input.dispatchEvent(new Event('input',{bubbles:true}));input.focus();});
+ });
+}
 function fieldControl(f,a='',report=false){
  const C=window.PropertyThesisBPOCore;
  if(report&&/\.condition$/.test(f.name))return '<input '+a+' type="text" autocomplete="off">';

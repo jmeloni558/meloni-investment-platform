@@ -31,13 +31,15 @@ function lotSquareFeet(value,unit='sqft'){
 }
 function lotDisplay(sqft,unit){return sqft===null?'':String(Number((unit==='acres'?sqft/43560:sqft).toFixed(2)));}
 function generalFields(input){
- if(input._clientTemplate==='rrr')return {...input};
- const v={...input,_aiFields:{...(input._aiFields||{})},_generalDefaults:{...(input._generalDefaults||{})},_lotAreas:{...(input._lotAreas||{})},_lotUnit:input._lotUnit==='acres'?'acres':'sqft'};
+ const rrr=input._clientTemplate==='rrr';
+ const v={...input,_aiFields:{...(input._aiFields||{})}};
+ if(!rrr){v._generalDefaults={...input._generalDefaults};v._lotAreas={...input._lotAreas};v._lotUnit=input._lotUnit==='acres'?'acres':'sqft';}
  const set=(key,value)=>{const previous=v[key];v[key]=value;if(v._aiFields[key]&&v._aiFields[key].value===previous)v._aiFields[key]={...v._aiFields[key],value};};
  for(const p of prefixes){
-  for(const key of ['condition','other']){const name=p+key;if(v._aiFields[name]&&v._aiFields[name].value===v[name])v[name]='';delete v._aiFields[name];}
+  for(const key of (rrr?['condition']:['condition','other'])){const name=p+key;if(v._aiFields[name]&&v._aiFields[name].value===v[name])v[name]='';delete v._aiFields[name];}
   if(v[p+'source']!==undefined){if(!v[p+'status']&&/\bpending\b|under contract/i.test(v[p+'source']))v[p+'status']='Pending';set(p+'source',mlsNumber(v[p+'source']));}
   if(v[p+'date']!==undefined)set(p+'date',saleDate(v[p+'date']));
+  if(rrr)continue;
   const design=p+'design';if(v._aiFields[design]&&v._aiFields[design].value===v[design])set(design,storyDesign(v[design],v._aiFields[design].evidence));
   else if(v[design]===undefined&&v[p+'stories']!==undefined){v[design]=storyDesign(v[p+'stories']+' stories');v._generalDefaults[design]=v[design];}
   const energy=p+'energy';if(v[energy]===undefined||(!input._generalFieldDefaultsVersion&&v[energy]==='')){v[energy]='None';v._generalDefaults[energy]='None';}
@@ -45,6 +47,7 @@ function generalFields(input){
   const sqft=cached&&cached.display===raw?cached.sqft:lotSquareFeet(raw,v._lotUnit);
   const display=lotDisplay(sqft,v._lotUnit);if(v[key]!==undefined)set(key,display);v._lotAreas[key]={sqft,display};
  }
+ if(rrr)return v;
  for(const [key,value] of Object.entries({field_0015:'Meloni Realty, Inc.',field_0018:'Jamie Meloni',field_0019:'813-760-8516',field_0021:'jamie@melonirealty.com',field_0484:'Jamie Meloni'}))if(v[key]===undefined||(!input._generalFieldDefaultsVersion&&v[key]==='')){v[key]=value;v._generalDefaults[key]=value;}
  for(const [key,group] of [['bpo_type_desktop',['bpo_type_desktop','field_0007','bpo_type_interior','field_0005']],['field_0259',['field_0259','field_0260','field_0261']],['field_0262',['field_0262','field_0263']]])if(!input._generalFieldDefaultsVersion&&!group.some(n=>v[n]===true))v[key]=true;
  v._generalFieldDefaultsVersion=1;return v;

@@ -1,5 +1,6 @@
 'use strict';
-const {mls,baths,lotAcres,garage}=require('./rrr-facts.cjs');
+const {saleDate,mlsNumber}=require('../bpo/general-fields.cjs');
+const {baths,lotAcres,garage}=require('./rrr-facts.cjs');
 const {concession}=require('../bpo/adjustments.cjs');
 const neighborhood=require('./rrr-neighborhood.cjs').neighborhood;
 const adjKeys={financing:'FinancingConcessions',location:'LocationType',site:'LotSize',view:'AdjustedViewPrice',year:'YearBuilt',condition:'ConditionType',gla:'LivingArea',garage:'GarageBayCount',pool:'AdjustedPoolAndSpaPrice'};
@@ -59,7 +60,7 @@ function exportStewart(values){
         if(fields[old])fields[key]=fields[old];delete fields[old];
       }
       for(const k of ['WaterSource','WasteDisposal','ConditionType'])delete fields[k];
-      if(kind==='sold')fields.SaleDate=get('date');
+      if(kind==='sold')fields.SaleDate=saleDate(get('date'));
       Object.assign(fields,fannieFacts(values,prefix));
     }
     const acres=lotAcres(get('site'));
@@ -67,7 +68,7 @@ function exportStewart(values){
     const cached=values._lotAreas?.[prefix+'site'];
     if(cached?.display===get('site')&&Number.isFinite(cached.sqft))fields.LotSize=String(Math.round(cached.sqft));
     const locality=['city','state','zip'].map(key=>clean(values[prefix+key])).filter(Boolean).join(' ');
-    comps.push({kind,...(fannie?{}:{adjustments,manualAdjustments}),address,locality,zip:get('zip'),mls:mls(values[prefix+'source'])||'',fields:Object.fromEntries(Object.entries(fields).filter(([,value])=>value))});
+    comps.push({kind,...(fannie?{}:{adjustments,manualAdjustments}),address,locality,zip:get('zip'),mls:mlsNumber(values[prefix+'source'])||'',fields:Object.fromEntries(Object.entries(fields).filter(([,value])=>value))});
   }
   if(!comps.length)throw Error('Prepare at least one comparable with a street address.');
   const orderFields={};
