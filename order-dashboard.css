@@ -97,10 +97,9 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 #ptOrders .od-desktop-order-info{position:relative;flex:1;min-width:0;padding:4px 8px}
 #ptOrders .od-desktop-order-info button[data-order]{width:100%;padding:0;text-align:left}
 #ptOrders .od-desktop-order-info .od-schedule{align-items:baseline;font-size:.8rem;color:#53696c}
-#ptOrders .od-desktop-order-info{--order-link-width:4rem;--order-link-gap:6px}
+#ptOrders .od-desktop-order-info{--order-link-width:4.5rem;--order-link-gap:6px}
 #ptOrders .od-order-links{position:absolute;inset-block-start:4px;inset-inline-end:8px;display:flex;gap:var(--order-link-gap)}
-#ptOrders .od-desktop-order-info .od-summary strong{margin-inline-end:calc(var(--order-link-width) + var(--order-link-gap));min-height:1.5rem;line-height:1.5rem}
-#ptOrders .od-desktop-order-info:has(.od-order-links>:nth-child(2)) .od-summary strong{margin-inline-end:calc(2 * (var(--order-link-width) + var(--order-link-gap)))}
+#ptOrders .od-desktop-order-info .od-summary strong{margin-inline-end:calc(var(--order-link-count) * (var(--order-link-width) + var(--order-link-gap)));min-height:1.5rem;line-height:1.5rem}
 #ptOrders #od-list .od-order-links :is(button.od-folder-button,a){
   box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
   flex:none;width:var(--order-link-width);min-width:var(--order-link-width);max-width:var(--order-link-width);height:1.5rem;min-height:1.5rem;max-height:1.5rem;
