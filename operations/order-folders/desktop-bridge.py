@@ -60,10 +60,32 @@ def rrr_sources(folder):
     return files
 
 
+# A top-level local window reads the PDFs on its own origin. Both ends check
+# the other window and exact origin before handing over the single-use ticket.
+TRANSFER_PAGE = b"""<!doctype html><meta charset="utf-8"><title>PropertyThesis source import</title>
+<p>Reading BPO source PDFs for PropertyThesis. This window closes when the files are ready.</p>
+<script>
+const site='https://propertythesis.com', owner=window.opener;
+async function receive(event){
+  if(!owner || event.source!==owner || event.origin!==site || event.data?.type!=='rrr-ticket')return;
+  removeEventListener('message',receive);
+  try{
+    const response=await fetch('/rrr-sources',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ticket:event.data.ticket})});
+    if(!response.ok)throw Error(response.status===422?(await response.json()).error:'Could not read the order folder.');
+    owner.postMessage({type:'rrr-result',files:await response.json()},site);
+  }catch(error){owner.postMessage({type:'rrr-result',error:error.message},site);}
+}
+addEventListener('message',receive);
+if(owner)owner.postMessage({type:'rrr-ready'},site);
+</script>"""
+
+
 class FolderRequest(BaseHTTPRequestHandler):
     def local_request(self):
         return (self.headers.get('Host') == '127.0.0.1:45273' and
-                self.headers.get('Origin') == 'https://propertythesis.com' and self.path in ('/stewart-photos', '/rrr-sources'))
+                ((self.headers.get('Origin') == 'https://propertythesis.com' and self.path in ('/stewart-photos', '/rrr-sources')) or
+                 (self.headers.get('Origin') == 'http://127.0.0.1:45273' and self.path == '/rrr-sources')))
 
     def do_OPTIONS(self):
         if not self.local_request():
@@ -117,6 +139,15 @@ class FolderRequest(BaseHTTPRequestHandler):
             return self.send_error(404, 'Local photo export unavailable')
 
     def do_GET(self):
+        if self.path == '/rrr-import' and self.headers.get('Host') == '127.0.0.1:45273':
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('X-Frame-Options', 'DENY')
+            self.send_header('Content-Length', str(len(TRANSFER_PAGE)))
+            self.end_headers()
+            self.wfile.write(TRANSFER_PAGE)
+            return
         ticket = re.fullmatch(r'/open/([0-9a-fA-F-]{36})', self.path)
         if self.headers.get('Host') != '127.0.0.1:45273' or not ticket:
             return self.send_error(404)

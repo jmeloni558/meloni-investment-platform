@@ -678,6 +678,38 @@
     directions.className='od-directions';directions.setAttribute('aria-label','Driving directions to '+address);
     return directions;
   }
+  function readRrrSources(orderId){
+    const origin='http://127.0.0.1:45273';
+    const popup=window.open('about:blank','_blank','popup,width=520,height=200');
+    if(!popup)return Promise.reject(Error('Allow the PropertyThesis import window and try again.'));
+    return new Promise((resolve,reject)=>{
+      let started=false;
+      function finish(error,files){
+        clearInterval(watch);
+        clearTimeout(timeout);
+        window.removeEventListener('message',receive);
+        popup.close();
+        if(error)reject(error);else resolve(files);
+      }
+      async function receive(event){
+        if(event.source!==popup || event.origin!==origin)return;
+        if(event.data?.type==='rrr-ready' && !started){
+          started=true;
+          try{
+            const {data:ticket,error}=await db.rpc('issue_desktop_folder_ticket',{job_id:orderId});
+            if(error || !ticket)throw Error('The property folder is unavailable.');
+            popup.postMessage({type:'rrr-ticket',ticket},origin);
+          }catch(error){finish(error);}
+        }else if(event.data?.type==='rrr-result' && started){
+          finish(event.data.error?Error(event.data.error):null,event.data.files);
+        }
+      }
+      const watch=setInterval(()=>{if(popup.closed)finish(Error('The source import window was closed.'));},500);
+      const timeout=setTimeout(()=>finish(Error('The OneDrive helper did not respond. Try again on the work PC.')),90000);
+      window.addEventListener('message',receive);
+      popup.location.href=origin+'/rrr-import';
+    });
+  }
   function createRrrButton(order){
     const button=el('button','Create BPO');
     button.type='button';
@@ -688,13 +720,7 @@
       try{
         if(!await canLeave())return;
         field('status').textContent='Reading BPO sources from OneDrive...';
-        const {data:ticket,error}=await db.rpc('issue_desktop_folder_ticket',{job_id:order.id});
-        if(error || !ticket)throw Error('The property folder is unavailable.');
-        const response=await fetch('http://127.0.0.1:45273/rrr-sources',{
-          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket})
-        }).catch(()=>{throw Error('Could not reach the OneDrive folder helper on this PC.');});
-        const sources=await response.json();
-        if(!response.ok)throw Error(sources.error || 'Could not read the property folder.');
+        const sources=await readRrrSources(order.id);
         await window.PropertyThesisBPO.createRrr(order.address,sources,hide);
         field('status').textContent='';
       }catch(error){field('status').textContent=error.message;}
