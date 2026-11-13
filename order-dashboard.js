@@ -304,8 +304,6 @@
       const desktopFolder=!fieldApp && hasOrderFolder(o);
       const desktopPhotos=!fieldApp && o.photo_id && account===membership.photo_owner;
       const desktopActions=desktopFolder || desktopPhotos;
-      if(desktopFolder)dueActions.append(rowFolderButton(o));
-      if(desktopPhotos)dueActions.append(desktopPhotoLink(o,'Photos'));
       if(o.appointment && !o.photosFinished){
         const appointment=el('time','Appt '+appointmentLabel.format(new Date(o.appointment))+(o.appointment_window?' \u2013 '+endTimeLabel.format(appointmentEnd(o)):''));
         appointment.className='od-order-appointment';
@@ -324,7 +322,11 @@
       if(desktopActions){
         const info=el('div');
         info.className='od-desktop-order-info';
-        info.append(title,schedule);
+        const links=el('span');
+        links.className='od-order-links';
+        if(desktopFolder)links.append(rowFolderButton(o));
+        if(desktopPhotos)links.append(desktopPhotoLink(o,'Photos'));
+        info.append(title,links,schedule);
         row.append(check,info);
       }else row.append(check,title);
       if(fieldApp && o.needs_photos && o.hasActivePhotoSet){
