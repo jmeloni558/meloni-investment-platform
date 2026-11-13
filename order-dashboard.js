@@ -313,6 +313,8 @@
         info.className='od-desktop-order-info';
         const links=el('span');
         links.className='od-order-links';
+        if(desktopFolder && /^(RRReview|RRR)$/i.test((o.client||'').trim()) &&
+           ['Int BPO','Ext BPO','Desktop BPO'].includes(o.kind))links.append(createRrrButton(o));
         if(desktopFolder)links.append(rowFolderButton(o));
         if(desktopDirections)links.append(directionsLink(o.address));
         if(desktopPhotos)links.append(desktopPhotoLink(o,'Photos'));
@@ -675,6 +677,30 @@
     }
     directions.className='od-directions';directions.setAttribute('aria-label','Driving directions to '+address);
     return directions;
+  }
+  function createRrrButton(order){
+    const button=el('button','Create BPO');
+    button.type='button';
+    button.className='od-folder-button';
+    button.onclick=async()=>{
+      if(button.disabled)return;
+      button.disabled=true;
+      try{
+        if(!await canLeave())return;
+        field('status').textContent='Reading BPO sources from OneDrive...';
+        const {data:ticket,error}=await db.rpc('issue_desktop_folder_ticket',{job_id:order.id});
+        if(error || !ticket)throw Error('The property folder is unavailable.');
+        const response=await fetch('http://127.0.0.1:45273/rrr-sources',{
+          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket})
+        }).catch(()=>{throw Error('Could not reach the OneDrive folder helper on this PC.');});
+        const sources=await response.json();
+        if(!response.ok)throw Error(sources.error || 'Could not read the property folder.');
+        await window.PropertyThesisBPO.createRrr(order.address,sources,hide);
+        field('status').textContent='';
+      }catch(error){field('status').textContent=error.message;}
+      finally{button.disabled=false;}
+    };
+    return button;
   }
   function rowFolderButton(order){
     const button=el('button','Folder');
