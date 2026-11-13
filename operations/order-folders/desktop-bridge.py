@@ -28,10 +28,42 @@ def redeem(ticket):
         return json.load(response)
 
 
+def rrr_sources(folder):
+    categories = {
+        'subject': r'(?:MLS Broker Synopsis|Subject MLS)(?:[ _-].*)?',
+        'imapp': r'iMapp(?:[ _-].*)?',
+        'tax': r'(?:Subject Tax|Tax Record)(?:[ _-].*)?',
+        'market': r'RPR Neighborhood(?:[ _-].*)?',
+        'sold': r'Sold Comp(?:s|arables)?(?:[ _-].*)?',
+        'active': r'(?:Active|Pending) Comp(?:s|arables)?(?:[ _-].*)?',
+    }
+    files = []
+    total = 0
+    for path in sorted(folder.iterdir()):
+        if path.suffix.lower() != '.pdf' or path.is_symlink() or not path.is_file():
+            continue
+        category = next((k for k, pattern in categories.items()
+                         if re.fullmatch(pattern, path.stem, re.I)), None)
+        if category is None:
+            continue
+        size = path.stat().st_size
+        total += size
+        if size > 15 * 1024**2 or total > 25 * 1024**2 or len(files) >= 12:
+            raise ValueError('Source files exceed the BPO upload limits.')
+        data = path.read_bytes()
+        if b'%PDF-' not in data[:1024]:
+            raise ValueError('Unreadable PDF: ' + path.name)
+        files.append(dict(category=category, name=path.name,
+                          data=base64.b64encode(data).decode('ascii')))
+    if not files:
+        raise ValueError('No matching BPO source PDFs are in this folder yet.')
+    return files
+
+
 class FolderRequest(BaseHTTPRequestHandler):
     def local_request(self):
         return (self.headers.get('Host') == '127.0.0.1:45273' and
-                self.headers.get('Origin') == 'https://propertythesis.com' and self.path == '/stewart-photos')
+                self.headers.get('Origin') == 'https://propertythesis.com' and self.path in ('/stewart-photos', '/rrr-sources'))
 
     def do_OPTIONS(self):
         if not self.local_request():
@@ -56,6 +88,21 @@ class FolderRequest(BaseHTTPRequestHandler):
             link = redeem(payload['ticket'])
             if not link:
                 return self.send_error(410)
+            if self.path == '/rrr-sources':
+                try:
+                    body = json.dumps(rrr_sources(property_folder(link))).encode()
+                    code = 200
+                except (ValueError, OSError) as exc:
+                    body = json.dumps({'error': str(exc)}).encode()
+                    code = 422
+                self.send_response(code)
+                self.send_header('Access-Control-Allow-Origin', 'https://propertythesis.com')
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(body)))
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(body)
+                return
             with tempfile.TemporaryFile() as output:
                 pack_export(property_folder(link), payload['photos'], output)
                 self.send_response(200)

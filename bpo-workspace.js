@@ -397,6 +397,27 @@ function renderDocuments(){if(!dialog)return;dialog.querySelectorAll('[data-docu
 async function download(token=epoch){collect();if(!(await access()))throw Error('BPO access is unavailable.');if(!(await refreshProximity(token)))return;const address=(dialog.querySelector('[data-address]')?.value||values.field_0008||'').trim();if(!address)throw Error('Enter the subject address first.');status('Preparing the two-page editable PDF…');const response=await fetch('assets/bpo/template.pdf?v=20261029-meloni');if(!response.ok)throw Error('Could not load the BPO template.');const bytes=await window.PropertyThesisBPOCore.exportPDF(await response.arrayBuffer(),values);if(token!==epoch||!dialog)return;const u=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),a=document.createElement('a');a.href=u;a.download=address.replace(/[^\w -]/g,'').slice(0,100)+'-BPO.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(u),60000);status('PDF download prepared. '+(dirty?'Your latest edits have not been saved to your account.':'Your saved BPO remains editable.'));}
 let bypass=false;
 document.addEventListener('click',e=>{if(!dialog)return;const target=e.target.closest?.('#appNavShell button,#appNavShell a');if(!target||target.id==='appNavExisting'||(target.id==='appNavNew'&&allowed&&!bypass))return;if(!close()){e.preventDefault();e.stopImmediatePropagation();}},true);
+async function createRrr(address,sources,onOpen){
+ if(!await access())throw Error('Sign in with BPO access to create this report.');
+ await core();
+ await prepareStellar();
+ if(dialog && !close())throw Error('Finish the current BPO first.');
+ const files=sources.map(({category,name,data})=>({
+   category,file:new File([Uint8Array.from(atob(data),c=>c.charCodeAt(0))],name,{type:'application/pdf'})
+ }));
+ if(!files.length)throw Error('No source PDFs are available.');
+ onOpen();
+ frame();
+ record=null;clientFilter='rrr';step=1;dirty=true;
+ values={_clientTemplate:'rrr',_clientTemplateChosen:true,field_0008:address};
+ editor();
+ for(const {category,file} of files){
+   const input=dialog.querySelector('[data-upload="'+category+'"]');
+   (input._queuedFiles ||= []).push(file);
+ }
+ updateCompQueue();
+ await run(uploadSelectedComps);
+}
 async function startNewBPO(){if(!(await access()))return;if(dialog&&!close())return;await core();frame();record=null;values={};dirty=false;step=1;editor();}
 document.addEventListener('click',e=>{const b=e.target.closest?.('#appNavExisting,#appNavNew');if(!b||!allowed||bypass)return;e.preventDefault();e.stopImmediatePropagation();const old=document.getElementById('ptBpoMenu');if(old){const same=old.dataset.anchor===b.id;old.remove();if(same)return;}const fresh=b.id==='appNavNew',menu=document.createElement('div');menu.id='ptBpoMenu';menu.dataset.anchor=b.id;menu.className='pt-bpo-menu';menu.innerHTML=fresh?'<button data-income>Income Analysis</button><button data-bpo>Comparable Sales</button>':'<button data-income>Income Properties</button><button data-bpo>Comparable Sales / BPOs</button>';b.insertAdjacentElement('afterend',menu);const rect=b.getBoundingClientRect();menu.style.position='fixed';menu.style.left=Math.max(8,Math.min(rect.left,innerWidth-260))+'px';menu.style.top=(rect.bottom+5)+'px';menu.style.marginTop='0';menu.querySelector('[data-income]').onclick=()=>{menu.remove();if(dialog&&!close())return;bypass=true;try{b.click();}finally{bypass=false;}};menu.querySelector('[data-bpo]').onclick=()=>{menu.remove();(fresh?startNewBPO():(async()=>{if(dialog&&!close())return;await open();})()).catch(e=>alert(e.message));};},true);
 document.addEventListener('click',e=>{if(!e.target.closest?.('#ptBpoMenu,#appNavExisting,#appNavNew'))document.getElementById('ptBpoMenu')?.remove();});
@@ -407,5 +428,5 @@ for(const event of ['scroll','wheel','touchmove'])window.addEventListener(event,
 window.addEventListener('resize',dismissNavigationMenu,{passive:true});
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 async function check(){const id=user();if(checkedUser!==id){allowed=false;checkedUser=id;lastCheck=0;release();for(const [key,label] of [['appNavExisting','Saved Properties'],['appNavNew','New Analysis']]){const nav=document.getElementById(key);if(nav){nav.textContent=label;nav.removeAttribute('aria-haspopup');nav.removeAttribute('title');}}document.getElementById('ptBpoMenu')?.remove();}if(!id||checking||allowed||Date.now()-lastCheck<60000)return;checking=true;lastCheck=Date.now();try{allowed=await access();}finally{checking=false;}const b=document.getElementById('appNavExisting');if(b&&allowed){b.setAttribute('aria-haspopup','true');b.textContent='Saved Properties ▾';b.title='Choose Income Properties or Comparable Sales / BPOs';}const newNav=document.getElementById('appNavNew');if(newNav&&allowed){newNav.setAttribute('aria-haspopup','true');newNav.textContent='New Analysis ▾';newNav.title='Choose Income Analysis or Comparable Sales';}}
-setInterval(async()=>{await check();const id=new URL(location.href).searchParams.get('bpo');if(allowed&&id&&!dialog&&!restoring){restoring=true;try{await open(id);}finally{restoring=false;}}},3000);check();window.PropertyThesisBPO={open};
+setInterval(async()=>{await check();const id=new URL(location.href).searchParams.get('bpo');if(allowed&&id&&!dialog&&!restoring){restoring=true;try{await open(id);}finally{restoring=false;}}},3000);check();window.PropertyThesisBPO={open,createRrr};
 })();
