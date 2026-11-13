@@ -28,7 +28,7 @@ export function uploadFailure(error){
   return 'file';
 }
 
-export async function sendQueuedPhoto({file,prefix,takenDate,auth,createClient,knownNames,signal,onRetry}){
+export async function sendQueuedPhoto({file,prefix,takenDate,auth,createClient,knownNames,signal,onRetry,onProgress}){
   const owner=prefix.split('/')[0];
   async function session(force){
     let result=force?await auth.refreshSession():await auth.getSession();
@@ -54,14 +54,14 @@ export async function sendQueuedPhoto({file,prefix,takenDate,auth,createClient,k
       return await bounded(async requestSignal=>{
         const current=await session(force);
         requestSignal.throwIfAborted();
-        const bucket=createClient(current.access_token,requestSignal).storage.from(BUCKET);
+        const bucket=createClient(current.access_token,requestSignal,onProgress).storage.from(BUCKET);
         if(knownNames.has(name)){
           const {data,error}=await bucket.list(prefix,{search:name,limit:1});
           if(error)throw error;
           if(data.some(row=>row.name===name&&row.id))return name;
         }
         return uploadPhoto(bucket,prefix,local,takenOn,name);
-      },signal,150000);
+      },signal,30*60*1000);
     }catch(error){
       signal.throwIfAborted();
       const kind=uploadFailure(error);

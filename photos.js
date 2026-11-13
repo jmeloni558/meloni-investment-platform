@@ -1,6 +1,6 @@
 import {cameraTimestamp,stampPhoto,dateParts,uprightJpeg} from './photo-dates.mjs?v=5';
 import {BUCKET,safeName,validateFile,originalName,listPhotos} from './photo-library.mjs?v=4';
-import {bounded,sendQueuedPhoto,uploadFailure} from './photo-upload-queue.mjs?v=2';
+import {bounded,sendQueuedPhoto,uploadFailure} from './photo-upload-queue.mjs?v=3';
 const $=id=>document.getElementById(id);
 let embedded=false;try{embedded=parent!==window&&parent.location.origin===location.origin&&!!parent.PropertyThesisDesktopPhotos;}catch(_){}
 if(embedded){
@@ -16,10 +16,33 @@ window.PropertyThesisPhotos={canNavigate:()=>{if(busy||dirtyDescriptions.size){s
 const projectUrl='https://lmaiqpkogmmsldkziggy.supabase.co';
 const publishableKey='sb_publishable_Lo83N3JsBNhwhRDDAt8mBA_1QTFymf7';
 const client=window.PropertyThesisSession?.getClient()||window.supabase?.createClient(projectUrl,publishableKey);
-function createUploadClient(token,signal){
+function createUploadClient(token,signal,onProgress){
+  function request(url,options){
+    if(options?.method?.toUpperCase()!=='POST'||!(options.body instanceof FormData))return fetch(url,{...options,signal});
+    return new Promise((resolve,reject)=>{
+      signal.throwIfAborted();
+      const xhr=new XMLHttpRequest();
+      xhr.open('POST',url);
+      new Headers(options.headers).forEach((value,key)=>xhr.setRequestHeader(key,value));
+      let timer;
+      const abort=()=>xhr.abort();
+      const resetTimer=()=>{clearTimeout(timer);timer=setTimeout(abort,90000);};
+      xhr.upload.onprogress=event=>{
+        resetTimer();
+        if(event.lengthComputable)onProgress?.(Math.floor(100*event.loaded/event.total));
+      };
+      xhr.onload=()=>resolve(new Response(xhr.responseText,{status:xhr.status,statusText:xhr.statusText,headers:{'Content-Type':xhr.getResponseHeader('Content-Type')||'application/json'}}));
+      xhr.onerror=()=>reject(Error('Network connection interrupted'));
+      xhr.onabort=()=>reject(signal.aborted?signal.reason:new DOMException('Upload stalled','TimeoutError'));
+      xhr.onloadend=()=>{clearTimeout(timer);signal.removeEventListener('abort',abort);};
+      signal.addEventListener('abort',abort,{once:true});
+      resetTimer();
+      xhr.send(options.body);
+    });
+  }
   return window.supabase.createClient(projectUrl,publishableKey,{
     accessToken:async()=>token,
-    global:{fetch:(url,options)=>fetch(url,{...options,signal})}
+    global:{fetch:request}
   });
 }
 let user=null,properties=[],selected=null,photos=[],queue=[],busy=false,epoch=0,installPrompt,listMode='active';
@@ -487,6 +510,20 @@ $('upload').onclick=()=>run(async()=>{
   async function worker(){
     while(next<waiting.length&&!controller.signal.aborted&&!interruption){
       check(version);
+      if(navigator.onLine===false){
+        status('Waiting for connection. Keep this page open to resume.');
+        await new Promise(resolve=>{
+          function resume(){
+            window.removeEventListener('online',resume);
+            controller.signal.removeEventListener('abort',resume);
+            resolve();
+          }
+          window.addEventListener('online',resume,{once:true});
+          controller.signal.addEventListener('abort',resume,{once:true});
+          if(navigator.onLine||controller.signal.aborted)resume();
+        });
+        continue;
+      }
       const item=waiting[next++];
       setItemState(item,'Uploading…');
       try{
@@ -496,6 +533,7 @@ $('upload').onclick=()=>run(async()=>{
             return item.cameraTime?.slice(0,10)||null;
           },
           createClient:createUploadClient,knownNames:confirmed,signal:controller.signal,
+          onProgress:percent=>setItemState(item,'Uploading '+percent+'%'),
           onRetry:(number,kind)=>setItemState(item,(kind==='auth'?'Renewing sign-in':'Connection interrupted')+' · retry '+number+' of 2')
         });
         check(version);if(item.cameraTime!==undefined)cameraTimes.set(prefix+'/'+item.name,item.cameraTime);
@@ -507,7 +545,7 @@ $('upload').onclick=()=>run(async()=>{
         if(controller.signal.aborted){setItemState(item,'Ready');break;}
         const kind=uploadFailure(error);
         setItemState(item,'Failed: '+(error.message||'Upload interrupted'));failures++;
-        if(kind!=='file')interruption=kind==='auth'?'Sign-in could not be renewed.':'The connection is unavailable.';
+        if(kind==='auth')interruption='Sign-in could not be renewed.';
       }
       status(uploaded+' of '+waiting.length+' photos confirmed.');
     }
@@ -631,7 +669,7 @@ $('signout').onclick=()=>{
   });
 };
 addEventListener('beforeunload',e=>{if(busy||dirtyDescriptions.size||queue.some(x=>x.state!=='Uploaded'&&!x.invalid)){e.preventDefault();e.returnValue='';}});
-addEventListener('offline',()=>status('You are offline. Keep this page open and retry remaining uploads when connected.',true));
+addEventListener('offline',()=>status('You are offline. Keep this page open to resume the upload.',true));
 const installedDisplay=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 $('install').hidden=installedDisplay();
 function showInstallHelp(){const help=$('installHelp');help.open=true;help.querySelector('summary').focus();help.scrollIntoView({block:'nearest'});}
