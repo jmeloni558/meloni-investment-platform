@@ -58,7 +58,8 @@ body.pt-orders-open #fieldPhotoPane{display:none}
 #fieldDashboardHost #ptOrders article.od-field-order{padding:6px 4px}
 #fieldDashboardHost #ptOrders .od-field-order .od-schedule{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}
 #fieldDashboardHost #ptOrders .od-field-actions{grid-column:2/-1;justify-self:start;gap:6px;margin-top:4px}
-#fieldDashboardHost #ptOrders .od-field-order :is(.od-appointment-warning,.od-order-appointment){margin-inline-start:auto;text-align:right}
+#fieldDashboardHost #ptOrders .od-field-order .od-appointment-warning{margin-inline-start:auto;text-align:right}
+#fieldDashboardHost #ptOrders .od-field-order .od-order-appointment{flex-basis:100%;text-align:left}
 #fieldDashboardHost :is(#od-new-list,#od-manage-clients){display:none}
 
 @media(max-width:760px){
