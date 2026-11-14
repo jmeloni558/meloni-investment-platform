@@ -948,6 +948,14 @@
     };
     field('attempt-cancel').onclick=()=>field('attempt-dialog').close();
     for(const id of ['call-number','text-number','phone-cancel'])field(id).onclick=()=>field('phone-dialog').close();
+    if(!fieldApp)field('text-number').onclick=async event=>{
+      event.preventDefault();
+      const number=field('text-number').getAttribute('href').slice(4);
+      field('phone-dialog').close();
+      try{const {openInitialText}=await import('./order-initial-text.mjs?v=1');
+        openInitialText({number,kind:field('kind').value,client:field('client').value,address:field('address').value});
+      }catch(e){field('error').textContent='Could not open the text composer. Please refresh and try again.';}
+    };
     if(fieldApp){
       document.getElementById('fieldDashboardHost').append(panel);
       const calendar=field('calendar');
