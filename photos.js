@@ -843,5 +843,5 @@ if(window===parent){
     }finally{restoring=false;}
   });
   const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./order-dashboard.css?v=order-notice-font-1';document.head.append(sheet);
-  import('./order-dashboard.js?v=field-velocity-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
+  import('./order-dashboard.js?v=followup-text-1').catch(()=>status('Dashboard could not load. Use Update app to retry.',true));
 }

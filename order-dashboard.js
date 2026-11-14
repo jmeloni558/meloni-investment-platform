@@ -562,6 +562,12 @@
         const action=el(type==='tel'?'button':'a'),editValue=el('button','Edit');
         editValue.type='button';editValue.setAttribute('aria-label','Edit '+poc+' '+title);
         if(type==='tel')action.type='button';
+        const initialSent=type==='tel'?el('input'):null;
+        if(initialSent){
+          initialSent.type='checkbox';initialSent.className='od-initial-text-sent';
+          initialSent.checked=method.initialTextSent===true || method.attemptTypes?.some((t,n)=>t==='Text' && method.attempts?.[n])===true;
+          initialSent.setAttribute('aria-label',poc+' '+title+' initial text sent');
+        }
         function showValue(){
           const value=input.value.trim(),target=type==='tel'?phoneTarget(value):null;
           const usable=!!value && (type==='tel'?!!target:input.validity.valid);
@@ -571,12 +577,16 @@
             field('phone-number').textContent=value;
             field('call-number').href='tel:'+target.dial;
             field('text-number').href='sms:'+target.sms;
+            field('text-number').dataset.initialSent=String(initialSent.checked || Array.from(row.querySelectorAll('.od-contact-attempts input[type=checkbox]')).some(c=>c.checked && c.dataset.method==='Text'));
+            field('manual-text').href='sms:'+target.sms;
             field('phone-dialog').showModal();
           };
         }
         editValue.onclick=()=>{action.hidden=editValue.hidden=true;input.hidden=false;input.focus();};
-        input.onchange=showValue;
+        let priorPhone=type==='tel'?phoneTarget(input.value)?.sms:null;
+        input.onchange=()=>{if(initialSent){const next=phoneTarget(input.value)?.sms;if(next!==priorPhone)initialSent.checked=false;priorPhone=next;}showValue();};
         entry.append(caption,input,action,editValue);showValue();
+        if(initialSent){const sentLabel=el('label','Initial text sent');sentLabel.hidden=!!fieldApp;sentLabel.prepend(initialSent);entry.append(sentLabel);}
         const attempts=el('fieldset');attempts.className='od-contact-attempts';attempts.append(el('legend','Attempts'));
         for(let n=0;n<3;n++){
           const check=el('input'),attempt=el('label',String(n+1));check.type='checkbox';
@@ -595,9 +605,10 @@
     return Array.from(field('contacts').children,group=>{
       const contact={name:group.querySelector('.od-poc-name').value.trim()};
       group.querySelectorAll('.od-contact-row').forEach((row,i)=>{
-        const checks=Array.from(row.querySelectorAll('input[type=checkbox]'));
+        const checks=Array.from(row.querySelectorAll('.od-contact-attempts input[type=checkbox]'));
         const method={value:row.querySelector('input').value.trim(),attempts:checks.map(check=>check.checked)};
         if(contactMethods[i][2]==='tel')method.attemptTypes=checks.map(check=>check.checked && check.dataset.method || null);
+        if(contactMethods[i][2]==='tel')method.initialTextSent=row.querySelector('.od-initial-text-sent').checked;
         contact[contactMethods[i][0]]=method;
       });
       return contact;
@@ -934,7 +945,7 @@
       <dialog id="od-attempt-dialog" aria-labelledby="od-attempt-title" closedby="any"><h2 id="od-attempt-title">Record contact attempt</h2><p id="od-attempt-context"></p>
       <button type="button" id="od-attempt-call">Call</button> <button type="button" id="od-attempt-text">Text</button> <button type="button" id="od-attempt-cancel">Cancel</button></dialog>
       <dialog id="od-phone-dialog" aria-labelledby="od-phone-number" closedby="any">
-      <h2 id="od-phone-number"></h2><a id="od-call-number">Call</a> <a id="od-text-number">Text</a>
+      <h2 id="od-phone-number"></h2><a id="od-call-number">Call</a> <a id="od-text-number">Text</a> <a id="od-manual-text" ${fieldApp?'hidden':''}>Manual text</a>
       <button id="od-phone-cancel" type="button">Cancel</button></dialog>`;
     field('loe-handled').onclick=async()=>{
       if(!editing?.missing_loe)return;
@@ -947,8 +958,9 @@
       catch(e){field('error').textContent=e.message;}
     };
     field('attempt-cancel').onclick=()=>field('attempt-dialog').close();
-    for(const id of ['call-number','text-number','phone-cancel'])field(id).onclick=()=>field('phone-dialog').close();
+    for(const id of ['call-number','text-number','manual-text','phone-cancel'])field(id).onclick=()=>field('phone-dialog').close();
     if(!fieldApp)field('text-number').onclick=async event=>{
+      if(field('text-number').dataset.initialSent==='true'){field('phone-dialog').close();return;}
       event.preventDefault();
       const number=field('text-number').getAttribute('href').slice(4);
       field('phone-dialog').close();

@@ -12,7 +12,7 @@ async function scenario(browser,mobile){
   window.writes=[];window.inserts=[];window.testRow=row;
   function builder(table){
    let patch,conditions={};
-   const q={select(){return q},eq(k,v){conditions[k]=v;return q},is(){return q},order(){return q},update(v){patch=v;return q},range:async()=>({data:[{...row}]}),
+   const q={select(){return q},eq(k,v){conditions[k]=v;return q},is(){return q},in(){return q},order(){return q},update(v){patch=v;return q},range:async()=>({data:[{...row}]}),
     insert:async v=>{inserts.push(v);return{}},maybeSingle:async()=>{
      if(table==='order_members')return {data:{photo_owner:'u'}};
      if(!patch)return {data:{...row}};
@@ -58,6 +58,16 @@ async function scenario(browser,mobile){
  await page.locator('#od-details').waitFor({state:'hidden'});assert.equal(await page.evaluate(()=>testRow.gate_code),'1234');
  await page.locator('[data-order]').first().click();assert.equal(await page.locator('#od-notes').inputValue(),'Final');assert.deepEqual(await page.evaluate(()=>Object.keys(writes[0])),['notes']);
  await page.locator('#od-contact-0-phone1').fill('5551234567');await page.locator('#od-contact-0-phone1').press('Tab');
+ if(!mobile){
+  await page.locator('.od-initial-text-sent').first().check();
+  await page.waitForFunction(()=>testRow.points_of_contact?.[0]?.phone1.initialTextSent===true);
+  assert.equal(await page.evaluate(()=>testRow.points_of_contact[0].phone1.attempts.length),3);
+  await page.getByRole('button',{name:'5551234567',exact:true}).click();
+  assert.equal(await page.locator('#od-text-number').getAttribute('data-initial-sent'),'true');
+  assert.equal(await page.locator('#od-manual-text').getAttribute('href'),'sms:5551234567');
+  assert.equal(await page.locator('#od-manual-text').isVisible(),true);
+  await page.locator('#od-phone-cancel').click();
+ }
  await page.getByRole('button',{name:/POC 1 Phone 1 attempt 1:/}).click();await page.locator('#od-attempt-text').click();
  await page.waitForFunction(()=>testRow.points_of_contact?.[0]?.phone1.attemptTypes[0]==='Text');
  await page.evaluate(()=>{testRow.updated_at='other-device';testRow.notes='Other device note'});
