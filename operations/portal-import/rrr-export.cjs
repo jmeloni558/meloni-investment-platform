@@ -3,7 +3,7 @@ const {saleDate,mlsNumber}=require('../bpo/general-fields.cjs');
 const facts=require('./rrr-facts.cjs');
 const source=require('./rrr-source.cjs');
 const adjustmentRemarks=require('./rrr-adjustment-remarks.cjs');
-const clientOf=v=>['rrr','boa','stewart','stewart-fannie'].includes(v._clientTemplate)?v._clientTemplate:'general';
+const clientOf=v=>['rrr','boa','stewart','stewart-fannie','fix-flip'].includes(v._clientTemplate)?v._clientTemplate:'general';
 function exportRRR(v,sourceRows=[]){
  if(clientOf(v)!=='rrr')throw Error('Choose RRR as the client before exporting.');
  const subject={address:v['sold.0.address']||v['active.0.address'],city:v['sold.0.city'],state:v['sold.0.state'],zip:v['sold.0.zip']};
