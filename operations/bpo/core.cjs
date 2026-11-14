@@ -15,6 +15,12 @@ function subjectEdit(input,name,value){const v={...input},match=/^(sold|active)\
 function recalculate(input){const v=General.generalFields(Subject.generalSubjectDefaults(V14.normalize(input)));v._roomDefaults={...(input._roomDefaults||{})};for(const kind of ['sold','active'])for(let i=0;i<4;i++){
  const p=`${kind}.${i}.`,beds=number(v[p+'beds']),rooms=v[p+'rooms'],prior=v._roomDefaults[p+'rooms'];if(beds!==null&&Number.isInteger(beds)&&beds>=0&&(rooms===undefined||rooms===''||(prior!==undefined&&String(rooms)===String(prior)))){v[p+'rooms']=String(beds+3);v._roomDefaults[p+'rooms']=v[p+'rooms'];}const price=number(v[p+'price']),gla=number(v[p+'gla']);v[p+'ppsf']=price!==null&&gla>0?money(price/gla):'';
  if(i){const fs=[...new Set([...schema.filter(f=>f.name.startsWith(p+'adj_')).map(f=>f.name),...Object.keys(v).filter(n=>n.startsWith(p+'adj_'))])].map(name=>({name}));let sum=0,invalid=false;for(const f of fs){const x=v[f.name];if(x!==undefined&&String(x).trim()!==''){const n=number(x);if(n===null)invalid=true;else sum+=n;}}v[p+'net']=invalid||(price===null&&!fs.some(f=>String(v[f.name]??'').trim()))?'':money(sum);v[p+'adjusted']=!invalid&&price!==null?money(price+sum):'';}
+ }if(v._clientTemplate==='fix-flip'&&v._fixFlip){
+ // Step 3 is the repair source of truth for this workflow, including the legacy form read by the summary writer.
+ let r;try{r=require('./fix-flip.cjs').fixFlip.calculate(v._fixFlip);}catch(_){}
+ if(r){for(let i=0;i<10;i++){v['repair.'+i+'.description']='';v['repair.'+i+'.cost']='';v['repair.'+i+'.recommended']=false;}
+ v['repair.0.description']='Repair scope - see attached estimate';v['repair.0.cost']=money(r.subtotal.budget);v['repair.0.recommended']=r.subtotal.budget>0;
+ v['repair.1.description']='Repair contingency ('+r.n.contingency+'%)';v['repair.1.cost']=money(r.contingency.budget);v['repair.1.recommended']=r.contingency.budget>0;}
  }let total=0,invalid=false;for(let i=0;i<10;i++){const x=v[`repair.${i}.cost`];if(x!==undefined&&String(x).trim()!==''){const n=number(x);if(n===null||n<0)invalid=true;else total+=n;}}v['repair.total']=invalid?'':money(total);return Proximity.applyProximity(v);}
 const groups=[...new Set(schema.map(f=>f.group).filter(Boolean))].map(g=>schema.filter(f=>f.group===g).map(f=>f.name));
 const calculated=n=>byName.get(n)?.readonly||/\.(ppsf|net|adjusted)$/.test(n)||n==='repair.total';
