@@ -97,7 +97,7 @@
     if(error)throw error;
     return new Map(data.map(set=>[set.order_id,set]));
   }
-  let mapsIssues=new Map();
+  let mapsIssues=new Map(),mapsPending=new Set();
   const mapsAddressKey=address=>address.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   function openMapsIssue(issue){
     if(!issue)return;
@@ -136,7 +136,7 @@
     dialog.showModal();
   }
   async function showMapsIssues(version,current){
-    const result=await db.rpc('inspection_sync_issues');
+    const result=await db.rpc('inspection_sync_status');
     if(version!==generation || current!==request || !panel)return;
     const box=field('maps-issues');
     if(result.error){
@@ -144,15 +144,18 @@
       box.textContent='Google Maps sync status is unavailable. Refresh the dashboard to check again.';
       return;
     }
-    mapsIssues=new Map((result.data || []).map(issue=>[mapsAddressKey(issue.address),issue]));
+    const issues=(result.data || []).filter(item=>item.status==='issue');
+    mapsIssues=new Map(issues.map(issue=>[mapsAddressKey(issue.address),issue]));
+    mapsPending=new Set((result.data || []).filter(item=>item.status==='pending').map(item=>mapsAddressKey(item.address)));
+    for(const pending of field('list').querySelectorAll('[data-maps-pending]'))pending.hidden=!mapsPending.has(pending.dataset.mapsPending);
     for(const flag of field('list').querySelectorAll('[data-maps-address]')){
       flag.hidden=!mapsIssues.has(flag.dataset.mapsAddress);
     }
     box.replaceChildren();
-    box.hidden=!result.data?.length;
+    box.hidden=!issues.length;
     if(box.hidden)return;
     box.append(el('strong','Google Maps needs attention'));
-    for(const issue of result.data){
+    for(const issue of issues){
       const row=el('p'), action=issue.wanted?'add':'remove';
       row.append(el('span',issue.address+' - Could not confirm '+(issue.wanted?'addition to':'removal from')+' Inspections. '+issue.reason+' '));
       const link=el('a','Open Inspections');
@@ -340,7 +343,11 @@
         flag.dataset.mapsAddress=mapsAddressKey(o.address);
         flag.hidden=!mapsIssues.has(flag.dataset.mapsAddress);
         flag.onclick=()=>openMapsIssue(mapsIssues.get(flag.dataset.mapsAddress));
-        row.append(flag);
+        const pending=el('span','Google Maps Pending');
+        pending.className='od-address-issue od-maps-pending';
+        pending.dataset.mapsPending=mapsAddressKey(o.address);
+        pending.hidden=!mapsPending.has(pending.dataset.mapsPending);
+        row.append(flag,pending);
       }
       field('list').append(row);
     }
@@ -1252,7 +1259,7 @@
     const id=session?.user?.id||null;if(id===account)return;
     clearTimeout(midnightTimer);clearTimeout(searchTimer);page=0;openDates=[];
     clearTimeout(autosaveTimer);dirty=false;editing=null;baseline=null;
-    const old=account;mapsIssues.clear();account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';selectedList='';namedLists=[];
+    const old=account;mapsIssues.clear();mapsPending.clear();account=id;const version=++generation;hide();menu?.remove();panel?.remove();panel=menu=membership=null;orders=[];clients=[];currentList='open';selectedList='';namedLists=[];
     if(fieldApp){
       document.getElementById('fieldViews').hidden=true;
       document.getElementById('fieldCalendar')?.remove();
@@ -1284,6 +1291,7 @@
     }
     window.addEventListener('focus',refreshVisibleOrders);
     setInterval(refreshVisibleOrders,60000);
+    setInterval(()=>{if(!document.hidden && panel && document.body.classList.contains('pt-orders-open'))showMapsIssues(generation,request).catch(()=>{});},15000);
 
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
