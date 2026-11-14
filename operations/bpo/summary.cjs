@@ -1,6 +1,7 @@
 'use strict';
 const {PDFDocument,StandardFonts,rgb}=require('pdf-lib');
-function fingerprint(v){const parts=[v._summaryNotes||{},Object.keys(v).filter(k=>!k.startsWith('_')).sort().map(k=>[k,v[k]])];if(v._clientTemplate==='fix-flip')parts.push(v._fixFlip||{});return JSON.stringify(parts);}
+function stable(value){return Array.isArray(value)?value.map(stable):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(k=>[k,stable(value[k])])):value;}
+function fingerprint(v){const parts=[v._summaryNotes||{},Object.keys(v).filter(k=>!k.startsWith('_')).sort().map(k=>[k,v[k]])];if(v._clientTemplate==='fix-flip')parts.push(stable(v._fixFlip||{}));return JSON.stringify(parts);}
 const text=x=>String(x??'').trim();
 const cash=x=>text(x)?Number(String(x).replace(/[$,]/g,'')).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'not entered';
 function includeFixFlipSummary(v,summary){
