@@ -15,7 +15,7 @@
 
  function render(){
   let menu=document.getElementById('ptPhotoLibrary');
-  const calendar=document.querySelector('#ptOrders nav #od-calendar');
+  const calendar=document.querySelector('#ptOrders nav #od-setup-folders')||document.querySelector('#ptOrders nav #od-calendar');
   if(allowed&&desktop()&&calendar){
    if(!menu){menu=document.createElement('a');menu.id='ptPhotoLibrary';menu.href='/photos';menu.textContent='Photos';}
    if(calendar.nextElementSibling!==menu)calendar.after(menu);
