@@ -440,6 +440,23 @@ const dismissNavigationMenu=()=>document.getElementById('ptBpoMenu')?.remove();
 for(const event of ['scroll','wheel','touchmove'])window.addEventListener(event,dismissNavigationMenu,{capture:true,passive:true});
 window.addEventListener('resize',dismissNavigationMenu,{passive:true});
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
-async function check(){const id=user();if(checkedUser!==id){allowed=false;checkedUser=id;lastCheck=0;release();for(const [key,label] of [['appNavExisting','Saved Properties'],['appNavNew','New Analysis']]){const nav=document.getElementById(key);if(nav){nav.textContent=label;nav.removeAttribute('aria-haspopup');nav.removeAttribute('title');}}document.getElementById('ptBpoMenu')?.remove();}if(!id||checking||allowed||Date.now()-lastCheck<60000)return;checking=true;lastCheck=Date.now();try{allowed=await access();}finally{checking=false;}const b=document.getElementById('appNavExisting');if(b&&allowed){b.setAttribute('aria-haspopup','true');b.textContent='Saved Properties ▾';b.title='Choose Income Properties or Comparable Sales / BPOs';}const newNav=document.getElementById('appNavNew');if(newNav&&allowed){newNav.setAttribute('aria-haspopup','true');newNav.textContent='New Analysis ▾';newNav.title='Choose Income Analysis or Comparable Sales';}}
+function syncNavigation(){
+ for(const [key,label,title] of [['appNavExisting','Saved Properties','Choose Income Properties or Comparable Sales / BPOs'],['appNavNew','New Analysis','Choose Income Analysis or Comparable Sales']]){
+  const nav=document.getElementById(key);if(!nav)continue;
+  const text=label+(allowed?' ▾':'');if(nav.textContent!==text)nav.textContent=text;
+  if(allowed){nav.setAttribute('aria-haspopup','true');nav.title=title;}
+  else{nav.removeAttribute('aria-haspopup');nav.removeAttribute('title');}
+ }
+}
+async function check(){
+ const id=user();
+ if(checkedUser!==id){allowed=false;checkedUser=id;lastCheck=0;release();document.getElementById('ptBpoMenu')?.remove();}
+ syncNavigation();
+ if(!id||checking||allowed||Date.now()-lastCheck<5000)return;
+ checking=true;lastCheck=Date.now();
+ try{const enabled=await access();if(id===user()&&id===checkedUser)allowed=enabled;}
+ catch(_){/* Retry transient session/network failures without losing navigation setup. */}
+ finally{checking=false;syncNavigation();}
+}
 setInterval(async()=>{await check();const id=new URL(location.href).searchParams.get('bpo');if(allowed&&id&&!dialog&&!restoring){restoring=true;try{await open(id);}finally{restoring=false;}}},3000);check();window.PropertyThesisBPO={open,createRrr};
 })();
