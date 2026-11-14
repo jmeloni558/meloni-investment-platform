@@ -20,9 +20,9 @@ KEY = subprocess.check_output([str(POWERSHELL), '-NoProfile', '-NonInteractive',
     cwd=HERE, creationflags=subprocess.CREATE_NO_WINDOW, timeout=15).decode().strip()
 
 
-def redeem(ticket):
+def redeem(ticket, procedure='take_desktop_folder_ticket'):
     body = json.dumps(dict(worker_key=KEY, open_ticket=ticket)).encode()
-    request = Request(CONFIG['api']+'/rest/v1/rpc/take_desktop_folder_ticket', data=body,
+    request = Request(CONFIG['api']+'/rest/v1/rpc/'+procedure, data=body,
                       headers={'apikey':CONFIG['publishable'],'Content-Type':'application/json'})
     with urlopen(request, timeout=10) as response:
         return json.load(response)
@@ -81,11 +81,38 @@ if(owner)owner.postMessage({type:'rrr-ready'},site);
 </script>"""
 
 
+SETUP_PAGE = b"""<!doctype html><meta charset="utf-8"><title>Setup Folders</title>
+<style>body{font:16px system-ui;margin:32px;color:#193c42}button{padding:10px 18px}</style>
+<h1>Setup Folders</h1><p id="status">Connecting to PropertyThesis...</p><ul id="issues"></ul>
+<button onclick="window.close()">Close</button>
+<script>
+const site='https://propertythesis.com',owner=window.opener;
+async function poll(){
+ const response=await fetch('/setup-state');
+ const state=await response.json();
+ document.getElementById('status').textContent=state.message+' | '+state.completed+' prepared, '+state.skipped+' already set up';
+ const list=document.getElementById('issues');list.replaceChildren();
+ for(const issue of state.issues){const li=document.createElement('li');li.textContent=issue;list.append(li);}
+ if(state.running)setTimeout(poll,2000);
+}
+async function receive(event){
+ if(!owner||event.source!==owner||event.origin!==site||event.data?.type!=='setup-ticket')return;
+ removeEventListener('message',receive);
+ try{
+ const response=await fetch('/setup-folders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket:event.data.ticket})});
+ if(!response.ok)throw Error('Could not start setup. Return to the dashboard and try again.');
+ owner.postMessage({type:'setup-started'},site);poll();
+ }catch(e){document.getElementById('status').textContent=e.message;}
+}
+addEventListener('message',receive);
+if(owner)owner.postMessage({type:'setup-ready'},site);
+</script>"""
+
 class FolderRequest(BaseHTTPRequestHandler):
     def local_request(self):
         return (self.headers.get('Host') == '127.0.0.1:45273' and
-                ((self.headers.get('Origin') == 'https://propertythesis.com' and self.path in ('/stewart-photos', '/rrr-sources')) or
-                 (self.headers.get('Origin') == 'http://127.0.0.1:45273' and self.path == '/rrr-sources')))
+                ((self.headers.get('Origin') == 'https://propertythesis.com' and self.path in ('/stewart-photos', '/rrr-sources', '/setup-folders')) or
+                 (self.headers.get('Origin') == 'http://127.0.0.1:45273' and self.path in ('/rrr-sources', '/setup-folders'))))
 
     def do_OPTIONS(self):
         if not self.local_request():
@@ -107,6 +134,20 @@ class FolderRequest(BaseHTTPRequestHandler):
             if not 0 < size <= 4 * 1024 * 1024:
                 return self.send_error(413)
             payload = json.loads(self.rfile.read(size))
+            if self.path == '/setup-folders':
+                from setup_folders import start
+                orders = redeem(payload['ticket'], 'take_bpo_setup_ticket')
+                if orders is None:
+                    return self.send_error(410)
+                state = start(orders)
+                body = json.dumps(state).encode()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Cache-Control', 'no-store')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
             link = redeem(payload['ticket'])
             if not link:
                 return self.send_error(410)
@@ -139,6 +180,18 @@ class FolderRequest(BaseHTTPRequestHandler):
             return self.send_error(404, 'Local photo export unavailable')
 
     def do_GET(self):
+        if self.headers.get('Host') == '127.0.0.1:45273' and self.path in ('/setup', '/setup-state'):
+            from setup_folders import STATE
+            body = SETUP_PAGE if self.path == '/setup' else json.dumps(STATE).encode()
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8' if self.path == '/setup' else 'application/json')
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('X-Frame-Options', 'DENY')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
         if self.path == '/rrr-import' and self.headers.get('Host') == '127.0.0.1:45273':
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')

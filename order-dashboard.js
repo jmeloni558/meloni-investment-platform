@@ -682,6 +682,29 @@
     directions.className='od-directions';directions.setAttribute('aria-label','Driving directions to '+address);
     return directions;
   }
+  async function setupFolders(){
+    const say=message=>{field('status').textContent=message;};
+    const popup=window.open('about:blank','_blank','width=650,height=420');
+    if(!popup){say('Allow popups to start folder setup.');return;}
+    let timer;
+    const cleanup=()=>{clearTimeout(timer);window.removeEventListener('message',receive);};
+    const receive=async event=>{
+      if(event.source!==popup || event.origin!=='http://127.0.0.1:45273')return;
+      if(event.data?.type==='setup-ready'){
+        try{
+          const {data,error}=await db.rpc('issue_bpo_setup_ticket');
+          if(error)throw error;
+          popup.postMessage({type:'setup-ticket',ticket:data},'http://127.0.0.1:45273');
+        }catch(error){cleanup();popup.close();say(error.message);}
+      }else if(event.data?.type==='setup-started'){
+        cleanup();say('Folder setup started. Follow progress in the Setup Folders window.');
+      }
+    };
+    window.addEventListener('message',receive);
+    timer=setTimeout(()=>{cleanup();say('Folder setup could not connect. Use your work computer with the PropertyThesis folder helper running.');},60000);
+    popup.location='http://127.0.0.1:45273/setup';
+  }
+
   function readRrrSources(orderId){
     const origin='http://127.0.0.1:45273';
     const popup=window.open('about:blank','_blank','popup,width=520,height=200');
@@ -853,7 +876,7 @@
     if(panel)return;
     panel=el('section');panel.id='ptOrders';panel.innerHTML=`
       <header><div><small>ORDER MANAGEMENT</small><h1>Dashboard</h1><p id="od-count" aria-live="polite"><span id="od-total"></span><span id="od-today"></span><span id="od-overdue"></span></p></div></header>
-      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><button type="button" id="od-main-open">Open orders</button><span class="od-open-picker" id="od-picker" hidden><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-rename-list" hidden>Rename list</button><button id="od-delete-list" hidden>Delete list</button><button id="od-hold">On Hold</button><button id="od-toggle-hold" type="button" hidden></button><button id="od-completed">Completed</button><button type="button" id="od-manage-clients">Manage clients</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Calendar</a></nav>
+      <nav><button id="od-new">New order</button><button id="od-new-list">New List</button><button type="button" id="od-main-open">Open orders</button><span class="od-open-picker" id="od-picker" hidden><select id="od-open" aria-label="Open orders lists"><option value="">Open orders</option></select></span><button id="od-rename-list" hidden>Rename list</button><button id="od-delete-list" hidden>Delete list</button><button id="od-hold">On Hold</button><button id="od-toggle-hold" type="button" hidden></button><button id="od-completed">Completed</button><button type="button" id="od-manage-clients">Manage clients</button><a id="od-calendar" href="https://outlook.cloud.microsoft/calendar/" target="_blank" rel="noopener">Calendar</a>${fieldApp?'':'<button type="button" id="od-setup-folders">Setup Folders</button>'}</nav>
       <dialog closedby="any" id="od-clients-dialog" aria-labelledby="od-clients-title">
       <h2 id="od-clients-title">Manage clients</h2>
       <form id="od-add-client-form"><label>New client name<input id="od-new-client" maxlength="160" required></label>
@@ -1173,6 +1196,7 @@
         hide();
       }
     });
+    if(!fieldApp)field('setup-folders').onclick=setupFolders;
     if(!fieldApp)field('calendar').onclick=event=>{
       if(event.defaultPrevented || !/Edg\//.test(navigator.userAgent))return;
       event.preventDefault();
