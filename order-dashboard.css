@@ -147,3 +147,5 @@ body.pt-orders-open #ptOrderNav.active{background:#175c92!important;border-color
 
 #ptOrders article .od-address-issue{flex:none;background:transparent;color:#ab1826;text-decoration:underline;font-weight:700;padding:5px 8px}
 #ptOrders .od-field-order .od-address-issue{grid-column:2/-1;justify-self:start;padding-left:0}
+
+#ptOrders article .od-maps-pending{color:#8a5700;text-decoration:none}

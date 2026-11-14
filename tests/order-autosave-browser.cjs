@@ -9,7 +9,8 @@ async function scenario(browser,mobile){
  await page.setContent('<div id="appNavShell"><button id="appNavNew"></button></div><nav id="fieldViews"><button id="fieldPhotos">Photos</button></nav><div id="fieldDashboardHost"></div>');
  await page.evaluate(mobile=>{
   const row={id:'one',address:'Test address',kind:'Marketing Photos',client:'Client',due:'2026-11-12',notes:'',updated_at:'1'};
-  window.writes=[];window.inserts=[];window.testRow=row;
+  window.writes=[];window.inserts=[];window.testRow=row;window.mapStatuses=[{address:row.address,wanted:true,status:'pending'}];
+  const realInterval=window.setInterval;window.setInterval=(fn,ms)=>{if(ms===15000)window.refreshMaps=fn;return realInterval(fn,ms)};
   function builder(table){
    let patch,conditions={};
    const q={select(){return q},eq(k,v){conditions[k]=v;return q},is(){return q},in(){return q},order(){return q},update(v){patch=v;return q},range:async()=>({data:[{...row}]}),
@@ -23,14 +24,23 @@ async function scenario(browser,mobile){
     then(resolve){resolve({data:table==='order_clients'?[{name:'Client',listed:true}]:[],count:0})}};
    return q;
   }
-  window.PropertyThesisSession={getClient:()=>({auth:{getSession:async()=>({data:{session:{user:{id:'u'}}}}),onAuthStateChange(){}},from:builder,rpc:()=>({maybeSingle:async()=>({data:{pending:false}})})})};
+  window.PropertyThesisSession={getClient:()=>({auth:{getSession:async()=>({data:{session:{user:{id:'u'}}}}),onAuthStateChange(){}},from:builder,rpc:name=>name==='inspection_sync_status'?Promise.resolve({data:window.mapStatuses}):({maybeSingle:async()=>({data:{pending:false}})})})};
   if(mobile)window.PropertyThesisFieldApp={canShowDashboard:()=>true,startOnDashboard:true,recordView(){}};
  },mobile);
  if(mobile){
   await page.addStyleTag({content:fs.readFileSync('photos.css','utf8')});
   }
  await page.addStyleTag({content:fs.readFileSync('order-dashboard.css','utf8')});
- await page.addScriptTag({content:source});await page.locator('[data-order]').first().click();
+ await page.addScriptTag({content:source});
+ await page.locator('[data-maps-pending]').waitFor({state:'visible'});
+ assert.equal(await page.locator('[data-maps-address]').isHidden(),true);
+ await page.evaluate(()=>{mapStatuses=[{address:testRow.address,wanted:true,status:'issue',reason:'Sync delayed'}];refreshMaps()});
+ await page.locator('[data-maps-address]').waitFor({state:'visible'});
+ assert.equal(await page.locator('[data-maps-pending]').isHidden(),true);
+ await page.evaluate(()=>{mapStatuses=[];refreshMaps()});
+ await page.locator('[data-maps-address]').waitFor({state:'hidden'});
+ assert.equal(await page.locator('[data-maps-pending]').isHidden(),true);
+ await page.locator('[data-order]').first().click();
  assert.ok(await page.locator('#od-save').isHidden());
  await page.locator('#od-notes').fill('First');await page.waitForFunction(()=>writes.length===1);
  await page.locator('#od-notes').fill('Final');await page.locator('#od-showingtime-requested').check();
