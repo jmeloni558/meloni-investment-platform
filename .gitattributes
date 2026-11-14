@@ -1,3 +1,5 @@
 /assets/bpo/*.pdf binary
 /assets/vendor/pdfjs-4.10.38/*.mjs -diff
 /bpo-core.js -diff
+
+/bpo-core.fix-flip-v1.js -diff
