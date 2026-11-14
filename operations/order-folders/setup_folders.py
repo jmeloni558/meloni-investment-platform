@@ -98,7 +98,9 @@ def batch(orders):
                 if status.exists() and verified(status.read_text(encoding="utf-8-sig"), folder):
                     STATE["completed"] += 1
                 else:
-                    STATE["issues"].append(order["address"] + " — setup incomplete. See the report status in its folder.")
+                    detail = status.read_text(encoding="utf-8-sig").strip() if status.exists() else "No report status was returned."
+                    detail = " ".join(detail.split())[:600]
+                    STATE["issues"].append(order["address"] + " — " + detail)
             except Exception as exc:
                 STATE["issues"].append(order["address"] + " — " + str(exc))
         STATE["message"] = "Setup finished"
