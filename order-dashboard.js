@@ -291,7 +291,7 @@
       const actions=fieldOrder && !o.photosFinished?el('span'):null;
       if(actions){
         actions.className='od-field-actions';
-        actions.append(directionsLink(o.address));
+        if(!o.velocity)actions.append(directionsLink(o.address));
       }
       const desktopFolder=!fieldApp && hasOrderFolder(o);
       const desktopPhotos=!fieldApp && o.photo_id && account===membership.photo_owner;
@@ -332,7 +332,7 @@
         (actions || row).append(button);
       }
       if(fieldOrder)row.append(schedule);
-      if(actions)row.append(actions);
+      if(actions?.childElementCount)row.append(actions);
       if(o.address && !o.list_name && !o.former_list_task){
         const flag=el('button','Address Issue');
         flag.type='button';
