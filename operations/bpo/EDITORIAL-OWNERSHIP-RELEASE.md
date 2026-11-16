@@ -1,0 +1,13 @@
+# Conversational summaries and ownership evidence
+
+The Laquinta package review found repetitive source-attribution wording and adjustment-grid recitation. Its Active Comp 2 narrative also described an REO although the attached MLS identifies Special Sale: None. A read-only inspection of the saved report found its combined ownership checkbox true while its extraction provenance value was false. This is a saved-data conflict; it does not establish where or why the checkbox changed.
+
+Both summary-only and full AI BPO writing now use shared editorial instructions: explain buyer appeal and comparable relevance, choose material valuation drivers, avoid row-by-row arithmetic, and retain detailed adjustment reasons in structured records. Reconciliation must describe the numerical range correctly and avoid alternate opinions in summary-only reports. Existing headings and length guidance remain. Explicit boilerplate and unsupported ownership claims trigger the existing validation/rewrite retry, never a silent substitution of facts.
+
+The summary context excludes raw combined ownership booleans and supplies property-specific evidence permissions. A combined flag, LLC owner name or corporate ownership is not proof of REO. Contradictory flags produce a review warning and cannot authorize an REO narrative. Extraction requires an explicit source statement. Full AI form completion rechecks ownership flags and requires a corresponding quotation; missing evidence remains unknown rather than fabricated. These checks are conservative citation checks, not verification of the underlying document's authenticity. Narratives still require review.
+
+## Publication
+
+Deploy all three Edge Functions, `bpo-summary`, `bpo-extract`, and `bpo-generate`, with their current relative dependencies including the new `bpo-summary/editorial.mjs`. Preserve existing authentication settings and project-specific configuration. This does not need a database migration. The frontend's new versioned core includes the matching completion validation and must be released with the functions; earlier AI outputs are not rewritten automatically.
+
+No saved customer reports or PDFs were modified in this change. After publication, review/correct the combined ownership checkbox in the affected report and generate a replacement summary. Verification uses a fixture of the observed flag/provenance conflict, explicit negative and positive ownership cases, per-property isolation, prose rejection, form completion and the existing BPO regressions. Live model writing with the new prompts has not been tested before deployment.
