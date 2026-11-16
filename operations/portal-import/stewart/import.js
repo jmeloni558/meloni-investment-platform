@@ -18,11 +18,13 @@ async function importStewartComps(payload) {
   function checkOrder() {
     const isFannie=[...document.querySelectorAll('h1,h2,h3')].some(el=>el.textContent.trim()==='FM MIT Interior BPO');
     if(fannie!==isFannie)stop('The open Stewart form does not match the selected importer.');
-    const heading = [...document.querySelectorAll('h1')].map(el=>norm(el.textContent.split(/\(\s*case\s*#/i)[0]));
+    // ZIP+4 is optional in Stewart headings; compare the five-digit delivery area.
+    const addressNorm = value => norm(value).replace(/\b(\d{5})-\d{4}$/, '$1');
+    const heading = [...document.querySelectorAll('h1')].map(el=>addressNorm(el.textContent.split(/\(\s*case\s*#/i)[0]));
     if(fannie){
       const canonicalStreet = street => street.replace(/\btrail\b/g,'trl');
-      const locality = norm([subject.city, subject.state, subject.zip].join(' '));
-      const address = norm(subject.address);
+      const locality = addressNorm([subject.city, subject.state, subject.zip].join(' '));
+      const address = addressNorm(subject.address);
       // Some exports already include the complete locality in the street field.
       const street = address.endsWith(' '+locality) ? address.slice(0,-(locality.length+1)) : address;
       const full = canonicalStreet(street)+' '+locality;
@@ -30,7 +32,7 @@ async function importStewartComps(payload) {
       if(!heading.some(h=>h.endsWith(' '+locality) && canonicalUnit(canonicalStreet(h.slice(0,-locality.length-1))+' '+locality)===canonicalUnit(full)))stop('Check the subject address, unit, city, state and ZIP on the open Fannie Mae order.');
       return;
     }
-    if (!heading.some(h=>h.startsWith(norm(subject.address)+' ') && h.endsWith(norm(subject.state+' '+subject.zip))))
+    if (!heading.some(h=>h.startsWith(norm(subject.address)+' ') && h.endsWith(addressNorm(subject.state+' '+subject.zip))))
       stop('The open order does not match the transfer subject street, state and ZIP.');
   }
   function control(kind,slot,key) {
