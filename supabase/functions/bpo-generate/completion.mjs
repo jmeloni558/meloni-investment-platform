@@ -1,3 +1,4 @@
+import {ownershipSupport} from '../bpo-summary/editorial.mjs';
 // Shared by the endpoint and browser: every applicable unfilled form control
 // must be considered, independently of the manual extraction restrictions.
 const protectedNames=new Set(['field_0002','field_0008','field_0015','field_0018','field_0019','field_0021','field_0477','field_0478','field_0483','field_0484']);
@@ -5,7 +6,7 @@ export const conditionChoices=['Poor','Fair','Average','Good','Excellent'];
 export const selectedCondition=values=>conditionChoices.includes(values._aiSubjectCondition)?values._aiSubjectCondition:null;
 const numericField=name=>/\.(price|gla)$/.test(name)||['field_0479','field_0480','market_months_supply'].includes(name);
 const metricField=name=>name.startsWith('market_')&&!['market_zip','market_county'].includes(name)||['field_0038','field_0039'].includes(name);
-const evidenceField=name=>metricField(name)||name==='market_county'||name==='sold.0.price'||/\.(rooms|basement|energy|utility|tenure|condition|quality|hvac|porches|fireplace|fence)$/.test(name);
+const evidenceField=name=>metricField(name)||name==='market_county'||name==='sold.0.price'||/\.(reo|rooms|basement|energy|utility|tenure|condition|quality|hvac|porches|fireplace|fence)$/.test(name);
 export const evidenceNames=plan=>plan.fields.filter(f=>evidenceField(f.name)).map(f=>f.name);
 export function completionPlan(values,schema){
  const active=['active.1','active.2','active.3'].filter(p=>values[p+'.address']);
@@ -14,6 +15,7 @@ export function completionPlan(values,schema){
   if(protectedNames.has(f.name)||f.readonly||f.group||f.kind==='select'||f.name.includes('.adj_')||/\.(ppsf|net|adjusted)$/.test(f.name)||f.name.startsWith('repair.'))return false;
   const m=f.name.match(/^(sold|active)\.(\d)\.(.+)$/);
   if(m&&((m[2]!=='0'&&!values[m[1]+'.'+m[2]+'.address'])||(m[1]==='active'&&m[2]==='0'&&m[3]!=='price')))return false;
+  if(f.name.endsWith('.reo'))return true; // Recheck the combined flag from this property's source.
   if(['field_0479','field_0480','field_0482'].includes(f.name))return true;
   if(condition&&f.name==='sold.0.condition')return true;
   if(assumedRenovated&&['sold.0.condition','sold.0.hvac'].includes(f.name))return true;
@@ -39,6 +41,7 @@ export function validateCompletion(result,plan){
  const metrics=plan.fields.filter(f=>evidenceField(f.name));
  if(!result.formEvidence||typeof result.formEvidence!=='object'||Array.isArray(result.formEvidence)||Object.keys(result.formEvidence).length!==metrics.length||metrics.some(f=>!Object.hasOwn(result.formEvidence,f.name)))throw Error('Account for each requested fact with an exact source quote or null.');
  for(const f of metrics){const quote=result.formEvidence[f.name];if(quote!==null&&(typeof quote!=='string'||quote.length>500))throw Error('Invalid form source quote.');
+  if(f.name.endsWith('.reo')){const support=ownershipSupport(quote);if(result.formFields[f.name]===true&&!support.reo&&!support.corporate)throw Error('Return true for '+f.name+' only with explicit affirmative REO or corporate ownership evidence for that property; otherwise use false for an explicit negative or null for unknown.');if(result.formFields[f.name]===false&&!support.negative)result.formFields[f.name]=null;continue;}
   const value=result.formFields[f.name],number=Number(String(value??'').replace(/[$,%]/g,''));
   const numbers=typeof quote==='string'?(quote.replace(/,/g,'').match(/-?\d+(?:\.\d+)?/g)||[]).map(Number):[];
   const propertyLabels={rooms:/\btotal\s+rooms|\brooms\s*[:=]/i,basement:/basement/i,energy:/energy|efficient|solar|insulat|green feature/i,utility:/functional|utility|layout|floor plan/i,tenure:/tenure|ownership|condominium|fee simple|leasehold|property rights/i,condition:/condition/i,quality:/quality|construction/i,hvac:/heating|cooling|hvac|air condition/i,porches:/porch|patio|deck/i,fireplace:/fireplace/i,fence:/fence|fencing/i};

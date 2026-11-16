@@ -23,6 +23,6 @@ test('subject and comparable data entry retain editable condition pickers and lo
  for(const name of ['sold.0.site','sold.1.site','active.3.site'])assert.match(ctx.formFields([C.schema.find(f=>f.name===name)]),/data-lot-unit/);
 });
 test('published workspace uses the same corrected source',()=>{
- assert.equal(fs.readFileSync('bpo-workspace.ai-bpo-v1.js','utf8'),source);
- assert.match(fs.readFileSync('app-core.html','utf8'),/bpo-workspace\.ai-bpo-v1\.js\?release=20261103-ai-bpo-reconciliation18/);
+ const asset=fs.readFileSync('app-core.html','utf8').match(/src="(bpo-workspace[^"?]+\.js)(?:\?[^" ]*)?"/)[1];
+ assert.equal(fs.readFileSync(asset,'utf8'),source);
 });
