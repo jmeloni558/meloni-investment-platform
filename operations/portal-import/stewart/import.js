@@ -65,6 +65,13 @@ async function importStewartComps(payload) {
     // Feed addresses can omit the directional or append a unit absent from the export.
     // Require exact MLS, ZIP, house number, street and any unit explicitly supplied.
     const explicit=address.match(/\bunit\s+(\S+)$/);
+    // A missing street suffix is safe only with corroborating MLS and ZIP.
+    // Do not erase conflicting suffixes, directionals, or unit information.
+    if(c.mls&&norm(c.mls)===norm(s.mls)&&zipcode(c)&&zipcode(c).slice(0,5)===s.zip.slice(0,5)&&secondOK&&!unit&&!explicit){
+      const suffix=/ (?:dr|st|rd|ave|ln|ct|blvd|ter|cir|trl)$/;
+      const oneSuffix=suffix.test(address)!==suffix.test(street);
+      if(oneSuffix&&address.replace(suffix,'')===street.replace(suffix,''))return true;
+    }
     if(fannie&&c.mls&&norm(c.mls)===norm(s.mls)&&zipcode(c)&&zipcode(c).slice(0,5)===s.zip.slice(0,5)&&secondOK){
       const base=address.replace(/\s+unit\s+\S+$/,'');
       const direction=/^(\d+[a-z]?) (?:n|s|e|w|ne|nw|se|sw) (.+)$/;
