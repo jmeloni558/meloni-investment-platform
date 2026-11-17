@@ -14,7 +14,7 @@ from export_photos import HERE, property_folder
 
 TYPES = {'.pdf':'application/pdf', '.docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
          '.doc':'application/msword', '.txt':'text/plain', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.png':'image/png'}
-LETTER = re.compile(r'\b(?:l\s*o\s*e|(?:letter|notice) of engagement|engagement (?:letter|agreement)|order (?:information|info|details|confirmation|assignment|form)|work order|assignment (?:letter|confirmation|details))\b', re.I)
+LETTER = re.compile(r'\b(?:l\s*o\s*e|eval\s*product\s*request|(?:letter|notice) of engagement|engagement (?:letter|agreement)|order (?:information|info|details|confirmation|assignment|form)|work order|assignment (?:letter|confirmation|details))\b', re.I)
 
 
 def words(value):
