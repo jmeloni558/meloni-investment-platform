@@ -918,7 +918,7 @@
       </div>
       <div class="od-fee-invoice od-entry-codes">
       <label>Order fee ($)<input type="number" id="od-fee" inputmode="decimal" min="0" max="9999999999.99" step="0.01"></label>
-      <div id="od-invoice-group" role="group" aria-labelledby="od-invoice-title" hidden><label id="od-invoice-title">QuickBooks invoice</label><div id="od-invoice" role="status"></div><button id="od-loe-handled" type="button" hidden>I handled the missing LOE</button></div>
+      <div id="od-invoice-group" role="group" aria-labelledby="od-invoice-title" hidden><label id="od-invoice-title">QuickBooks invoice</label><div id="od-invoice" role="status"></div><button id="od-loe-handled" type="button" hidden title="Clear Missing LOE after attaching the letter yourself">Added Manually</button></div>
       <button id="od-invoice-summary" type="button" aria-expanded="false" aria-controls="od-invoice-options" hidden>Invoice options</button></div>
       <fieldset id="od-billing" aria-label="QuickBooks invoice options"><p id="od-monthly" hidden>This BPO uses the date entered as its service date on the client's monthly invoice.</p>
       <div id="od-invoice-options" hidden><label>Existing open invoice number (optional)<input id="od-invoice-target" maxlength="21"></label><div id="od-invoice-lines"></div><button type="button" id="od-add-line">Add invoice line</button></div></fieldset>
