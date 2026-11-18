@@ -71,6 +71,13 @@ async function importStewartComps(payload) {
       const suffix=/ (?:dr|st|rd|ave|ln|ct|blvd|ter|cir|trl)$/;
       const oneSuffix=suffix.test(address)!==suffix.test(street);
       if(oneSuffix&&address.replace(suffix,'')===street.replace(suffix,''))return true;
+      // One substituted letter in a long street name, never in house number,
+      // directional, suffix or unit. Exact MLS and ZIP above are mandatory.
+      const streetParts=/^(\d+[a-z]?) ((?:(?:n|s|e|w|ne|nw|se|sw) )?)([a-z]{5,}) (dr|st|rd|ave|ln|ct|blvd|ter|cir|trl|way)$/;
+      const a=address.match(streetParts),b=street.match(streetParts);
+      if(a&&b&&a[1]===b[1]&&a[2]===b[2]&&a[4]===b[4]&&a[3].length===b[3].length&&
+        [...a[3]].filter((letter,i)=>letter!==b[3][i]).length===1)return true;
+
     }
     if(fannie&&c.mls&&norm(c.mls)===norm(s.mls)&&zipcode(c)&&zipcode(c).slice(0,5)===s.zip.slice(0,5)&&secondOK){
       const base=address.replace(/\s+unit\s+\S+$/,'');

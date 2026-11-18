@@ -15,5 +15,11 @@ test('missing comp suffix needs matching MLS, ZIP and no conflicting unit or str
    assert.equal(!!match(c,{...s,...change}),false,JSON.stringify(change));
   assert.equal(!!match({...c,address:'7604 Mako Ct'},s),false);
   assert.equal(!!match({...c,address:'7604 Mako #2'},s),false);
+  const typo={address:'5461 MAGDALENE WAY',locality:'ZEPHYRHILLS FL 33541',zip:'33541',mls:'TB8490515'};
+  const loaded={address:'5461 Magdelene Way',zip:'33541',mls:'TB8490515',unit:'',second:''};
+  assert.equal(match(typo,loaded),true);
+  for(const change of [{mls:''},{mls:'TB8490516'},{zip:''},{zip:'33542'},{unit:'2'},{address:'5462 Magdelene Way'},{address:'5461 Magdelene Dr'},{address:'5461 N Magdelene Way'},{address:'5461 Magdolena Way'},{second:'Unit 2'}])
+   assert.equal(!!match(typo,{...loaded,...change}),false,JSON.stringify(change));
+
  }
 });
