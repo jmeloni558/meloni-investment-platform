@@ -96,7 +96,7 @@ async function mapsPage(job,step){
     const displayed=address.getAttribute('aria-label')?.replace(/^Address:?\s*/i,'') || address.innerText.split("\n").find(line=>/\d{5}/.test(line)) || "";
     if(!hasNumberAndZip || normalize(displayed)!==expected)return {retryAddress:true};
     const actions=await wait(()=>document.querySelector('[role="region"][aria-label^="Actions for"],[role="group"][aria-label^="Actions for"]'));
-    const save=await wait(()=>Array.from(actions.querySelectorAll('button')).find(b=>/^(save|saved)$/i.test(b.getAttribute('aria-label')||b.innerText.trim())));
+    const save=await wait(()=>Array.from(actions.querySelectorAll('button')).find(b=>/^(save|saved(?: in .+)?)$/i.test(b.getAttribute('aria-label')||b.innerText.trim())));
     save.click();
     const option=await wait(()=>{
       const items=Array.from(document.querySelectorAll('[role="menuitemradio"]')).filter(el=>el.innerText.split('\n').some(line=>line.trim()===job.listName));
@@ -186,7 +186,15 @@ async function syncInspections(){
   return finished && 'data' in finished;
 }
 function startInspectionSync(){
-  inspectionRun??=(async()=>{for(let i=0;i<12 && await syncInspections();i++){} })().catch(e=>console.warn('Inspections sync:',e.message)).finally(()=>{inspectionRun=null;});
+  inspectionRun??=(async()=>{
+    // Keep the service worker awake while a background Maps tab is loading.
+    const keepAlive=setInterval(()=>chrome.runtime.getPlatformInfo().catch(()=>{}),20000);
+    try {
+      for(let i=0;i<12 && await syncInspections();i++){}
+    } finally {
+      clearInterval(keepAlive);
+    }
+  })().catch(e=>console.warn('Inspections sync:',e.message)).finally(()=>{inspectionRun=null;});
   return inspectionRun;
 }
 chrome.alarms.onAlarm.addListener(alarm=>{if(alarm.name==='inspection-sync')startInspectionSync();});
