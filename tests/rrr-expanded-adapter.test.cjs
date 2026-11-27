@@ -95,3 +95,18 @@ test('Petersburg city spellings match only when the rest of the order matches',(
   }
  }
 });
+
+test('ZIP+4 matches its five-digit ZIP while different and malformed identities fail',()=>{
+ const {api}=fixture();
+ const subject={address:'100 Test Dr',city:'Lutz',state:'FL',zip:'33559'};
+ for(const zip of ['33559','33559-1234']){
+  assert.equal(api.matches(subject,{...subject,zip}),true);
+  assert.equal(api.matches({...subject,zip},subject),true);
+ }
+ for(const zip of ['33558','33558-1234','33559-extra','33559-123','', '335591234']){
+  assert.equal(api.matches(subject,{...subject,zip}),false);
+ }
+ for(const change of [{address:'102 Test Dr'},{city:'Tampa'},{state:'GA'}]){
+  assert.equal(api.matches(subject,{...subject,zip:'33559-1234',...change}),false);
+ }
+});
