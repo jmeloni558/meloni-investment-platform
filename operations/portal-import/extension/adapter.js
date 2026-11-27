@@ -7,6 +7,10 @@ const norm=s=>String(s||'').toUpperCase().replace(/\bSTREET\b/g,'ST').replace(/\
 function identity(doc){return {address:doc.getElementById('rrrSubject_txtAddress')?.value,city:doc.getElementById('rrrSubject_txtCity')?.value,state:doc.getElementById('rrrSubject_ddlState')?.value,zip:doc.getElementById('rrrSubject_txtZip')?.value};}
 function identityPart(subject,key){
  const value=subject?.[key];
+ if(key==='zip'){
+  const zip=/^([0-9]{5})(?:-[0-9]{4})?$/.exec(String(value||'').trim());
+  return zip?zip[1]:'';
+ }
  if(key==='city' && /^(?:st[.]?|saint)\s+petersburg$/i.test(String(value||'').trim()))return 'STPETERSBURG';
  return norm(value);
 }
